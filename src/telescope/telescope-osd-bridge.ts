@@ -4271,7 +4271,14 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     list.setAttribute('role', 'list');
     list.style.setProperty('--poi-spawn-icon-size', `${iconSize}px`);
     for (const { key, count, name, size } of entries) {
-      const row = document.createElement('li');
+      const outcome = document.createElement('li');
+      if (list.childElementCount && spawnDetails.separator) {
+        const separator = document.createElement('div');
+        separator.className = 'poi-spawn-separator';
+        separator.textContent = spawnDetails.separator;
+        outcome.appendChild(separator);
+      }
+      const row = document.createElement('div');
       row.className = 'poi-spawn-row';
       const icon = document.createElement('span');
       icon.className = 'poi-spawn-icon';
@@ -4293,9 +4300,16 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       label.className = 'poi-spawn-name';
       label.textContent = name;
       row.append(icon, amount, label);
-      list.appendChild(row);
+      outcome.appendChild(row);
+      list.appendChild(outcome);
     }
     spawnsDiv.appendChild(list);
+    if (spawnDetails.relationship) {
+      const relationship = document.createElement('div');
+      relationship.className = 'poi-spawn-relationship';
+      relationship.textContent = spawnDetails.relationship;
+      spawnsDiv.appendChild(relationship);
+    }
     if (spawnDetails.outcomes.length) tooltipEl.appendChild(spawnsDiv);
     tooltipEl.appendChild(poi.type === 'entity'
       ? buildExtendedSection('creature', canonicalEntityId(poi.entity))

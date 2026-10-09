@@ -5139,9 +5139,15 @@
     "nestSpawnLimit": "{{frames}}ゲームフレームごとに判定します。プレイヤーとの距離が{{distance}}ピクセル未満の場合、判定ごとに{{chance}}の確率で1体出現し、合計で最大{{count}}体まで出現します。",
     "spawnChancePerCreature": "確率は、出現に成功するたびに適用されます。",
     "cocoonSpawns": "破壊されると1体出現します。ダメージを受けると、それより早く出現することがあります。",
-    "snowCrystalSpawns": "プレイヤーが近くにいる間、幻影を1体ずつ作り出します。確率は、出現に成功するたびに適用されます。",
+    "snowCrystalSpawns": "プレイヤーが近くにいる間、幻影を作り出します。確率は、出現に成功するたびに適用されます。",
     "spawns": "出現する生物",
-    "lukkiEggSpawns": "攻撃によって効果が発動するたびに1体出現します。卵が破壊されるまでに繰り返し攻撃すると、さらに出現することがあります。"
+    "lukkiEggSpawns": "攻撃によって効果が発動するたびに1体出現します。卵が破壊されるまでに繰り返し攻撃すると、さらに出現することがあります。",
+    "hatchesOneOf": "孵化時は次のいずれか",
+    "oneOptionPerSpawn": "出現1回につき1つの結果",
+    "oneIllusionPerSpawn": "出現1回につき幻影1体",
+    "spawnsPerEvent": "1回の出現あたり",
+    "spawnOptionsOverTime": "出現するたびに異なる結果になることがあります。",
+    "spawnOr": "または"
   },
   "skipCreatures": {
     "title": "クリーチャーを追加しない",

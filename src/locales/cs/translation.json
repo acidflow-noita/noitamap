@@ -5139,9 +5139,15 @@
     "nestSpawnLimit": "Kontroluje každých {{frames}} herních snímků. Každá kontrola má šanci {{chance}} vytvořit jednoho tvora, pokud je hráč blíže než {{distance}} pixelů, celkem nejvýše {{count}}.",
     "spawnChancePerCreature": "Pravděpodobnosti platí pro každé úspěšné vytvoření tvora.",
     "cocoonSpawns": "Při zničení vypustí jednoho tvora; poškození ho může vypustit dříve.",
-    "snowCrystalSpawns": "Vytváří vždy jednu iluzi, dokud je hráč poblíž. Pravděpodobnosti platí pro každé úspěšné vytvoření iluze.",
+    "snowCrystalSpawns": "Vytváří iluzi, když je hráč poblíž. Pravděpodobnosti platí pro každé úspěšné vytvoření iluze.",
     "spawns": "Vytváří",
-    "lukkiEggSpawns": "Vypustí jednoho tvora za každý zásah, který účinek spustí. Opakované zásahy mohou vypustit další před zničením vejce."
+    "lukkiEggSpawns": "Vypustí jednoho tvora za každý zásah, který účinek spustí. Opakované zásahy mohou vypustit další před zničením vejce.",
+    "hatchesOneOf": "Při vylíhnutí jedna z těchto možností",
+    "oneOptionPerSpawn": "Jedna možnost při každém vytvoření",
+    "oneIllusionPerSpawn": "Jedna iluze při každém vytvoření",
+    "spawnsPerEvent": "Při každém vytvoření",
+    "spawnOptionsOverTime": "Při dalších vytvořeních se mohou objevit jiné možnosti.",
+    "spawnOr": "NEBO"
   },
   "skipCreatures": {
     "title": "Nepřidávat tvory",

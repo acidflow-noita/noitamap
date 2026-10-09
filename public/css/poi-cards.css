@@ -63,6 +63,25 @@
   margin: 0;
   padding: 0;
 }
+.poi-spawn-separator {
+  display: flex;
+  align-items: center;
+  gap: .5em;
+  margin-bottom: .25em;
+  color: var(--text-muted);
+  font-size: .85em;
+  font-weight: 600;
+}
+.poi-spawn-separator::before, .poi-spawn-separator::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border-strong);
+}
+.poi-spawn-relationship {
+  margin-top: .35em;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
 .poi-spawn-row {
   display: grid;
   grid-template-columns: var(--poi-spawn-icon-size) 3ch minmax(0, 1fr);

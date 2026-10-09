@@ -40,7 +40,7 @@ beforeEach(async () => {
 });
 afterEach(() => { document.body.replaceChildren(); auth.listeners.clear(); vi.unstubAllGlobals(); });
 
-it('exposes only count and species for every free egg and spawner card', () => {
+it('exposes outcome relationships, count and species without paid odds or conditions', () => {
   const pois = [
     ...Object.keys(EGG_SPAWNS).map(item => ({ type: 'item', item })),
     ...Object.keys(SPAWNER_SPAWNS).map(entity => ({ type: 'entity', entity })),
@@ -50,7 +50,18 @@ it('exposes only count and species for every free egg and spawner card', () => {
     expect(details).toBeDefined();
     expect(details.notes).toEqual([]);
     expect(details.outcomes.every(outcome => outcome.length === 2)).toBe(true);
+    const extended = getPOISpawnDetails(poi, true)!;
+    for (const key of ['heading', 'selection', 'repeatable', 'separator', 'relationship'] as const)
+      expect(details[key]).toEqual(extended[key]);
+    expect(details).not.toHaveProperty('maxSpawns');
+    expect(details).not.toHaveProperty('spawnCheck');
   }
+  expect(getPOISpawnDetails({ type: 'item', item: 'egg_worm' })).toMatchObject({
+    heading: en.poi.hatchesOneOf, separator: en.poi.spawnOr,
+  });
+  expect(getPOISpawnDetails({ type: 'entity', entity: 'firebugnest' })).toMatchObject({
+    heading: en.poi.oneOptionPerSpawn, relationship: en.poi.spawnOptionsOverTime,
+  });
 });
 
 it('shows the existing Pro gate, with no spawn odds/notes or extended fetches for free users', () => {

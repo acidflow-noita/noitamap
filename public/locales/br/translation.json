@@ -5139,9 +5139,15 @@
     "nestSpawnLimit": "Verifica a cada {{frames}} quadros do jogo. Cada verificação tem {{chance}} de chance de gerar uma criatura se o jogador estiver a menos de {{distance}} pixels, até {{count}} no total.",
     "spawnChancePerCreature": "As probabilidades se aplicam a cada geração bem-sucedida.",
     "cocoonSpawns": "Libera uma criatura ao ser destruído; o dano pode liberá-la antes.",
-    "snowCrystalSpawns": "Cria uma ilusão por vez enquanto o jogador está por perto. As probabilidades se aplicam a cada geração bem-sucedida.",
+    "snowCrystalSpawns": "Cria uma ilusão enquanto o jogador está por perto. As probabilidades se aplicam a cada geração bem-sucedida.",
     "spawns": "Gera",
-    "lukkiEggSpawns": "Libera uma criatura a cada golpe que o ativa. Golpes repetidos podem liberar mais antes que o ovo seja destruído."
+    "lukkiEggSpawns": "Libera uma criatura a cada golpe que o ativa. Golpes repetidos podem liberar mais antes que o ovo seja destruído.",
+    "hatchesOneOf": "Ao eclodir, um destes resultados",
+    "oneOptionPerSpawn": "Uma opção por geração",
+    "oneIllusionPerSpawn": "Uma ilusão por geração",
+    "spawnsPerEvent": "Por geração",
+    "spawnOptionsOverTime": "Em gerações sucessivas, podem aparecer opções diferentes.",
+    "spawnOr": "OU"
   },
   "skipCreatures": {
     "title": "Não adicionar criaturas",

@@ -30,26 +30,51 @@ beforeEach(async () => { await translator.current.changeLanguage('en'); });
 
 describe('spawner card details', () => {
   it.each([
-    ['ghost_crystal', 'ghost'], ['physics_cocoon', 'worm'], ['flynest', 'fly'],
-    ['spidernest', 'longleg'], ['lukki_eggs', 'lukki_tiny'],
+    ['ghost_crystal', 'ghost'], ['physics_cocoon', 'worm'],
   ])('labels the fixed offspring of %s as Spawns', (entity, offspring) => {
-    expect(spawner(entity)).toMatchObject({ heading: 'Spawns', outcomes: [[offspring, 1]] });
+    expect(spawner(entity)).toMatchObject({ heading: 'Spawns', outcomes: [[offspring, 1]],
+      selection: 'fixed', repeatable: false, separator: undefined, relationship: undefined });
     expect(spawner(`data/entities/buildings/${entity}.xml`)).toEqual(spawner(entity));
   });
 
+  it.each([['flynest', 'fly'], ['spidernest', 'longleg'], ['lukki_eggs', 'lukki_tiny']])(
+    'labels %s counts per spawn rather than as a lifetime total', (entity, offspring) => {
+      expect(spawner(entity)).toMatchObject({ heading: 'Each spawn', outcomes: [[offspring, 1]],
+        selection: 'fixed', repeatable: true, separator: undefined });
+      expect(spawner(`data/entities/buildings/${entity}.xml`)).toEqual(spawner(entity));
+    });
+
   it('keeps exact random odds and distinguishes illusions from real creatures', () => {
-    expect(spawner('firebugnest')).toMatchObject({ heading: 'Possible spawns',
+    expect(spawner('firebugnest')).toMatchObject({ heading: 'One option per spawn',
+      selection: 'exclusive', repeatable: true, separator: 'OR',
+      relationship: 'Different options can appear over successive spawns.',
       outcomes: [['firebug', 1, 4, 5], ['bigfirebug', 1, 1, 5]] });
     const illusions = spawner('snowcrystal');
-    expect(illusions.heading).toBe('Possible illusions');
+    expect(illusions).toMatchObject({ heading: 'One illusion per spawn',
+      selection: 'exclusive', repeatable: true, separator: 'OR',
+      relationship: 'Different options can appear over successive spawns.' });
     expect(illusions.outcomes).toHaveLength(8);
     expect(illusions.outcomes.every(row => row[2] === 1 && row[3] === 8)).toBe(true);
     expect(getPOISpawnDetails({ type: 'item', item: 'egg_worm' }, true)).toMatchObject({
-      heading: 'Possible spawns', outcomes: [['worm_tiny', 1, 343, 512], ['worm', 1, 147, 512], ['worm_big', 1, 11, 256]],
+      heading: 'Hatches one of these', selection: 'exclusive', repeatable: false, separator: 'OR', relationship: undefined,
+      outcomes: [['worm_tiny', 1, 343, 512], ['worm', 1, 147, 512], ['worm_big', 1, 11, 256]],
     });
     expect(getPOISpawnDetails({ type: 'item', item: 'egg_hollow' }, true)).toMatchObject({
       outcomes: [], notes: ['No creatures hatch from this egg.'],
     });
+  });
+
+  it('keeps multi-creature hatch results as whole, mutually exclusive alternatives', () => {
+    expect(getPOISpawnDetails({ type: 'item', item: 'egg_fire' })).toMatchObject({
+      selection: 'exclusive', repeatable: false, separator: 'OR',
+      outcomes: [['firebug', 3], ['bigfirebug', 1]],
+    });
+    for (const item of ['egg_purple', 'egg_spiders']) {
+      expect(getPOISpawnDetails({ type: 'item', item })).toMatchObject({
+        selection: 'exclusive', repeatable: false, separator: 'OR',
+        outcomes: [['longleg', 3], ['longleg', 4], ['longleg', 5]],
+      });
+    }
   });
 
   it('does not describe a whole nest or a repeatedly hit Lukki egg as a single guaranteed hatchling', () => {
@@ -69,7 +94,8 @@ describe('spawner card details', () => {
   it.each(Object.keys(locales))('translates every explanation and reuses official creature keys in %s', async locale => {
     await translator.current.changeLanguage(locale);
     const copy = locales[locale].poi;
-    const keys = ['spawns', 'possibleSpawns', 'possibleIllusions', 'eggHatch', 'noEggSpawns',
+    const keys = ['spawns', 'hatchesOneOf', 'oneOptionPerSpawn', 'oneIllusionPerSpawn', 'spawnsPerEvent',
+      'spawnOptionsOverTime', 'spawnOr', 'eggHatch', 'noEggSpawns',
       'nestSpawnLimit', 'spawnChancePerCreature', 'cocoonSpawns', 'snowCrystalSpawns', 'lukkiEggSpawns'];
     for (const key of keys) {
       expect(copy[key]?.trim(), key).toBeTruthy();
@@ -78,8 +104,13 @@ describe('spawner card details', () => {
     expect(spawner('ghost_crystal').heading).toBe(copy.spawns);
     expect(spawner('lukki_eggs').notes).toEqual([copy.lukkiEggSpawns]);
     expect(spawner('physics_cocoon').notes).toEqual([copy.cocoonSpawns]);
-    expect(spawner('snowcrystal')).toMatchObject({ heading: copy.possibleIllusions, notes: [copy.snowCrystalSpawns] });
-    expect(getPOISpawnDetails({ type: 'item', item: 'egg_worm' }, true)).toMatchObject({ heading: copy.possibleSpawns, notes: [copy.eggHatch] });
+    expect(spawner('snowcrystal')).toMatchObject({ heading: copy.oneIllusionPerSpawn,
+      separator: copy.spawnOr, relationship: copy.spawnOptionsOverTime, notes: [copy.snowCrystalSpawns] });
+    expect(spawner('firebugnest')).toMatchObject({ heading: copy.oneOptionPerSpawn,
+      separator: copy.spawnOr, relationship: copy.spawnOptionsOverTime });
+    expect(spawner('spidernest').heading).toBe(copy.spawnsPerEvent);
+    expect(getPOISpawnDetails({ type: 'item', item: 'egg_worm' }, true)).toMatchObject({
+      heading: copy.hatchesOneOf, separator: copy.spawnOr, notes: [copy.eggHatch] });
     expect(getPOISpawnDetails({ type: 'item', item: 'egg_hollow' }, true)?.notes).toEqual([copy.noEggSpawns]);
     for (const entity of ['flynest', 'spidernest', 'firebugnest']) {
       const info = SPAWNER_SPAWNS[entity]!;

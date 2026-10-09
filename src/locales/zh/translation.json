@@ -5139,9 +5139,15 @@
     "nestSpawnLimit": "每 {{frames}} 个游戏帧检查一次。如果玩家距离小于 {{distance}} 像素，每次检查有 {{chance}} 的概率生成一个生物，最多共生成 {{count}} 个。",
     "spawnChancePerCreature": "这些概率适用于每次成功生成生物时。",
     "cocoonSpawns": "被摧毁时释放一个生物；受到伤害可能使其提前释放。",
-    "snowCrystalSpawns": "玩家在附近时，每次生成一个幻象。这些概率适用于每次成功生成幻象时。",
+    "snowCrystalSpawns": "玩家在附近时生成幻象。这些概率适用于每次成功生成幻象时。",
     "spawns": "生成",
-    "lukkiEggSpawns": "每次命中触发效果时释放一个生物。在蛋被摧毁前，多次命中可释放更多生物。"
+    "lukkiEggSpawns": "每次命中触发效果时释放一个生物。在蛋被摧毁前，多次命中可释放更多生物。",
+    "hatchesOneOf": "孵化时只会出现以下一种结果",
+    "oneOptionPerSpawn": "每次生成只会选择一种结果",
+    "oneIllusionPerSpawn": "每次生成一个幻象",
+    "spawnsPerEvent": "每次生成",
+    "spawnOptionsOverTime": "多次生成时，可能出现不同的结果。",
+    "spawnOr": "或"
   },
   "skipCreatures": {
     "title": "不添加生物",

@@ -1,6 +1,6 @@
 import i18next from '../i18n';
 import { canonicalEntityId } from './entity-canonical';
-import { EGG_SPAWNS } from './egg-spawns';
+import { EGG_HATCH_BEHAVIOR, EGG_SPAWNS } from './egg-spawns';
 import { SPAWNER_SPAWNS } from './spawner-spawns';
 
 /** Resolve at card-open time so changing language also changes every note. */
@@ -12,14 +12,29 @@ export function getPOISpawnDetails(poi: { type: string; item?: string; entity?: 
   const outcomes = egg ?? spawner?.outcomes;
   if (!outcomes) return undefined;
 
-  const heading = spawner?.illusions
-    ? i18next.t('poi.possibleIllusions', 'Possible illusions')
-    : outcomes.length > 1
-      ? i18next.t('poi.possibleSpawns', 'Possible spawns')
-      : i18next.t('poi.spawns', 'Spawns');
-  // Free cards expose counts/species only. Resolve explanatory copy only for
-  // the extended section, after the shared subscriber gate has accepted it.
-  if (!extended) return { heading, outcomes: outcomes.map(([entity, count]) => [entity, count] as const), notes: [] };
+  const behavior = egg ? EGG_HATCH_BEHAVIOR : spawner!;
+  const exclusive = behavior.selection === 'exclusive';
+  const heading = egg
+    ? i18next.t('poi.hatchesOneOf', 'Hatches one of these')
+    : exclusive
+      ? spawner?.illusions
+        ? i18next.t('poi.oneIllusionPerSpawn', 'One illusion per spawn')
+        : i18next.t('poi.oneOptionPerSpawn', 'One option per spawn')
+      : behavior.repeatable
+        ? i18next.t('poi.spawnsPerEvent', 'Each spawn')
+        : i18next.t('poi.spawns', 'Spawns');
+  const presentation = {
+    heading,
+    selection: behavior.selection,
+    repeatable: behavior.repeatable,
+    separator: exclusive ? i18next.t('poi.spawnOr', 'OR') : undefined,
+    relationship: exclusive && behavior.repeatable
+      ? i18next.t('poi.spawnOptionsOverTime', 'Different options can appear over successive spawns.')
+      : undefined,
+  };
+  // Basic cards explain how to read the outcomes. Odds, triggering conditions,
+  // timing and lifetime limits remain in the authenticated extended section.
+  if (!extended) return { ...presentation, outcomes: outcomes.map(([entity, count]) => [entity, count] as const), notes: [] };
   const notes: string[] = [];
   if (egg) notes.push(egg.length
     ? i18next.t('poi.eggHatch', 'The outcome depends on the seed and where the egg hatches.')
@@ -33,5 +48,5 @@ export function getPOISpawnDetails(poi: { type: string; item?: string; entity?: 
     defaultValue: 'Checks every {{frames}} game frames. Each check has a {{chance}} chance to spawn one if the player is less than {{distance}} pixels away, up to {{count}} in total.',
   }));
   if (spawner?.note) notes.push(i18next.t(spawner.note[0], spawner.note[1]));
-  return { heading, outcomes, notes };
+  return { ...presentation, outcomes, notes };
 }

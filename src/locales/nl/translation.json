@@ -5139,9 +5139,15 @@
     "nestSpawnLimit": "Controleert elke {{frames}} gameframes. Elke controle heeft een kans van {{chance}} om één wezen voort te brengen als de speler minder dan {{distance}} pixels verwijderd is, tot {{count}} in totaal.",
     "spawnChancePerCreature": "De kansen gelden voor elke geslaagde verschijning.",
     "cocoonSpawns": "Laat bij vernietiging één wezen vrij; schade kan het eerder vrijlaten.",
-    "snowCrystalSpawns": "Creëert één illusie tegelijk zolang de speler in de buurt is. De kansen gelden voor elke geslaagde verschijning.",
+    "snowCrystalSpawns": "Creëert een illusie zolang de speler in de buurt is. De kansen gelden voor elke geslaagde verschijning.",
     "spawns": "Brengt voort",
-    "lukkiEggSpawns": "Laat één wezen vrij per treffer die het effect activeert. Herhaalde treffers kunnen er meer vrijlaten voordat het ei wordt vernietigd."
+    "lukkiEggSpawns": "Laat één wezen vrij per treffer die het effect activeert. Herhaalde treffers kunnen er meer vrijlaten voordat het ei wordt vernietigd.",
+    "hatchesOneOf": "Eén van deze uitkomsten bij het uitkomen",
+    "oneOptionPerSpawn": "Één uitkomst per verschijning",
+    "oneIllusionPerSpawn": "Één illusie per verschijning",
+    "spawnsPerEvent": "Per verschijning",
+    "spawnOptionsOverTime": "Opeenvolgende verschijningen kunnen verschillende uitkomsten hebben.",
+    "spawnOr": "OF"
   },
   "skipCreatures": {
     "title": "Geen wezens toevoegen",

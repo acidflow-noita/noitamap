@@ -5139,9 +5139,15 @@
     "nestSpawnLimit": "Kontrollerar var {{frames}}:e spelbildruta. Varje kontroll har sannolikheten {{chance}} att skapa en varelse om spelaren är närmare än {{distance}} pixlar, upp till {{count}} totalt.",
     "spawnChancePerCreature": "Sannolikheterna gäller varje gång en varelse faktiskt skapas.",
     "cocoonSpawns": "Släpper ut en varelse när den förstörs; skada kan släppa ut den tidigare.",
-    "snowCrystalSpawns": "Skapar en illusion i taget medan spelaren är i närheten. Sannolikheterna gäller varje gång en illusion faktiskt skapas.",
+    "snowCrystalSpawns": "Skapar en illusion medan spelaren är i närheten. Sannolikheterna gäller varje gång en illusion faktiskt skapas.",
     "spawns": "Skapar",
-    "lukkiEggSpawns": "Släpper ut en varelse per träff som utlöser effekten. Upprepade träffar kan släppa ut fler innan ägget förstörs."
+    "lukkiEggSpawns": "Släpper ut en varelse per träff som utlöser effekten. Upprepade träffar kan släppa ut fler innan ägget förstörs.",
+    "hatchesOneOf": "Vid kläckning ett av dessa utfall",
+    "oneOptionPerSpawn": "Ett utfall per skapande",
+    "oneIllusionPerSpawn": "En illusion per skapande",
+    "spawnsPerEvent": "Varje skapande",
+    "spawnOptionsOverTime": "Olika utfall kan förekomma vid senare skapanden.",
+    "spawnOr": "ELLER"
   },
   "skipCreatures": {
     "title": "Lägg inte till varelser",

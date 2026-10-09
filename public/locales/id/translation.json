@@ -5139,9 +5139,15 @@
     "nestSpawnLimit": "Memeriksa setiap {{frames}} frame permainan. Setiap pemeriksaan memiliki peluang {{chance}} untuk memunculkan satu makhluk jika pemain berjarak kurang dari {{distance}} piksel, hingga total {{count}}.",
     "spawnChancePerCreature": "Peluang berlaku setiap kali makhluk berhasil dimunculkan.",
     "cocoonSpawns": "Melepaskan satu makhluk saat dihancurkan; kerusakan dapat melepaskannya lebih awal.",
-    "snowCrystalSpawns": "Menciptakan satu ilusi setiap kali selama pemain berada di dekatnya. Peluang berlaku setiap kali ilusi berhasil dimunculkan.",
+    "snowCrystalSpawns": "Menciptakan ilusi selama pemain berada di dekatnya. Peluang berlaku setiap kali ilusi berhasil dimunculkan.",
     "spawns": "Memunculkan",
-    "lukkiEggSpawns": "Melepaskan satu makhluk setiap kali serangan memicu efeknya. Serangan berulang dapat melepaskan lebih banyak sebelum telur dihancurkan."
+    "lukkiEggSpawns": "Melepaskan satu makhluk setiap kali serangan memicu efeknya. Serangan berulang dapat melepaskan lebih banyak sebelum telur dihancurkan.",
+    "hatchesOneOf": "Telur menetas menjadi salah satu hasil berikut",
+    "oneOptionPerSpawn": "Satu hasil tiap pemunculan",
+    "oneIllusionPerSpawn": "Satu ilusi tiap pemunculan",
+    "spawnsPerEvent": "Setiap pemunculan",
+    "spawnOptionsOverTime": "Pemunculan berikutnya dapat menghasilkan hasil yang berbeda.",
+    "spawnOr": "ATAU"
   },
   "skipCreatures": {
     "title": "Jangan tambahkan makhluk",

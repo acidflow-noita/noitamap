@@ -5139,9 +5139,15 @@
     "nestSpawnLimit": "Prüft alle {{frames}} Spiel-Frames. Jede Prüfung hat eine Chance von {{chance}}, eine Kreatur zu erzeugen, wenn der Spieler weniger als {{distance}} Pixel entfernt ist, insgesamt bis zu {{count}}.",
     "spawnChancePerCreature": "Die Wahrscheinlichkeiten gelten für jede erfolgreiche Erzeugung.",
     "cocoonSpawns": "Setzt bei Zerstörung eine Kreatur frei; Schaden kann sie bereits vorher freisetzen.",
-    "snowCrystalSpawns": "Erzeugt jeweils eine Illusion, solange der Spieler in der Nähe ist. Die Wahrscheinlichkeiten gelten für jede erfolgreiche Erzeugung.",
+    "snowCrystalSpawns": "Erzeugt eine Illusion, solange der Spieler in der Nähe ist. Die Wahrscheinlichkeiten gelten für jede erfolgreiche Erzeugung.",
     "spawns": "Erzeugt",
-    "lukkiEggSpawns": "Setzt pro auslösendem Treffer eine Kreatur frei. Wiederholte Treffer können weitere freisetzen, bevor das Ei zerstört wird."
+    "lukkiEggSpawns": "Setzt pro auslösendem Treffer eine Kreatur frei. Wiederholte Treffer können weitere freisetzen, bevor das Ei zerstört wird.",
+    "hatchesOneOf": "Eines dieser Ergebnisse beim Schlüpfen",
+    "oneOptionPerSpawn": "Ein Ergebnis pro Erzeugung",
+    "oneIllusionPerSpawn": "Eine Illusion pro Erzeugung",
+    "spawnsPerEvent": "Pro Erzeugung",
+    "spawnOptionsOverTime": "Weitere Erzeugungen können andere Ergebnisse haben.",
+    "spawnOr": "ODER"
   },
   "skipCreatures": {
     "title": "Keine Kreaturen hinzufügen",

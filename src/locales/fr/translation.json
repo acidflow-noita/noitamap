@@ -5139,9 +5139,15 @@
     "nestSpawnLimit": "Effectue une vérification toutes les {{frames}} images du jeu. Chaque vérification a une probabilité de {{chance}} de faire apparaître une créature si le joueur est à moins de {{distance}} pixels, jusqu’à {{count}} au total.",
     "spawnChancePerCreature": "Les probabilités s’appliquent à chaque apparition effective.",
     "cocoonSpawns": "Libère une créature à sa destruction ; les dégâts peuvent la libérer plus tôt.",
-    "snowCrystalSpawns": "Crée une illusion à la fois lorsque le joueur est à proximité. Les probabilités s’appliquent à chaque apparition effective.",
+    "snowCrystalSpawns": "Crée une illusion lorsque le joueur est à proximité. Les probabilités s’appliquent à chaque apparition effective.",
     "spawns": "Fait apparaître",
-    "lukkiEggSpawns": "Libère une créature par coup déclencheur. Des coups répétés peuvent en libérer davantage avant la destruction de l’œuf."
+    "lukkiEggSpawns": "Libère une créature par coup déclencheur. Des coups répétés peuvent en libérer davantage avant la destruction de l’œuf.",
+    "hatchesOneOf": "À l’éclosion, une seule de ces possibilités",
+    "oneOptionPerSpawn": "Une possibilité par apparition",
+    "oneIllusionPerSpawn": "Une illusion par apparition",
+    "spawnsPerEvent": "À chaque apparition",
+    "spawnOptionsOverTime": "Des apparitions successives peuvent donner des résultats différents.",
+    "spawnOr": "OU"
   },
   "skipCreatures": {
     "title": "Ne pas ajouter de créatures",

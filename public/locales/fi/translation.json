@@ -5139,9 +5139,15 @@
     "nestSpawnLimit": "Tarkistaa {{frames}} peliruudun välein. Jokaisella tarkistuksella on {{chance}} todennäköisyys synnyttää yksi olento, jos pelaaja on alle {{distance}} pikselin päässä, yhteensä enintään {{count}} olentoa.",
     "spawnChancePerCreature": "Todennäköisyydet koskevat jokaista onnistunutta syntymistä.",
     "cocoonSpawns": "Vapauttaa yhden olennon tuhoutuessaan; vahinko voi vapauttaa sen jo aiemmin.",
-    "snowCrystalSpawns": "Luo yhden illuusion kerrallaan pelaajan ollessa lähellä. Todennäköisyydet koskevat jokaista onnistunutta syntymistä.",
+    "snowCrystalSpawns": "Luo illuusion pelaajan ollessa lähellä. Todennäköisyydet koskevat jokaista onnistunutta syntymistä.",
     "spawns": "Synnyttää",
-    "lukkiEggSpawns": "Vapauttaa yhden olennon jokaista vaikutuksen laukaisevaa osumaa kohti. Toistuvat osumat voivat vapauttaa lisää ennen munan tuhoutumista."
+    "lukkiEggSpawns": "Vapauttaa yhden olennon jokaista vaikutuksen laukaisevaa osumaa kohti. Toistuvat osumat voivat vapauttaa lisää ennen munan tuhoutumista.",
+    "hatchesOneOf": "Kuoriutuessa yksi näistä vaihtoehdoista",
+    "oneOptionPerSpawn": "Yksi vaihtoehto ilmestymiskertaa kohti",
+    "oneIllusionPerSpawn": "Yksi illuusio ilmestymiskertaa kohti",
+    "spawnsPerEvent": "Jokaisella ilmestymiskerralla",
+    "spawnOptionsOverTime": "Eri ilmestymiskerroilla voi esiintyä eri vaihtoehtoja.",
+    "spawnOr": "TAI"
   },
   "skipCreatures": {
     "title": "Älä lisää olentoja",

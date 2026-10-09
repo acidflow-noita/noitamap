@@ -5139,9 +5139,15 @@
     "nestSpawnLimit": "Sprawdza co {{frames}} klatek gry. Każde sprawdzenie ma szansę {{chance}} na przywołanie jednego stworzenia, jeśli gracz jest bliżej niż {{distance}} pikseli, do {{count}} łącznie.",
     "spawnChancePerCreature": "Podane szanse dotyczą każdego udanego przywołania.",
     "cocoonSpawns": "Uwalnia jedno stworzenie po zniszczeniu; obrażenia mogą uwolnić je wcześniej.",
-    "snowCrystalSpawns": "Tworzy po jednej iluzji, gdy gracz jest w pobliżu. Podane szanse dotyczą każdego udanego przywołania.",
+    "snowCrystalSpawns": "Tworzy iluzję, gdy gracz jest w pobliżu. Podane szanse dotyczą każdego udanego przywołania.",
     "spawns": "Przywołuje",
-    "lukkiEggSpawns": "Uwalnia jedno stworzenie przy każdym trafieniu, które wyzwoli ten efekt. Kolejne trafienia mogą uwolnić więcej stworzeń przed zniszczeniem jaja."
+    "lukkiEggSpawns": "Uwalnia jedno stworzenie przy każdym trafieniu, które wyzwoli ten efekt. Kolejne trafienia mogą uwolnić więcej stworzeń przed zniszczeniem jaja.",
+    "hatchesOneOf": "Po wykluciu jeden z tych wyników",
+    "oneOptionPerSpawn": "Jeden wynik na przywołanie",
+    "oneIllusionPerSpawn": "Jedna iluzja na przywołanie",
+    "spawnsPerEvent": "Przy każdym przywołaniu",
+    "spawnOptionsOverTime": "Kolejne przywołania mogą dawać różne wyniki.",
+    "spawnOr": "LUB"
   },
   "skipCreatures": {
     "title": "Nie dodawaj stworzeń",

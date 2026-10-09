@@ -1,5 +1,9 @@
 type EggSpawn = readonly [entity: string, count: number, numerator: number, denominator: number];
 
+// egg_hatch.lua selects one table entry, then spawns that entry's whole count.
+// A multi-creature entry is one outcome, not a roll for each creature.
+export const EGG_HATCH_BEHAVIOR = { selection: 'exclusive', repeatable: false } as const;
+
 const chillySpawns: readonly EggSpawn[] = [
   ['longleg', 3, 343, 512],
   ['longleg', 4, 147, 512],
