@@ -133,6 +133,20 @@ describe('POI refresh after background unlock generation', () => {
     expect(generate).not.toHaveBeenCalled();
   });
 
+  it('resets primary and alternate data when a fresh mod payload replaces the same seed in place', async () => {
+    const f = await fixture();
+    await f.prewarmAlt(92, false);
+    expect(f.primaryDescriptor()).toBe('all');
+    expect(f.getAltResult('none', 92)).not.toBeNull();
+    history.replaceState({}, '', '/?m=dy&se=92&u=AQAAAAA&p=1.AA');
+    f.resetUnlocksForNavigation();
+    expect(f.primaryDescriptor()).toBe('mod');
+    expect(f.getAltResult('none', 92)).toBeNull();
+    expect(f.getActiveDescriptor()).toBe('mod');
+    await f.prewarmAlt(92, false);
+    expect(f.getAltResult('all', 92)).not.toBeNull();
+  });
+
   it('aborts an active old seed and ignores its late results and notifications', async () => {
     const f = await fixture('&u=AQAAAAA');
     let complete!: (value: GenerationResult) => void;

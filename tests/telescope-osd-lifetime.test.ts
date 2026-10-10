@@ -11,6 +11,7 @@ function barrier() {
 
 /** Run the bridge's actual orchestration without booting its browser UI imports. */
 function bridgeLifecycle(dependencies: Record<string, unknown>) {
+  dependencies = { buildSceneBitmaps: async () => null, ...dependencies };
   const source = createSourceFile('bridge.ts', readFileSync('src/telescope/telescope-osd-bridge.ts', 'utf8'), ScriptTarget.Latest);
   const names = ['clearInstantTerrain', 'beginMarkerRequest', 'cancelPendingDynamicTerrain', 'clearDynamicOverlays', 'renderGenerationResult', 'rebuildAltLayers'];
   if (!dependencies.addOrbOverlays) names.push('addOrbOverlays');
@@ -74,7 +75,7 @@ describe('terrain presentation lifetime', () => {
       buildMarkerData: async () => ({}), ensureTelescopeModules, instantSceneMasks,
       loadInstantTerrain: async () => ({ addInstantTerrain }), glTerrainDeps: {},
     });
-    const outgoing = bridge.renderGenerationResult(viewer, { worldSize: 70, isNGP: false });
+    const outgoing = bridge.renderGenerationResult(viewer, { worldSize: 70, isNGP: false, pixelScenesByPW: {} });
     if (stage === 'masks') await vi.waitFor(() => expect(instantSceneMasks).toHaveBeenCalledOnce());
     else expect(ensureTelescopeModules).toHaveBeenCalledOnce();
 
@@ -111,6 +112,7 @@ function presentationFixture(instant = true) {
     instantSceneMasks: async () => [], glTerrainDeps: {},
     addBiomeLayersProgressively: vi.fn(async (_viewer: any, _result: any, _id: number, paint: () => void) => paint()),
     addPixelScenes: vi.fn(() => artwork.promise), registerPixelSceneHoverDebug: vi.fn(),
+    buildSceneBitmaps: vi.fn(async () => ({ release: vi.fn() })),
     buildMarkerData: vi.fn(async () => ({ originX: 0, originY: 0, bboxWidth: 100 })),
     addOrbOverlays: vi.fn(), installClickHandler: vi.fn(), rebuildHighValueOverlays: vi.fn(),
     createMarkerTileSource: vi.fn(() => ({})), installPortalAnimations: vi.fn(),
@@ -130,6 +132,35 @@ function presentationFixture(instant = true) {
 }
 
 describe('terrain before live POIs', () => {
+  it('prepares artwork while terrain setup waits, then attaches it above terrain before publishing', async () => {
+    const f = presentationFixture(), terrainSetup = barrier();
+    const install = f.module.addInstantTerrain.getMockImplementation()!;
+    f.module.addInstantTerrain.mockImplementation(async (...args: any[]) => {
+      await terrainSetup.promise; return install(...args);
+    });
+    const pending = f.start();
+    await vi.waitFor(() => expect(f.buildSceneBitmaps).toHaveBeenCalledOnce());
+    expect(f.addPixelScenes).not.toHaveBeenCalled();
+    expect(f.firstPaint).not.toHaveBeenCalled();
+    terrainSetup.resolve();
+    await vi.waitFor(() => expect(f.addPixelScenes).toHaveBeenCalledOnce());
+    expect((f.addPixelScenes.mock.calls[0] as any)[3]).toBe(f.buildSceneBitmaps.mock.results[0].value);
+    f.artwork.resolve(); await f.calls[0][9]; f.calls[0][6](); await pending;
+    expect((await f.buildSceneBitmaps.mock.results[0].value).release).not.toHaveBeenCalled();
+  });
+
+  it('releases prepared scene images when terrain retires before their layer can attach', async () => {
+    const f = presentationFixture(), terrainSetup = barrier(), release = vi.fn();
+    f.buildSceneBitmaps.mockResolvedValue({ release });
+    f.module.addInstantTerrain.mockImplementation(async () => { await terrainSetup.promise; return true; });
+    const pending = f.start();
+    await vi.waitFor(() => expect(f.buildSceneBitmaps).toHaveBeenCalledOnce());
+    f.bridge.cancelPendingDynamicTerrain(); terrainSetup.resolve(); await pending;
+    await vi.waitFor(() => expect(release).toHaveBeenCalledOnce());
+    expect(f.addPixelScenes).not.toHaveBeenCalled();
+    expect(f.firstPaint).not.toHaveBeenCalled();
+  });
+
   it('passes the persisted-terrain preference to live presentation', async () => {
     const f = presentationFixture();
     const pending = f.bridge.renderGenerationResult(f.viewer, f.result, null, false, f.firstPaint,

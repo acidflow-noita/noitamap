@@ -13,7 +13,8 @@ import i18next, { initializeTranslations, STARTUP_MESSAGES, SUPPORTED_LANGUAGES 
 import { showStartupFailure, startWhenReady } from './startup';
 import { setupDropOverlay } from "./drop-overlay";
 import { createProLoader } from "./pro-loader";
-import { negotiateTabHandoff } from "./tab-coordinator";
+import { negotiateTabHandoff, registerTabHandoff } from "./tab-coordinator";
+import { createModNavigation } from './mod-navigation';
 import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, setDynamicUIBusy, createLoadingStripProgress, hideLoadingStrip } from "./dynamic_ui";
 import {
   runDynamicMapFromURL,
@@ -36,6 +37,7 @@ import {
   getAltResult,
   isVariantReady,
   UnlockDescriptor,
+  resetUnlocksForNavigation,
 } from "./unlocks-toggle";
 import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport, openTooltipForPOI, closePOICard, guardPOICardContext, resetPOICardContext, restorePOICardContext, getPOISpriteFirstFrame, applyHighValueOverlays } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
@@ -1078,6 +1080,7 @@ startWhenReady(async () => {
   // Track previous map so state-change can detect transitions away from dynamic
   let lastKnownMap: string = app.getMap();
   let renderedMap: string | undefined;
+  let modMapTransition = false;
 
   app.on("state-change", (state) => {
     // record map / position / zoom changes to the URL when they happen
@@ -1091,7 +1094,7 @@ startWhenReady(async () => {
       clearDynamicMap(app.osd);
       unifiedSearch.setDynamicPOIs([]);
       unifiedSearch.setIndexingState('idle');
-    } else if (lastKnownMap !== "dynamic-main-branch" && state.map === "dynamic-main-branch") {
+    } else if (lastKnownMap !== "dynamic-main-branch" && state.map === "dynamic-main-branch" && !modMapTransition) {
       if (drawingDailyRequest) {
         const request = drawingDailyRequest;
         drawingDailyRequest = undefined;
@@ -1134,6 +1137,38 @@ startWhenReady(async () => {
   });
 
   const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);
+
+  const modNavigation = createModNavigation({
+    href: () => window.location.href,
+    getMap: () => app.getMap(),
+    replaceURL: url => history.replaceState(history.state, '', url),
+    setMap: async map => {
+      if (app.getMap() === map) return;
+      modMapTransition = true;
+      try {
+        for (const callback of mapChangeCallbacks) callback(map);
+        await app.setMap(map);
+        unifiedSearch.currentMap = map;
+      } finally { modMapTransition = false; }
+    },
+    goto: pos => { app.osd.cancelNavigation(); app.osd.setZoomPos(pos); },
+    updateSeed: (seed, daily) => {
+      pendingDynamicSeed = null;
+      lastSessionSeed = seed; lastSessionIsDaily = daily;
+      setDynamicUISeed(seed, daily);
+    },
+    resetUnlocks: resetUnlocksForNavigation,
+    closeCard: () => {
+      initialTargetPoiId = undefined;
+      spawnSharing?.dismiss();
+      clearCreatureSpawnBiomeFocus(osdRootElement);
+      reportHighlights?.clear(false);
+      closePOICard();
+    },
+    renderDynamic: () => runDynamicMapFromURL(dynamicOpts),
+    failed: error => console.error('[Noitamap] Mod navigation failed:', error),
+  });
+  registerTabHandoff(href => modNavigation.accept(href));
   // show/hide loading indicator — BUT suppress while on the dynamic map
   // because OSD keeps emitting loading-change(true) as it lazily loads the
   // many biome tile images, which would keep the spinner stuck.

@@ -499,8 +499,13 @@ it('draws newly exposed terrain synchronously without a coarse frame and freezes
     return gpu;
   });
   try {
-    const f = fixture(undefined, undefined, false, immediate);
-    await drain(); f.image(); await drain(); f.draw(); await drain();
+    const f = fixture(undefined, undefined, true, immediate);
+    await drain();
+    // Even when the caller requests fallback coverage, direct GPU rendering
+    // starts at the actual camera instead of rendering the entire map first.
+    expect(f.renders[0].plan).toMatchObject({ x: 0, y: 0, width: 32, height: 24, scale: 1 });
+    expect(f.renderFrame.mock.calls[0][2]).toBe(false);
+    f.image(); await drain(); f.draw(); await drain();
     expect(f.firstPaint).toHaveBeenCalledOnce();
     f.navigate(-10); f.draw();
     expect(f.pixel(0, 8)).toEqual([224, 64, 32, 255]);

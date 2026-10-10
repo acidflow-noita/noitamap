@@ -815,9 +815,7 @@ export async function addInstantTerrain(
         },
         renderFrameNow: mainRenderer.renderViewportSync,
         async renderFrame(plan, signal, preparingOverview) {
-          // The overview is retained privately until the close-up paints.
-          // Prepare it alongside scene artwork; visible terrain still waits.
-          if (!preparingOverview) await new Promise<void>((resolve, reject) => {
+          const waitForArtwork = () => preparingOverview ? Promise.resolve() : new Promise<void>((resolve, reject) => {
             const abort = () => reject(signal.reason);
             if (signal.aborted) { abort(); return; }
             signal.addEventListener('abort', abort, { once: true });
@@ -825,8 +823,12 @@ export async function addInstantTerrain(
           });
           signal.throwIfAborted();
           if (mainRenderer.renderViewportSync) {
+            // All terrain inputs and cutouts are already configured. Warm the
+            // real requested frame while artwork finishes, then publish only
+            // after both are ready. A separate world overview adds no coverage
+            // to this synchronous navigation path.
             mainRenderer.renderViewportSync(plan);
-            await mainRenderer.waitForViewport(signal);
+            await Promise.all([mainRenderer.waitForViewport(signal), waitForArtwork()]);
             signal.throwIfAborted();
             // Republish from retained GPU textures after the wait: WebGL may
             // discard its default drawing buffer between animation frames.
@@ -836,6 +838,8 @@ export async function addInstantTerrain(
             canvas.getContext('2d')!.drawImage(image, 0, 0);
             return canvas;
           }
+          await waitForArtwork();
+          signal.throwIfAborted();
           return display.render(plan, signal);
         },
         firstPaint() {

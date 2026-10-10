@@ -1,0 +1,60 @@
+name: Map performance
+
+on:
+  push:
+    branches: [dynamic-map]
+  pull_request:
+    branches: [dynamic-map]
+  workflow_dispatch:
+
+# Standard public-repository runners only. No private checkout, publication,
+# deployment credentials, PR comments, or paid larger runners.
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install public test tooling
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build candidate, parent, and fixed reference
+        run: node build_scripts/performance/build-versions.mjs
+      - name: Check candidate types and navigation regressions
+        working-directory: ${{ runner.temp }}/noitamap-performance/candidate
+        run: |
+          npm run typecheck
+          npm test -- tests/tab-coordinator.test.ts tests/mod-navigation.test.ts tests/unlocks-poi-refresh.test.ts tests/dynamic-map-url.test.ts tests/performance-comparison.test.ts tests/creature-spawn-url.test.ts tests/startup.test.ts tests/app-startup-cleanup.test.ts
+          npm test -- tests/scene-prefetch.test.ts tests/terrain-startup-overlap.test.ts tests/telescope-osd-lifetime.test.ts tests/instant-terrain-viewport.test.ts
+      - name: Install browser and display dependencies
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Compare cold, warm, reload, mod launch, and navigation
+        # Firefox needs a display for software WebGL2. The harness requires a
+        # successful pixel readback and identical backends across revisions.
+        run: xvfb-run -a node build_scripts/performance/run.mjs --browser=${{ matrix.browser }}
+      - name: Save compact evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: map-performance-${{ matrix.browser }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            performance-results/
+            performance-versions.json
+            ${{ runner.temp }}/noitamap-performance/*-build.log

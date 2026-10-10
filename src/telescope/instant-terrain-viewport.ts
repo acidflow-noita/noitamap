@@ -232,7 +232,10 @@ export function createInstantTerrainViewport(options: {
   type Frame = Request & { image: CanvasImageSource; borrowed?: boolean };
   let frame: Frame | undefined;
   let overview: Frame | undefined;
-  let overviewReady = !options.initialOverview;
+  // A synchronous GPU view covers newly exposed terrain on the very next
+  // draw. Its startup overview is never needed for live navigation, and
+  // otherwise shades all nine regions before the requested camera can paint.
+  let overviewReady = !options.initialOverview || !!options.renderFrameNow;
   let retained: Frame[] = [];
   const maxRetainedPixels = Math.max(0, options.maxRetainedPixels ?? 8 * 1024 * 1024);
   const overviewPixels = () => overview ? overview.plan.pixelWidth * overview.plan.pixelHeight : 0;

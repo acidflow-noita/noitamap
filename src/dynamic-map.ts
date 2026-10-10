@@ -465,6 +465,14 @@ async function runDynamicMapRequest(
     // Baked terrain needs no live renderer or speculative asset preparation.
     const bakedData = await bakedProbePromise;
     if (myToken !== generationToken) return null;
+    // Ordinary custom-seed links also need shader/artwork startup overlapped
+    // with generation. Previously only the diagnostic ?nb link did this, so
+    // normal cold loads initialized presentation after generation had finished.
+    // Resolve the baked route first: daily pixels must never trigger live work.
+    if (!noBaked && !bakedData?.probe.baked && isInstantTerrainEnabled()) {
+      prewarmInstantTerrain();
+      prewarmMapPresentation();
+    }
     // UI hooks (spoiler-free toggle) need to know when the view is served
     // from baked pyramids: identities are flattened into the pixels there,
     // so spoiler-free cannot work and the toggle gets disabled.

@@ -214,6 +214,25 @@ describe('pending map replacement ownership', () => {
     } finally { lookup.resolve(); pipeline.clearDynamicMap(f.viewer); f.frame.mockRestore(); }
   });
 
+  it('overlaps presentation startup with initialization for an ordinary custom seed after excluding baked data', async () => {
+    const f = fixture(), initialization = barrier();
+    vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
+    vi.mocked(isInstantTerrainEnabled).mockReturnValue(true);
+    vi.mocked(initTelescope).mockImplementationOnce(() => initialization.promise);
+    const pipeline = await import('../src/dynamic-map');
+    try {
+      const pending = pipeline.runDynamicMap(72, false, f);
+      await vi.waitFor(() => expect(initTelescope).toHaveBeenCalledOnce());
+      expect(prewarmInstantTerrain).toHaveBeenCalledOnce();
+      expect(prewarmMapPresentation).toHaveBeenCalledOnce();
+      expect(vi.mocked(prewarmInstantTerrain).mock.invocationCallOrder[0])
+        .toBeLessThan(vi.mocked(initTelescope).mock.invocationCallOrder[0]);
+      expect(generateDynamicMap).not.toHaveBeenCalled();
+      initialization.resolve();
+      expect(await pending).toMatchObject({ seed: 72 });
+    } finally { initialization.resolve(); pipeline.clearDynamicMap(f.viewer); f.frame.mockRestore(); }
+  });
+
   it('keeps the completed renderer alive while confirming the same seed is redundant', async () => {
     const f = fixture(), lookup = barrier();
     const pipeline = await import('../src/dynamic-map');
@@ -489,6 +508,7 @@ describe('dynamic seed URL identity', () => {
       expect(vi.mocked(renderGenerationResult).mock.calls[0].slice(6, 9)).toEqual([placements, true, true]);
       expect(scheduleDailyAssetWarmup).not.toHaveBeenCalled();
       expect(prewarmInstantTerrain).not.toHaveBeenCalled();
+      expect(prewarmMapPresentation).not.toHaveBeenCalled();
       expect(prepareInstantTerrainResources).not.toHaveBeenCalled();
       expect(prefetchAllSceneBitmaps).not.toHaveBeenCalled();
       expect(prewarmAlt).toHaveBeenCalledExactlyOnceWith(seed, prefix === 'daily' || dailyFlag, false);

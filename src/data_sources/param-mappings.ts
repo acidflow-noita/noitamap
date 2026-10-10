@@ -87,11 +87,11 @@ export function overlayToShort(key: OverlayKey): string {
  */
 export function shortToOverlay(code: string): OverlayKey | undefined {
   // Try short code first
-  if (code in OVERLAY_SHORT_TO_FULL) {
+  if (Object.hasOwn(OVERLAY_SHORT_TO_FULL, code)) {
     return OVERLAY_SHORT_TO_FULL[code];
   }
   // Try full name (backward compat)
-  if (code in OVERLAY_FULL_TO_SHORT) {
+  if (Object.hasOwn(OVERLAY_FULL_TO_SHORT, code)) {
     return code as OverlayKey;
   }
   return undefined;
@@ -110,11 +110,11 @@ export function mapToShort(name: MapName): string {
  */
 export function shortToMap(code: string): MapName | undefined {
   // Try short code first
-  if (code in MAP_SHORT_TO_FULL) {
+  if (Object.hasOwn(MAP_SHORT_TO_FULL, code)) {
     return MAP_SHORT_TO_FULL[code];
   }
   // Try full name (backward compat)
-  if (code in MAP_FULL_TO_SHORT) {
+  if (Object.hasOwn(MAP_FULL_TO_SHORT, code)) {
     return code as MapName;
   }
   return undefined;

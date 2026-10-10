@@ -76,8 +76,15 @@ export function availableDescriptors(): UnlockDescriptor[] {
 // The primary descriptor is *locked* to whatever URL state was present on
 // first call (i.e. the descriptor used to GENERATE the initial map). User
 // toggles never change this — they only flip the *active* view, which may
-// pull alt-cached variants. Recomputed only on page reload.
+// pull alt-cached variants. A fresh mod payload explicitly resets this too.
 let _primary: UnlockDescriptor | null = null;
+
+/** An in-page mod handoff can replace both spell and pillar inputs for the
+ * same seed. Retire variants computed from the preceding payload. */
+export function resetUnlocksForNavigation(): void {
+  resetAltCache();
+  _primary = null;
+}
 
 /** Which variant is used to *generate* the visible map / primary POI list. */
 export function primaryDescriptor(): UnlockDescriptor {

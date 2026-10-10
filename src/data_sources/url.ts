@@ -1,7 +1,7 @@
 import type { AppState } from '../app';
 
 import { asMapName, type MapName } from './tile_data';
-import { isValidOverlayKey, OverlayKey } from './overlays';
+import type { OverlayKey } from './overlays';
 import {
   overlayToShort,
   shortToOverlay,
@@ -10,6 +10,11 @@ import {
   sidebarToShort,
   shortToSidebar,
 } from './param-mappings';
+
+// URL parsing must not initialize the overlay renderer. The complete canonical
+// mapping is checked against OverlayKey by TypeScript.
+const isValidOverlayKey = (name: string | undefined): name is OverlayKey =>
+  typeof name === 'string' && shortToOverlay(name) === name;
 
 /**
  * Extended app state with overlays and sidebar
@@ -118,8 +123,8 @@ export const logZoomFromZoom = (zoom: number): number => Math.log2(zoom) * -100;
  * Take the window's URL and return partial application state
  * Accepts both short (z, m, o, s) and long (zoom, map, overlays, sidebar) param names
  */
-export function parseURL(): URLState {
-  const url = new URL(window.location.toString());
+export function parseURL(href = window.location.toString()): URLState {
+  const url = new URL(href);
 
   const x = intQueryValue(url.searchParams.get('x'));
   const y = intQueryValue(url.searchParams.get('y'));

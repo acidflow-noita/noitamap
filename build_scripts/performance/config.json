@@ -1,0 +1,13 @@
+{
+  "referenceCommit": "bf733b75e290f0a56bd8ed065af7642b2089c719",
+  "repeats": 3,
+  "seed": 195331,
+  "nextSeed": 195332,
+  "viewport": { "width": 1280, "height": 800 },
+  "camera": { "x": 0, "y": 5120, "z": 1736 },
+  "modCamera": { "x": -3152, "y": 874, "z": 930 },
+  "navigationCamera": { "x": -3152, "y": 874, "z": 868 },
+  "warning": { "relative": 0.05, "absoluteMs": 250 },
+  "navigationWarning": { "relative": 0.2, "absoluteMs": 50 },
+  "enforceTiming": false
+}

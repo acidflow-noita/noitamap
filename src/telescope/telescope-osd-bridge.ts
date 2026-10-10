@@ -2089,7 +2089,7 @@ async function compositeSceneBitmap(
     bgByPath: Map<string, string>;
     bgByName: Map<string, string>;
   },
-  seed: number
+  seed: number,
 ): Promise<{
   bitmap: ImageBitmap;
   blob: Blob | null;
@@ -2105,7 +2105,7 @@ async function compositeSceneBitmap(
     const texture = decodePngToRgba(await file.async('arraybuffer'));
     const pixels = capturedGoldRepairPixels(raw, texture, { ...scene, x: scene.x ?? 0, y: scene.y ?? 0 });
     const canvas = new OffscreenCanvas(scene.width, scene.height);
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
     const image = ctx.createImageData(scene.width, scene.height);
     image.data.set(pixels);
     ctx.putImageData(image, 0, 0);
@@ -2113,6 +2113,7 @@ async function compositeSceneBitmap(
     let blob: Blob | null = null;
     try { blob = await canvas.convertToBlob({ type: 'image/png' }); }
     catch (error) { console.warn("[OSD Bridge] convertToBlob failed (scene won't be cached):", key, error); }
+    canvas.width = canvas.height = 0;
     return { bitmap, blob, width: scene.width, height: scene.height, kind: 'composite' };
   }
   const slashIdx = key.indexOf('/');
@@ -2249,7 +2250,11 @@ async function compositeSceneBitmap(
   if (cw <= 0 || ch <= 0) return null;
 
   const canvas = new OffscreenCanvas(cw, ch);
-  const ctx = canvas.getContext('2d')!;
+  // These inputs are decoded CPU pixels and the result is PNG-encoded
+  // for persistence. A GPU canvas forces a readback for every scene
+  // and competes with the first terrain draw; only the preparatory canvas
+  // uses CPU rasterization. The displayed ImageBitmap stays unchanged.
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
   ctx.imageSmoothingEnabled = false;
 
   let bgBmp: ImageBitmap | null = null;
@@ -2275,6 +2280,7 @@ async function compositeSceneBitmap(
   if (bgBmp) bgBmp.close();
   if (midBitmap) midBitmap.close();
   if (visBmp) visBmp.close();
+  canvas.width = canvas.height = 0;
 
   return { bitmap, blob, width: cw, height: ch, kind };
 }
@@ -2545,8 +2551,12 @@ async function buildSceneBitmaps(
   }
 }
 
-export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult, generationId: number): Promise<void> {
-  if (!pixelSceneConfig.enabled) return;
+export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult, generationId: number,
+  prepared?: ReturnType<typeof buildSceneBitmaps>): Promise<void> {
+  if (!pixelSceneConfig.enabled) {
+    void prepared?.then(built => built?.release(), () => {});
+    return;
+  }
 
   const { pixelScenesByPW } = result;
 
@@ -2566,7 +2576,7 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
     );
   }
 
-  const bitmapWork = buildSceneBitmaps(result, generationId);
+  const bitmapWork = prepared ?? buildSceneBitmaps(result, generationId);
   const sourceWork = import('./pixel-scene-tile-source').catch(error => {
     // A failed module download must also release images still being prepared.
     void bitmapWork.then(built => built?.release(), () => {});
@@ -5158,6 +5168,15 @@ export async function renderGenerationResult(
   // to the live dynamic composite when no baked set is available (any non-
   // daily seed or a deploy that hasn't caught up yet).
   let awaitingTerrainDraw = false;
+  let preparedScenes: { result: GenerationResult; work: ReturnType<typeof buildSceneBitmaps> } | undefined;
+  let scenesAttached = false;
+  const discardPreparedScenes = () => {
+    if (!preparedScenes || scenesAttached) return;
+    const { work } = preparedScenes;
+    preparedScenes = undefined;
+    void work.then(built => built?.release(), () => {});
+  };
+  try {
   if (bakedDZIs && bakedDZIs.length > 0) {
     if (bakedDZIsAlreadyOnScreen) {
       // dynamic-map painted these the moment the probe resolved. Just hook
@@ -5214,6 +5233,18 @@ export async function renderGenerationResult(
         loadInstantTerrain(), instantSceneMasks(result),
       ]);
       if (currentGenerationId !== generationId) return;
+      if (!bakedDecorations && !isGLTerrainEnabled()) {
+        const sceneResult = { ...result,
+          pixelScenesByPW: Object.fromEntries(Object.entries(result.pixelScenesByPW).map(([key, scenes]) =>
+            [key, scenes.filter(scene => !isRepeatedTempleTemplate(scene))])),
+        };
+        // Cutout masks are complete. Compose required artwork while the
+        // terrain worker prepares/uploads resources; attach only afterwards
+        // to preserve OSD order and the atomic terrain/art first-paint gate.
+        const work = buildSceneBitmaps(sceneResult, generationId);
+        void work.catch(() => {}); // Terrain may fail or retire before joining.
+        preparedScenes = { result: sceneResult, work };
+      }
       if (glTerrainDeps) instant = await addInstantTerrain(viewer, result, glTerrainDeps,
         masks, () => currentGenerationId === generationId,
         item => dynamicTiledImages.add(item), wrappedOnFirstPaint,
@@ -5231,7 +5262,6 @@ export async function renderGenerationResult(
     if (currentGenerationId !== generationId) return;
   }
 
-  try {
     // Pixel scenes render on top of biome overlays, below POI markers. When the
     // baked DZIs already carry scenes in their pixels, skip the live layer.
     if (!bakedDecorations) {
@@ -5243,7 +5273,16 @@ export async function renderGenerationResult(
           [key, scenes.filter(scene => !isRepeatedTempleTemplate(scene)
             && (!isGLTerrainEnabled() || scene.key.startsWith('static_tile/')))])),
       } : result;
-      await addPixelScenes(viewer, sceneResult, generationId);
+      if (awaitingTerrainDraw && preparedScenes) {
+        await addPixelScenes(viewer, preparedScenes.result, generationId, preparedScenes.work);
+        scenesAttached = true; // The installed scene layer now owns its leases.
+      } else {
+        // Unsupported GPU paths still need their repeated temple templates.
+        // Finish/release the subset first; the decoded cache reuses its art.
+        if (preparedScenes) await preparedScenes.work;
+        discardPreparedScenes();
+        await addPixelScenes(viewer, sceneResult, generationId);
+      }
       if (currentGenerationId !== generationId) return fallbackRender;
     }
 
@@ -5345,6 +5384,8 @@ export async function renderGenerationResult(
     // already visible terrain usable and navigable.
     if (currentGenerationId === generationId && !terrainPainted) clearInstantTerrain();
     throw error;
+  } finally {
+    discardPreparedScenes();
   }
 }
 
