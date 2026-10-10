@@ -252,7 +252,7 @@ export function releaseInstantTerrainBackend(): void {
       new DOMException("Terrain backend released", "AbortError"),
     );
     if (slot.resources) slot.resources.invalidate();
-    else slot.main?.invalidate();
+    else slot.main?.invalidate?.(); // A shader-only context has no resource owner yet.
     if (slot.main?.program) slot.main.gl.deleteProgram(slot.main.program);
     slot.main?.gl?.getExtension?.("WEBGL_lose_context")?.loseContext();
   }
@@ -306,11 +306,17 @@ export async function prepareInstantTerrain(
       let upload: any;
       if (slot.direct) {
         slot.worker ??= new InstantTerrainWorkerClient();
+        // Generation already opened the main-thread game archive. Share its
+        // small physics classification instead of reopening that archive in
+        // the CPU preparation worker just to identify liquids.
+        const { loadLiquidMaterialIds } = await import('./liquid-surfaces');
+        const liquidMaterialIds = [...await loadLiquidMaterialIds()];
+        current();
         const layers = prepared.tileLayers.map(serializeTileLayer), shafts = elevatorShafts.map(serializeTileLayer);
         const transfer = [...layers, ...shafts].map(layer => layer.buffer).filter((value): value is ArrayBuffer => value !== null);
         const data = await slot.worker.request('prepare', { token, limit: slot.main.gl.getParameter(slot.main.gl.MAX_TEXTURE_SIZE), generation: {
           seed: gen.seed, isNGP: gen.isNGP, gameMode: gen.gameMode, tileLayers: layers,
-          elevatorShafts: shafts, biomeData: prepared.biomeData,
+          elevatorShafts: shafts, biomeData: prepared.biomeData, liquidMaterialIds,
         } }, undefined, transfer);
         current();
         if (!data.upload) throw new Error('GPU terrain preparation returned no resource data');

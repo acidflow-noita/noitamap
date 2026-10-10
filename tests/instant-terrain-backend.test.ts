@@ -1,5 +1,9 @@
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 
+const liquidSetup = vi.hoisted(() => ({ probe: vi.fn(), ids: vi.fn() }));
+vi.mock('../src/telescope/direct-terrain-capability', () => ({ probeDirectTerrainContext: liquidSetup.probe }));
+vi.mock('../src/telescope/liquid-surfaces', () => ({ loadLiquidMaterialIds: liquidSetup.ids }));
+
 vi.mock("../src/telescope/terrain-shader-prewarm", () => ({
   prewarmTerrainShader: vi.fn(async () => {}),
 }));
@@ -61,6 +65,8 @@ class TestWorker {
 }
 beforeEach(() => {
   vi.resetModules();
+  liquidSetup.probe.mockReset();
+  liquidSetup.ids.mockReset().mockResolvedValue(new Set([9, 56]));
   TestWorker.instances = [];
   TestWorker.initError = false;
   TestWorker.holdInit = false;
@@ -119,6 +125,49 @@ const deps = () => {
     loseContext,
   };
 };
+
+function directContext(d: ReturnType<typeof deps>) {
+  liquidSetup.probe.mockReturnValue({
+    canvas: { addEventListener: vi.fn() }, program: {},
+    gl: { MAX_TEXTURE_SIZE: 0x0d33, getParameter: () => 4096, getError: () => 0,
+      deleteProgram: d.deleteProgram, getExtension: () => ({ loseContext: d.loseContext }) },
+  });
+}
+
+it('passes the already loaded liquid classification to the CPU preparation worker', async () => {
+  const d = deps(); directContext(d); TestWorker.strictClone = true;
+  const { prewarmInstantTerrain, prepareInstantTerrain, releaseInstantTerrainBackend } =
+    await import('../src/telescope/instant-terrain-backend');
+  await prewarmInstantTerrain();
+  expect(liquidSetup.ids).not.toHaveBeenCalled(); // Shader-only startup still loads no archive.
+  const preparing = prepareInstantTerrain(generation(), d);
+  await vi.waitFor(() => expect(TestWorker.instances[0]?.sent[0]?.type).toBe('prepare'));
+  const worker = TestWorker.instances[0], request = worker.sent[0];
+  expect(request.generation.liquidMaterialIds).toEqual([9, 56]);
+  worker.reply({ id: request.id, upload: { liquidFixture: true } });
+  const renderer = await preparing;
+  expect(renderer.backend).toBe('main-gpu');
+  expect(liquidSetup.ids).toHaveBeenCalledOnce();
+  releaseInstantTerrainBackend();
+});
+
+it('cancels a direct preparation while liquid classification is still loading', async () => {
+  const d = deps(); directContext(d);
+  let release!: (ids: Set<number>) => void;
+  liquidSetup.ids.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+  const { prepareInstantTerrain, releaseInstantTerrainBackend } = await import('../src/telescope/instant-terrain-backend');
+  const controller = new AbortController();
+  const preparing = prepareInstantTerrain(generation(), d, 0, controller.signal);
+  await vi.waitFor(() => expect(liquidSetup.ids).toHaveBeenCalledOnce());
+  controller.abort(new DOMException('Replaced seed', 'AbortError'));
+  release(new Set([9, 56]));
+  await expect(preparing).rejects.toMatchObject({ name: 'AbortError' });
+  expect(TestWorker.instances.flatMap(worker => worker.sent)).toEqual([]);
+  expect(d.build).not.toHaveBeenCalled();
+  releaseInstantTerrainBackend();
+  expect(d.deleteProgram).toHaveBeenCalledOnce();
+  expect(d.loseContext).toHaveBeenCalledOnce();
+});
 
 it("prewarms once before generation, coalesces early/final objects, and cannot invalidate a newer seed", async () => {
   const { prewarmInstantTerrain, prepareInstantTerrain } =

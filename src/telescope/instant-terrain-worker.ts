@@ -110,11 +110,13 @@ self.onmessage = ({ data }) => {
           import('./shared-instant-terrain'), import('noita-telescope-full-pixels/generator_config.js'),
         ]);
         const gen = data.generation;
-        const upload = buildSharedTerrainUpload(gen.tileLayers.map(restoreTileLayer), gen.biomeData, {
+        const upload = await buildSharedTerrainUpload(gen.tileLayers.map(restoreTileLayer), gen.biomeData, {
           seed: gen.seed, isNGP: gen.isNGP, gameMode: gen.gameMode,
+          liquidMaterialIds: gen.liquidMaterialIds,
           lut: { recolorMaterials: true, clearSpawnPixels: true }, generatorConfig: GENERATOR_CONFIG,
           elevatorShafts: (gen.elevatorShafts ?? []).map(restoreTileLayer),
         }, data.limit);
+        if (token !== latestToken) throw new DOMException('Obsolete terrain preparation', 'AbortError');
         const buffers = new Set<ArrayBuffer>(), seen = new Set<object>();
         const visit = (value: any) => {
           if (!value || typeof value !== 'object' || seen.has(value)) return;

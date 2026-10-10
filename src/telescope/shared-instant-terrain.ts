@@ -48,6 +48,10 @@ import {
 import { prewarmTerrainShader } from "./terrain-shader-prewarm";
 import { setTerrainPlane } from "./instant-terrain-plane";
 import type { VerticalPlane } from "./terrain-policy";
+import { createPlaneOwnership } from './terrain-policy';
+import { includeElevatorOwnership } from './terrain-elevator';
+import { findLiquidSurfaces, loadLiquidMaterialIds } from './liquid-surfaces';
+import { packLiquidSurfaces } from './gpu-liquid-surfaces';
 import {
   packElevatorLattices,
   createElevatorChunkTexture,
@@ -93,15 +97,28 @@ export function buildPlaneEngineChunks(
 
 /** CPU preparation is transferable; interactive GPU presentation can upload it
  * on the UI context without running the lattice/atlas builders on that thread. */
-export function buildSharedTerrainUpload(layers: any[], biomeData: any, opts: any, limit: number) {
+export async function buildSharedTerrainUpload(layers: any[], biomeData: any, opts: any, limit: number) {
+  const liquidIds: Set<number> = opts.liquidMaterialIds
+    ? new Set(opts.liquidMaterialIds) : await loadLiquidMaterialIds();
   const isNGP = opts.isNGP ?? false, gameMode = opts.gameMode ?? 'normal';
   const width = getWorldSize(isNGP, gameMode);
   const resources = buildTerrainResources(layers, biomeData, { isNGP, gameMode, maxTextureSize: limit, lut: opts.lut });
   const engine = buildEngineResources(layers, biomeData, opts.generatorConfig ?? {}, width);
   const elevators = packElevatorLattices(engine.lattice, opts.elevatorShafts ?? [], opts.generatorConfig ?? {}, limit);
+  const owners = ([-1, 0, 1] as const).map(plane => {
+    const pixels = plane === 0 ? biomeData.pixels : new Uint32Array(width * 48);
+    if (plane !== 0) {
+      const row = (plane < 0 ? 0 : 47) * width;
+      for (let y = 0; y < 48; y++) pixels.set(biomeData.pixels.subarray(row, row + width), y * width);
+    }
+    return includeElevatorOwnership(createPlaneOwnership(layers, biomeData.pixels, pixels,
+      opts.generatorConfig ?? {}, width), opts.elevatorShafts ?? [], plane).owners;
+  });
+  const liquids = packLiquidSurfaces(buildEngineTable(opts.seed ?? 0),
+    findLiquidSurfaces(engine.lattice, liquidIds, width), owners, width, limit);
   // The palette lookup closure is only used while building the atlas above.
   const { indexOf: _lookup, ...palette } = resources.palette;
-  return { resources: { ...resources, palette }, engine, elevators };
+  return { resources: { ...resources, palette }, engine, elevators, liquids };
 }
 
 type PlaneResources = { textures: Record<string, any>; chunks: Uint16Array };
@@ -125,6 +142,9 @@ export class SharedInstantTerrainResources {
   private commonUploads = 0;
   private planeUploads = 0;
   private latticeBytes = 0;
+  private liquidRow = 0;
+  private liquidUniform: any;
+  private liquidBytes = 0;
   constructor(readonly renderer: any) {
     // Taking over an already initialized renderer must release its previous
     // source textures too; shader-only prewarming normally leaves this empty.
@@ -139,6 +159,7 @@ export class SharedInstantTerrainResources {
       planeTextureUploads: this.planeUploads,
       planeCount: this.planes.size,
       latticeBytes: this.latticeBytes,
+      liquidBytes: this.liquidBytes,
     };
   }
 
@@ -191,7 +212,13 @@ export class SharedInstantTerrainResources {
       const isNGP = opts.isNGP ?? false,
         gameMode = opts.gameMode ?? "normal";
       const width = getWorldSize(isNGP, gameMode);
-      const { resources, engine, elevators } = opts.upload ?? buildSharedTerrainUpload(layers, biomeData, opts, maxTextureSize(gl));
+      const { resources, engine, elevators, liquids } = opts.upload ?? await buildSharedTerrainUpload(layers, biomeData, opts, maxTextureSize(gl));
+      current();
+      this.liquidUniform = gl.getUniformLocation(renderer.program, 'u_liquidRow');
+      if (this.liquidUniform === null || this.liquidUniform === -1)
+        throw new Error('Liquid-surface shader is unavailable');
+      this.liquidRow = liquids.liquidRow;
+      this.liquidBytes = liquids.bytes;
       const atlas = getMaterialAtlas();
       if (!atlas) throw new Error("Shared terrain material atlas unavailable");
       const own = (texture: any) => {
@@ -221,7 +248,7 @@ export class SharedInstantTerrainResources {
         cov: lattices.cov,
         latMat: lattices.mat,
         engTable: own(
-          createFloatTableTexture(gl, buildEngineTable(opts.seed ?? 0)),
+          createFloatTableTexture(gl, liquids),
         ),
         sinHash: own(
           createR32FTexture(gl, buildSinHashAndGrids(opts.seed ?? 0)),
@@ -315,6 +342,7 @@ export class SharedInstantTerrainResources {
     this.renderer.engineChunkModes = resources.chunks;
     this.renderer.engineChunkWidth = this.renderer.mapWidth;
     setTerrainPlane(this.renderer, plane);
+    this.renderer.gl.uniform1i(this.liquidUniform, this.liquidRow);
   }
 
   render(view: any) {
@@ -332,6 +360,8 @@ export class SharedInstantTerrainResources {
     this.common = undefined;
     this.planes.clear();
     this.latticeBytes = 0;
+    this.liquidRow = this.liquidBytes = 0;
+    this.liquidUniform = undefined;
     this.generatorConfig = undefined;
     this.shafts = undefined;
     this.layers = this.biomes = this.key = this.pending = undefined;

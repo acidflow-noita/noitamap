@@ -71,6 +71,78 @@ export function shareTerrainMaterialResolve(source: string): string {
 ` + source.slice(end);
 }
 
+/** Mirror the bake's narrow liquid/air correction, without a CPU readback or
+ * another texture unit. Legacy/bake renderers leave u_liquidRow at zero. */
+export function levelTerrainLiquids(source: string): string {
+  if (source.includes('uniform int u_liquidRow;')) return source;
+  const replaceOnce = (before: string, after: string) => {
+    if (source.split(before).length !== 2) throw new Error('Review changed terrain liquid integration');
+    source = source.replace(before, after);
+  };
+  replaceOnce('uniform bool u_engineTerrain;', 'uniform bool u_engineTerrain;\nuniform int u_liquidRow;');
+  replaceOnce('void main() {\n    // Screen pixel center', `
+vec4 nmLiquidRecord(int index) {
+    int width = textureSize(u_engTableTex, 0).x;
+    return engTable(index % width, u_liquidRow + index / width);
+}
+vec4 nmLiquidChunk(ivec2 w) {
+    int y = fdiv(w.y - u_verticalPlane * 24576 + u_baseY, CHUNK);
+    if (y < 0 || y >= 48) return vec4(0.0);
+    int x = pmod(fdiv(w.x + u_centerPx, CHUNK), u_mapWidth);
+    return nmLiquidRecord(y * u_mapWidth + x);
+}
+bool nmLiquidOwned(ivec2 w) {
+    return (int(nmLiquidChunk(w).z) & (1 << (u_verticalPlane + 1))) != 0;
+}
+ivec3 nmLiquidSurface(ivec2 w) {
+    if (u_liquidRow == 0 || u_materialIdOut) return ivec3(0);
+    vec4 chunk = nmLiquidChunk(w);
+    if ((int(chunk.z) & (1 << (u_verticalPlane + 1))) == 0) return ivec3(0);
+    if ((int(chunk.w) & (1 << (pmod(w.y + u_baseY, CHUNK) / 32))) == 0) return ivec3(0);
+    int x = pmod(w.x + u_centerPx, u_worldWidth) - u_centerPx;
+    int y = w.y - u_verticalPlane * 24576;
+    int reach = int(chunk.z) >> 3;
+    for (int n = 0; n < int(chunk.y); n++) {
+        ivec4 s = ivec4(nmLiquidRecord(int(chunk.x) + n));
+        if (x >= s.x && x < s.y && y >= s.z - reach && y < s.z + reach)
+            return ivec3(s.z + u_verticalPlane * 24576, s.w, reach);
+    }
+    return ivec3(0);
+}
+
+void main() {
+    // Screen pixel center`);
+  const start = source.indexOf('        // Noitamap: resolve once for color and material-id output.');
+  const end = source.indexOf('        if (u_materialIdOut) {', start);
+  if (start < 0 || end < 0) throw new Error('Review changed shared terrain material resolve');
+  const resolve = source.slice(start, end);
+  // Keep one expensive topology call site. Only an air pixel BELOW a pool's
+  // level needs a second sample, to prove the same liquid exists beneath it.
+  source = source.slice(0, start) + `        // Noitamap: resolve once for color and material-id output.
+        ivec2 originalW = w;
+        ivec3 liquid = nmLiquidSurface(w);
+        int mat = -1;
+        for (int pass = 0; pass < 2; pass++) {
+            if (pass != 0) {
+                cell = engResolveCell(w);
+                info = engInfoAt(cell.x, cell.y);
+                mode = (info >> 8) & 3u;
+            }
+${resolve.slice(resolve.indexOf('        if ((info & 2048u)')).trimEnd()}
+            if (pass != 0) {
+                mat = mat == liquid.y ? liquid.y : 0;
+                break;
+            }
+            if (liquid.y == 0 || (mat != 0 && mat != liquid.y)) break;
+            if (w.y < liquid.x) { mat = 0; break; }
+            if (mat != 0 || !nmLiquidOwned(ivec2(w.x, liquid.x + liquid.z))) break;
+            w.y = liquid.x + liquid.z;
+        }
+        w = originalW;
+` + source.slice(end);
+  return source;
+}
+
 export function correctTerrainShaderBits(source: string): string {
   for (const [name, bits] of Object.entries({
     ...POLKA_FLOAT_BITS,
@@ -175,7 +247,7 @@ float covAt(int x, int y) {`,
         ivec2 cell = engResolveCell(w);`,
     );
   }
-  return shareTerrainMaterialResolve(source);
+  return levelTerrainLiquids(shareTerrainMaterialResolve(source));
 }
 
 export function terrainShaderBitsPlugin(directory: string): Plugin {

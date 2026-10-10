@@ -50,6 +50,8 @@ export interface LiquidSurface {
   material: number;
 }
 
+export const LIQUID_SURFACE_REACH = 6;
+
 /** Straight liquid/air runs authored in the Wang lattice are level surfaces.
  * Edge-warp noise must not turn their free surface into a powder/rock edge.
  * Keep the cave wall/bottom samples; this is not a full fluid/reaction simulator. */
@@ -63,12 +65,16 @@ export function findLiquidSurfaces(
     { GW, GH, mat, cov } = lattice;
   for (let y = 1; y < GH; y++)
     for (let x = 0; x < GW;) {
-      const i = y * GW + x,
-        material = mat[i] - 1;
+      const i = y * GW + x;
+      // Most cells cannot be free surfaces. Reject their coverage before
+      // consulting material physics, especially on the live worker path.
+      if (cov[i] < 0.5 || cov[i - GW] >= 0.5) {
+        x++;
+        continue;
+      }
+      const material = mat[i] - 1;
       if (
         !ids.has(material) ||
-        cov[i] < 0.5 ||
-        cov[i - GW] >= 0.5 ||
         (mat[i - GW] > 1 && mat[i - GW] !== mat[i])
       ) {
         x++;
@@ -102,7 +108,7 @@ export function createLiquidSurfacePainter(
   surfaces: LiquidSurface[],
   worldWidth: number,
 ) {
-  const reach = 6,
+  const reach = LIQUID_SURFACE_REACH,
     index = surfaces.length ? new Flatbush(surfaces.length) : null;
   for (const s of surfaces)
     index!.add(s.left, s.y - reach, s.right, s.y + reach);
