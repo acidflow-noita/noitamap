@@ -23,7 +23,7 @@ describe('sparse GPU liquid-surface records', () => {
     const records = (cell: number) => {
       const start = result.liquidRow * 32, header = start + cell * 4;
       return Array.from({ length: result.data[header + 1] }, (_, n) =>
-        [...result.data.subarray(start + (result.data[header] + n) * 4, start + (result.data[header] + n + 1) * 4)]);
+        [...result.data.subarray(start + (result.data[header] + n * 2) * 4, start + (result.data[header] + n * 2 + 1) * 4)]);
     };
     for (const y of [13, 14]) {
       expect(records(y * 2)).toEqual([[-512, -480, 0, 56]]);
@@ -36,5 +36,21 @@ describe('sparse GPU liquid-surface records', () => {
   it('rejects invalid ownership and oversized uploads', () => {
     expect(() => packLiquidSurfaces(table(), [], [], 2, 256)).toThrow('ownership');
     expect(() => packLiquidSurfaces(table(), [], ownership(), 2, 8)).toThrow('capacity');
+  });
+  it('indexes the entire interval between old and new levels, including the next chunk', () => {
+    const surfaces = [
+      { left: -500, right: -450, y: 8, sourceY: -10, material: 56 },
+      { left: -450, right: -400, y: 8, sourceY: 16, material: 56 },
+    ];
+    const result = packLiquidSurfaces(table(), surfaces, ownership(), 2, 256);
+    const start = result.liquidRow * 32, header = start + 28 * 4;
+    expect(result.data[header + 1]).toBe(2);
+    const offset = start + result.data[header] * 4;
+    expect([...result.data.subarray(offset, offset + 16)]).toEqual([
+      -500, -450, 8, 56, -10, 0, 0, 0,
+      -450, -400, 8, 56, 16, 0, 0, 0,
+    ]);
+    expect(result.data[start + 26 * 4 + 1]).toBe(1); // old surface extends into the preceding chunk
+    expect(result.data[start + 26 * 4 + 3]).toBe(32768);
   });
 });

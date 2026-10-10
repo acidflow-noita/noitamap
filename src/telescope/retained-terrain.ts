@@ -10,7 +10,7 @@ import {
 } from "./retained-terrain-codec";
 
 const SIZE = 256;
-const REVISION = `${TERRAIN_VERSION}/retained-hd-v2-flat-liquids-9c58775`;
+const REVISION = `${TERRAIN_VERSION}/retained-hd-v3-level-pools-9c58775`;
 export interface RetainedTile {
   level: number;
   x: number;

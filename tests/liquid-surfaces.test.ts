@@ -15,6 +15,54 @@ import {
   createLiquidSurfacePainter,
 } from "../src/telescope/liquid-surfaces";
 describe("flat authored liquid surfaces", () => {
+  const steppedPool = () => {
+    const GW = 10, GH = 8, mat = new Uint16Array(GW * GH), cov = new Float32Array(GW * GH);
+    for (let y = 2; y <= 5; y++) for (let x = y === 2 ? 4 : 1; x <= 6; x++) {
+      mat[y * GW + x] = 57; cov[y * GW + x] = 1;
+    }
+    return { GW, GH, mat, cov };
+  };
+
+  it("gives touching steps of one liquid pool a common area-preserving level", () => {
+    const lattice = steppedPool(), before = { mat: lattice.mat.slice(), cov: lattice.cov.slice() };
+    expect(findLiquidSurfaces(lattice, new Set([56]), 2)).toEqual([
+      { left: -477, right: -447, y: -7148, sourceY: -7153, material: 56 },
+      { left: -507, right: -477, y: -7148, sourceY: -7143, material: 56 },
+    ]);
+    expect(lattice.mat).toEqual(before.mat);
+    expect(lattice.cov).toEqual(before.cov);
+  });
+
+  it("does not merge pools across a rock separator or across different materials", () => {
+    const separated = steppedPool();
+    for (let y = 3; y <= 5; y++) separated.mat[y * separated.GW + 4] = 9;
+    const separate = findLiquidSurfaces(separated, new Set([56]), 2);
+    expect(separate.map(s => s.y)).toEqual([-7153, -7143]);
+    expect(separate.every(s => s.sourceY === undefined)).toBe(true);
+    const mixed = steppedPool();
+    for (let y = 2; y <= 5; y++) for (let x = 4; x <= 6; x++) mixed.mat[y * mixed.GW + x] = 81;
+    expect(findLiquidSurfaces(mixed, new Set([56, 80]), 2).map(s => [s.material, s.y, s.sourceY])).toEqual([
+      [80, -7153, undefined], [56, -7143, undefined],
+    ]);
+  });
+
+  it("clears the old high surface and fills the low side without changing rocks or the bottom", () => {
+    const w = 16, h = 32, original = new Int16Array(w * h), pixels = new Uint8ClampedArray(w * h * 4);
+    for (let x = 0; x < w; x++) for (let y = (x < 8 ? 8 : 18) + x % 3 - 1; y < 26; y++) original[y * w + x] = 56;
+    original[10 * w + 3] = 8; original[19 * w + 9] = 135;
+    original.forEach((id, i) => { if (id) pixels.set([id, 0, 0, 255], i * 4); });
+    const before = pixels.slice(), sample = (x: number, y: number) => original[y * w + x] ?? 0;
+    createLiquidSurfacePainter([
+      { left: 0, right: 8, y: 13, sourceY: 8, material: 56 },
+      { left: 8, right: 16, y: 13, sourceY: 18, material: 56 },
+    ], 35840)(pixels, 0, 0, w, h, sample, () => 0xff000038);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (original[i] !== 0 && original[i] !== 56) expect([...pixels.slice(i * 4, i * 4 + 4)]).toEqual([...before.slice(i * 4, i * 4 + 4)]);
+      else expect(pixels[i * 4 + 3], `${x},${y}`).toBe(y >= 13 && y < 26 ? 255 : 0);
+    }
+  });
+
   it("distinguishes liquids from powdered metals using inherited liquid_sand", () => {
     const ids = liquidMaterialIds(
       `<Materials>

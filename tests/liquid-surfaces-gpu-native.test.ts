@@ -25,15 +25,25 @@ it.skipIf(process.platform !== 'linux')('levels the reported live pools with the
     });
     await writeFile('/tmp/noitamap-liquid-native.json', JSON.stringify(result, null, 2));
     expect(result.diagnostics).toEqual([]);
-    expect(result.samples).toHaveLength(9);
-    expect(result.samples.filter((s: any) => s.plane === 0).every((s: any) => s.changed > 100)).toBe(true);
-    for (const s of result.samples) {
-      expect(s.alphaDifferences, JSON.stringify(s)).toBe(0);
-      expect(s.untouchedDifferences, JSON.stringify(s)).toBe(0);
-      expect(s.changedColorMaxError, JSON.stringify(s)).toBeLessThanOrEqual(2); // GL premultiplication/readback rounding
-      expect(s.materialIdDifferences, JSON.stringify(s)).toBe(0);
-      expect(s.seamDifferences, JSON.stringify(s)).toBe(0);
+    expect(result.cases).toHaveLength(2);
+    for (const c of result.cases) {
+      expect(c.samples).toHaveLength(9);
+      expect(c.samples.filter((s: any) => s.plane === 0).every((s: any) => s.changed > 100)).toBe(true);
+      for (const s of c.samples) {
+        expect(s.alphaDifferences, JSON.stringify(s)).toBe(0);
+        expect(s.untouchedDifferences, JSON.stringify(s)).toBe(0);
+        expect(s.changedColorMaxError, JSON.stringify(s)).toBeLessThanOrEqual(2); // GL premultiplication/readback rounding
+        expect(s.materialIdDifferences, JSON.stringify(s)).toBe(0);
+        expect(s.seamDifferences, JSON.stringify(s)).toBe(0);
+        if (c.seed === 195331 && s.plane === 0) {
+          expect(s.surfaceAlpha).toHaveLength(2);
+          for (const point of s.surfaceAlpha) {
+            expect(point.above, JSON.stringify({ ...point, pw: s.pw })).toBe(0);
+            expect(point.below, JSON.stringify({ ...point, pw: s.pw })).toBeGreaterThan(0);
+          }
+        }
+      }
+      expect(c.resourceStats.liquidBytes).toBeLessThan(256 * 1024);
     }
-    expect(result.resourceStats.liquidBytes).toBeLessThan(256 * 1024);
   } finally { await rm(bundle, { recursive: true, force: true }); }
 }, 120000);

@@ -6,7 +6,8 @@ type EngineTable = { width: number; height: number; data: Float32Array };
  * engine-table sampler: live terrain already uses WebGL2's minimum 16 units.
  * Each chunk header is (record offset, count, ownership | reach << 3, Y mask).
  * The 16-bit Y mask skips surface-list reads outside relevant 32px strips.
- * Pool records are (left, right, surface Y, material), in main-world pixels. */
+ * Each pool uses (left, right, surface Y, material) followed by its source Y.
+ * Positions are main-world pixels; the old level bounds the correction band. */
 export function packLiquidSurfaces(
   table: EngineTable,
   surfaces: readonly LiquidSurface[],
@@ -26,14 +27,14 @@ export function packLiquidSurfaces(
       const right = Math.min(center, surface.right + shift);
       if (left >= right) continue;
       const record = { ...surface, left, right };
-      const top = Math.max(0, Math.floor((surface.y - LIQUID_SURFACE_REACH + 7168) / 512));
-      const bottom = Math.min(47, Math.floor((surface.y + LIQUID_SURFACE_REACH - 1 + 7168) / 512));
+      const top = Math.max(0, Math.floor((Math.min(surface.y, surface.sourceY ?? surface.y) - LIQUID_SURFACE_REACH + 7168) / 512));
+      const bottom = Math.min(47, Math.floor((Math.max(surface.y, surface.sourceY ?? surface.y) + LIQUID_SURFACE_REACH - 1 + 7168) / 512));
       for (let y = top; y <= bottom; y++)
         for (let x = Math.floor((left + center) / 512); x <= Math.floor((right - 1 + center) / 512); x++)
           bins[y * worldColumns + x].push(record);
     }
   }
-  const records = bins.reduce((sum, bin) => sum + bin.length, chunks);
+  const records = bins.reduce((sum, bin) => sum + bin.length * 2, chunks);
   const rows = Math.ceil(records / table.width), liquidRow = table.height - 1;
   const height = table.height + rows;
   if (height > textureLimit || table.width > textureLimit)
@@ -50,12 +51,15 @@ export function packLiquidSurfaces(
     let yMask = 0;
     const rowY = Math.floor(chunk / worldColumns) * 512 - 7168;
     for (const s of bin) {
-      const top = Math.max(0, Math.floor((s.y - LIQUID_SURFACE_REACH - rowY) / 32));
-      const bottom = Math.min(15, Math.floor((s.y + LIQUID_SURFACE_REACH - 1 - rowY) / 32));
+      const top = Math.max(0, Math.floor((Math.min(s.y, s.sourceY ?? s.y) - LIQUID_SURFACE_REACH - rowY) / 32));
+      const bottom = Math.min(15, Math.floor((Math.max(s.y, s.sourceY ?? s.y) + LIQUID_SURFACE_REACH - 1 - rowY) / 32));
       for (let y = top; y <= bottom; y++) yMask |= 1 << y;
     }
     data.set([next, bin.length, ownership | (LIQUID_SURFACE_REACH << 3), yMask], start + chunk * 4);
-    for (const s of bin) data.set([s.left, s.right, s.y, s.material], start + next++ * 4);
+    for (const s of bin) {
+      data.set([s.left, s.right, s.y, s.material], start + next++ * 4);
+      data.set([s.sourceY ?? s.y, 0, 0, 0], start + next++ * 4);
+    }
   });
   return { width: table.width, height, data, liquidRow, bytes: rows * table.width * 16, surfaces: surfaces.length };
 }

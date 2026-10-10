@@ -48,6 +48,8 @@ export interface LiquidSurface {
   right: number;
   y: number;
   material: number;
+  /** Original grid level when connected runs are brought to one surface. */
+  sourceY?: number;
 }
 
 export const LIQUID_SURFACE_REACH = 6;
@@ -61,7 +63,7 @@ export function findLiquidSurfaces(
   width: number,
   offsetY = 0,
 ): LiquidSurface[] {
-  const surfaces: LiquidSurface[] = [],
+  const surfaces: LiquidSurface[] = [], rows: number[] = [],
     { GW, GH, mat, cov } = lattice;
   for (let y = 1; y < GH; y++)
     for (let x = 0; x < GW;) {
@@ -101,7 +103,45 @@ export function findLiquidSurfaces(
         y: Math.ceil((y - 1 + fraction) * 10 - 7168 - 0.5) + offsetY,
         material,
       });
+      rows.push(y);
     }
+  // A pool can straddle two lattice rows. Independent row-wise leveling
+  // otherwise leaves a 10px stair in one connected fluid. Join touching runs
+  // only when the actual liquid cells share an edge below the higher surface.
+  // This is a sparse pass over surfaces, not another world-sized flood fill.
+  const starts = new Map<number, number[]>();
+  const parents = surfaces.map((_, i) => i);
+  const root = (i: number): number => {
+    while (parents[i] !== i) { parents[i] = parents[parents[i]]; i = parents[i]; }
+    return i;
+  };
+  surfaces.forEach((s, i) => {
+    const list = starts.get(s.left) ?? [];
+    list.push(i); starts.set(s.left, list);
+  });
+  surfaces.forEach((left, i) => {
+    for (const j of starts.get(left.right) ?? []) {
+      const right = surfaces[j];
+      if (left.material !== right.material || Math.abs(rows[i] - rows[j]) > 1) continue;
+      const x = (left.right + width * 256 + 5) / 10;
+      const cell = Math.max(rows[i], rows[j]) * GW + x;
+      if (x <= 0 || x >= GW || cov[cell - 1] < 0.5 || cov[cell] < 0.5 ||
+          mat[cell - 1] !== left.material + 1 || mat[cell] !== left.material + 1) continue;
+      parents[root(j)] = root(i);
+    }
+  });
+  const totals = new Map<number, { width: number; area: number }>();
+  surfaces.forEach((s, i) => {
+    const id = root(i), total = totals.get(id) ?? { width: 0, area: 0 };
+    const span = s.right - s.left;
+    total.width += span; total.area += span * s.y; totals.set(id, total);
+  });
+  surfaces.forEach((s, i) => {
+    const total = totals.get(root(i))!;
+    // Preserve the grid's nominal liquid area, rounded to one world pixel.
+    const y = Math.round(total.area / total.width);
+    if (y !== s.y) { s.sourceY = s.y; s.y = y; }
+  });
   return surfaces;
 }
 export function createLiquidSurfacePainter(
@@ -111,7 +151,8 @@ export function createLiquidSurfacePainter(
   const reach = LIQUID_SURFACE_REACH,
     index = surfaces.length ? new Flatbush(surfaces.length) : null;
   for (const s of surfaces)
-    index!.add(s.left, s.y - reach, s.right, s.y + reach);
+    index!.add(s.left, Math.min(s.y, s.sourceY ?? s.y) - reach,
+      s.right, Math.max(s.y, s.sourceY ?? s.y) + reach);
   index?.finish();
   return (
     pixels: Uint8ClampedArray,
@@ -129,9 +170,11 @@ export function createLiquidSurfacePainter(
       for (const id of index?.search(x - offset, y, x + w - offset, y + h) ??
         []) {
         const s = surfaces[id];
+        const top = Math.min(s.y, s.sourceY ?? s.y) - reach;
+        const bottom = Math.max(s.y, s.sourceY ?? s.y) + reach;
         for (
-          let wy = Math.max(y, s.y - reach);
-          wy < Math.min(y + h, s.y + reach);
+          let wy = Math.max(y, top);
+          wy < Math.min(y + h, bottom);
           wy++
         )
           for (
@@ -145,7 +188,7 @@ export function createLiquidSurfacePainter(
             const i = ((wy - y) * w + wx - x) * 4;
             if (wy < s.y) {
               if (existing === s.material) pixels.fill(0, i, i + 4);
-            } else if (existing === 0 && sample(wx, s.y + reach) === s.material)
+            } else if (existing === 0 && sample(wx, bottom) === s.material)
               writeRGBA(pixels, i, color(s.material, wx, wy));
           }
       }

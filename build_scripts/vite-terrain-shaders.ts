@@ -103,9 +103,13 @@ ivec3 nmLiquidSurface(ivec2 w) {
     int y = w.y - u_verticalPlane * 24576;
     int reach = int(chunk.z) >> 3;
     for (int n = 0; n < int(chunk.y); n++) {
-        ivec4 s = ivec4(nmLiquidRecord(int(chunk.x) + n));
-        if (x >= s.x && x < s.y && y >= s.z - reach && y < s.z + reach)
-            return ivec3(s.z + u_verticalPlane * 24576, s.w, reach);
+        int record = int(chunk.x) + n * 2;
+        ivec4 s = ivec4(nmLiquidRecord(record));
+        if (x < s.x || x >= s.y) continue;
+        int sourceY = int(nmLiquidRecord(record + 1).x);
+        int bottom = max(s.z, sourceY) + reach;
+        if (y >= min(s.z, sourceY) - reach && y < bottom)
+            return ivec3(s.z + u_verticalPlane * 24576, s.w, bottom + u_verticalPlane * 24576);
     }
     return ivec3(0);
 }
@@ -135,8 +139,8 @@ ${resolve.slice(resolve.indexOf('        if ((info & 2048u)')).trimEnd()}
             }
             if (liquid.y == 0 || (mat != 0 && mat != liquid.y)) break;
             if (w.y < liquid.x) { mat = 0; break; }
-            if (mat != 0 || !nmLiquidOwned(ivec2(w.x, liquid.x + liquid.z))) break;
-            w.y = liquid.x + liquid.z;
+            if (mat != 0 || !nmLiquidOwned(ivec2(w.x, liquid.z))) break;
+            w.y = liquid.z;
         }
         w = originalW;
 ` + source.slice(end);
