@@ -3,6 +3,7 @@
  * workers, exact RGBA mip reduction, lossless tiles and validated publication. */
 import { build } from "vite";
 import { Worker } from "node:worker_threads";
+import { spawn } from "node:child_process";
 import { resolve, join } from "node:path";
 import {
   mkdir,
@@ -80,6 +81,21 @@ const log = (message) =>
   console.log(
     `[full-pixel bake +${((Date.now() - start) / 1000).toFixed(1)}s] ${message}`,
   );
+// CI invokes this CLI directly after npm ci --ignore-scripts, bypassing the
+// website's prebuild steps. Validate/reuse or rebuild both scene packs before
+// Vite loads their manifest. A child keeps the prep CLI's early exit isolated.
+log("ensuring prepared Telescope scene assets");
+await new Promise((done, reject) => {
+  const child = spawn(process.execPath, [resolve(root, "build_scripts/build-telescope-scenes.mjs")], {
+    cwd: root,
+    stdio: "inherit",
+  });
+  child.once("error", reject);
+  child.once("close", (code, signal) => {
+    if (code === 0) done();
+    else reject(new Error(`Telescope scene preparation failed (${signal || code})`));
+  });
+});
 await mkdir(out, { recursive: true });
 const bundle = resolve(out, "runtime"),
   snapshot = resolve(out, "generation.bin");

@@ -1,6 +1,8 @@
 import { it, expect } from "vitest";
 import { spawn } from "node:child_process";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import { cp, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { deserialize } from "node:v8";
@@ -10,43 +12,70 @@ import { createReportInventorySnapshot, readReportInventorySnapshot, reportFindI
 import { getAllPOIsFlat } from "../src/telescope/poi-inventory";
 import { planeAtWorldY } from "../src/telescope/terrain-planes";
 
-/** This deliberately runs the REAL CLI and its custom Vite chunking. The
- * renderer fixtures use different entrypoints/chunks and did not catch the
- * material-atlas -> MATERIAL_DATA top-level-await regression from CI. */
-it("prepares the CI seed through the actual native bake entrypoint", async () => {
-  const root = resolve(import.meta.dirname, "..");
-  const out = await mkdtemp(resolve(tmpdir(), "noitamap-native-entry-"));
-  try {
-    const child = spawn(
-      process.execPath,
-      [
-        "--enable-source-maps",
-        resolve(root, "build_scripts/build-full-pixel-bake.mjs"),
-        "--seed=1483922992",
-        `--out=${out}`,
-        "--concurrency=2",
-        "--prepare-only",
-      ],
-      { cwd: root, stdio: ["ignore", "pipe", "pipe"] },
-    );
-    let logs = "";
-    const append = (chunk: Buffer) => {
-      logs = (logs + chunk.toString()).slice(-60000);
-    };
-    child.stdout.on("data", append);
-    child.stderr.on("data", append);
-    const code = await new Promise<number | null>((resolveExit, reject) => {
-      const timeout = setTimeout(() => child.kill("SIGKILL"), 240000);
-      child.once("error", (error) => {
-        clearTimeout(timeout);
-        reject(error);
-      });
-      child.once("close", (code) => {
-        clearTimeout(timeout);
-        resolveExit(code);
-      });
+async function runBake(root: string, out: string, extra: string[] = []) {
+  const child = spawn(
+    process.execPath,
+    [
+      "--enable-source-maps",
+      resolve(root, "build_scripts/build-full-pixel-bake.mjs"),
+      "--seed=1483922992",
+      `--out=${out}`,
+      "--concurrency=2",
+      "--prepare-only",
+      ...extra,
+    ],
+    { cwd: root, stdio: ["ignore", "pipe", "pipe"] },
+  );
+  let logs = "";
+  const append = (chunk: Buffer) => {
+    logs = (logs + chunk.toString()).slice(-60000);
+  };
+  child.stdout.on("data", append);
+  child.stderr.on("data", append);
+  const code = await new Promise<number | null>((resolveExit, reject) => {
+    const timeout = setTimeout(() => child.kill("SIGKILL"), 240000);
+    child.once("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
     });
+    child.once("close", (code) => {
+      clearTimeout(timeout);
+      resolveExit(code);
+    });
+  });
+  return { code, logs };
+}
+
+/** Run the REAL CLI/custom Vite chunking in an isolated copy without generated
+ * scene packs. Local prepared assets previously hid the clean-CI build failure.
+ * Also guards the material-atlas -> MATERIAL_DATA top-level-await regression. */
+it("prepares missing scene assets and the CI seed through the actual native bake entrypoint", async () => {
+  const source = resolve(import.meta.dirname, "..");
+  const root = await mkdtemp(resolve(tmpdir(), "noitamap-native-entry-"));
+  const out = resolve(root, "bake");
+  try {
+    for (const path of ["package.json", "package-lock.json", "tsconfig.json", "vite.config.ts",
+      "src", "build_scripts", "public", "lib/noita-telescope", "lib/noita-telescope-vm"]) {
+      // Real files preserve Vite's root-relative transforms; symlinked forks do not.
+      await cp(resolve(source, path), resolve(root, path), { recursive: true, mode: constants.COPYFILE_FICLONE });
+    }
+    await symlink(resolve(source, "node_modules"), resolve(root, "node_modules"), "dir");
+    const scenes = resolve(root, "build_data/telescope-scenes");
+    await expect(stat(scenes)).rejects.toMatchObject({ code: "ENOENT" });
+
+    const { code, logs } = await runBake(root, out);
     expect(code, logs).toBe(0);
+    const manifest = JSON.parse(await readFile(resolve(scenes, "manifest.json"), "utf8"));
+    expect(manifest.version).toBe(1);
+    expect(Object.keys(manifest.packs).sort()).toEqual(["approx", "full"]);
+    const sceneFiles = ["manifest.json"];
+    for (const pack of Object.values(manifest.packs) as any[]) {
+      expect(pack.scenes).toBeGreaterThan(0);
+      const bytes = await readFile(resolve(scenes, pack.file));
+      expect(createHash("sha256").update(bytes).digest("hex")).toBe(pack.sha256);
+      sceneFiles.push(pack.file);
+    }
+    const sceneTimes = await Promise.all(sceneFiles.map(async file => (await stat(resolve(scenes, file))).mtimeMs));
     const prepared = JSON.parse(
       await readFile(resolve(out, "prepared.json"), "utf8"),
     );
@@ -132,7 +161,26 @@ it("prepares the CI seed through the actual native bake entrypoint", async () =>
         () => false,
       ),
     ).toBe(false);
+
+    // An up-to-date pack is reused, and the child script's successful early
+    // exit must not terminate the parent baker before it validates the resumed
+    // seed and writes its completion result. Avoid rendering decorations twice.
+    await rm(resolve(out, "benchmark.json"));
+    const reused = await runBake(root, out, ["--resume"]);
+    expect(reused.code, reused.logs).toBe(0);
+    expect(JSON.parse(await readFile(resolve(out, "benchmark.json"), "utf8"))).toMatchObject({
+      seed: 1483922992, prepareOnly: true, resumed: true,
+    });
+    expect(await Promise.all(sceneFiles.map(async file => (await stat(resolve(scenes, file))).mtimeMs))).toEqual(sceneTimes);
+
+    // A real preparation failure must stop the bake, even with old packs on disk.
+    await rm(resolve(root, "public/pixel_scenes.zip"));
+    const failedOut = resolve(root, "bake-failure"), failed = await runBake(root, failedOut);
+    expect(failed.code, failed.logs).toBe(1);
+    expect(failed.logs).toContain("pixel_scenes.zip");
+    await expect(stat(resolve(failedOut, "runtime/bake.js"))).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(stat(resolve(failedOut, "seed.txt"))).rejects.toMatchObject({ code: "ENOENT" });
   } finally {
-    await rm(out, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true });
   }
 }, 270000);
