@@ -4,7 +4,7 @@ import { completeGenerationBossPOIs } from "./boss-pois";
 import { serializeTileLayer, restoreTileLayer, type CachedTileLayer } from "./tile-layer-cache";
 import { telescopeCacheKey } from "./cache-identity";
 import { readReportInventorySnapshot, type ReportInventorySnapshot } from "../report-inventory";
-import { readGenerationCache, writeGenerationCache } from './generation-cache-records';
+import { expireGenerationCache, readGenerationCache, writeGenerationCache } from './generation-cache-records';
 /**
  * tile-cache.ts
  *
@@ -12,7 +12,7 @@ import { readGenerationCache, writeGenerationCache } from './generation-cache-re
  * Keyed by seed — stores raw tile buffers, biome data, and POIs.
  * Also stores rendered biome layer blobs per (pw, pvt) so cache hits skip
  * the ~1.5-2s of CPU-bound tile-overlay generation on reload.
- * Prunes entries older than 30 days.
+ * Expires requested generations older than 30 days.
  */
 
 const DB_NAME = "noitamap-telescope";
@@ -69,16 +69,12 @@ interface CachedGeneration {
   >;
 }
 
-const storage = new OptionalCacheDatabase(DB_NAME, DB_VERSION, (db, transaction, oldVersion) => {
-  // Bumping past v5 (the schema-change version) wiped data. From v6 onward
-  // the upgrade is additive — keep existing cached generations when adding
-  // new stores.
-  if (oldVersion < 5) {
-    if (db.objectStoreNames.contains(STORE_NAME)) {
-      db.deleteObjectStore(STORE_NAME);
-    }
-    db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
-  } else if (!db.objectStoreNames.contains(STORE_NAME)) {
+// Older schemas contain invalid geometry and, before v9, duplicate raw scene
+// pixels. Retire their database before opening stores; do not read or delete
+// those potentially huge values inside an upgrade transaction. Valid v14
+// caches are reused, so this change does not cold-start existing users.
+const storage = new OptionalCacheDatabase(DB_NAME, DB_VERSION, db => {
+  if (!db.objectStoreNames.contains(STORE_NAME)) {
     db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
   }
   if (!db.objectStoreNames.contains(RENDER_STORE_NAME)) {
@@ -87,33 +83,10 @@ const storage = new OptionalCacheDatabase(DB_NAME, DB_VERSION, (db, transaction,
   }
   if (!db.objectStoreNames.contains(SCENE_BITMAP_STORE_NAME)) {
     db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
-  } else if (oldVersion < 11) {
-    // v8 fixed the temple/single-layer scene sizing bug. v10 recolors
-    // pixel-scene fills (f0bbee -> chosen material) and temple wang
-    // templates (white slab -> templeslab brown). v11 stops a material
-    // colormap (essenceroom.png) shadowing the real _visual.png. Wipe so
-    // stale pre-fix bitmaps get re-composited.
-    db.deleteObjectStore(SCENE_BITMAP_STORE_NAME);
-    db.createObjectStore(SCENE_BITMAP_STORE_NAME, { keyPath: "key" });
   }
-  // v9: generation entries bundled imgData per pixel scene (~MBs each).
-  // Cache reads were taking ~2.4s on FF. Drop those entries; new ones
-  // are written without imgData.
-  if (oldVersion >= 5 && oldVersion < 9 && db.objectStoreNames.contains(STORE_NAME)) {
-    db.deleteObjectStore(STORE_NAME);
-    db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });
-  }
-  // v12 replaces missing scene inputs (previously transparent 1x1 PNGs).
-  // v13 corrects main-only boss POIs. v14 prioritizes prepared scene assets:
-  // the raw watercave image had the wrong height, so both composed bitmaps and
-  // cached generation geometry can be stale. Clear all derived stores even on
-  // cache-only paths before telescope initialization/library-version checks.
-  if (oldVersion > 0 && oldVersion < 14) {
-    for (const name of [STORE_NAME, RENDER_STORE_NAME, SCENE_BITMAP_STORE_NAME]) {
-      transaction.objectStore(name).clear();
-    }
-  }
-});
+}, undefined, undefined, 14);
+
+const expiring = new Map<string, Promise<void>>();
 
 function openDB(): Promise<IDBDatabase> {
   return storage.open();
@@ -196,7 +169,12 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
 
     if (!entry) return null;
     if (Date.now() - entry.timestamp > MAX_AGE_MS) {
-      pruneOldEntries().catch(() => {});
+      if (!expiring.has(cacheKey)) {
+        const pending = expireGenerationCache(storage, db, STORE_NAME, cacheKey, Date.now() - MAX_AGE_MS)
+          .catch(error => warnCacheFailure("[TileCache] Failed to expire generation:", error))
+          .finally(() => expiring.delete(cacheKey));
+        expiring.set(cacheKey, pending);
+      }
       return null;
     }
 
@@ -262,43 +240,12 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
 }
 
 /**
- * Prune entries older than MAX_AGE_MS.
- */
-async function pruneOldEntries(): Promise<void> {
-  try {
-    const db = await openDB();
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
-    const req = store.openCursor();
-    const now = Date.now();
-
-    req.onsuccess = () => {
-      const cursor = req.result;
-      if (!cursor) return;
-      const entry = cursor.value as CachedGeneration;
-      if (now - entry.timestamp > MAX_AGE_MS) {
-        cursor.delete();
-      }
-      cursor.continue();
-    };
-
-    await storage.complete(tx);
-  } catch (e) {
-    warnCacheFailure("[TileCache] Failed to prune:", e);
-  }
-}
-
-/**
- * Completely clear the telescope generation cache.
+ * Reset only the disposable Telescope database, keeping other databases
+ * (including retained terrain), settings and authentication untouched.
  */
 export async function clearCache(): Promise<boolean> {
   try {
-    const db = await openDB();
-    const tx = db.transaction([STORE_NAME, RENDER_STORE_NAME, SCENE_BITMAP_STORE_NAME], "readwrite");
-    tx.objectStore(STORE_NAME).clear();
-    tx.objectStore(RENDER_STORE_NAME).clear();
-    tx.objectStore(SCENE_BITMAP_STORE_NAME).clear();
-    await storage.complete(tx);
+    await storage.reset();
     console.log("[TileCache] Cache cleared (generations + biome_renders + pixel_scene_bitmaps)");
     return true;
   } catch (e) {

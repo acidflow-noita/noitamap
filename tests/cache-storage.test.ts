@@ -356,6 +356,78 @@ describe("optional generation cache storage", () => {
     warnCacheFailure("already reported", new CacheUnavailableError("blocked", "blocked"));
     expect(console.warn).toHaveBeenCalledTimes(1);
   });
+
+  it('coalesces reset callers and blocks reads until the fresh database opens', async () => {
+    await ready();
+    const deleted = request(), remove = vi.fn(() => deleted);
+    vi.stubGlobal('indexedDB', { open, deleteDatabase: remove });
+    const old = db, next = database();
+    opening = request(next);
+    const a = storage.reset(), b = storage.reset();
+    expect(a).toBe(b);
+    expect(storage.open()).toBe(a);
+    expect(old.close).toHaveBeenCalledOnce();
+    expect(remove).toHaveBeenCalledExactlyOnceWith('noitamap-test-cache');
+    expect(open).toHaveBeenCalledOnce();
+    deleted.onsuccess();
+    opening.onupgradeneeded({ oldVersion: 0 }); opening.onsuccess();
+    expect(await a).toBe(next);
+    expect(await storage.open()).toBe(next);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('rejects a blocked reset without reopening stale records, then recovers after deletion', async () => {
+    await ready();
+    const deleted = request();
+    vi.stubGlobal('indexedDB', { open, deleteDatabase: vi.fn(() => deleted) });
+    const rejected = expect(storage.reset()).rejects.toMatchObject({ reason: 'blocked' });
+    deleted.onblocked(); await rejected;
+    await expect(storage.open()).rejects.toMatchObject({ reason: 'blocked' });
+    expect(open).toHaveBeenCalledOnce();
+    deleted.onsuccess();
+    db = database(); opening = request(db);
+    expect(await ready()).toBe(db);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each(['error', 'timeout', 'throw'])('keeps the cache unavailable after reset %s', async kind => {
+    await ready();
+    const deleted = request();
+    const remove = vi.fn(() => { if (kind === 'throw') throw new Error('denied'); return deleted; });
+    vi.stubGlobal('indexedDB', { open, deleteDatabase: remove });
+    const rejected = expect(storage.reset()).rejects.toBeInstanceOf(CacheUnavailableError);
+    if (kind === 'error') { deleted.error = new Error('failed'); deleted.onerror(); }
+    if (kind === 'timeout') await vi.advanceTimersByTimeAsync(50);
+    await rejected;
+    if (kind !== 'throw') deleted.onsuccess();
+    await expect(storage.open()).rejects.toBeInstanceOf(CacheUnavailableError);
+    expect(open).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('does not revive a disposed owner when pending deletion finishes', async () => {
+    const deleted = request();
+    vi.stubGlobal('indexedDB', { open, deleteDatabase: vi.fn(() => deleted) });
+    const rejected = expect(storage.reset()).rejects.toMatchObject({ message: 'Cache owner was disposed' });
+    storage.close(); await rejected; deleted.onsuccess();
+    expect(open).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('closes a superseded open without dropping the replacement connection', async () => {
+    const original = opening;
+    const rejected = expect(storage.open()).rejects.toMatchObject({ message: 'Cache open superseded by reset' });
+    const deleted = request();
+    vi.stubGlobal('indexedDB', { open, deleteDatabase: vi.fn(() => deleted) });
+    const replacement = storage.reset(); await rejected;
+    const next = database(); opening = request(next);
+    deleted.onsuccess(); opening.onsuccess();
+    expect(await replacement).toBe(next);
+    original.onsuccess();
+    expect(original.result.close).toHaveBeenCalledOnce();
+    expect(await storage.open()).toBe(next);
+    expect(open).toHaveBeenCalledTimes(2);
+  });
 });
 
 /** Exercise the real tile-cache upgrade through its public read/write API.
@@ -374,7 +446,6 @@ describe("derived terrain cache schema migration", () => {
     };
     const records = new Map<string, Map<string, any>>([
       ["generations", new Map([["seed", { pixelScenesByPW: { "0,0": [{ height: 512 }] } }]])],
-      ["unrelated", new Map([["keep", "unrelated data"]])],
     ]);
     if (oldVersion >= 5) {
       records.set("biome_renders", new Map([["seed|0,0", { blob: new Blob(["old map render"]) }]]));
@@ -390,7 +461,7 @@ describe("derived terrain cache schema migration", () => {
       const entries = records.get(name);
       if (!entries) throw new Error(`Missing object store ${name}`);
       return {
-        clear: () => entries.clear(),
+        clear: () => { throw new Error('Must retire the database without clearing individual stores'); },
         createIndex: vi.fn(),
         get: (key: string) => read(entries.get(key)),
         put: (entry: any) => {
@@ -402,7 +473,7 @@ describe("derived terrain cache schema migration", () => {
     const db: any = {
       close: vi.fn(),
       objectStoreNames: { contains: (name: string) => records.has(name) },
-      deleteObjectStore: (name: string) => records.delete(name),
+      deleteObjectStore: () => { throw new Error('Must not delete legacy stores in an upgrade transaction'); },
       createObjectStore(name: string) {
         if (records.has(name)) throw new Error(`Duplicate object store ${name}`);
         records.set(name, new Map());
@@ -414,18 +485,26 @@ describe("derived terrain cache schema migration", () => {
       },
     };
     const open = vi.fn((_name: string, requested: number) => {
-      const req: any = { result: db, transaction: { objectStore: (name: string) => store(name) } };
+      let aborted = false;
+      const req: any = { result: db, transaction: { objectStore: (name: string) => store(name),
+        abort: () => { aborted = true; req.error = new DOMException('Upgrade aborted', 'AbortError'); } } };
       queueMicrotask(() => {
         if (requested > version) {
           req.onupgradeneeded?.({ oldVersion: version });
+          if (aborted) { req.onerror?.({ preventDefault: vi.fn() }); return; }
           version = requested;
         }
         req.onsuccess?.();
       });
       return req;
     });
-    vi.stubGlobal("indexedDB", { open });
-    return { records, open, stale, sceneKey };
+    const remove = vi.fn((_name: string) => {
+      const req: any = {};
+      queueMicrotask(() => { records.clear(); version = 0; req.onsuccess?.(); });
+      return req;
+    });
+    vi.stubGlobal("indexedDB", { open, deleteDatabase: remove });
+    return { records, open, remove, stale, sceneKey };
   }
 
   it.each([4, 8, 11, 12, 13])("removes all stale derived entries when upgrading v%s, then retains corrected scene pixels", async oldVersion => {
@@ -433,17 +512,18 @@ describe("derived terrain cache schema migration", () => {
     const fixture = legacyDatabase(oldVersion);
     const { getCachedSceneBitmap, cacheSceneBitmap } = await import("../src/telescope/tile-cache");
     expect(await getCachedSceneBitmap(fixture.sceneKey)).toBeNull();
-    expect(fixture.open).toHaveBeenCalledExactlyOnceWith("noitamap-telescope", 14);
+    expect(fixture.open).toHaveBeenCalledTimes(2);
+    expect(fixture.open).toHaveBeenLastCalledWith("noitamap-telescope", 14);
+    expect(fixture.remove).toHaveBeenCalledExactlyOnceWith("noitamap-telescope");
     for (const name of ["generations", "biome_renders", "pixel_scene_bitmaps"])
       expect(fixture.records.get(name)?.size, name).toBe(0);
-    expect(fixture.records.get("unrelated")?.get("keep")).toBe("unrelated data");
 
     const pixels = new Blob(["complete spliced scene"]);
     await cacheSceneBitmap(fixture.sceneKey, pixels, 512, 1139);
     expect(await getCachedSceneBitmap(fixture.sceneKey)).toMatchObject({
       blob: pixels, width: 512, height: 1139,
     });
-    expect(fixture.open).toHaveBeenCalledOnce();
+    expect(fixture.open).toHaveBeenCalledTimes(2);
   });
 
   it("keeps valid data when opening an already current database", async () => {
@@ -455,5 +535,6 @@ describe("derived terrain cache schema migration", () => {
     expect(fixture.records.get("generations")?.size).toBe(1);
     expect(fixture.records.get("biome_renders")?.size).toBe(1);
     expect(fixture.open).toHaveBeenCalledExactlyOnceWith("noitamap-telescope", 14);
+    expect(fixture.remove).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { OptionalCacheDatabase } from '../src/telescope/cache-storage';
-import { generationCacheRecords, readGenerationCache, writeGenerationCache } from '../src/telescope/generation-cache-records';
+import { expireGenerationCache, generationCacheRecords, readGenerationCache, writeGenerationCache } from '../src/telescope/generation-cache-records';
 import { generationCacheDB } from './helpers/generation-cache-db';
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
@@ -90,4 +90,44 @@ it.each(['version', 'size', 'missing world'])('rejects a malformed %s manifest a
   else if (damage === 'size') header.pageItems = 0;
   else header.arrays.pop();
   expect(await readGenerationCache(storage, fixture.db, 'generations', original.cacheKey)).toBeUndefined();
+});
+
+it('expires only the requested seed, including its header, pages and legacy record', async () => {
+  const fixture = generationCacheDB(), storage = owner(), old = { ...entry(2100), timestamp: 10 };
+  const other = { ...entry(1400, 'other-seed'), timestamp: 10 };
+  await writeGenerationCache(storage, fixture.db, 'generations', old);
+  await writeGenerationCache(storage, fixture.db, 'generations', other);
+  fixture.records.set(old.cacheKey, structuredClone(old));
+  const untouched = [...fixture.records].filter(([, r]) => r.cacheKey[1] === other.cacheKey);
+  await expireGenerationCache(storage, fixture.db, 'generations', old.cacheKey, 20);
+  expect(await readGenerationCache(storage, fixture.db, 'generations', old.cacheKey)).toBeUndefined();
+  expect([...fixture.records]).toEqual(untouched);
+  expect(await readGenerationCache(storage, fixture.db, 'generations', other.cacheKey)).toEqual(other);
+});
+
+it('does not expire a generation refreshed after an earlier stale read', async () => {
+  const fixture = generationCacheDB(), storage = owner(), fresh = { ...entry(2100), timestamp: 30 };
+  await writeGenerationCache(storage, fixture.db, 'generations', fresh);
+  await expireGenerationCache(storage, fixture.db, 'generations', fresh.cacheKey, 20);
+  expect(await readGenerationCache(storage, fixture.db, 'generations', fresh.cacheKey)).toEqual(fresh);
+});
+
+it.each(['legacy', 'pages'])('keeps newer %s records when expiring the other format', async newer => {
+  const fixture = generationCacheDB(), storage = owner();
+  const paged = { ...entry(2100), timestamp: newer === 'pages' ? 30 : 10 };
+  const legacy = { ...entry(10), timestamp: newer === 'legacy' ? 30 : 10 };
+  await writeGenerationCache(storage, fixture.db, 'generations', paged);
+  fixture.records.set(legacy.cacheKey, structuredClone(legacy));
+  await expireGenerationCache(storage, fixture.db, 'generations', legacy.cacheKey, 20);
+  expect(await readGenerationCache(storage, fixture.db, 'generations', legacy.cacheKey))
+    .toEqual(newer === 'legacy' ? legacy : paged);
+});
+
+it('never materializes unrelated legacy payloads while expiring a missing seed', async () => {
+  const fixture = generationCacheDB(), storage = owner();
+  const unrelated = { cacheKey: 'large-old-seed', timestamp: 1,
+    get poisByPW() { throw new Error('Must not read the unrelated payload'); } };
+  fixture.records.set(unrelated.cacheKey, unrelated);
+  await expireGenerationCache(storage, fixture.db, 'generations', 'missing', 20);
+  expect(fixture.records.get(unrelated.cacheKey)).toBe(unrelated);
 });

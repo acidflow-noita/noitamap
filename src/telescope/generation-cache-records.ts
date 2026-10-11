@@ -82,6 +82,30 @@ export async function writeGenerationCache<T extends GenerationEntry>(
   }
 }
 
+/** Expire one requested generation, never scan/clone the entire cache. Read
+ * timestamps inside the write transaction so a newer tab's replacement wins.
+ * Legacy and paged records can coexist; neither may expire the other's newer
+ * data. Pre-v14 databases with duplicated raw scene pixels are retired whole. */
+export async function expireGenerationCache(
+  storage: OptionalCacheDatabase, db: IDBDatabase, storeName: string, cacheKey: string, cutoff: number,
+): Promise<void> {
+  const transaction = db.transaction(storeName, 'readwrite');
+  const complete = storage.complete(transaction);
+  void complete.catch(() => {});
+  try {
+    const store = transaction.objectStore(storeName);
+    const header = await storage.read<Header<GenerationEntry> | undefined>(store.get(key(cacheKey, -1)));
+    if (header && header.timestamp < cutoff) await storage.read(store.delete(range(cacheKey)));
+    const legacy = await storage.read<GenerationEntry | undefined>(store.get(cacheKey));
+    if (legacy && legacy.timestamp < cutoff) await storage.read(store.delete(cacheKey));
+    await complete;
+  } catch (error) {
+    try { transaction.abort(); } catch { /* already finished/aborted */ }
+    await complete.catch(() => {});
+    throw error;
+  }
+}
+
 /** All pages are read in one snapshot transaction: another tab cannot replace
  * the header or a later page halfway through this read. Missing/malformed
  * pages are cache misses, never partially usable generation results. */

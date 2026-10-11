@@ -18,7 +18,9 @@ export class OptionalCacheDatabase {
   private opening: Promise<IDBDatabase> | null = null;
   private unavailable: CacheUnavailableError | null = null;
   private closed: CacheUnavailableError | null = null;
-  private abandonOpen: (() => void) | null = null;
+  private abandonOpen: ((reason: CacheUnavailableError) => void) | null = null;
+  private resetting: Promise<IDBDatabase> | null = null;
+  private openingId = 0;
 
   constructor(
     private readonly name: string,
@@ -27,6 +29,9 @@ export class OptionalCacheDatabase {
     // This bounds optional storage I/O, NOT terrain generation or downloads.
     private readonly waitMs = 3000,
     private readonly writeWait = { idleMs: CACHE_WRITE_IDLE_MS, maxMs: CACHE_WRITE_MAX_MS },
+    // Disposable derived caches can retire obsolete databases without an
+    // upgrade transaction copying every old value into a deletion undo log.
+    private readonly resetBeforeVersion = 0,
   ) {}
 
   private disable(reason: CacheUnavailableError["reason"], message: string, cause?: unknown): CacheUnavailableError {
@@ -44,7 +49,28 @@ export class OptionalCacheDatabase {
     if (this.unavailable) return Promise.reject(this.unavailable);
     if (this.connection) return Promise.resolve(this.connection);
     if (this.opening) return this.opening;
-    this.opening = new Promise((resolve, reject) => {
+    return this.opening = this.connect(false);
+  }
+
+  /** Only for databases wholly owned by a disposable cache. Database deletion
+   * lets Chromium retire the key range without recording each old value in
+   * its transaction undo log. A blocked reset still fails open for the map. */
+  reset(): Promise<IDBDatabase> {
+    if (this.closed) return Promise.reject(this.closed);
+    if (this.unavailable) return Promise.reject(this.unavailable);
+    if (this.resetting) return this.resetting;
+    this.abandonOpen?.(new CacheUnavailableError("Cache open superseded by reset", "unavailable"));
+    this.connection?.close();
+    this.connection = null;
+    const pending = this.resetting = this.opening = this.connect(true);
+    const finished = () => { if (this.resetting === pending) this.resetting = null; };
+    void pending.then(finished, finished);
+    return pending;
+  }
+
+  private connect(reset: boolean): Promise<IDBDatabase> {
+    const openingId = ++this.openingId;
+    return new Promise((resolve, reject) => {
       let settled = false;
       let failure: CacheUnavailableError | null = null;
       const fail = (reason: CacheUnavailableError["reason"], message: string, cause?: unknown) => {
@@ -56,57 +82,91 @@ export class OptionalCacheDatabase {
         reject(failure);
       };
       const timer = setTimeout(() => fail("timeout", "Opening the cache database did not respond"), this.waitMs);
-      this.abandonOpen = () => {
+      this.abandonOpen = reason => {
         if (settled) return;
         settled = true;
         this.abandonOpen = null;
         clearTimeout(timer);
-        reject(this.closed);
+        reject(reason);
       };
-      try {
-        const request = indexedDB.open(this.name, this.version);
-        request.onupgradeneeded = event => {
-          if (this.closed) {
-            request.transaction?.abort();
-            return;
-          }
-          this.upgrade(request.result, request.transaction!, event.oldVersion);
-        };
-        request.onblocked = () => fail("blocked", "Cache upgrade is blocked by an older tab");
-        request.onerror = () => fail("unavailable", "Cannot open the cache database", request.error);
-        request.onsuccess = () => {
-          clearTimeout(timer);
-          const db = request.result;
-          if (settled) {
-            // IDB open requests cannot be cancelled. Do not leak a connection
-            // when an abandoned upgrade eventually succeeds (and block later tabs).
-            db.close();
-            this.opening = null;
-            // A blocked upgrade has now completed, including schema invalidation.
-            // Other failures stay disabled for this page, avoiding stale reads after
-            // an unsuccessful library-version cache clear.
-            if (failure?.reason === "blocked" && this.unavailable === failure) this.unavailable = null;
-            return;
-          }
-          settled = true;
-          this.abandonOpen = null;
-          this.connection = db;
-          const release = () => {
-            db.close();
-            if (this.connection === db) {
-              this.connection = null;
-              this.opening = null;
+      const recoverBlockedOpen = () => {
+        if (openingId !== this.openingId) return;
+        this.opening = null;
+        if (failure?.reason === "blocked" && this.unavailable === failure) this.unavailable = null;
+      };
+      const open = () => {
+        try {
+          const request = indexedDB.open(this.name, this.version);
+          let retireLegacy = false;
+          request.onupgradeneeded = event => {
+            if (this.closed || (settled && failure?.reason !== "blocked")) {
+              request.transaction?.abort();
+              return;
             }
+            if (event.oldVersion > 0 && event.oldVersion < this.resetBeforeVersion) {
+              // Abort before the caller's upgrade can clear/delete old stores.
+              // Wait for its error event to release the version-change lock.
+              retireLegacy = true;
+              request.transaction!.abort();
+              request.result.close();
+              return;
+            }
+            this.upgrade(request.result, request.transaction!, event.oldVersion);
           };
-          db.onversionchange = release;
-          db.onclose = release;
-          resolve(db);
-        };
-      } catch (error) {
-        fail("unavailable", "Cannot open the cache database", error);
-      }
+          request.onblocked = () => fail("blocked", "Cache upgrade is blocked by an older tab");
+          request.onerror = event => {
+            if (retireLegacy) {
+              event.preventDefault();
+              if (!settled && !this.closed) remove();
+              else recoverBlockedOpen();
+            } else fail("unavailable", "Cannot open the cache database", request.error);
+          };
+          request.onsuccess = () => {
+            clearTimeout(timer);
+            const db = request.result;
+            if (settled) {
+              // IDB open requests cannot be cancelled. Do not leak a connection
+              // when an abandoned upgrade eventually succeeds (and block later tabs).
+              db.close();
+              // A blocked upgrade has now completed, including schema invalidation.
+              // Other failures stay disabled for this page, avoiding stale reads after
+              // an unsuccessful library-version cache clear.
+              recoverBlockedOpen();
+              return;
+            }
+            settled = true;
+            this.abandonOpen = null;
+            this.connection = db;
+            const release = () => {
+              db.close();
+              if (this.connection === db) {
+                this.connection = null;
+                this.opening = null;
+              }
+            };
+            db.onversionchange = release;
+            db.onclose = release;
+            resolve(db);
+          };
+        } catch (error) {
+          fail("unavailable", "Cannot open the cache database", error);
+        }
+      };
+      const remove = () => {
+        try {
+          const request = indexedDB.deleteDatabase(this.name);
+          request.onblocked = () => fail("blocked", "Cache reset is blocked by an older tab");
+          request.onerror = () => fail("unavailable", "Cannot reset the cache database", request.error);
+          request.onsuccess = () => {
+            if (!settled && !this.closed) open();
+            else recoverBlockedOpen();
+          };
+        } catch (error) {
+          fail("unavailable", "Cannot reset the cache database", error);
+        }
+      };
+      if (reset) remove(); else open();
     });
-    return this.opening;
   }
 
   /** Terminal owner disposal. Existing transactions may finish; an IDB open
@@ -114,7 +174,7 @@ export class OptionalCacheDatabase {
   close(): void {
     if (this.closed) return;
     this.closed = new CacheUnavailableError("Cache owner was disposed", "unavailable");
-    this.abandonOpen?.();
+    this.abandonOpen?.(this.closed);
     this.connection?.close();
     this.connection = null;
     this.opening = null;
