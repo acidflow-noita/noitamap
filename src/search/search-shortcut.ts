@@ -1,3 +1,5 @@
+import './search-shortcut.css';
+
 export type SearchShortcut = { updateHint(label: string): void; dispose(): void };
 
 const activeShortcuts = new WeakMap<Document, SearchShortcut>();
