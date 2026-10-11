@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { inspectDaily, dailyPreflightSummary, performanceExitCode } from '../build_scripts/performance/daily-preflight.mjs';
-import { createDailyReplay } from '../build_scripts/performance/daily-fixture.mjs';
+import { createDailyReplay, dailyOverviewUrls } from '../build_scripts/performance/daily-fixture.mjs';
 
 const middle = 'https://daily-middle.acidflow.stream/manifest.json';
 function response(url: string) {
@@ -73,5 +73,26 @@ describe('performance prerequisite reporting', () => {
     expect(() => replay.response('https://daily-left.acidflow.stream/map.dzi')).toThrow('Uncaptured');
     expect(() => replay.capture(url, { status: 200, headers: {}, body: Buffer.from([4]) })).toThrow('changed while capturing');
     expect(() => replay.capture(url, { status: 403, headers: {}, body: Buffer.from('denied') })).toThrow('HTTP 403');
+  });
+  it('includes the level-10 tiles omitted by the Chromium CI capture in every world', async () => {
+    const preflight = await inspectDaily(async (url: string) => response(url));
+    const daily = preflight.daily!;
+    for (const manifest of daily.manifests) manifest.generatedAt = '2026-10-11T00:11:25.316Z';
+    const urls = dailyOverviewUrls(daily, { width: 1280, height: 800 });
+    expect(urls).toHaveLength(54); // 3 worlds: ten 1-tile levels, then 2 and 6 tiles.
+    expect(new Set(urls).size).toBe(54);
+    for (const world of ['left', 'middle', 'right']) {
+      for (const y of [0, 1]) expect(urls).toContain(
+        `https://daily-${world}.acidflow.stream/map_files/10/0_${y}.webp?v=2026-10-11T00%3A11%3A25.316Z`);
+      expect(urls.some(url => url.includes(`daily-${world}.`) && url.includes('/11/1_2.webp'))).toBe(true);
+    }
+    expect(urls.some(url => url.includes('/12/'))).toBe(false); // No full-resolution world download.
+  });
+  it('respects DZI tile locations and refuses an unbounded fixture', async () => {
+    const preflight = await inspectDaily(async (url: string) => response(url));
+    const daily = preflight.daily!;
+    daily.descriptors[0].json.Image.Url = 'custom_tiles/';
+    expect(dailyOverviewUrls(daily, { width: 1280, height: 800 })[0]).toContain('/custom_tiles/0/0_0.webp');
+    expect(() => dailyOverviewUrls(daily, { width: 1e9, height: 1e9 })).toThrow('bounded fixture');
   });
 });

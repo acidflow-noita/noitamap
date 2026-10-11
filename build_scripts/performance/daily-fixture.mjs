@@ -43,6 +43,38 @@ export function createDailyReplay(seed, previousSeed) {
   };
 }
 
+/** OSD may skip an intermediate level during capture and request it during
+ * a slower measured load. Include every overview tile, independent of that
+ * request order; these small levels fit within the benchmark viewport. */
+export function dailyOverviewUrls(daily, viewport) {
+  const extent = Math.max(viewport.width, viewport.height);
+  if (!Number.isFinite(extent) || extent <= 0) throw Error('Invalid fixture viewport');
+  const urls = [];
+  for (const [index, descriptor] of daily.descriptors.entries()) {
+    const image = descriptor.json.Image;
+    const width = Number(image.Size.Width), height = Number(image.Size.Height), tileSize = Number(image.TileSize);
+    if (![width, height, tileSize].every(n => Number.isSafeInteger(n) && n > 0)) throw Error('Invalid fixture DZI dimensions');
+    const maxLevel = Math.ceil(Math.log2(Math.max(width, height)));
+    const overviewLevel = Math.min(maxLevel, Math.ceil(Math.log2(extent)));
+    const base = new URL(image.Url || 'map_files/', descriptor.url);
+    if (!base.pathname.endsWith('/')) base.pathname += '/';
+    if (!assetHosts.includes(base.hostname)) throw Error('Unexpected fixture tile host');
+    for (let level = 0; level <= overviewLevel; level++) {
+      const divisor = 2 ** (maxLevel - level);
+      const columns = Math.ceil(Math.ceil(width / divisor) / tileSize);
+      const rows = Math.ceil(Math.ceil(height / divisor) / tileSize);
+      if (urls.length + columns * rows > 512) throw Error('Daily overview exceeds the bounded fixture size');
+      for (let x = 0; x < columns; x++) for (let y = 0; y < rows; y++) {
+        const url = new URL(`${level}/${x}_${y}.${image.Format}`, base);
+        const version = daily.manifests[index].generatedAt;
+        if (version) url.searchParams.set('v', version);
+        urls.push(url.href);
+      }
+    }
+  }
+  return urls;
+}
+
 /** Rewrite only the public Daily transports to the local snapshot. Using
  * Playwright routing here would disable the browser's entire HTTP cache and
  * invalidate the reload measurements. The production bundles stay unchanged. */
@@ -99,6 +131,24 @@ export async function captureDailyFixture(browser, origin, daily, config) {
     if (inFlight.size) throw Error('Baked fixture still has unfinished requests');
     await Promise.all(pending);
     if (errors.length) throw Error(errors.join('\n'));
+    const overview = dailyOverviewUrls(daily, config.viewport);
+    const missing = overview.filter(url => !replay.assets.has(normalized(url)));
+    // Fetch real bytes before the timing runs. The response listener above
+    // captures them with their cache headers, just like the observed tiles.
+    await page.evaluate(async urls => {
+      let next = 0;
+      await Promise.all(Array.from({ length: Math.min(4, urls.length) }, async () => {
+        while (next < urls.length) {
+          const url = urls[next++];
+          const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(15000) });
+          if (!response.ok) throw Error(`Fixture overview HTTP ${response.status}: ${url}`);
+          await response.arrayBuffer();
+        }
+      }));
+    }, missing);
+    await Promise.all(pending);
+    if (errors.length) throw Error(errors.join('\n'));
+    for (const url of overview) replay.response(url);
     for (const prefix of ['daily', 'previous-daily']) for (const [index, world] of ['left', 'middle', 'right'].entries()) {
       const url = `https://${prefix}-${world}.acidflow.stream/manifest.json`;
       const before = (prefix === 'daily' ? daily.manifests : daily.previousManifests)[index];
