@@ -44,4 +44,11 @@ describe('paired performance regression reporting', () => {
     expect(report.timingRegressions.map((row: any) => row.scenario)).toEqual(['direct']);
     expect(report.timingRegressions[0].regressions[0].deltaMs).toBe(7900);
   });
+  it('pairs changes on the same runner instead of subtracting medians from different machines', () => {
+    const runs = [...samples('previous', [10000, 1000, 1000]), ...samples('candidate', [10010, 1400, 900])];
+    const report = compareRuns(runs, { ...config, pairedTrials: true });
+    expect(report.comparable).toBe(true);
+    expect(report.rows[0].medians).toEqual({ previous: 1000, candidate: 1400 });
+    expect(report.timingRegressions).toEqual([]); // Paired changes: +10, +400, -100 ms.
+  });
 });

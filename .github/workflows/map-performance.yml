@@ -12,14 +12,19 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: map-performance-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   compare:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, firefox]
+        trial: [1, 2, 3]
     env:
       LIBGL_ALWAYS_SOFTWARE: '1'
     steps:
@@ -39,22 +44,56 @@ jobs:
         working-directory: ${{ runner.temp }}/noitamap-performance/candidate
         run: |
           npm run typecheck
-          npm test -- tests/tab-coordinator.test.ts tests/mod-navigation.test.ts tests/unlocks-poi-refresh.test.ts tests/dynamic-map-url.test.ts tests/performance-comparison.test.ts tests/performance-preflight.test.ts tests/creature-spawn-url.test.ts tests/startup.test.ts tests/app-startup-cleanup.test.ts
+          npm test -- tests/tab-coordinator.test.ts tests/mod-navigation.test.ts tests/unlocks-poi-refresh.test.ts tests/dynamic-map-url.test.ts tests/performance-comparison.test.ts tests/performance-preflight.test.ts tests/performance-trials.test.ts tests/creature-spawn-url.test.ts tests/startup.test.ts tests/app-startup-cleanup.test.ts
           npm test -- tests/scene-prefetch.test.ts tests/terrain-startup-overlap.test.ts tests/telescope-osd-lifetime.test.ts tests/instant-terrain-viewport.test.ts
       - name: Install browser and display dependencies
-        run: npx playwright install --with-deps ${{ matrix.browser }}
+        run: |
+          npx playwright install --with-deps ${{ matrix.browser }}
+          sudo apt-get install -y --no-install-recommends libgl1-mesa-dri libglx-mesa0 libegl-mesa0
       - name: Compare cold, warm, reload, mod launch, and navigation
-        # Both run full browsers under Xvfb, including Chromium (not its separate
-        # headless shell). Require pixel readback and matching renderer backends.
-        run: xvfb-run -a node build_scripts/performance/run.mjs --browser=${{ matrix.browser }}
+        # Independent repeats use separate standard runners; all revisions
+        # remain paired on one machine. No concurrent browsers on a runner.
+        # Mesa is software WebGL; retain real rendering and pixel readback.
+        run: xvfb-run -a node build_scripts/performance/run.mjs --browser=${{ matrix.browser }} --graphics=mesa --trial=${{ matrix.trial }} --out=performance-results/${{ matrix.browser }}/trial-${{ matrix.trial }}
       - name: Save compact evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: map-performance-${{ matrix.browser }}
+          name: map-performance-${{ matrix.browser }}-${{ matrix.trial }}
+          overwrite: true
           retention-days: 7
           if-no-files-found: warn
           path: |
             performance-results/
             performance-versions.json
             ${{ runner.temp }}/noitamap-performance/*-build.log
+
+  summary:
+    needs: compare
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: actions/download-artifact@v8
+        with:
+          # Exclude the combined summary if this job is re-run.
+          pattern: map-performance-*-*
+          path: performance-input
+      - name: Compare all paired trials
+        run: node build_scripts/performance/aggregate.mjs
+      - name: Save combined comparison
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: map-performance-summary
+          overwrite: true
+          retention-days: 7
+          if-no-files-found: warn
+          path: performance-results/combined/

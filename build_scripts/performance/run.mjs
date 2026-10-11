@@ -6,6 +6,8 @@ import { resolve, join, extname } from 'node:path';
 import { compareRuns, markdownSummary } from './compare.mjs';
 import { inspectDaily, publicResponseHeaders, dailyPreflightSummary, performanceExitCode } from './daily-preflight.mjs';
 import { captureDailyFixture, fixturePath, installDailyTransport } from './daily-fixture.mjs';
+import { selectTrials } from './trials.mjs';
+import { cpus, availableParallelism } from 'node:os';
 
 const options = Object.fromEntries(process.argv.slice(2).map(arg => { const [key, ...value] = arg.replace(/^--/, '').split('='); return [key, value.join('=')]; }));
 const config = JSON.parse(await readFile(new URL('./config.json', import.meta.url), 'utf8'));
@@ -14,10 +16,15 @@ const kind = options.browser || 'chromium', out = resolve(options.out || `perfor
 const presentation = options.terrain || 'gpu';
 if (!['gpu', 'worker'].includes(presentation)) throw Error('terrain must be gpu or worker');
 const expectedBackend = presentation === 'gpu' ? 'main-gpu' : 'worker';
+const graphicsMode = options.graphics || 'swiftshader';
+if (!['swiftshader', 'mesa'].includes(graphicsMode)) throw Error('graphics must be swiftshader or mesa');
 if (!['chromium', 'firefox'].includes(kind) || !variants.some(v => v.label === 'candidate')) throw Error('Invalid browser/version configuration');
 config.repeats = Number(options.repeats || config.repeats);
 config.handoffs = options.handoffs !== 'false';
 if (!Number.isInteger(config.repeats) || config.repeats < 1 || config.repeats > 9) throw Error('repeats must be 1..9');
+const trials = selectTrials(config.repeats, options.trial);
+const selectedTrial = options.trial === undefined ? null : Number(options.trial);
+const startedAt = Date.now();
 await mkdir(out, { recursive: true });
 let root;
 let dailyReplay;
@@ -49,7 +56,13 @@ const launch = () => browserType.launch({
   ...(kind === 'chromium' ? { channel: 'chromium' } : {}),
   ...(process.env.PERF_BROWSER_EXECUTABLE ? { executablePath: process.env.PERF_BROWSER_EXECUTABLE } : {}),
   ...(process.env.PERF_BROWSER_CHANNEL ? { channel: process.env.PERF_BROWSER_CHANNEL } : {}),
-  ...(kind === 'chromium' ? { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--host-resolver-rules=MAP www.googletagmanager.com ~NOTFOUND,MAP static.cloudflareinsights.com ~NOTFOUND'] } : {}),
+  ...(kind === 'chromium' ? { args: [
+    ...(process.platform === 'linux' && options.headless !== 'true' ? ['--ozone-platform=x11'] : []),
+    '--use-gl=angle',
+    ...(graphicsMode === 'mesa' ? ['--use-angle=gl', '--ignore-gpu-blocklist']
+      : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']),
+    '--host-resolver-rules=MAP www.googletagmanager.com ~NOTFOUND,MAP static.cloudflareinsights.com ~NOTFOUND',
+  ] } : {}),
 });
 const analytics = url => /https:\/\/(?:www\.googletagmanager\.com|static\.cloudflareinsights\.com)\//.test(url);
 const runs = [];
@@ -99,13 +112,15 @@ try {
       if (process.env.GITHUB_STEP_SUMMARY) await writeFile(process.env.GITHUB_STEP_SUMMARY, message, { flag: 'a' });
     }
   }
-  for (let trial = 0; trial < config.repeats; trial++) {
+  for (const trial of trials) {
     // Rotate starting versions: every version sees the first-run position.
     const ordered = variants.map((_, i) => variants[(i + trial) % variants.length]);
     for (const variant of ordered) for (const scenario of daily ? ['direct', 'baked'] : ['direct']) {
       root = resolve(variant.root);
       const result = { variant: variant.label, commit: variant.commit, trial: trial + 1, scenario, presentation, phases: [], logs: [], errors: [], browserDiagnostics: [], requestErrors: [], cancelledRequests: [], valid: false };
       const file = join(out, `${variant.label}-${scenario}-${trial + 1}.json`);
+      const journeyStarted = Date.now();
+      console.log(`[Performance] ${variant.label}/${scenario}, trial ${trial + 1}/${config.repeats}: starting`);
       const browser = await launch();
       const watchdog = setTimeout(() => { result.failure = 'Trial exceeded five minutes'; void browser.close(); }, 300000);
       result.browser = `${kind} ${browser.version()}`;
@@ -306,6 +321,8 @@ try {
           return { webgl2: true, renderer: gl.getParameter(debug ? debug.UNMASKED_RENDERER_WEBGL : gl.RENDERER), pixel: [...pixel], error: gl.getError() };
         });
         if (!result.graphics.webgl2 || result.graphics.error || result.graphics.pixel.join() !== '255,0,255,255') throw Error('Graphics probe failed');
+        if (kind === 'chromium' && !new RegExp(graphicsMode === 'mesa' ? 'llvmpipe|softpipe' : 'SwiftShader', 'i').test(result.graphics.renderer))
+          throw Error(`Unexpected graphics driver for ${graphicsMode}: ${result.graphics.renderer}`);
         if (result.errors.length || result.requestErrors.length) throw Error('Browser or required asset errors; see report');
         if (result.logs.some(l => /Pipeline failed|Using approximate terrain|worker timed out|backend.*failed/i.test(l))) throw Error('Terrain failed or fell back');
         result.valid = true;
@@ -313,15 +330,23 @@ try {
         result.failure = String(error); result.stack = error.stack; console.error(`${variant.label}/${scenario}: ${result.failure}`);
         await page.screenshot({ path: join(out, `${variant.label}-${scenario}-${trial + 1}-failed.png`), timeout: 10000 }).catch(() => {});
       }
-      finally { clearTimeout(watchdog); runs.push(result); await writeFile(file, JSON.stringify(result, null, 2)); await browser.close(); }
+      finally {
+        clearTimeout(watchdog); await browser.close();
+        result.journeyMs = Date.now() - journeyStarted;
+        runs.push(result); await writeFile(file, JSON.stringify(result, null, 2));
+        console.log(`[Performance] ${variant.label}/${scenario}, trial ${trial + 1}: ${Math.round(result.journeyMs / 1000)}s total, valid=${result.valid}`);
+      }
     }
   }
-  const comparison = compareRuns(runs, config);
-  await writeFile(join(out, 'results.json'), JSON.stringify({ config, variants, daily, dailyPreflight, comparison, runs }, null, 2));
-  const summary = dailyPreflightSummary(dailyPreflight) + markdownSummary(comparison, runs);
+  const comparison = compareRuns(runs, { ...config, repeats: trials.length });
+  await writeFile(join(out, 'results.json'), JSON.stringify({ browser: kind, trial: selectedTrial, config, variants, daily,
+    dailyPreflight, comparison, runs, graphicsMode, elapsedMs: Date.now() - startedAt,
+    machine: { cpu: cpus()[0]?.model, cores: availableParallelism(), platform: process.platform } }, null, 2));
+  const summary = (selectedTrial === null ? '' : `Trial ${selectedTrial}/${config.repeats}; the final comparison combines all trials.\n`)
+    + dailyPreflightSummary(dailyPreflight) + markdownSummary(selectedTrial === null ? comparison : { ...comparison, timingRegressions: [] }, runs);
   console.log(summary);
   if (process.env.GITHUB_STEP_SUMMARY) await writeFile(process.env.GITHUB_STEP_SUMMARY, summary, { flag: 'a' });
-  for (const row of comparison.timingRegressions) for (const r of row.regressions)
+  for (const row of selectedTrial === null ? comparison.timingRegressions : []) for (const r of row.regressions)
     console.log(`::warning title=Map performance::${row.scenario}/${row.phase} vs ${r.baseline}: +${Math.round(r.deltaMs)}ms, ${(r.relative * 100).toFixed(1)}%`);
-  process.exitCode = performanceExitCode(comparison, config, dailyPreflight);
+  process.exitCode = performanceExitCode(comparison, { ...config, enforceTiming: selectedTrial === null && config.enforceTiming }, dailyPreflight);
 } finally { await new Promise(done => server.close(done)); }

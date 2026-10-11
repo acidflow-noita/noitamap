@@ -28,7 +28,22 @@ export function compareRuns(runs, config) {
         if (!row.comparable) continue;
         const before = medians[baseline], after = medians.candidate;
         if (before === null || after === null) continue;
-        const deltaMs = after - before, relative = before > 0 ? deltaMs / before : 0;
+        let deltaMs = after - before, relative = before > 0 ? deltaMs / before : 0;
+        if (config.pairedTrials) {
+          const paired = rowRuns.filter(r => r.variant === 'candidate').map(run => {
+            const match = rowRuns.find(r => r.variant === baseline && r.trial === run.trial);
+            const a = run.phases.find(p => p.label === phase)?.durationMs;
+            const b = match?.phases.find(p => p.label === phase)?.durationMs;
+            return { delta: a - b, relative: b > 0 ? (a - b) / b : 0, matched: !!match };
+          });
+          if (paired.some(p => !p.matched)) {
+            row.comparable = false;
+            problems.push(`Missing paired trial: ${scenario}/${phase} vs ${baseline}`);
+            continue;
+          }
+          deltaMs = median(paired.map(p => p.delta));
+          relative = median(paired.map(p => p.relative));
+        }
         const threshold = phase === 'navigation-frame-gap' ? config.navigationWarning ?? config.warning : config.warning;
         if (deltaMs > threshold.absoluteMs && relative > threshold.relative)
           row.regressions.push({ baseline, deltaMs, relative });
@@ -37,7 +52,8 @@ export function compareRuns(runs, config) {
     }
   }
   // An unavailable baked case must not hide a valid dynamic-case slowdown.
-  return { comparable: problems.length === 0, problems, rows, timingRegressions: rows.filter(r => r.regressions.length) };
+  return { comparable: problems.length === 0, pairedTrials: !!config.pairedTrials,
+    problems, rows, timingRegressions: rows.filter(r => r.comparable && r.regressions.length) };
 }
 export function markdownSummary(result, runs) {
   const variants = [...new Set(runs.map(r => r.variant))];
@@ -47,6 +63,7 @@ export function markdownSummary(result, runs) {
     '| Case | ' + variants.join(' | ') + ' |', '|---|' + variants.map(() => '---:').join('|') + '|'];
   for (const r of result.rows) lines.push(`| ${r.scenario}: ${r.phase} | ${variants.map(v => r.medians[v] === null ? 'missing' : `${Math.round(r.medians[v])} ms`).join(' | ')} |`);
   lines.push('', 'Times are medians. Navigation frame gaps are responsiveness metrics, not exact input-to-pixel latency.');
+  if (result.pairedTrials) lines.push('Warnings use the median change within matched runner trials, not differences between unrelated machines.');
   for (const problem of result.problems) lines.push(`\n**INVALID:** ${problem}`);
   for (const row of result.timingRegressions) for (const r of row.regressions)
     lines.push(`\n**Timing warning:** ${row.scenario}/${row.phase} vs ${r.baseline}: +${Math.round(r.deltaMs)} ms (${(r.relative * 100).toFixed(1)}%).`);
