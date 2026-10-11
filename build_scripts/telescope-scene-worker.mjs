@@ -18,5 +18,6 @@ try {
 } finally {
   env.close();
 }
-parentPort.postMessage(result, result.bytes ? [result.bytes.buffer] : []);
+parentPort.postMessage(result, result.bytes
+  ? [result.bytes.buffer, ...(result.pixelPack ? [result.pixelPack.buffer] : [])] : []);
 parentPort.close();

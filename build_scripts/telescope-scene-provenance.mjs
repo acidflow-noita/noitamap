@@ -15,6 +15,7 @@ export async function sceneInputFingerprint(root, watchFile = (_file) => {}) {
     "build_scripts/telescope-scene-fixture.ts",
     "build_scripts/vite-telescope-browser.ts",
     "src/telescope/scene-pack.ts",
+    "src/telescope/scene-pixel-runs.ts",
     "src/telescope/worker-scenes.ts",
     "src/telescope/telescope-asset-paths.ts",
     "src/telescope/telescope-assets.ts",

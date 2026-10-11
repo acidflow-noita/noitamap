@@ -45,7 +45,7 @@ export function telescopeScenesPlugin(root: string): Plugin {
           "Prepared Telescope scene assets are stale. Run npm run prepare-telescope-scenes.",
         );
       const urls: string[] = [];
-      for (const key of ["full", "approx"]) {
+      for (const key of ["full", "approx", "pixels"]) {
         const pack = manifest.packs[key];
         if (!pack || pack.file !== `${key}.bin.gz`)
           throw new Error("Invalid prepared scene asset manifest");

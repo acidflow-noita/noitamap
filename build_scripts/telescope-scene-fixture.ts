@@ -7,6 +7,7 @@ import { getDataZip } from "../src/data-archive";
 import { loadTelescopeModules } from "../src/telescope/load-telescope";
 import { snapshotWorkerScenes } from "../src/telescope/worker-scenes";
 import { encodeScenePack, decodeScenePack } from "../src/telescope/scene-pack";
+import { encodeScenePixelRuns, decodeScenePixelRuns } from '../src/telescope/scene-pixel-runs';
 
 export async function bakeScenePack(fullPixels: boolean, provenance: string) {
   installTelescopeShim({
@@ -67,13 +68,33 @@ export async function bakeScenePack(fullPixels: boolean, provenance: string) {
       throw new Error(`Prepared scene value differs: ${path}`);
   }
   compare(snapshot, decoded, "scenes");
+  const snapshotSourceBytes = sourceBytes;
+  const snapshotRestoredBytes = [...buffers].reduce((sum, buffer) => sum + buffer.byteLength, 0);
+  let pixelPack: Uint8Array | undefined;
+  let pixelBytes = 0;
+  if (fullPixels) {
+    const data: Record<string, any> = {}, spawns: Record<string, any[]> = {};
+    for (const [key, scene] of Object.entries(modules.pixelSceneMod.PIXEL_SCENE_DATA) as [string, any][]) {
+      await modules.pixelSceneMod.ensureScenePixels(scene, { art: false });
+      const record = encodeScenePixelRuns(scene.imgElement, scene.width, scene.height);
+      const restored = decodeScenePixelRuns(record);
+      if (restored.constructor !== scene.imgElement.constructor
+        || restored.some((value, i) => value !== scene.imgElement[i]))
+        throw new Error(`Prepared scene material pixels differ: ${key}`);
+      data[key] = record; spawns[key] = [];
+      pixelBytes += restored.byteLength;
+    }
+    const source = { version: 1 as const, fullPixels: true, data, spawns };
+    pixelPack = encodeScenePack(source, provenance);
+    const roundtrip = decodeScenePack(pixelPack.buffer as ArrayBuffer, provenance);
+    compare(source, roundtrip, 'pixel-runs');
+  }
   return {
     bytes,
     scenes: Object.keys(snapshot.data).length,
-    sourceBytes,
-    restoredBytes: [...buffers].reduce(
-      (sum, buffer) => sum + buffer.byteLength,
-      0,
-    ),
+    sourceBytes: snapshotSourceBytes,
+    restoredBytes: snapshotRestoredBytes,
+    pixelPack,
+    pixelBytes,
   };
 }

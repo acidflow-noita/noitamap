@@ -9,6 +9,7 @@ vi.mock('../src/telescope/load-telescope', () => ({ loadTelescopeModules: vi.fn(
 vi.mock('../src/telescope/telescope-dom-shim', () => ({ installTelescopeShim: vi.fn() }));
 vi.mock('../src/telescope/telescope-data-bridge', () => ({ installFetchInterceptor: vi.fn(), installImageSrcInterceptor: vi.fn() }));
 vi.mock('../src/telescope/telescope-cache-version', () => ({ ensureTelescopeCacheVersion: vi.fn() }));
+vi.mock('../src/telescope/prepared-scene-pixels', () => ({ restorePreparedScenePixels: vi.fn() }));
 vi.mock('../src/telescope/pw-worker?worker', () => ({ default: class {
   onmessage: any = null;
   onerror: any = null;

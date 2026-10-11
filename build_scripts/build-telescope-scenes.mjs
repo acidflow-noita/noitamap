@@ -15,14 +15,14 @@ try {
   const old = JSON.parse(
     await readFile(resolve(target, "manifest.json"), "utf8"),
   );
-  if (old.provenance === provenance && old.version === 1) {
+  if (old.provenance === provenance && old.version === 1 && old.packs.pixels) {
     for (const pack of Object.values(old.packs)) {
       const bytes = await readFile(resolve(target, pack.file));
       if (createHash("sha256").update(bytes).digest("hex") !== pack.sha256)
         throw new Error("Damaged prepared scenes");
     }
     console.log(
-      "[scene assets] Source fingerprint unchanged; reusing both prepared scene packs.",
+      "[scene assets] Source fingerprint unchanged; reusing prepared scene assets.",
     );
     process.exit(0);
   }
@@ -100,6 +100,17 @@ try {
         restoredBytes: result.restoredBytes,
         sha256: createHash("sha256").update(compressed).digest("hex"),
       };
+      if (result.pixelPack) {
+        const compressedPixels = gzipSync(result.pixelPack, { level: 9 });
+        await writeFile(resolve(target, 'pixels.bin.gz'), compressedPixels);
+        manifest.packs.pixels = {
+          file: 'pixels.bin.gz', scenes: result.scenes,
+          packedBytes: result.pixelPack.length, compressedBytes: compressedPixels.length,
+          decodedPixelBytes: result.pixelBytes,
+          sha256: createHash('sha256').update(compressedPixels).digest('hex'),
+        };
+        console.log(`[scene assets] pixels: ${result.scenes} scenes; ${compressedPixels.length} compressed bytes; ${result.pixelBytes} decoded bytes verified, expanded only on demand`);
+      }
       console.log(
         `[scene assets] ${key}: ${result.scenes} scenes; ${result.bytes.length} packed bytes, ${compressed.length} compressed bytes, ${result.restoredBytes} retained bytes; every scene byte/metadata field verified`,
       );

@@ -67,7 +67,9 @@ it("prepares missing scene assets and the CI seed through the actual native bake
     expect(code, logs).toBe(0);
     const manifest = JSON.parse(await readFile(resolve(scenes, "manifest.json"), "utf8"));
     expect(manifest.version).toBe(1);
-    expect(Object.keys(manifest.packs).sort()).toEqual(["approx", "full"]);
+    expect(Object.keys(manifest.packs).sort()).toEqual(["approx", "full", "pixels"]);
+    expect(manifest.packs.pixels.scenes).toBe(manifest.packs.full.scenes);
+    expect(manifest.packs.pixels.decodedPixelBytes).toBeGreaterThan(manifest.packs.pixels.packedBytes);
     const sceneFiles = ["manifest.json"];
     for (const pack of Object.values(manifest.packs) as any[]) {
       expect(pack.scenes).toBeGreaterThan(0);

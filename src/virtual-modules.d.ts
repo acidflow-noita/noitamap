@@ -11,7 +11,7 @@ declare module "noita-telescope-full-pixels/*";
 
 declare module "virtual:noitamap-scene-assets" {
   export const provenance: string;
-  export const packs: Record<"full" | "approx", { url: string; scenes: number; bytes: number }>;
+  export const packs: Record<"full" | "approx" | "pixels", { url: string; scenes: number; bytes: number }>;
 }
 declare module "virtual:noitamap-telescope-asset-identity" {
   export const provenance: string;

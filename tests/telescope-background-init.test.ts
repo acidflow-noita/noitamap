@@ -26,6 +26,7 @@ vi.mock("../src/telescope/prepared-scenes", () => ({
   prepareSceneInputs: vi.fn(async () => {}),
   installPreparedScenes: vi.fn(async () => {}),
 }));
+vi.mock("../src/telescope/prepared-scene-pixels", () => ({ restorePreparedScenePixels: vi.fn() }));
 vi.mock("../src/telescope/pw-worker?worker", () => ({ default: class {} }));
 import { loadTelescopeModules } from "../src/telescope/load-telescope";
 import { initTelescope } from "../src/telescope/telescope-adapter";

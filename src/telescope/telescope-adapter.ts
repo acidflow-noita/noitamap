@@ -2,6 +2,7 @@ import { completeGenerationBossPOIs } from "./boss-pois";
 import { normalizeScenePOIs } from "./scene-pois";
 import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-elevator";
 import { loadTelescopeModules } from "./load-telescope";
+import { restorePreparedScenePixels } from './prepared-scene-pixels';
 import { useRenderPerfGeneration } from "../renderer_settings";
 /**
  * telescope-adapter.ts
@@ -59,6 +60,9 @@ export async function ensurePixelSceneData(
   options: { art?: boolean } = {},
 ): Promise<any | null> {
   const data = getPixelSceneData(key);
+  if (data && ensureScenePixels && useRenderPerfGeneration() && !ArrayBuffer.isView(data.imgElement)) {
+    restorePreparedScenePixels(key, data);
+  }
   if (data && ensureScenePixels) await ensureScenePixels(data, options);
   return data;
 }

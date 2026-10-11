@@ -6,6 +6,7 @@ import { mountPOICardPlacement, type CardAnchor } from './poi-card-placement';
 import { POICardLifecycle, type POICardOwner, type POICardRequest } from './poi-card-lifecycle';
 import Flatbush from "flatbush";
 import { CONTAINER_TYPES } from "./poi-containers";
+import { prepareScenePixelInputs } from './prepared-scene-pixels';
 import { EGG_SPAWNS } from './egg-spawns';
 import { getPOISpawnDetails } from './poi-spawn-details';
 import { prepareAssetJobs } from './background-idle';
@@ -428,6 +429,7 @@ export async function prepareInstantTerrainResources(
 export function prewarmMapPresentation(): Promise<PromiseSettledResult<unknown>[]> {
   return Promise.allSettled([loadSpritesheetAndAtlas(), getScenePngIndex(),
     prepareBiomeBackgroundLayer().then(layer => { _bgLayer = layer; }),
+    ...(useRenderPerfGeneration() ? [prepareScenePixelInputs()] : []),
     ...(isInstantTerrainEnabled() ? [loadInstantTerrain()] : [])]);
 }
 
