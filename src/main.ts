@@ -9,6 +9,7 @@ import { getPOIDisplayName } from "./telescope/poi-display-name";
 import { getPOIBiomeDescription } from "./data_sources/biome-names";
 import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 import { getCachedGeneration } from "./telescope/tile-cache";
+import { telescopeSearchUrl } from './search/telescope-link';
 import i18next, { initializeTranslations, STARTUP_MESSAGES, SUPPORTED_LANGUAGES } from "./i18n";
 import { showStartupFailure, startWhenReady } from './startup';
 import { setupDropOverlay } from "./drop-overlay";
@@ -499,6 +500,8 @@ startWhenReady(async () => {
     currentMap: app.getMap(),
     form: searchForm,
     initialFilters: urlState.filters,
+    getTelescopeSearchUrl: query => poiContextReady
+      ? telescopeSearchUrl(query, getCurrentDynamicSeed()) : undefined,
   });
 
   // Store global reference for translation updates

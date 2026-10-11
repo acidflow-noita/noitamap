@@ -14,6 +14,7 @@
     "popoverContent": "Sök efter trollformler, föremål, trollstavar, bossar, varelser, drycker, strukturer och mer. Använd filterknapparna nedan för att begränsa resultaten efter kategori.",
     "chunksAway": "~{{count}} chunks bort",
     "openTelescope": "Öppna i Telescope",
+    "searchTelescope": "Sök i Telescope",
     "noResults": "Inget hittades",
     "shortcutHint": "Fokusera sökfältet: /, Ctrl+/ eller ⌘+/"
   },

@@ -465,6 +465,7 @@
     "popoverContent": "Search for spells, items, wands, bosses, creatures, potions, structures, and more. Use the filter buttons below to narrow results by category.",
     "chunksAway": "~{{count}} chunks away",
     "openTelescope": "Open in Telescope",
+    "searchTelescope": "Search in Telescope",
     "noResults": "Nothing found",
     "shortcutHint": "Focus search: /, Ctrl+/ or ⌘+/"
   },

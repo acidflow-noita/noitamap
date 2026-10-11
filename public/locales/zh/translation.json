@@ -14,6 +14,7 @@
     "popoverContent": "搜索咒语、物品、魔杖、Boss、生物、药剂、结构等等。使用下面的过滤按钮按类别缩小结果范围。",
     "chunksAway": "~{{count}} 个区块之外",
     "openTelescope": "在 Telescope 中打开",
+    "searchTelescope": "在 Telescope 中搜索",
     "noResults": "未找到结果",
     "shortcutHint": "聚焦搜索：/、Ctrl+/ 或 ⌘+/"
   },

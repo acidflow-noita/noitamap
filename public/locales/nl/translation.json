@@ -14,6 +14,7 @@
     "popoverContent": "Zoek naar spreuken, items, toverstokken, bazen, wezens, drankjes, structuren en meer. Gebruik de onderstaande filterknoppen om de resultaten per categorie te verfijnen.",
     "chunksAway": "~{{count}} chunks verwijderd",
     "openTelescope": "Openen in Telescope",
+    "searchTelescope": "Zoeken in Telescope",
     "noResults": "Niets gevonden",
     "shortcutHint": "Zoeken activeren: /, Ctrl+/ of ⌘+/"
   },

@@ -14,6 +14,7 @@
     "popoverContent": "Etsi loitsuja, esineitä, sauvoja, pomoja, olentoja, juomia, rakenteita ja muuta. Käytä alla olevia suodatinpainikkeita rajataksesi tuloksia luokittain.",
     "chunksAway": "~{{count}} chunkkia kaukana",
     "openTelescope": "Avaa Telescopessa",
+    "searchTelescope": "Hae Telescopessa",
     "noResults": "Ei tuloksia",
     "shortcutHint": "Siirry hakuun: /, Ctrl+/ tai ⌘+/"
   },

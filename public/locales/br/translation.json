@@ -14,6 +14,7 @@
     "popoverContent": "Procure feitiços, itens, varinhas, chefes, criaturas, poções, estruturas e muito mais. Use os botões de filtro abaixo para restringir os resultados por categoria.",
     "chunksAway": "~{{count}} chunks de distancia",
     "openTelescope": "Abrir no Telescope",
+    "searchTelescope": "Pesquisar no Telescope",
     "noResults": "Nada encontrado",
     "shortcutHint": "Focar a busca: /, Ctrl+/ ou ⌘+/"
   },

@@ -557,6 +557,7 @@ export type UnifiedSearchCreateOptions = {
   currentMap: MapName;
   form: HTMLFormElement;
   initialFilters?: string[];
+  getTelescopeSearchUrl?: (query: string) => string | undefined;
 };
 
 type UnifiedSearchConstructOptions = {
@@ -565,6 +566,7 @@ type UnifiedSearchConstructOptions = {
   searchInput: HTMLInputElement;
   searchResults: UnifiedSearchResults;
   initialFilters?: string[];
+  getTelescopeSearchUrl?: (query: string) => string | undefined;
 };
 
 export interface UnifiedSearch {
@@ -591,6 +593,7 @@ export class UnifiedSearch extends EventEmitter2 {
   public searchInput: HTMLInputElement;
   public activeFilters: Set<string> = new Set();
   private searchResults: UnifiedSearchResults;
+  private getTelescopeSearchUrl?: (query: string) => string | undefined;
   private dynamicPOIs: DynamicPOI[] = [];
   private dynamicIndex: any = null; // FlexSearch.Document index for dynamic POIs
   private dynamicPOIMap: Map<string, DynamicPOI> = new Map(); // fast id→POI lookup
@@ -671,13 +674,14 @@ export class UnifiedSearch extends EventEmitter2 {
     }
   }
 
-  private constructor({ currentMap, form, searchInput, searchResults, initialFilters }: UnifiedSearchConstructOptions) {
+  private constructor({ currentMap, form, searchInput, searchResults, initialFilters, getTelescopeSearchUrl }: UnifiedSearchConstructOptions) {
     super();
 
     this._currentMap = currentMap;
     this.form = form;
     this.searchInput = searchInput;
     this.searchResults = searchResults;
+    this.getTelescopeSearchUrl = getTelescopeSearchUrl;
     if (initialFilters) {
       initialFilters.forEach((f) => this.activeFilters.add(f));
     }
@@ -1680,11 +1684,16 @@ export class UnifiedSearch extends EventEmitter2 {
       const combinedResults: any[] = [...dynamicResults];
 
       if (combinedResults.length === 0) {
-        // A pillar transformation/item search that found nothing on this seed's
-        // rendered map: the perk/item may still exist off-screen or in a
-        // parallel world the map didn't draw, so point the user at Telescope
-        // (seed baked into the URL, mirroring the toolbar Telescope button).
-        this.searchResults.setNoResults(pillarNote);
+        // Offer the handoff only after this seed's index is ready. Check again
+        // on activation so a replaced map/query cannot leave a stale link.
+        const getUrl = () => this.indexingState === 'ready'
+          && this.currentMap === 'dynamic-main-branch' && this.searchInput.value === searchText
+          ? this.getTelescopeSearchUrl?.(searchText) : undefined;
+        const url = searchText.trim() ? getUrl() : undefined;
+        this.searchResults.setNoResults(url ? {
+          text: pillarNote?.text ?? '', telescopeUrl: url, getUrl,
+          linkText: i18next.t('search.searchTelescope', 'Search in Telescope'),
+        } : pillarNote);
       } else {
         // Structure searches (Buried Eye / Meditation Cube) attach an info
         // banner to their exact query while it stays in the bar.
@@ -1747,7 +1756,7 @@ export class UnifiedSearch extends EventEmitter2 {
     }
   }
 
-  static create({ currentMap, form, initialFilters }: UnifiedSearchCreateOptions) {
+  static create({ currentMap, form, initialFilters, getTelescopeSearchUrl }: UnifiedSearchCreateOptions) {
     // Use the existing search input from HTML instead of creating a new one
     const searchInput = document.getElementById("unified-search-input") as HTMLInputElement;
     if (!searchInput) {
@@ -1946,10 +1955,17 @@ export class UnifiedSearch extends EventEmitter2 {
 
     let isOverlayVisible = false;
 
+    // The search help popover overlaps the results and their final action.
+    // Once search is open, the results panel takes priority over hover help.
+    searchInput.addEventListener('show.bs.popover', (event) => {
+      if (isOverlayVisible) event.preventDefault();
+    });
     searchInput.addEventListener("focus", () => {
       positionOverlay();
       overlayDiv.style.display = "block";
       isOverlayVisible = true;
+      // @ts-ignore — Bootstrap is loaded by the page.
+      bootstrap.Popover.getInstance(searchInput)?.hide();
       searchResults.resetScroll();
     });
 
@@ -2061,6 +2077,7 @@ export class UnifiedSearch extends EventEmitter2 {
       searchInput,
       searchResults,
       initialFilters,
+      getTelescopeSearchUrl,
     });
 
     const shortcutLabel = () => String(i18next.t('search.shortcutHint', 'Focus search: /, Ctrl+/ or ⌘+/'));

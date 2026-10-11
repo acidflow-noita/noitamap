@@ -14,6 +14,7 @@
     "popoverContent": "Szukaj zaklęć, przedmiotów, różdżek, bossów, stworzeń, mikstur, struktur i nie tylko. Użyj poniższych przycisków filtrowania, aby zawęzić wyniki według kategorii.",
     "chunksAway": "~{{count}} chunkow dalej",
     "openTelescope": "Otwórz w Telescope",
+    "searchTelescope": "Szukaj w Telescope",
     "noResults": "Nic nie znaleziono",
     "shortcutHint": "Przejdź do wyszukiwania: /, Ctrl+/ lub ⌘+/"
   },

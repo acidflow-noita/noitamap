@@ -246,12 +246,10 @@ export class UnifiedSearchResults extends EventEmitter2 {
   }
 
   /**
-   * Show a "no results" placeholder when search yields nothing. When `note` is
-   * given (pillar search links that found nothing on this seed's visible map),
-   * append an explanatory line plus a seeded Telescope link — the target might
-   * still exist off-screen / in a parallel world the map didn't render.
+   * Show a "no results" placeholder, followed by the optional Telescope link.
+   * Pillar searches may also supply an explanation alongside the link.
    */
-  setNoResults(note?: { text: string; telescopeUrl: string }): void {
+  setNoResults(note?: { text: string; telescopeUrl: string; linkText?: string; getUrl?: () => string | undefined }): void {
     this.clearResults(false);
     const li = document.createElement("li");
     li.className = "search-no-results";
@@ -262,13 +260,21 @@ export class UnifiedSearchResults extends EventEmitter2 {
       const noteLi = document.createElement("li");
       noteLi.className = "search-no-results-note";
       noteLi.style.cssText = "padding:0.4em 0.75em;color:#aaa;font-size:0.85em;line-height:1.4";
-      noteLi.appendChild(document.createTextNode(note.text + " "));
+      if (note.text) noteLi.appendChild(document.createTextNode(note.text + " "));
       const a = document.createElement("a");
       a.href = note.telescopeUrl;
       a.target = "_blank";
       a.rel = "noopener noreferrer";
       a.style.cssText = "color:#7ab8ff;text-decoration:underline";
-      a.textContent = i18next.t("search.openTelescope", "Open in Telescope");
+      a.textContent = note.linkText ?? i18next.t("search.openTelescope", "Open in Telescope");
+      if (note.getUrl) {
+        const refresh = (event: Event) => {
+          const url = note.getUrl!();
+          if (url) a.href = url;
+          else { a.removeAttribute('href'); event.preventDefault(); }
+        };
+        for (const event of ['pointerdown', 'focus', 'contextmenu', 'click']) a.addEventListener(event, refresh);
+      }
       noteLi.appendChild(a);
       this.wrapper.appendChild(noteLi);
     }

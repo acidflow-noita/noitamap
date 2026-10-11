@@ -14,6 +14,7 @@
     "popoverContent": "呪文、アイテム、杖、ボス、クリーチャー、ポーション、建造物などを検索します。下のフィルタ ボタンを使用して、結果をカテゴリ別に絞り込みます。",
     "chunksAway": "~{{count}} チャンク先",
     "openTelescope": "Telescopeで開く",
+    "searchTelescope": "Telescope で検索",
     "noResults": "見つかりませんでした",
     "shortcutHint": "検索にフォーカス：/、Ctrl+/ または ⌘+/"
   },

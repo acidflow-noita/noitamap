@@ -14,6 +14,7 @@
     "popoverContent": "Suchen Sie nach Zaubersprüchen, Gegenständen, Zauberstäben, Bossen, Kreaturen, Tränken, Strukturen und mehr. Verwenden Sie die Filterschaltflächen unten, um die Ergebnisse nach Kategorie einzugrenzen.",
     "chunksAway": "~{{count}} Chunks entfernt",
     "openTelescope": "In Telescope öffnen",
+    "searchTelescope": "In Telescope suchen",
     "noResults": "Nichts gefunden",
     "shortcutHint": "Suche fokussieren: /, Strg+/ oder ⌘+/"
   },

@@ -14,6 +14,7 @@
     "popoverContent": "Busque hechizos, objetos, varitas, jefes, criaturas, pociones, estructuras y más. Utilice los botones de filtro a continuación para limitar los resultados por categoría.",
     "chunksAway": "~{{count}} chunks de distancia",
     "openTelescope": "Abrir en Telescope",
+    "searchTelescope": "Buscar en Telescope",
     "noResults": "No se encontró nada",
     "shortcutHint": "Enfocar la búsqueda: /, Ctrl+/ o ⌘+/"
   },
