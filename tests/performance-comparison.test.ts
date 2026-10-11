@@ -35,4 +35,13 @@ describe('paired performance regression reporting', () => {
     expect(invalid.comparable).toBe(false);
     expect(invalid.timingRegressions).toEqual([]);
   });
+  it('still warns about a complete dynamic comparison when a separate baked scenario failed', () => {
+    const runs = [...samples('previous', [6000, 6100, 6200]), ...samples('candidate', [14000, 24000, 6500]),
+      ...samples('previous', [1000, 1000, 1000]).map(r => ({ ...r, scenario: 'baked' })),
+      ...samples('candidate', [1000, 1000, 1000]).map((r, i) => ({ ...r, scenario: 'baked', valid: i !== 2 }))];
+    const report = compareRuns(runs, config);
+    expect(report.comparable).toBe(false);
+    expect(report.timingRegressions.map((row: any) => row.scenario)).toEqual(['direct']);
+    expect(report.timingRegressions[0].regressions[0].deltaMs).toBe(7900);
+  });
 });

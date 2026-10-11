@@ -4,6 +4,8 @@ import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir, stat } from 'node:fs/promises';
 import { resolve, join, extname } from 'node:path';
 import { compareRuns, markdownSummary } from './compare.mjs';
+import { inspectDaily, publicResponseHeaders, dailyPreflightSummary, performanceExitCode } from './daily-preflight.mjs';
+import { captureDailyFixture, fixturePath, installDailyTransport } from './daily-fixture.mjs';
 
 const options = Object.fromEntries(process.argv.slice(2).map(arg => { const [key, ...value] = arg.replace(/^--/, '').split('='); return [key, value.join('=')]; }));
 const config = JSON.parse(await readFile(new URL('./config.json', import.meta.url), 'utf8'));
@@ -18,11 +20,17 @@ config.handoffs = options.handoffs !== 'false';
 if (!Number.isInteger(config.repeats) || config.repeats < 1 || config.repeats > 9) throw Error('repeats must be 1..9');
 await mkdir(out, { recursive: true });
 let root;
+let dailyReplay;
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.wasm': 'application/wasm', '.csv': 'text/csv', '.dzi': 'application/xml' };
 const server = createServer(async (req, res) => {
   try {
     const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     if (pathname === '/__performance_probe') { res.setHeader('Content-Type', 'text/html'); res.end('<!doctype html><title>Public asset check</title>'); return; }
+    if (pathname.startsWith(fixturePath)) {
+      const value = dailyReplay?.response('https://' + pathname.slice(fixturePath.length));
+      if (!value) throw Error('Daily fixture is not ready');
+      res.writeHead(value.status, value.headers); res.end(value.body); return;
+    }
     const path = resolve(root, '.' + pathname);
     if (path !== root && !path.startsWith(root + '/')) throw Error('Invalid path');
     const file = (await stat(path)).isDirectory() ? join(path, 'index.html') : path;
@@ -35,7 +43,10 @@ await new Promise(done => server.listen(0, '127.0.0.1', done));
 const origin = `http://127.0.0.1:${server.address().port}`;
 const browserType = kind === 'chromium' ? chromium : firefox;
 const launch = () => browserType.launch({
-  headless: kind === 'chromium' || options.headless === 'true',
+  // CI already supplies Xvfb. Use full Chromium, matching local validation,
+  // rather than Playwright's separate default headless-shell executable.
+  headless: options.headless === 'true',
+  ...(kind === 'chromium' ? { channel: 'chromium' } : {}),
   ...(process.env.PERF_BROWSER_EXECUTABLE ? { executablePath: process.env.PERF_BROWSER_EXECUTABLE } : {}),
   ...(process.env.PERF_BROWSER_CHANNEL ? { channel: process.env.PERF_BROWSER_CHANNEL } : {}),
   ...(kind === 'chromium' ? { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--host-resolver-rules=MAP www.googletagmanager.com ~NOTFOUND,MAP static.cloudflareinsights.com ~NOTFOUND'] } : {}),
@@ -43,29 +54,50 @@ const launch = () => browserType.launch({
 const analytics = url => /https:\/\/(?:www\.googletagmanager\.com|static\.cloudflareinsights\.com)\//.test(url);
 const runs = [];
 let daily;
+let dailyPreflight = { status: 'disabled' };
 try {
   // Freeze one actual baked identity for both versions. An unpublished/mixed
   // Daily is a failed precondition, never a "baked" run which generated live.
   if (options.baked !== 'false') {
-    const browser = await launch();
+    let browser;
     try {
+      browser = await launch();
       const page = await browser.newPage(); await page.goto(origin + '/__performance_probe');
-      daily = await page.evaluate(async () => {
-        const get = async url => { const r = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(15000) }); if (!r.ok) throw Error(`${r.status}: ${url}`); return r; };
-        const seed = Number((await (await get('https://daily-seed.acidflow.stream/current_seed.txt')).text()).trim());
-        const manifests = await Promise.all(['left', 'middle', 'right'].map(async world => (await get(`https://daily-${world}.acidflow.stream/manifest.json`)).json()));
-        if (!Number.isInteger(seed) || !manifests.every(m => m.seed === seed && m.baked === true && m.complete === true)) throw Error('Daily pointer and complete baked manifests do not match');
-        const descriptors = await Promise.all(['left', 'middle', 'right'].map(async world => {
-          const url = `https://daily-${world}.acidflow.stream/map.dzi`, response = await get(url);
-          const json = await response.json(), image = json?.Image;
-          if (![image?.Size?.Width, image?.Size?.Height, image?.TileSize].every(n => Number.isInteger(Number(n)) && Number(n) > 0)
-            || !['webp', 'png', 'jpg', 'jpeg'].includes(image?.Format)) throw Error(`Invalid JSON DZI: ${url}`);
-          return { url, contentType: response.headers.get('content-type'), json };
-        }));
-        return { seed, manifests, descriptors };
+      const network = new Map(), captures = [];
+      page.on('response', response => {
+        const capture = (async () => {
+          const details = { status: response.status(), headers: publicResponseHeaders(await response.allHeaders()) };
+          if (response.status() >= 400) details.bodyExcerpt = (await response.text()).slice(0, 1024);
+          network.set(response.url(), details);
+        })();
+        captures.push(capture.catch(() => {}));
       });
-      await writeFile(join(out, 'daily.json'), JSON.stringify(daily, null, 2));
-    } finally { await browser.close(); }
+      dailyPreflight = await inspectDaily(url => page.evaluate(async url => {
+        const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(15000) });
+        return { status: response.status, headers: Object.fromEntries(response.headers), body: await response.text() };
+      }, url));
+      await Promise.all(captures);
+      // DevTools can see diagnostic headers which CORS hides from fetch().
+      for (const request of dailyPreflight.requests) {
+        const captured = network.get(request.url);
+        if (captured) Object.assign(request, captured, { headers: { ...request.headers, ...captured.headers } });
+      }
+      if (dailyPreflight.status === 'ready') {
+        root = resolve(variants.find(variant => variant.label === 'candidate').root);
+        dailyReplay = await captureDailyFixture(browser, origin, dailyPreflight.daily, config);
+        daily = dailyPreflight.daily;
+        await writeFile(join(out, 'daily.json'), JSON.stringify(daily, null, 2));
+        await writeFile(join(out, 'daily-fixture.json'), JSON.stringify(dailyReplay.manifest(), null, 2));
+      }
+    } catch (error) {
+      dailyPreflight = { ...dailyPreflight, status: 'failed', failure: String(error), requests: dailyPreflight.requests ?? [] };
+    } finally { await browser?.close(); }
+    await writeFile(join(out, 'daily-preflight.json'), JSON.stringify(dailyPreflight, null, 2));
+    if (dailyPreflight.status === 'failed') {
+      const message = dailyPreflightSummary(dailyPreflight);
+      console.error(message);
+      if (process.env.GITHUB_STEP_SUMMARY) await writeFile(process.env.GITHUB_STEP_SUMMARY, message, { flag: 'a' });
+    }
   }
   for (let trial = 0; trial < config.repeats; trial++) {
     // Rotate starting versions: every version sees the first-run position.
@@ -77,7 +109,8 @@ try {
       const browser = await launch();
       const watchdog = setTimeout(() => { result.failure = 'Trial exceeded five minutes'; void browser.close(); }, 300000);
       result.browser = `${kind} ${browser.version()}`;
-      const context = await browser.newContext({ viewport: config.viewport, deviceScaleFactor: 1 });
+      const context = await browser.newContext({ viewport: config.viewport, deviceScaleFactor: 1, serviceWorkers: 'block' });
+      if (dailyReplay) await context.addInitScript(installDailyTransport, { origin, path: fixturePath });
       context.setDefaultTimeout(15000);
       context.setDefaultNavigationTimeout(45000);
       await context.addInitScript(() => {
@@ -97,12 +130,13 @@ try {
       });
       const watch = page => {
         page.on('pageerror', error => {
-          const text = String(error), location = text.match(/^XML Parsing Error: not well-formed\nLocation: (https:\/\/[^\n]+\/map\.dzi)\n/);
+          const text = String(error), location = text.match(/^XML Parsing Error: not well-formed\nLocation: (https?:\/\/[^\n]+\/map\.dzi)\n/);
           // Firefox BiDi reports its automatic XHR XML probe of these valid
           // JSON DZIs as a pageerror. Preserve the diagnostic separately;
           // only preflight-validated URLs qualify. Broken bakes/assets and
           // actual JavaScript errors still fail the run.
-          if (location && daily?.descriptors.some(d => d.url === location[1])) result.browserDiagnostics.push(text);
+          if (location && daily?.descriptors.some(d => d.url === location[1]
+            || origin + fixturePath + new URL(d.url).host + new URL(d.url).pathname === location[1])) result.browserDiagnostics.push(text);
           else result.errors.push(text);
         });
         page.on('console', message => { if (/DynamicMap|Instant terrain|TileCache/.test(message.text())) result.logs.push(message.text()); });
@@ -147,7 +181,16 @@ try {
         if (baked) {
           if (!state.baked || state.terrain.length || state.bakedSources.length !== 3) throw Error('Expected three baked worlds and no live terrain');
         } else if (state.baked || state.terrain[0]?.backend !== expectedBackend) throw Error('Unexpected renderer/fallback');
-        result.phases.push({ label, ...state });
+        // Distinguish slow boot/network work from generation/presentation.
+        const startup = await page.evaluate(() => ({
+          navigation: performance.getEntriesByType('navigation').map(entry => ({
+            responseEnd: entry.responseEnd, domContentLoadedEventEnd: entry.domContentLoadedEventEnd,
+            loadEventEnd: entry.loadEventEnd })),
+          slowResources: performance.getEntriesByType('resource').filter(entry => entry.duration >= 100)
+            .sort((a, b) => b.duration - a.duration).slice(0, 15)
+            .map(entry => ({ url: entry.name, start: entry.startTime, duration: entry.duration, responseEnd: entry.responseEnd })),
+        }));
+        result.phases.push({ label, ...state, startup });
         await writeFile(file, JSON.stringify(result, null, 2));
         console.log(JSON.stringify({ browser: kind, variant: variant.label, scenario, trial: trial + 1, phase: label, ms: Math.round(state.durationMs) }));
         return state;
@@ -274,11 +317,11 @@ try {
     }
   }
   const comparison = compareRuns(runs, config);
-  await writeFile(join(out, 'results.json'), JSON.stringify({ config, variants, daily, comparison, runs }, null, 2));
-  const summary = markdownSummary(comparison, runs);
+  await writeFile(join(out, 'results.json'), JSON.stringify({ config, variants, daily, dailyPreflight, comparison, runs }, null, 2));
+  const summary = dailyPreflightSummary(dailyPreflight) + markdownSummary(comparison, runs);
   console.log(summary);
   if (process.env.GITHUB_STEP_SUMMARY) await writeFile(process.env.GITHUB_STEP_SUMMARY, summary, { flag: 'a' });
   for (const row of comparison.timingRegressions) for (const r of row.regressions)
     console.log(`::warning title=Map performance::${row.scenario}/${row.phase} vs ${r.baseline}: +${Math.round(r.deltaMs)}ms, ${(r.relative * 100).toFixed(1)}%`);
-  if (!comparison.comparable || (config.enforceTiming && comparison.timingRegressions.length)) process.exitCode = 1;
+  process.exitCode = performanceExitCode(comparison, config, dailyPreflight);
 } finally { await new Promise(done => server.close(done)); }
