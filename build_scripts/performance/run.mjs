@@ -109,7 +109,6 @@ try {
     if (dailyPreflight.status === 'failed') {
       const message = dailyPreflightSummary(dailyPreflight);
       console.error(message);
-      if (process.env.GITHUB_STEP_SUMMARY) await writeFile(process.env.GITHUB_STEP_SUMMARY, message, { flag: 'a' });
     }
   }
   for (const trial of trials) {
@@ -342,10 +341,12 @@ try {
   await writeFile(join(out, 'results.json'), JSON.stringify({ browser: kind, trial: selectedTrial, config, variants, daily,
     dailyPreflight, comparison, runs, graphicsMode, elapsedMs: Date.now() - startedAt,
     machine: { cpu: cpus()[0]?.model, cores: availableParallelism(), platform: process.platform } }, null, 2));
-  const summary = (selectedTrial === null ? '' : `Trial ${selectedTrial}/${config.repeats}; the final comparison combines all trials.\n`)
-    + dailyPreflightSummary(dailyPreflight) + markdownSummary(selectedTrial === null ? comparison : { ...comparison, timingRegressions: [] }, runs);
-  console.log(summary);
-  if (process.env.GITHUB_STEP_SUMMARY) await writeFile(process.env.GITHUB_STEP_SUMMARY, summary, { flag: 'a' });
+  // Only the aggregate job publishes to the workflow page. Worker tables
+  // remain in their artifacts so six partial reports cannot bury the verdict.
+  const summary = dailyPreflightSummary(dailyPreflight) + markdownSummary(comparison, runs);
+  await writeFile(join(out, 'summary.txt'), summary);
+  console.log(selectedTrial === null ? summary
+    : `[Performance] ${kind} trial ${selectedTrial}/${config.repeats}: ${runs.filter(run => run.valid).length}/${runs.length} journeys valid; see the overall deploy verdict.`);
   for (const row of selectedTrial === null ? comparison.timingRegressions : []) for (const r of row.regressions)
     console.log(`::warning title=Map performance::${row.scenario}/${row.phase} vs ${r.baseline}: +${Math.round(r.deltaMs)}ms, ${(r.relative * 100).toFixed(1)}%`);
   process.exitCode = performanceExitCode(comparison, { ...config, enforceTiming: selectedTrial === null && config.enforceTiming }, dailyPreflight);

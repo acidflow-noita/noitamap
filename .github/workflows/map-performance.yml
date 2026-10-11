@@ -44,7 +44,7 @@ jobs:
         working-directory: ${{ runner.temp }}/noitamap-performance/candidate
         run: |
           npm run typecheck
-          npm test -- tests/tab-coordinator.test.ts tests/mod-navigation.test.ts tests/unlocks-poi-refresh.test.ts tests/dynamic-map-url.test.ts tests/performance-comparison.test.ts tests/performance-preflight.test.ts tests/performance-trials.test.ts tests/creature-spawn-url.test.ts tests/startup.test.ts tests/app-startup-cleanup.test.ts
+          npm test -- tests/tab-coordinator.test.ts tests/mod-navigation.test.ts tests/unlocks-poi-refresh.test.ts tests/dynamic-map-url.test.ts tests/performance-comparison.test.ts tests/performance-preflight.test.ts tests/performance-trials.test.ts tests/performance-report.test.ts tests/creature-spawn-url.test.ts tests/startup.test.ts tests/app-startup-cleanup.test.ts
           npm test -- tests/scene-prefetch.test.ts tests/terrain-startup-overlap.test.ts tests/telescope-osd-lifetime.test.ts tests/instant-terrain-viewport.test.ts
       - name: Install browser and display dependencies
         run: |
@@ -69,6 +69,7 @@ jobs:
             ${{ runner.temp }}/noitamap-performance/*-build.log
 
   summary:
+    name: Overall deploy verdict
     needs: compare
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
@@ -82,12 +83,24 @@ jobs:
           node-version: '22'
           package-manager-cache: false
       - uses: actions/download-artifact@v8
+        id: reports
         with:
           # Exclude the combined summary if this job is re-run.
           pattern: map-performance-*-*
           path: performance-input
-      - name: Compare all paired trials
+      - name: Publish overall deploy verdict
+        id: verdict
+        if: ${{ !cancelled() }}
+        env:
+          PERF_REPORT_DOWNLOAD: ${{ steps.reports.outcome }}
+          PERF_WORKER_RESULT: ${{ needs.compare.result }}
         run: node build_scripts/performance/aggregate.mjs
+      - name: Report unavailable verdict
+        if: ${{ !cancelled() && steps.verdict.outputs.summary-written != 'true' }}
+        run: |
+          echo "::error title=Overall deploy verdict::DEPLOY: HOLD — The checks could not produce a complete result."
+          echo "**DEPLOY: HOLD — The checks could not produce a complete result.**" >> "$GITHUB_STEP_SUMMARY"
+          exit 1
       - name: Save combined comparison
         if: always()
         uses: actions/upload-artifact@v7

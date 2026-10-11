@@ -73,16 +73,22 @@ describe('isolated performance trials', () => {
         mkdirSync(dir, { recursive: true });
         writeFileSync(join(dir, 'results.json'), JSON.stringify(report));
       }
-      const run = () => spawnSync(process.execPath, ['build_scripts/performance/aggregate.mjs', join(root, 'input'), join(root, 'output')], {
-        encoding: 'utf8', env: { ...process.env, GITHUB_SHA: 'candidate-commit', GITHUB_STEP_SUMMARY: join(root, 'step-summary') },
+      const run = (env: Record<string, string> = {}) => spawnSync(process.execPath, ['build_scripts/performance/aggregate.mjs', join(root, 'input'), join(root, 'output')], {
+        encoding: 'utf8', env: { ...process.env, GITHUB_SHA: 'candidate-commit', GITHUB_STEP_SUMMARY: join(root, 'step-summary'),
+          GITHUB_OUTPUT: join(root, 'step-output'), PERF_REPORT_DOWNLOAD: 'success', PERF_WORKER_RESULT: 'success', ...env },
       });
       const complete = run();
       expect(complete.error).toBeUndefined();
       expect(complete.status, complete.stderr).toBe(0);
-      expect(complete.stdout).toContain('::warning title=Map performance::chromium');
-      expect(readFileSync(join(root, 'step-summary'), 'utf8')).toContain('reference');
+      expect(complete.stdout).toContain('::warning title=Overall deploy verdict::DEPLOY: REVIEW');
+      expect(complete.stdout).not.toContain('| Browser |');
+      expect(readFileSync(join(root, 'step-summary'), 'utf8')).toMatch(/^\*\*DEPLOY: REVIEW/);
+      expect(readFileSync(join(root, 'step-output'), 'utf8')).toContain('summary-written=true');
+      expect(run({ PERF_WORKER_RESULT: 'failure' }).status).toBe(1);
+      expect(readFileSync(join(root, 'step-summary'), 'utf8')).toMatch(/^\*\*DEPLOY: HOLD/);
       rmSync(join(root, 'input', 'map-performance-chromium-3'), { recursive: true });
       expect(run().status).toBe(1);
+      expect(readFileSync(join(root, 'step-summary'), 'utf8')).toMatch(/^\*\*DEPLOY: HOLD/);
       expect(JSON.parse(readFileSync(join(root, 'output', 'results.json'), 'utf8')).combined.valid).toBe(false);
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
