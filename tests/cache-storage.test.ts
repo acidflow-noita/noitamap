@@ -513,8 +513,8 @@ describe("derived terrain cache schema migration", () => {
     const { getCachedSceneBitmap, cacheSceneBitmap } = await import("../src/telescope/tile-cache");
     expect(await getCachedSceneBitmap(fixture.sceneKey)).toBeNull();
     expect(fixture.open).toHaveBeenCalledTimes(2);
-    expect(fixture.open).toHaveBeenLastCalledWith("noitamap-telescope", 14);
-    expect(fixture.remove).toHaveBeenCalledExactlyOnceWith("noitamap-telescope");
+    expect(fixture.open).toHaveBeenLastCalledWith("noitamap-telescope-v14", 14);
+    expect(fixture.remove).toHaveBeenCalledExactlyOnceWith("noitamap-telescope-v14");
     for (const name of ["generations", "biome_renders", "pixel_scene_bitmaps"])
       expect(fixture.records.get(name)?.size, name).toBe(0);
 
@@ -534,7 +534,29 @@ describe("derived terrain cache schema migration", () => {
     expect(await getCachedSceneBitmap(fixture.sceneKey)).toBe(fixture.stale);
     expect(fixture.records.get("generations")?.size).toBe(1);
     expect(fixture.records.get("biome_renders")?.size).toBe(1);
-    expect(fixture.open).toHaveBeenCalledExactlyOnceWith("noitamap-telescope", 14);
+    expect(fixture.open).toHaveBeenCalledExactlyOnceWith("noitamap-telescope-v14", 14);
     expect(fixture.remove).not.toHaveBeenCalled();
+  });
+
+  it('reads, writes and resets its schema without opening or deleting a newer shared database', async () => {
+    vi.resetModules();
+    const fixture = legacyDatabase(14);
+    const safeOpen = fixture.open.getMockImplementation()!, safeRemove = fixture.remove.getMockImplementation()!;
+    fixture.open.mockImplementation((name: string, version: number) => {
+      if (name !== 'noitamap-telescope-v14') throw new DOMException('Newer schema present', 'VersionError');
+      return safeOpen(name, version);
+    });
+    fixture.remove.mockImplementation((name: string) => {
+      if (name !== 'noitamap-telescope-v14') throw new Error('Must preserve the other deployment');
+      return safeRemove(name);
+    });
+    const { cacheSceneBitmap, getCachedSceneBitmap, clearCache } = await import('../src/telescope/tile-cache');
+    const pixels = new Blob(['complete scene']);
+    await cacheSceneBitmap('new-scene', pixels, 20, 30);
+    expect(await getCachedSceneBitmap('new-scene')).toMatchObject({ blob: pixels, width: 20, height: 30 });
+    expect(await clearCache()).toBe(true);
+    expect(await getCachedSceneBitmap('new-scene')).toBeNull();
+    expect(fixture.open).toHaveBeenCalledTimes(2);
+    expect(fixture.remove).toHaveBeenCalledExactlyOnceWith('noitamap-telescope-v14');
   });
 });

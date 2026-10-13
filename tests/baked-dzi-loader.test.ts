@@ -4,11 +4,17 @@ import {
   probeBakedDZIs,
 } from "../src/telescope/baked-dzi-loader";
 import { TERRAIN_VERSION } from "../src/telescope/terrain-policy";
+import { JSDOM } from "jsdom";
 import {
   isGLTerrainEnabled,
   isInstantTerrainEnabled,
   setFullPixelTerrainForBake,
 } from "../src/renderer_settings";
+const descriptor = { Image: {
+  xmlns: 'http://schemas.microsoft.com/deepzoom/2008', Format: 'webp',
+  TileSize: 512, Overlap: 0, Size: { Width: 35840, Height: 73728 },
+} };
+const region = { pw: 0, dzi: 'map.dzi', minX: 0, minY: -31744, fullW: 35840, fullH: 73728 };
 afterEach(() => {
   setFullPixelTerrainForBake(false);
   vi.unstubAllGlobals();
@@ -29,6 +35,7 @@ describe("baked DZI rendering", () => {
           const pw = { left: -1, middle: 0, right: 1 }[world]!;
           return {
             ok: true,
+            text: async () => JSON.stringify(descriptor),
             json: async () => ({
               seed: 239365546,
               world,
@@ -62,6 +69,13 @@ describe("baked DZI rendering", () => {
         // This flag certifies the current renderer's pixels, not whether the
         // independently published daily map is usable.
         expect(result.fullPixelsBaked).toBe(false);
+        expect(result.placements[1].tileSource.Image).toEqual({
+          ...descriptor.Image, Url: `https://${prefix}-middle.acidflow.stream/map_files/`,
+        });
+        expect(fetch).toHaveBeenCalledWith(
+          `https://${prefix}-middle.acidflow.stream/map.dzi?v=2026-09-28T00%3A07%3A46.454Z`,
+          { signal: undefined },
+        );
       }
     },
   );
@@ -78,6 +92,7 @@ describe("baked DZI rendering", () => {
         {
           pw: 0,
           dziUrl: "https://daily-middle.acidflow.stream/map.dzi",
+          tileSource: descriptor,
           x: 0,
           y: 0,
           width: 35840,
@@ -98,6 +113,7 @@ describe("baked DZI rendering", () => {
         "fetch",
         vi.fn(async () => ({
           ok: true,
+          text: async () => JSON.stringify(descriptor),
           json: async () => ({
             seed: 123,
             terrainVersion: TERRAIN_VERSION,
@@ -136,10 +152,11 @@ describe("baked DZI rendering", () => {
         "fetch",
         vi.fn(async (url: string) => ({
           ok: true,
+          text: async () => JSON.stringify(descriptor),
           json: async () => ({
             seed: 123,
             baked: true,
-            regions: [{ pw: 0, dzi: "map.dzi" }],
+            regions: [region],
             ...(url.includes("-left.")
               ? legacy
               : { complete: true, terrainVersion: TERRAIN_VERSION }),
@@ -157,12 +174,13 @@ describe("baked DZI rendering", () => {
       "fetch",
       vi.fn(async () => ({
         ok: true,
+        text: async () => JSON.stringify(descriptor),
         json: async () => ({
           seed: 123,
           baked: true,
           complete: true,
           terrainVersion: TERRAIN_VERSION,
-          regions: [{ pw: 0, dzi: "map.dzi" }],
+          regions: [region],
         }),
       })),
     );
@@ -212,4 +230,63 @@ describe("baked DZI rendering", () => {
       expect(isGLTerrainEnabled()).toBe(false);
     },
   );
+
+  it.each(['missing', 'html', 'malformed-json', 'invalid-size', 'invalid-region'])(
+    'rejects the entire bake when one world has a %s descriptor or placement', async failure => {
+      vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+        const broken = url.includes('-right.');
+        return {
+          ok: !(broken && failure === 'missing' && url.includes('.dzi')),
+          json: async () => ({ seed: 123, regions: [broken && failure === 'invalid-region' ? { ...region, minX: null } : region] }),
+          text: async () => !broken ? JSON.stringify(descriptor) : ({
+            html: '<html><body>Unavailable</body></html>',
+            'malformed-json': '{',
+            'invalid-size': JSON.stringify({ Image: { ...descriptor.Image, Size: { Width: 0, Height: 73728 } } }),
+          }[failure] ?? JSON.stringify(descriptor)),
+        };
+      }));
+      const result = await probeBakedDZIs('daily', 123);
+      expect(result.baked).toBe(false);
+      if (!result.baked) expect(result.reason).toContain('right');
+    },
+  );
+
+  it('parses legacy XML explicitly and resolves its relative tile URL', async () => {
+    const dom = new JSDOM();
+    vi.stubGlobal('DOMParser', dom.window.DOMParser);
+    const xml = `<Image xmlns="http://schemas.microsoft.com/deepzoom/2008" Format="png" TileSize="256" Overlap="1" Url="tiles/">
+      <Size Width="35840" Height="73728"/>
+      <DisplayRect MinLevel="0" MaxLevel="17"><Rect X="0" Y="0" Width="100" Height="200"/></DisplayRect>
+    </Image>`;
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true,
+      json: async () => ({ seed: 123, regions: [region] }), text: async () => xml,
+    })));
+    try {
+      const result = await probeBakedDZIs('daily', 123);
+      expect(result.baked).toBe(true);
+      if (!result.baked) return;
+      expect(result.placements[1].tileSource.Image).toMatchObject({
+        Url: 'https://daily-middle.acidflow.stream/tiles/', Format: 'png', TileSize: 256, Overlap: 1,
+        Size: { Width: 35840, Height: 73728 },
+        DisplayRect: [{ Rect: { X: '0', Y: '0', Width: '100', Height: '200', MinLevel: '0', MaxLevel: '17' } }],
+      });
+    } finally { dom.window.close(); }
+  });
+
+  it('passes the parsed sources to OSD, with the center first and no descriptor XHR', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => ({ ok: true,
+      json: async () => ({ seed: 123, generatedAt: 'bake 1', regions: [{ ...region,
+        pw: url.includes('-left.') ? -1 : url.includes('-right.') ? 1 : 0,
+      }] }), text: async () => JSON.stringify(descriptor),
+    })));
+    const result = await probeBakedDZIs('daily', 123);
+    expect(result.baked).toBe(true);
+    if (!result.baked) return;
+    const addTiledImage = vi.fn();
+    addBakedDZIsToOSD({ addTiledImage }, result.placements);
+    const sources = addTiledImage.mock.calls.map(([options]) => options.tileSource);
+    expect(sources.map(s => s.Image.Url)).toEqual(['middle', 'left', 'right'].map(world =>
+      `https://daily-${world}.acidflow.stream/map_files/`));
+    expect(sources.every(s => s.queryParams === '?v=bake%201')).toBe(true);
+  });
 });

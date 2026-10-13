@@ -159,14 +159,16 @@ it.each(['daily', 'previous-daily'] as const)('keeps %s covered on the first zoo
   const placements = [-1, 0, 1].map(pw => ({
     pw, x: -17920 + pw * 35840, y: -31744, width: 35840,
     dziUrl: `https://${prefix}-${['left', 'middle', 'right'][pw + 1]}.acidflow.stream/map.dzi`, bust: `${prefix}-bake`,
+    tileSource: { Image: { xmlns: 'http://schemas.microsoft.com/deepzoom/2008',
+      Url: `https://${prefix}-${['left', 'middle', 'right'][pw + 1]}.acidflow.stream/map_files/`,
+      Format: 'webp', TileSize: 512, Overlap: 0, Size: { Width: 35840, Height: 73728 } } },
   }));
   const originalAdd = viewer.addTiledImage.bind(viewer);
   // Keep the real baked loader's success tags, versioning and OSD event order;
   // supply local DZI metadata and painted tile responses instead of network I/O.
   const add = vi.spyOn(viewer, 'addTiledImage').mockImplementation((options: any) => {
-    if (typeof options.tileSource !== 'string') return originalAdd(options);
-    const source = new OSD.DziTileSource({ width: 35840, height: 73728, tileSize: 512,
-      tileOverlap: 0, fileFormat: 'webp', tilesUrl: options.tileSource.replace(/\.dzi$/, '_files/') });
+    if (!options.tileSource?.Image) return originalAdd(options);
+    const source = new OSD.DziTileSource(OSD.DziTileSource.prototype.configure(options.tileSource));
     source.downloadTileStart = (job: any) => { requests.push(job); paint(job, bakedColor, true); };
     return originalAdd({ ...options, tileSource: source });
   });

@@ -24,7 +24,7 @@ async function holdCache(context, mode) {
   await page.route('**/__cache_holder', route => route.fulfill({contentType: 'text/html', body: '<!doctype html><title>cache regression holder</title>'}));
   await page.goto(`${base}/__cache_holder`);
   await page.evaluate(mode => new Promise((resolve, reject) => {
-    const request = indexedDB.open('noitamap-telescope', mode === 'blocked-upgrade' ? 11 : 12);
+    const request = indexedDB.open('noitamap-telescope-v14', mode === 'blocked-upgrade' ? 13 : 14);
     request.onupgradeneeded = () => {
       const db = request.result;
       db.createObjectStore('generations', {keyPath: 'cacheKey'});

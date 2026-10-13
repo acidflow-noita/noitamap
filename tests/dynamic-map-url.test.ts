@@ -262,7 +262,7 @@ describe('pending map replacement ownership', () => {
       vi.mocked(fetchDailySeed).mockImplementationOnce(() => lookup.promise.then(() => today));
       vi.mocked(fetchBakedGeneration).mockResolvedValue(baked);
       vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix, decorationsBaked: true,
-        fullPixelsBaked: true, placements: [{ pw: 0, x: 0, y: 0, width: 100, bust: 'published', dziUrl: `/${prefix}.dzi` }] });
+        fullPixelsBaked: true, placements: [{ pw: 0, x: 0, y: 0, width: 100, bust: 'published', dziUrl: `/${prefix}.dzi`, tileSource: {} }] });
       const pending = pipeline.runDynamicMap(seed, false, f);
       expect(cancelPendingDynamicTerrain).toHaveBeenCalledOnce();
       lookup.resolve();
@@ -431,7 +431,7 @@ describe('dynamic seed URL identity', () => {
       vi.mocked(prepareInstantTerrainResources).mockResolvedValue();
       vi.mocked(hasDynamicOverlays).mockReturnValue(true);
       vi.mocked(fetchBakedGeneration).mockResolvedValue(baked);
-      const placements = [{ pw: 0, x: 0, y: 0, width: 100, bust: 'published', dziUrl: `/${prefix}.dzi` }];
+      const placements = [{ pw: 0, x: 0, y: 0, width: 100, bust: 'published', dziUrl: `/${prefix}.dzi`, tileSource: {} }];
       vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix, placements,
         decorationsBaked: true, fullPixelsBaked: false });
       vi.mocked(scheduleDailyAssetWarmup).mockReturnValue(vi.fn());
@@ -475,7 +475,7 @@ describe('dynamic seed URL identity', () => {
   ))('keeps $prefix pixels baked with metadata=$metadata, dailyFlag=$dailyFlag, then prepares live rendering on demand', async ({ prefix, seed, metadata, dailyFlag }) => {
     history.replaceState(null, '', `/?m=dy&se=${seed}${dailyFlag ? '&ds=1' : ''}`);
     vi.mocked(isInstantTerrainEnabled).mockReturnValue(true);
-    const viewer = {}, placements = [{ pw: 0, x: 0, y: 0, width: 100, bust: '1', dziUrl: `/${prefix}.dzi` }];
+    const viewer = {}, placements = [{ pw: 0, x: 0, y: 0, width: 100, bust: '1', dziUrl: `/${prefix}.dzi`, tileSource: {} }];
     const generated = { seed, ngPlus: 0, isNGP: false, worldSize: 70, worldCenter: 35,
       tileLayers: metadata ? [] : [{}], biomeData: {}, poisByPW: {}, pixelScenesByPW: {}, parallelWorlds: [0] } as any;
     vi.mocked(fetchBakedGeneration).mockResolvedValue(metadata ? generated : null);

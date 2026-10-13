@@ -15,8 +15,12 @@ import { expireGenerationCache, readGenerationCache, writeGenerationCache } from
  * Expires requested generations older than 30 days.
  */
 
-const DB_NAME = "noitamap-telescope";
 const DB_VERSION = 14; // invalidate scene pixels/geometry derived from raw asset fallbacks
+// Different checkouts/deployments can share an origin (especially localhost).
+// IndexedDB cannot open a newer database with an older requested version. Give
+// each schema its own disposable cache so neither disabling storage nor deleting
+// the other deployment's database is necessary when switching between them.
+const DB_NAME = `noitamap-telescope-v${DB_VERSION}`;
 const STORE_NAME = "generations";
 const RENDER_STORE_NAME = "biome_renders";
 const SCENE_BITMAP_STORE_NAME = "pixel_scene_bitmaps";
@@ -72,7 +76,8 @@ interface CachedGeneration {
 // Older schemas contain invalid geometry and, before v9, duplicate raw scene
 // pixels. Retire their database before opening stores; do not read or delete
 // those potentially huge values inside an upgrade transaction. Valid v14
-// caches are reused, so this change does not cold-start existing users.
+// caches in this schema's namespace are reused. The move from the old shared
+// name rebuilds these derived caches once; retained terrain is a separate DB.
 const storage = new OptionalCacheDatabase(DB_NAME, DB_VERSION, db => {
   if (!db.objectStoreNames.contains(STORE_NAME)) {
     db.createObjectStore(STORE_NAME, { keyPath: "cacheKey" });

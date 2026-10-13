@@ -37,6 +37,9 @@ export interface BakedDziPlacement {
   /** Absolute DZI URL on a CF worker, e.g.
    *  https://daily-middle.acidflow.stream/dynamic-daily-middle.dzi */
   dziUrl: string;
+  /** Parsed descriptor with an absolute tile URL. Avoid XHR's automatic XML
+   * parsing: the current baker writes JSON inside the .dzi file. */
+  tileSource: Record<string, any>;
   /** Top-left in OSD coords (seed-anchored world coords). */
   x: number;
   y: number;
@@ -121,9 +124,77 @@ async function fetchWorldManifest(
   }
 }
 
+function parseDzi(text: string, url: URL): Record<string, any> {
+  let image: Record<string, any>;
+  if (text.trimStart().startsWith('{')) {
+    image = JSON.parse(text).Image;
+  } else {
+    // Retain support for older XML bakes without asking XHR to infer the format
+    // from the server's Content-Type (which can be XML for a JSON .dzi).
+    const doc = new DOMParser().parseFromString(text, 'application/xml');
+    const root = doc.documentElement;
+    if (root.localName !== 'Image' || doc.getElementsByTagName('parsererror').length) {
+      throw new Error('Invalid DZI XML');
+    }
+    const size = root.getElementsByTagNameNS('*', 'Size')[0];
+    image = {
+      xmlns: root.namespaceURI,
+      Url: root.getAttribute('Url'),
+      Format: root.getAttribute('Format'),
+      TileSize: root.getAttribute('TileSize'),
+      Overlap: root.getAttribute('Overlap'),
+      Size: { Width: size?.getAttribute('Width'), Height: size?.getAttribute('Height') },
+      DisplayRect: Array.from(root.getElementsByTagNameNS('*', 'DisplayRect'), node => {
+        const rect = node.getElementsByTagNameNS('*', 'Rect')[0];
+        return { Rect: {
+          X: rect?.getAttribute('X'), Y: rect?.getAttribute('Y'),
+          Width: rect?.getAttribute('Width'), Height: rect?.getAttribute('Height'),
+          MinLevel: node.getAttribute('MinLevel'), MaxLevel: node.getAttribute('MaxLevel'),
+        } };
+      }),
+    };
+  }
+  if (!image || !/^http:\/\/schemas\.microsoft\.com\/deepzoom\/200[89]$/.test(image.xmlns)) {
+    throw new Error('Invalid DZI namespace');
+  }
+  const integer = (value: unknown, minimum: number): number => {
+    if ((typeof value !== 'number' && typeof value !== 'string') || value === '') throw new Error('Missing DZI dimension');
+    const result = Number(value);
+    if (!Number.isSafeInteger(result) || result < minimum) throw new Error('Invalid DZI dimension');
+    return result;
+  };
+  const width = integer(image.Size?.Width, 1), height = integer(image.Size?.Height, 1);
+  const tileSize = integer(image.TileSize, 1), overlap = integer(image.Overlap, 0);
+  if (overlap > tileSize || !/^(webp|png|jpg|jpeg|avif)$/.test(image.Format)) throw new Error('Invalid DZI tiles');
+  const defaultTiles = new URL(url);
+  defaultTiles.search = ''; defaultTiles.hash = '';
+  defaultTiles.pathname = defaultTiles.pathname.replace(/\.[^/.]+$/, '') + '_files/';
+  return { Image: {
+    ...image,
+    Url: image.Url ? new URL(image.Url, url).href : defaultTiles.href,
+    Size: { Width: width, Height: height }, TileSize: tileSize, Overlap: overlap,
+  } };
+}
+
+async function loadDzi(placement: BakedDziPlacement, signal?: AbortSignal): Promise<boolean> {
+  try {
+    const url = new URL(placement.dziUrl, globalThis.location?.href);
+    url.searchParams.set('v', placement.bust);
+    const response = await fetch(url.href, { signal });
+    if (!response.ok) return false;
+    placement.tileSource = parseDzi(await response.text(), url);
+    // OSD can request the first tile before its add-item callback runs.
+    placement.tileSource.queryParams = `?v=${encodeURIComponent(placement.bust)}`;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Probe all three worlds for the given seed. Resolves with `baked: true`
- * iff all three manifests load AND every one reports the requested seed.
+ * iff all three manifests report the requested seed AND their DZI descriptors
+ * load and parse. A manifest alone cannot certify a usable bake.
  *
  * `prefix` is either "daily" (today's bake) or "previous-daily" (yesterday's).
  * The caller picks based on what `fetchDailySeed`/`fetchPreviousDailySeed`
@@ -165,10 +236,15 @@ export async function probeBakedDZIs(
     // every re-bake, so a new daily isn't served stale from the HTTP cache.
     const bust = (m.generatedAt && String(m.generatedAt)) || String(m.seed);
     for (const r of m.regions) {
+      if (!r || typeof r.dzi !== 'string' || !r.dzi || !Number.isInteger(r.pw)
+        || ![r.minX, r.minY, r.fullW, r.fullH].every(Number.isFinite) || !(r.fullW > 0) || !(r.fullH > 0)) {
+        return { baked: false, reason: `invalid region for ${prefix}-${WORLDS[i]}` };
+      }
       placements.push({
         pw: r.pw,
         pvt: r.pvt,
         dziUrl: `${origin}/${r.dzi}`,
+        tileSource: {},
         x: r.minX,
         y: r.minY,
         width: r.fullW,
@@ -176,6 +252,9 @@ export async function probeBakedDZIs(
       });
     }
   }
+  const loaded = await Promise.all(placements.map(p => loadDzi(p, signal)));
+  const failed = loaded.indexOf(false);
+  if (failed !== -1) return { baked: false, reason: `DZI missing/invalid: ${placements[failed].dziUrl}` };
   const fullPixelsBaked = manifests.every(m => m?.terrainVersion === TERRAIN_VERSION && m.complete === true);
   return { baked: true, prefix, placements, decorationsBaked, fullPixelsBaked };
 }
@@ -202,7 +281,7 @@ export function addBakedDZIsToOSD(
   const ordered = [...placements].sort((a, b) => Math.abs(a.pw) - Math.abs(b.pw));
   for (const p of ordered) {
     viewer.addTiledImage({
-      tileSource: p.dziUrl,
+      tileSource: p.tileSource,
       x: p.x,
       y: p.y,
       width: p.width,
