@@ -29,9 +29,8 @@ import { createGenerationCheckpoint, runGenerationTask, waitForGenerationWork, y
 let parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
 
 // Telescope modules
-let generateBiomeData: any;
+let geometry: import("../native-map/geometry").GeometryGenerator;
 let BIOME_CONFIG: any;
-let generateBiomeTiles: any;
 let scanSpawnFunctions: any;
 let getSpecialPoIs: any;
 let prescanSpawnFunctions: any;
@@ -203,7 +202,7 @@ function retowerWands(pois: POI[]): void {
 let initialized = false;
 let initPromise: Promise<void> | null = null;
 let backgroundInitialization: AbortController | null = null;
-let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null; nightmare: Uint32Array | null } = {
+let biomeAssets: { ng0: Uint8Array | null; ngp: Uint8Array | null; nightmare: Uint8Array | null } = {
   ng0: null,
   ngp: null,
   nightmare: null,
@@ -268,8 +267,7 @@ async function _doInitTelescope(background?: AbortSignal): Promise<void> {
   const modulesStarted = performance.now();
   const telescope = await loadTelescopeModules();
   measure("modules", modulesStarted);
-  const biomeGenMod = telescope.biomeGenMod;
-  const tileGenMod = telescope.tileGenMod;
+  const geometryMod = telescope.geometryMod;
   const poiScannerMod = telescope.poiScannerMod;
   const pixelSceneMod = telescope.pixelSceneMod;
   const genConfigMod = telescope.genConfigMod;
@@ -300,9 +298,7 @@ async function _doInitTelescope(background?: AbortSignal): Promise<void> {
     showEnemies: true,
   });
 
-  generateBiomeData = biomeGenMod.generateBiomeData;
-  BIOME_CONFIG = biomeGenMod.BIOME_CONFIG;
-  generateBiomeTiles = tileGenMod.generateBiomeTiles;
+  BIOME_CONFIG = geometryMod.BIOME_CONFIG;
   scanSpawnFunctions = poiScannerMod.scanSpawnFunctions;
   getSpecialPoIs = poiScannerMod.getSpecialPoIs;
   prescanSpawnFunctions = poiScannerMod.prescanSpawnFunctions;
@@ -388,12 +384,22 @@ async function _doInitTelescope(background?: AbortSignal): Promise<void> {
     await load();
     measure(name, from);
   };
-  await Promise.all([loadBaseMaps(), loadTimed("translations", loadTranslations), loadWangTemplates(), loadTimed("pixel-scenes", async () => {
+  const [, minesOverlay] = await Promise.all([loadBaseMaps(),
+    pngSanitizerMod.loadPNG("../data/wang_tiles/extra_layers/coalmine.png", { bitmap: false }),
+    loadTimed("translations", loadTranslations), loadWangTemplates(), loadTimed("pixel-scenes", async () => {
     const { installPreparedScenes } = await preparedScenes;
     await installPreparedScenes(pixelSceneMod, useRenderPerfGeneration());
     // Injection replaces the module's exported table; retain its new identity.
     PIXEL_SCENE_DATA = pixelSceneMod.PIXEL_SCENE_DATA;
   })]);
+  geometry = geometryMod.createGeometryGenerator({
+    biomeMaps: biomeAssets,
+    biomes: GENERATOR_CONFIG,
+    minesOverlay,
+    blockedRoomColors: telescope.sceneConfigMod.BLOCKED_COLORS,
+    fillLayers: useRenderPerfGeneration(),
+    nightmarePlusPainter: useRenderPerfGeneration(),
+  });
   measure("assets", assetsStarted);
 
   await ensureTelescopeCacheVersion();
@@ -486,7 +492,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   if (!base) throw new Error("[Telescope] Biome map assets not loaded");
 
   // Step 1: Generate biome data
-  const biomeData = generateBiomeData(seed, ngPlus, gameMode, base, w, h);
+  const biomeData = geometry.generateBiome({ seed, ngPlus, gameMode, signal: opts.signal });
 
   // Debug: Log all unique colors to see if they match constants
   const uniqueColors = new Set(Array.from(biomeData.pixels));
@@ -603,17 +609,11 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   }
 
   // Step 2: Generate tiles
-  const tileLayers: TileLayer[] = await generateBiomeTiles(
-    biomeData.pixels,
-    w,
-    h,
-    GENERATOR_CONFIG,
-    seed,
-    ngPlus,
-    0 /* extra_rerolls */,
-    gameMode,
-    createGenerationCheckpoint(opts.signal),
-  );
+  // The historic host interface also lists fields attached after generation.
+  const tileLayers = await geometry.generateTiles({
+    pixels: biomeData.pixels, width: w, height: h, seed, ngPlus, gameMode,
+    signal: opts.signal, yieldControl: createGenerationCheckpoint(opts.signal),
+  }) as unknown as TileLayer[];
   await yieldGenerationTask(opts.signal);
 
   // Initialize pixel scene caches on each layer

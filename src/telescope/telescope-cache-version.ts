@@ -1,6 +1,8 @@
 import { clearCache } from "./tile-cache";
 
-const LIB_VERSION = "2026-09-28-telescope-7fce46b-render-perf-9c58775";
+// The owned geometry core now waits for its required Mines overlay. Do not
+// reuse generations that could have been cached before that input was ready.
+const LIB_VERSION = "2026-10-12-native-geometry-v1-telescope-7fce46b-render-perf-9c58775";
 let pending: Promise<void> | undefined;
 
 /** Share this barrier between asset initialization and generation-cache reads.

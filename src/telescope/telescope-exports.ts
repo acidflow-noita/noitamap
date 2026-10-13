@@ -8,10 +8,9 @@
  * This completely resolves the "dynamic import will not move module into another chunk" warnings.
  */
 
+export * as geometryMod from "../native-map/geometry";
 // @ts-ignore
-export * as biomeGenMod from "noita-telescope/biome_generator.js";
-// @ts-ignore
-export * as tileGenMod from "noita-telescope/tile_generator.js";
+export * as sceneConfigMod from "noita-telescope/pixel_scene_config.js";
 // @ts-ignore
 export * as poiScannerMod from "noita-telescope/poi_scanner.js";
 // @ts-ignore

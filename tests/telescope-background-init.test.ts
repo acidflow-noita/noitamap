@@ -49,9 +49,9 @@ it("joins and promotes background Telescope initialization without waiting for i
     ]),
   );
   const modules: Record<string, any> = {};
+  modules.geometryMod = { BIOME_CONFIG: {}, createGeometryGenerator: vi.fn() };
+  modules.sceneConfigMod = { BLOCKED_COLORS: [] };
   for (const name of [
-    "biomeGenMod",
-    "tileGenMod",
     "poiScannerMod",
     "pixelSceneMod",
     "unlocksMod",

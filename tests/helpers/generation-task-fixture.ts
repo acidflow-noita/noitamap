@@ -38,13 +38,19 @@ export async function run(concurrent: boolean) {
     };
     if (concurrent) snapshots.push(...await Promise.all(cases.map(generate)));
     else for (const options of cases) snapshots.push(await generate(options));
-    const { tileGenMod, genConfigMod } = await loadTelescopeModules();
+    const { geometryMod, genConfigMod, sceneConfigMod, pngSanitizerMod } = await loadTelescopeModules();
+    const generateTiles = geometryMod.createTerrainTileGenerator({
+      biomes: genConfigMod.GENERATOR_CONFIG,
+      blockedRoomColors: sceneConfigMod.BLOCKED_COLORS,
+      minesOverlay: await pngSanitizerMod.loadPNG('../data/wang_tiles/extra_layers/coalmine.png', { bitmap: false }),
+      fillLayers: true,
+    });
     let inputDuringTiles = false;
     const queuedInput = setTimeout(() => { inputDuringTiles = true; }, 0);
     let tileSnapshot;
     try {
-      const layers = await tileGenMod.generateBiomeTiles(firstBiomeData.pixels, 70, 48,
-        genConfigMod.GENERATOR_CONFIG, 74803, 0, 0, 'normal', createGenerationCheckpoint());
+      const layers = await generateTiles({ pixels: firstBiomeData.pixels, width: 70, height: 48,
+        seed: 74803, yieldControl: createGenerationCheckpoint() });
       tileSnapshot = (globalThis as any).__generationSnapshot({ seed: 74803,
         tileLayers: layers, poisByPW: {}, pixelScenesByPW: {} });
     } finally { clearTimeout(queuedInput); }

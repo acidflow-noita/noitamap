@@ -12,7 +12,7 @@ import {
 } from "../src/telescope/tile-layer-cache";
 const ROBOT = 0xff4e5267;
 const generate = vi.hoisted(() => vi.fn());
-vi.mock("noita-telescope-full-pixels/tile_generator.js", () => ({ generateBiomeTiles: generate }));
+vi.mock("../src/native-map/geometry", () => ({ createTerrainTileGenerator: () => generate }));
 vi.mock("noita-telescope-full-pixels/generator_config.js", () => ({
   GENERATOR_CONFIG: { robobase: { color: 0xff4e5267, wangData: {} } },
 }));

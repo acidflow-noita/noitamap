@@ -54,9 +54,9 @@ async function generateElevatorShafts(gen: GLTerrainGeneration): Promise<any[]> 
   const width = pixels.length / 48;
   const stubs = bottomElevatorStubs(gen.tileLayers, pixels, width);
   if (!stubs.length) return [];
-  const [{ generateBiomeTiles }, { GENERATOR_CONFIG }, { loadPNG }] =
+  const [{ createTerrainTileGenerator }, { GENERATOR_CONFIG }, { loadPNG }] =
     await Promise.all([
-      import("noita-telescope-full-pixels/tile_generator.js"),
+      import("../native-map/geometry"),
       import("noita-telescope-full-pixels/generator_config.js"),
       import("noita-telescope-full-pixels/png_sanitizer.js"),
     ]);
@@ -68,22 +68,15 @@ async function generateElevatorShafts(gen: GLTerrainGeneration): Promise<any[]> 
       wangData: conf.wangData ?? (await loadPNG(conf.wangFile)),
     },
   };
+  const generate = createTerrainTileGenerator({ biomes: config, blockedRoomColors: [], fillLayers: true });
   const out: any[] = [];
   for (const stub of stubs) {
     const [claim] = stub.validChunks as Set<string>;
     const [x] = claim.split(",").map(Number);
     const extended = new Uint32Array(width * 96);
     for (let y = 47; y < 96; y++) extended[y * width + x] = conf.color;
-    const layers = await generateBiomeTiles(
-      extended,
-      width,
-      96,
-      config,
-      gen.seed,
-      gen.ngPlus ?? 0,
-      0,
-      gen.gameMode ?? "normal",
-    );
+    const layers = await generate({ pixels: extended, width, height: 96,
+      seed: gen.seed, ngPlus: gen.ngPlus ?? 0, gameMode: gen.gameMode ?? "normal" });
     if (
       layers.length !== 1 ||
       !layers[0].buffer ||

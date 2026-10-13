@@ -1,0 +1,81 @@
+{
+  "source": "Pre-extraction browser-source bundle in the native Node/Canvas harness; SHA-256 includes all biome arrays, RGB buffers and tile metadata. Canvas/image objects excluded. These fixtures assert path preservation, not Noita fidelity.",
+  "pins": {
+    "lymm": "7fce46be8a5587fa88693d468046e236f862f5c7",
+    "vm": "9c587750c361e88583fe8df406d74136bbcc1dde"
+  },
+  "cases": [
+    {
+      "name": "normal",
+      "seed": 786433191,
+      "ngPlus": 0,
+      "gameMode": "normal",
+      "geometryHash": "fe0dbd51b304f9a12442dcfd231242382bafab3f0399ece8520dc92ae1c0e371",
+      "fork": "lymm",
+      "hostHash": "ea0593c696a5cef60a39081f9cf1fdb1ec9ce08a9b8da5b6f7f765454c4e6f64"
+    },
+    {
+      "name": "ngplus",
+      "seed": 92,
+      "ngPlus": 1,
+      "gameMode": "normal",
+      "geometryHash": "f1ca69e87f2640b6006576990db0197d575a66242623504991796b07abe0c5ee",
+      "fork": "lymm",
+      "hostHash": "93582d9d32072a3b3cd7555a8f723908a87e33c920109440e6b7149c92a7b232"
+    },
+    {
+      "name": "nightmare",
+      "seed": 1,
+      "ngPlus": 0,
+      "gameMode": "nightmare",
+      "geometryHash": "4de9e008c795ba4fa7d44f37b7de90168eda7d5adcfea76353952f853856e8eb",
+      "fork": "lymm",
+      "hostHash": "98f2d7afda8cd15015dce999f80fa93ecc8f06a6cb2174c085931bf00ad15bfb"
+    },
+    {
+      "name": "nightmare-plus",
+      "seed": 92,
+      "ngPlus": 1,
+      "gameMode": "nightmare",
+      "geometryHash": "f1ca69e87f2640b6006576990db0197d575a66242623504991796b07abe0c5ee",
+      "fork": "lymm",
+      "hostHash": "fa27b591cc32aecb120bb1133d9cbb7644e7aebcb82c87fc83a0f6eb3051656f"
+    },
+    {
+      "name": "normal",
+      "seed": 786433191,
+      "ngPlus": 0,
+      "gameMode": "normal",
+      "geometryHash": "6356629d16432a595a0918bbc92a0da5463e139780aa63f37734f209e5325dd9",
+      "fork": "vm",
+      "hostHash": "716f127d5aef587684c6f10995f0951080800316ae0400d8a5cab5b0cfe8cad9"
+    },
+    {
+      "name": "ngplus",
+      "seed": 92,
+      "ngPlus": 1,
+      "gameMode": "normal",
+      "geometryHash": "8029e06d9ff709b51819e7fa6ad52ddcad4f593defca66161dc59090885aabd8",
+      "fork": "vm",
+      "hostHash": "1e243f24ebf4bcc7cb1d42e4cdcb803991a95c98bb7ff199d8a5c093df4e05eb"
+    },
+    {
+      "name": "nightmare",
+      "seed": 1,
+      "ngPlus": 0,
+      "gameMode": "nightmare",
+      "geometryHash": "1b0c7d6fdd9cd18784341f1f759811542a1e0ecdbd1739a04892fb0debef880e",
+      "fork": "vm",
+      "hostHash": "b335894a125167cca7a7fc6e0cb650c47589417537e7765fec6367bb20893871"
+    },
+    {
+      "name": "nightmare-plus",
+      "seed": 92,
+      "ngPlus": 1,
+      "gameMode": "nightmare",
+      "geometryHash": "8029e06d9ff709b51819e7fa6ad52ddcad4f593defca66161dc59090885aabd8",
+      "fork": "vm",
+      "hostHash": "75bec91083e20e92a7546f615f72abc175c974fd8386e2cb044c53be28daa63c"
+    }
+  ]
+}

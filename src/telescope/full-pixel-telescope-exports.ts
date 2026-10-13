@@ -1,8 +1,7 @@
 /** Complete render-perf fork, lazy-loaded only in full-pixel mode. */
+export * as geometryMod from "../native-map/geometry";
 // @ts-ignore
-export * as biomeGenMod from "noita-telescope-full-pixels/biome_generator.js";
-// @ts-ignore
-export * as tileGenMod from "noita-telescope-full-pixels/tile_generator.js";
+export * as sceneConfigMod from "noita-telescope-full-pixels/pixel_scene_config.js";
 // @ts-ignore
 export * as poiScannerMod from "noita-telescope-full-pixels/poi_scanner.js";
 // @ts-ignore

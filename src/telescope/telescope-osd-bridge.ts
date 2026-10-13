@@ -364,7 +364,7 @@ async function ensureTelescopeModules(): Promise<void> {
 
   const telescope = await loadTelescopeModules();
   const constantsMod = telescope.constantsMod;
-  const biomeMod = telescope.biomeGenMod;
+  const geometryMod = telescope.geometryMod;
   const genMod = telescope.genConfigMod;
   const imageMod = telescope.imageProcessingMod;
   const utilsMod = telescope.utilsMod;
@@ -384,7 +384,7 @@ async function ensureTelescopeModules(): Promise<void> {
   });
 
   CHUNK_SIZE = constantsMod.CHUNK_SIZE;
-  BIOME_CONFIG = biomeMod.BIOME_CONFIG;
+  BIOME_CONFIG = geometryMod.BIOME_CONFIG;
   GENERATOR_CONFIG = genMod.GENERATOR_CONFIG;
   TILE_FOREGROUND_COLORS = imageMod.TILE_FOREGROUND_COLORS;
   BIOME_COLOR_LOOKUP = imageMod.BIOME_COLOR_LOOKUP;

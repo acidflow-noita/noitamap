@@ -4,13 +4,21 @@
 
 The target is **less than one second from a cold site navigation to the complete final-pixel map**: Main, West and East, including each region's Heaven and Hell. Downloads, JavaScript loading, decoding, worker startup, shader compilation, seed generation, final terrain composition and overview reduction count. Finishing only the visible viewport, showing a preview, or starting background generation does not meet this target.
 
+The warm target is **effectively instant generation of a new, uncached seed** with source assets and renderer initialization already available in the same session. Its completion extent and required output are the same as the cold target. Returning to a previously cached seed is a separate cache-reuse measurement. Report actual elapsed milliseconds for both cases.
+
 Completion means every generated native-resolution pixel in that extent has its final material, scene artwork, FORCE AIR behavior, liquid surface, edge decals, background and static-art protection, **including the map's displayed POI sprites at their deterministic placements**, with completed overview reductions. Moving anywhere or changing zoom must not trigger further procedural generation for that completed map. Encoding completed pixels losslessly can reduce storage; retaining only a seed and a procedural resolver does not count as completion. Any extra requirement to persist the entire result to disk must also have its own measured completion point.
 
-**The current implementation does not achieve this.** The upstream update and retained live tile caches are useful groundwork. The requested network baseline is **100Mb/s with 30ms latency**; hardware should span phones/integrated GPUs through large desktop GPUs, including 96GB devices. This is a device family to validate, not evidence that every member can meet one second. Browser/OS and concrete representative devices remain measurement inputs. No hardware GPU is exposed in this development VM; its native renderer is llvmpipe.
+**The current implementation does not achieve this.** The upstream update and retained live tile caches are useful groundwork. The requested network baseline is **100Mb/s with 30ms latency**; hardware should span phones/integrated GPUs through large desktop GPUs, including 96GB devices. This is a device family to validate, not evidence that every member can meet one second. Browser/OS and concrete representative devices remain measurement inputs. The execution sandbox exposes llvmpipe; an unsandboxed native probe also exposes a VMware SVGA3D virtual GPU. The physical host GPU is unknown, and neither result establishes browser/device performance.
 
 Graceful degradation is under discussion. Until explicitly accepted, progressive completion on constrained devices is not a replacement for the all-nine cold target. If accepted, report “complete” only after the whole extent is final; retain completed quality through all pan/zoom changes and show remaining generation separately. Do not use missing thin features, discarded completed pixels or unbounded memory as the fallback.
 
 The [deployed Telescope measurement](deployed-telescope-measurement.md), with Render Everything enabled, verifies viewport-sized terrain shading and deferred scene work. Its status text, first frame and pending-zero samples do not establish complete nine-region generation. That implementation is a source of reusable optimizations, not the performance target.
+
+## October 13 priority clarification
+
+The owned geometry core and reduced edge-halo sampling are groundwork. Their measured stage-level improvements do not establish sub-one-second cold completion or instant warm generation. Prioritize complete mandatory-input delivery, a shared material result across rendering/finishing, bulk processing, and bounded retention of completed output. Evaluate these against the full cold/warm completion contract before claiming progress toward the timing target.
+
+The current generation, first-viewport, and terrain-cooking logs each measure only part of that contract. In particular, terrain cooking excludes final scene/POI presentation and cannot stand in for an end-to-end complete-map measurement. Local production preview is useful for manual regression checks; localhost transfer speed is not the specified network baseline.
 
 ## POI imagery is part of the result
 

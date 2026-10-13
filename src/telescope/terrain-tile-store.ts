@@ -1,7 +1,8 @@
 import { TERRAIN_VERSION } from "./terrain-policy";
-// Shader coefficients changed without changing the daily manifest schema.
-// Invalidate old finished GPU leaves, preserving existing baked daily identity.
-const TILE_RENDER_REVISION = "shader-bits-2026-09-25";
+// The owned geometry core waits for the required Mines overlay. Invalidate
+// legacy finished leaves that may have used incomplete generation inputs,
+// without changing the daily manifest schema or baked daily identity.
+const TILE_RENDER_REVISION = "native-geometry-v1-2026-10-12";
 /** Persistent completed tiles only. Browsing another zoom level must not
  * regenerate thousands of world pixels that were already rendered. */
 let database: Promise<IDBDatabase | null> | undefined;
