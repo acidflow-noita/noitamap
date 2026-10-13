@@ -49,6 +49,8 @@ self.onmessage = async ({ data }) => {
       });
     } else if (type === "render" || type === "present") {
       if (!terrain) throw new Error("CPU terrain resources are not ready");
+      const currentTerrain = terrain;
+      const isCancelled = () => cancelled.has(id) || terrain !== currentTerrain;
       const { x, y, width, height } = data;
       if (
         ![x, y, width, height].every(Number.isSafeInteger) ||
@@ -66,15 +68,21 @@ self.onmessage = async ({ data }) => {
           : new Uint8ClampedArray(width * height * 4);
       if (pixels.length !== width * height * 4)
         throw new Error("Invalid terrain presentation buffer");
-      const hasContent = terrain.contains(x, y, width, height);
+      const hasContent = currentTerrain.contains(x, y, width, height);
+      if (hasContent && !isCancelled()) {
+        currentTerrain.prefillMaterials(x, y, width, height);
+        // A native batch is bounded to one tile plus its material halo. Yield
+        // before rendering/finishing so queued cancellation is observed too.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
       let yieldAt = performance.now() + 12;
       for (
         let row = 0;
         type === "render" && hasContent && row < height;
         row += 16
       ) {
-        if (cancelled.has(id)) break;
-        terrain.renderRows(
+        if (isCancelled()) break;
+        currentTerrain.renderRows(
           x,
           y,
           width,
@@ -87,9 +95,9 @@ self.onmessage = async ({ data }) => {
           yieldAt = performance.now() + 12;
         }
       }
-      if (cancelled.has(id)) self.postMessage({ id, type: "cancelled" });
+      if (isCancelled()) self.postMessage({ id, type: "cancelled" });
       else {
-        if (hasContent) terrain.finish(pixels, x, y, width, height);
+        if (hasContent) currentTerrain.finish(pixels, x, y, width, height);
         self.postMessage(
           { id, type: "tile", width, height, pixels: pixels.buffer },
           [pixels.buffer],

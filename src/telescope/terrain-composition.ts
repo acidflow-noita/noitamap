@@ -25,6 +25,7 @@ import {
 } from "./terrain-backgrounds";
 import { createTerrainScenes, readRGBA, writeRGBA } from "./terrain-scenes";
 import type { GLTerrainGeneration } from "./gl-terrain-tile-source";
+import type { ReadMaterialRect } from "./material-cache";
 
 /** One pixel pipeline for GPU tiles, CPU tiles and the native bake. The source
  * terrain stays separate from the background until scene air masks have erased
@@ -35,6 +36,7 @@ export async function createTerrainComposition(
   width: number,
   materialAt?: TerrainMaterialAt,
   lattice?: any,
+  readMaterials?: ReadMaterialRect,
 ) {
   const ownership = createPlaneOwnership(
     gen.tileLayers,
@@ -68,7 +70,13 @@ export async function createTerrainComposition(
           : 0;
       })
     : null;
-  const edges = await createTerrainEdges(gen, config, width, materialAt);
+  const edges = await createTerrainEdges(
+    gen,
+    config,
+    width,
+    materialAt,
+    readMaterials,
+  );
   const staticMask = createStaticTerrainMask(gen.sceneData?.staticMasks);
   const water = createLiquidSurfacePainter(
     findLiquidSurfaces(
@@ -153,16 +161,53 @@ export async function createTerrainComposition(
       h: number,
     ) {
       const background = new Uint8ClampedArray(pixels.length);
-      for (let row = 0; row < h; row++)
-        for (let col = 0; col < w; col++) {
-          const i = (row * w + col) * 4;
-          if (ownership.at(x + col, y + row - offsetY) < 0)
-            pixels.fill(0, i, i + 4);
-          writeRGBA(background, i, backgroundAt(x + col, y + row));
+      // Retain the exact source bytes and absolute texture
+      // origin, but query chunk ownership and repeat texture rows in spans.
+      const mod = (a: number, b: number) => ((a % b) + b) % b;
+      for (let row = 0; row < h;) {
+        const ly = y + row - offsetY;
+        const rows = Math.min(h - row, 512 - mod(ly + 7168, 512));
+        for (let col = 0; col < w;) {
+          const wx = x + col;
+          const columns = Math.min(w - col, 512 - mod(wx + width * 256, 512));
+          const owned = ownership.at(wx, ly) >= 0;
+          const owner = backgroundOwnership.at(wx, ly);
+          const texture =
+            owner < 0
+              ? undefined
+              : backgrounds.get(backgroundOwnership.names[owner]);
+          for (let dy = 0; dy < rows; dy++) {
+            const dest = ((row + dy) * w + col) * 4;
+            if (!owned) pixels.fill(0, dest, dest + columns * 4);
+            if (!texture) continue;
+            const sourceRow =
+              mod(ly + dy + 7168, texture.height) * texture.width;
+            let sx = mod(wx + width * 256, texture.width);
+            for (let dx = 0; dx < columns;) {
+              const count = Math.min(columns - dx, texture.width - sx);
+              const source = (sourceRow + sx) * 4;
+              background.set(
+                texture.data.subarray(source, source + count * 4),
+                dest + dx * 4,
+              );
+              dx += count;
+              sx = 0;
+            }
+          }
+          col += columns;
         }
-      water(pixels, x, y, w, h,
-        (wx, wy) => ownership.at(wx, wy - offsetY) < 0 ? -1 : edges.sample(wx, wy),
-        liquidColor);
+        row += rows;
+      }
+      water(
+        pixels,
+        x,
+        y,
+        w,
+        h,
+        (wx, wy) =>
+          ownership.at(wx, wy - offsetY) < 0 ? -1 : edges.sample(wx, wy),
+        liquidColor,
+      );
       scenes?.paint(pixels, background, x, y, w, h);
 
       if (hasTerrain(x, y, w, h))

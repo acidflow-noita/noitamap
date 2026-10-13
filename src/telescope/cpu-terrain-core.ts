@@ -4,6 +4,12 @@ import { createTerrainComposition } from "./terrain-composition";
 import { createPlaneMaterialField } from "./plane-material-field";
 import { WORLD_HEIGHT } from "./terrain-policy";
 import { compositeTerrain } from "./terrain-backgrounds";
+import { TERRAIN_MATERIAL_HALO } from "./terrain-edges";
+import {
+  createNativeMaterialResolver,
+  warmNativeMaterialModule,
+  type MaterialShaft,
+} from "../native-map/materials";
 /** CPU execution of render-perf's material resolver and legacy shader fallbacks.
  * Imported only in the terrain worker after Telescope's data shims are installed.
  * All samples are at integer world pixels; the shared pyramid handles reduction.
@@ -13,7 +19,10 @@ import { createMaterialField } from "noita-telescope-full-pixels/engine_resolve/
 // @ts-ignore
 import { resolveCellFull } from "noita-telescope-full-pixels/engine_resolve/chunk_wobble.js";
 // @ts-ignore
-import { BIOME_ENGINE } from "noita-telescope-full-pixels/engine_resolve/engine_data.js";
+import {
+  BIOME_ENGINE,
+  WANG_PARAMS_BY_ID,
+} from "noita-telescope-full-pixels/engine_resolve/engine_data.js";
 // @ts-ignore
 import {
   buildEngineResources,
@@ -64,7 +73,10 @@ const mod = (value: number, size: number) => ((value % size) + size) % size;
 const packed = (r: number, g: number, b: number, a: number) =>
   ((a << 24) | (r << 16) | (g << 8) | b) >>> 0;
 
-export async function createCpuTerrain(gen: GLTerrainGeneration) {
+export async function createCpuTerrain(
+  gen: GLTerrainGeneration,
+  options: { nativeMaterials?: boolean } = {},
+) {
   updateSettings({
     recolorMaterials: true,
     clearSpawnPixels: true,
@@ -95,6 +107,8 @@ export async function createCpuTerrain(gen: GLTerrainGeneration) {
     gen.seed,
     { lattice: engine.lattice },
   );
+  const useNativeMaterials = options.nativeMaterials !== false;
+  if (useNativeMaterials) warmNativeMaterialModule();
   const planeMaterialAt =
     plane === 0
       ? null
@@ -105,6 +119,7 @@ export async function createCpuTerrain(gen: GLTerrainGeneration) {
           offsetY,
         );
   const shaftFields = new Map<number, (x: number, y: number) => number>();
+  const nativeShafts: MaterialShaft[] = [];
   if (plane === 1)
     for (const shaft of gen.elevatorShafts ?? []) {
       // A small region-local lattice, not a second world-sized allocation. Rebase
@@ -122,6 +137,12 @@ export async function createCpuTerrain(gen: GLTerrainGeneration) {
         Math.ceil(shaft.w / 512),
         Math.ceil(shaft.h / 512),
       );
+      nativeShafts.push({
+        column: shaft.minX,
+        lattice,
+        offsetY: Math.trunc((shaft.minY * 512) / 10) * 10,
+        originX: Math.trunc((shaft.minX * 512) / 10),
+      });
       shaftFields.set(
         shaft.minX,
         createPlaneMaterialField(
@@ -188,8 +209,60 @@ export async function createCpuTerrain(gen: GLTerrainGeneration) {
     mapWidth,
     materialCache.materialAt,
     engine.lattice,
+    materialCache.readRect,
   );
   const ownership = composition.ownership;
+  let nativeMaterials = useNativeMaterials
+    ? await createNativeMaterialResolver({
+        lattice: engine.lattice,
+        plane: plane === 0 ? undefined : { offsetY, shafts: nativeShafts },
+        biomePixels: gen.biomeData.pixels,
+        mapWidth,
+        hostChunks: engine.chunk,
+        parameters: WANG_PARAMS_BY_ID.map(
+          ([scale, threshold, type]: number[]) => ({ scale, threshold, type }),
+        ),
+      })
+    : null;
+  const nativeMaterialStats = {
+    enabled: !!nativeMaterials,
+    batches: 0,
+    pixels: 0,
+    failures: 0,
+  };
+  function prefillMaterials(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) {
+    if (
+      !nativeMaterials ||
+      width < 1 ||
+      height < 1 ||
+      width > 512 ||
+      height > 512
+    )
+      return;
+    const halo = TERRAIN_MATERIAL_HALO;
+    const left = x - halo,
+      top = y - halo,
+      w = width + halo * 2,
+      h = height + halo * 2;
+    if (!materialCache.hasMissing(left, top, w, h)) return;
+    try {
+      const values = nativeMaterials.resolve(left, top, w, h);
+      materialCache.prefill(left, top, w, h, values);
+      nativeMaterialStats.batches++;
+      nativeMaterialStats.pixels += w * h;
+    } catch {
+      // No partial native output is published if the batch fails. Subsequent
+      // requests retain the original lazy JS material/legacy color path.
+      nativeMaterials = null;
+      nativeMaterialStats.enabled = false;
+      nativeMaterialStats.failures++;
+    }
+  }
   function rawMaterialAt(x: number, worldY: number): number {
     const y = worldY - offsetY;
     if (y < -7168 || y >= 17408) return 0;
@@ -206,9 +279,14 @@ export async function createCpuTerrain(gen: GLTerrainGeneration) {
       : field.materialAt(x, y);
   }
 
-  function rawColorAt(x: number, y: number, worldY: number): number {
+  function rawColorAt(
+    x: number,
+    y: number,
+    worldY: number,
+    preparedMaterial?: number,
+  ): number {
     if (y < -7168 || y >= 17408) return 0; // same supported vertical plane as GL
-    const material = materialCache.materialAt(x, worldY);
+    const material = preparedMaterial ?? materialCache.materialAt(x, worldY);
     if (material === 0) return 0;
     if (material > 0) {
       const p = material * 4,
@@ -288,6 +366,8 @@ export async function createCpuTerrain(gen: GLTerrainGeneration) {
     stats: resources.stats,
     edgeStats: composition.edgeStats,
     materialStats: materialCache.stats,
+    nativeMaterialStats,
+    prefillMaterials,
     colorAt,
     materialAt: materialCache.materialAt,
     contains: composition.contains,
@@ -300,18 +380,42 @@ export async function createCpuTerrain(gen: GLTerrainGeneration) {
       toRow: number,
       pixels: Uint8ClampedArray,
     ) {
-      for (let py = fromRow; py < toRow; py++)
-        for (let px = 0; px < width; px++) {
-          const wy = y + py,
-            ly = wy - offsetY;
-          const rgba =
-              ownership.at(x + px, ly) < 0 ? 0 : rawColorAt(x + px, ly, wy),
-            i = (py * width + px) * 4;
-          pixels[i] = (rgba >>> 16) & 255;
-          pixels[i + 1] = (rgba >>> 8) & 255;
-          pixels[i + 2] = rgba & 255;
-          pixels[i + 3] = rgba >>> 24;
+      const rowMaterials = new Int16Array(width);
+      for (let py = fromRow; py < toRow; py++) {
+        const wy = y + py,
+          ly = wy - offsetY;
+        for (let col = 0; col < width;) {
+          const wx = x + col;
+          const count = Math.min(
+            width - col,
+            512 - mod(wx + mapWidth * 256, 512),
+          );
+          if (ownership.at(wx, ly) < 0) {
+            pixels.fill(
+              0,
+              (py * width + col) * 4,
+              (py * width + col + count) * 4,
+            );
+          } else {
+            // Keep unowned pixels lazy: a color-only request must not resolve
+            // the rest of its rectangle merely because batching is available.
+            materialCache.readRect(wx, wy, count, 1, {
+              data: rowMaterials,
+              stride: width,
+              offset: col,
+            });
+            for (let px = col; px < col + count; px++) {
+              const rgba = rawColorAt(x + px, ly, wy, rowMaterials[px]);
+              const i = (py * width + px) * 4;
+              pixels[i] = (rgba >>> 16) & 255;
+              pixels[i + 1] = (rgba >>> 8) & 255;
+              pixels[i + 2] = rgba & 255;
+              pixels[i + 3] = rgba >>> 24;
+            }
+          }
+          col += count;
         }
+      }
     },
   };
 }

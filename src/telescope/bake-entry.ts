@@ -105,6 +105,7 @@ export async function openBakeRenderer(snapshot: any, backend: "cpu" | "gpu" = "
           continue;
         const from = top - y,
           to = bottom - y;
+        renderer.prefillMaterials(x, top, width, bottom - top);
         renderer.renderRows(x, y, width, from, to, pixels);
         renderer.finish(
           pixels.subarray(from * width * 4, to * width * 4),

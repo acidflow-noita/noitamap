@@ -14,6 +14,57 @@ import {
 } from "../build_scripts/terrain-pyramid.mjs";
 
 describe("native lossless terrain pyramid", () => {
+  it("preserves every RGBA byte for opaque, transparent, mixed-alpha and odd reductions", () => {
+    // Deliberately simple independent box-filter oracle, including the current
+    // four-sample denominator at odd image boundaries and hidden color bytes.
+    const reference = (pixels: Uint8Array, width: number, height: number) => {
+      const w = Math.ceil(width / 2),
+        h = Math.ceil(height / 2);
+      const out = Buffer.alloc(w * h * 4);
+      for (let y = 0; y < h; y++)
+        for (let x = 0; x < w; x++) {
+          const color = [0, 0, 0];
+          let alpha = 0;
+          for (let dy = 0; dy < 2; dy++)
+            for (let dx = 0; dx < 2; dx++) {
+              if (x * 2 + dx >= width || y * 2 + dy >= height) continue;
+              const p = ((y * 2 + dy) * width + x * 2 + dx) * 4;
+              alpha += pixels[p + 3];
+              for (let c = 0; c < 3; c++)
+                color[c] += pixels[p + c] * pixels[p + 3];
+            }
+          const p = (y * w + x) * 4;
+          if (alpha)
+            for (let c = 0; c < 3; c++)
+              out[p + c] = Math.round(color[c] / alpha);
+          out[p + 3] = Math.round(alpha / 4);
+        }
+      return out;
+    };
+    let seed = 0x12345678;
+    const random = () => {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      return seed >>> 0;
+    };
+    for (let n = 0; n < 96; n++) {
+      const width = n < 4 ? [1, 2, 17, 18][n] : 1 + (random() % 131);
+      const height = n < 4 ? [1, 2, 18, 17][n] : 1 + (random() % 129);
+      const pixels = Buffer.alloc(width * height * 4);
+      for (let p = 0; p < pixels.length; p += 4) {
+        pixels.writeUInt32LE(random(), p);
+        if (n % 4 === 0) pixels[p + 3] = 0;
+        else if (n % 4 === 1) pixels[p + 3] = 255;
+        else if (n % 4 === 2) pixels[p + 3] = random() % 3;
+      }
+      expect(
+        reduce2(pixels, width, height).data,
+        `case ${n}, ${width}x${height}`,
+      ).toEqual(reference(pixels, width, height));
+    }
+  });
+
   it("averages all pixels with premultiplied alpha, not hidden black/color values", () => {
     const source = Buffer.from([
       255, 0, 0, 255, 0, 255, 0, 0, 255, 0, 0, 255, 0, 0, 255, 0,

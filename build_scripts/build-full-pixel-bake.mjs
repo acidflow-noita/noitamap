@@ -9,14 +9,13 @@ import {
   mkdir,
   writeFile,
   readFile,
-  readdir,
   rename,
   rm,
   stat,
 } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { deserialize } from "node:v8";
-import { createHash } from "node:crypto";
+import { bakeCodeHash } from "./bake-fingerprint.mjs";
 import { availableParallelism, totalmem } from "node:os";
 import { createBakedWorldMetadata, readBakedWorldMetadata, writeBakedWorldMetadata, REPORT_INVENTORY_VERSION } from "./baked-world-metadata.mjs";
 import {
@@ -160,31 +159,7 @@ async function prepare() {
     });
   });
 }
-const fingerprint = createHash("sha256");
-for (const directory of [
-  "src/telescope",
-  "lib/noita-telescope-vm/js",
-  "lib/noita-telescope-vm/js/engine_resolve",
-  "lib/noita-telescope-vm/js/gl",
-  "build_scripts",
-]) {
-  for (const name of (await readdir(resolve(root, directory))).sort()) {
-    if (!/\.(ts|js|mjs|cjs)$/.test(name)) continue;
-    fingerprint.update(directory + "/" + name);
-    fingerprint.update(await readFile(resolve(root, directory, name)));
-  }
-}
-for (const file of [
-  "src/report-inventory.ts",
-  "package-lock.json",
-  "public/data.zip",
-  "public/wang_tiles.zip",
-  "public/pixel_scenes.zip",
-  "lib/noita-telescope-vm/data/material_atlas.bin",
-  "lib/noita-telescope-vm/data/material_atlas.json",
-])
-  fingerprint.update(await readFile(resolve(root, file)));
-const codeHash = fingerprint.digest("hex").slice(0, 16);
+const codeHash = await bakeCodeHash(root);
 let prepared;
 if (args.resume) {
   try {

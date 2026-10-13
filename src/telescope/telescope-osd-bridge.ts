@@ -22,9 +22,14 @@ import { prepareInstantTerrain } from './instant-terrain-backend';
 import { clearTerrainPngEncoders } from './terrain-png-encoder';
 import { createScenePrefetch } from "./scene-prefetch";
 import { SceneBitmapCache } from './scene-bitmap-cache';
+import { ScenePngEncodingQueue, finishSceneBitmap, type ScenePngEncodingBatch } from './scene-png-queue';
 import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer, clearBiomeBackgroundLayers } from "./biome-background-layer";
 
 const liveSceneBitmaps = new SceneBitmapCache();
+const scenePngEncodings = new ScenePngEncodingQueue({
+  onError: error => console.warn('[OSD Bridge] Optional scene PNG cache failed:', error),
+});
+let cancelLiveSceneEncoding: (() => void) | undefined;
 
 let instantTerrainModule: typeof import('./instant-terrain') | undefined;
 let instantTerrainLoading: Promise<typeof import('./instant-terrain')> | undefined;
@@ -490,6 +495,7 @@ function beginMarkerRequest(generationId: number) {
 
 /** Retire terrain work while keeping the outgoing map visible until first paint. */
 export function cancelPendingDynamicTerrain(): void {
+  cancelLiveSceneEncoding?.();
   // A retired presentation may still be waiting for modules or scene masks,
   // before addInstantTerrain creates the lifetime that clear can abort.
   currentGenerationId++;
@@ -501,6 +507,7 @@ export function cancelPendingDynamicTerrain(): void {
  * Remove all dynamic map overlays from the viewer.
  */
 export function clearDynamicOverlays(viewer: any): void {
+  cancelLiveSceneEncoding?.();
   resetPOICardContext(viewer);
   suspendedMarkerContext = null;
   clearPortalAnimations();
@@ -2092,6 +2099,7 @@ async function compositeSceneBitmap(
     bgByName: Map<string, string>;
   },
   seed: number,
+  deferEncoding?: (canvas: OffscreenCanvas) => void,
 ): Promise<{
   bitmap: ImageBitmap;
   blob: Blob | null;
@@ -2111,12 +2119,9 @@ async function compositeSceneBitmap(
     const image = ctx.createImageData(scene.width, scene.height);
     image.data.set(pixels);
     ctx.putImageData(image, 0, 0);
-    const bitmap = await createImageBitmap(canvas);
-    let blob: Blob | null = null;
-    try { blob = await canvas.convertToBlob({ type: 'image/png' }); }
-    catch (error) { console.warn("[OSD Bridge] convertToBlob failed (scene won't be cached):", key, error); }
-    canvas.width = canvas.height = 0;
-    return { bitmap, blob, width: scene.width, height: scene.height, kind: 'composite' };
+    const finished = await finishSceneBitmap(canvas, deferEncoding,
+      error => console.warn("[OSD Bridge] convertToBlob failed (scene won't be cached):", key, error));
+    return { ...finished, width: scene.width, height: scene.height, kind: 'composite' };
   }
   const slashIdx = key.indexOf('/');
   const biome = slashIdx >= 0 ? key.substring(0, slashIdx) : '';
@@ -2227,8 +2232,8 @@ async function compositeSceneBitmap(
 
   // Determine canvas dimensions matching the original per-branch behavior:
   // single-layer paths used the source's own dimensions, multi-layer used
-  // scene.width/height (or max of bg/vis as fallback). Going through a canvas
-  // for every path is necessary so we can convertToBlob for the IDB cache.
+  // scene.width/height (or max of bg/vis as fallback). Retain this original
+  // composition canvas for optional persistence; never redraw the bitmap.
   let cw: number;
   let ch: number;
   let kind: 'composite' | 'fallback';
@@ -2261,30 +2266,28 @@ async function compositeSceneBitmap(
 
   let bgBmp: ImageBitmap | null = null;
   let visBmp: ImageBitmap | null = null;
-  if (bgData) {
-    bgBmp = await createImageBitmap(bgData);
-    ctx.drawImage(bgBmp, 0, 0);
-  }
-  if (midBitmap) ctx.drawImage(midBitmap, 0, 0);
-  if (visualData) {
-    visBmp = await createImageBitmap(visualData);
-    ctx.drawImage(visBmp, 0, 0);
-  }
-
-  const bitmap = await createImageBitmap(canvas);
-  let blob: Blob | null = null;
+  let canvasTransferred = false;
   try {
-    blob = await canvas.convertToBlob({ type: 'image/png' });
-  } catch (e) {
-    console.warn("[OSD Bridge] convertToBlob failed (scene won't be cached):", key, e);
+    if (bgData) {
+      bgBmp = await createImageBitmap(bgData);
+      ctx.drawImage(bgBmp, 0, 0);
+    }
+    if (midBitmap) ctx.drawImage(midBitmap, 0, 0);
+    if (visualData) {
+      visBmp = await createImageBitmap(visualData);
+      ctx.drawImage(visBmp, 0, 0);
+    }
+
+    canvasTransferred = true;
+    const finished = await finishSceneBitmap(canvas, deferEncoding,
+      error => console.warn("[OSD Bridge] convertToBlob failed (scene won't be cached):", key, error));
+    return { ...finished, width: cw, height: ch, kind };
+  } finally {
+    if (!canvasTransferred) canvas.width = canvas.height = 0;
+    bgBmp?.close();
+    midBitmap?.close();
+    visBmp?.close();
   }
-
-  if (bgBmp) bgBmp.close();
-  if (midBitmap) midBitmap.close();
-  if (visBmp) visBmp.close();
-  canvas.width = canvas.height = 0;
-
-  return { bitmap, blob, width: cw, height: ch, kind };
 }
 
 /**
@@ -2445,9 +2448,12 @@ async function instantSceneMasks(result: GenerationResult): Promise<StaticTerrai
   return loadInstantSceneMasks(scenes, key => ensurePixelSceneData(key, { art: false }));
 }
 
+/** Live presentation supplies a bounded encoding batch. Offline exports and
+ * background prefetch keep their awaited PNG/persistence contract. */
 async function buildSceneBitmaps(
   result: GenerationResult,
-  generationId: number | null
+  generationId: number | null,
+  encoding?: ScenePngEncodingBatch,
 ): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap>; release: () => void } | null> {
   const validScenes = renderableScenes(result);
   // Correct the captured base only for live/exported scene composition. Baked
@@ -2523,7 +2529,11 @@ async function buildSceneBitmaps(
       }
 
       if (!current()) return;
-      const composited = await compositeSceneBitmap(scene.key, scene, idx!, result.seed);
+      const deferEncoding = encoding ? (canvas: OffscreenCanvas) => {
+        const { width, height } = canvas;
+        encoding.enqueue(canvas, blob => cacheSceneBitmap(rk, blob, width, height));
+      } : undefined;
+      const composited = await compositeSceneBitmap(scene.key, scene, idx!, result.seed, deferEncoding);
       if (!composited) {
         missingCount++;
         return;
@@ -5070,12 +5080,33 @@ export async function renderGenerationResult(
   restoreTerrain = false,
 ): Promise<void> {
   const generationId = ++currentGenerationId;
+  cancelLiveSceneEncoding?.();
+  const encoding = scenePngEncodings.batch();
+  const sceneViewer = (viewer as any).viewer || viewer;
+  const cancelEncoding = () => {
+    encoding.cancel();
+    sceneViewer.removeHandler?.('before-destroy', cancelEncoding);
+    if (cancelLiveSceneEncoding === cancelEncoding) cancelLiveSceneEncoding = undefined;
+  };
+  cancelLiveSceneEncoding = cancelEncoding;
+  sceneViewer.addHandler?.('before-destroy', cancelEncoding);
   const markerRequest = beginMarkerRequest(generationId);
+  let terrainPainted = false;
+  let artworkComplete = false;
+  const startEncodingAfterPaint = () => {
+    if (currentGenerationId === generationId && terrainPainted && artworkComplete)
+      encoding.afterPaint();
+  };
   let completeArtwork = () => {};
-  const artworkReady = new Promise<void>(resolve => { completeArtwork = resolve; });
+  const artworkReady = new Promise<void>(resolve => {
+    completeArtwork = () => {
+      artworkComplete = true;
+      resolve();
+      startEncodingAfterPaint();
+    };
+  });
   let completeTerrainDraw!: (drawn: boolean) => void;
   const terrainDrawn = new Promise<boolean>(resolve => { completeTerrainDraw = resolve; });
-  let terrainPainted = false;
   let fallbackRender: Promise<void> | undefined;
   clearPortalAnimations();
   clearInstantTerrain();
@@ -5156,6 +5187,7 @@ export async function renderGenerationResult(
       console.warn('[OSD Bridge] onFirstPaint threw:', e);
     }
     completeTerrainDraw(true);
+    startEncodingAfterPaint();
   };
 
   // Bakes already contain terrain and sprites. Live POI preparation waits for
@@ -5243,7 +5275,7 @@ export async function renderGenerationResult(
         // Cutout masks are complete. Compose required artwork while the
         // terrain worker prepares/uploads resources; attach only afterwards
         // to preserve OSD order and the atomic terrain/art first-paint gate.
-        const work = buildSceneBitmaps(sceneResult, generationId);
+        const work = buildSceneBitmaps(sceneResult, generationId, encoding);
         void work.catch(() => {}); // Terrain may fail or retire before joining.
         preparedScenes = { result: sceneResult, work };
       }
@@ -5256,7 +5288,10 @@ export async function renderGenerationResult(
           fallbackRender = renderGenerationResult(viewer, result, unlocks, isDaily, onFirstPaint, cacheKey,
             null, false, false, true, generationStartedAt);
           void fallbackRender.catch(error => console.error('[OSD Bridge] Terrain fallback failed:', error));
-        }, generationStartedAt, artworkReady, () => completeTerrainDraw(false), restoreTerrain);
+        }, generationStartedAt, artworkReady, () => {
+          completeTerrainDraw(false);
+          cancelEncoding();
+        }, restoreTerrain);
     }
     if (currentGenerationId !== generationId) return fallbackRender;
     awaitingTerrainDraw = instant;
@@ -5283,7 +5318,8 @@ export async function renderGenerationResult(
         // Finish/release the subset first; the decoded cache reuses its art.
         if (preparedScenes) await preparedScenes.work;
         discardPreparedScenes();
-        await addPixelScenes(viewer, sceneResult, generationId);
+        await addPixelScenes(viewer, sceneResult, generationId,
+          buildSceneBitmaps(sceneResult, generationId, encoding));
       }
       if (currentGenerationId !== generationId) return fallbackRender;
     }
@@ -5388,6 +5424,10 @@ export async function renderGenerationResult(
     throw error;
   } finally {
     discardPreparedScenes();
+    // A failed/obsolete/never-painted view must not retain canvases behind an
+    // unresolved paint gate. Caching is optional even on late baked callbacks.
+    if (currentGenerationId !== generationId || !terrainPainted || !artworkComplete)
+      cancelEncoding();
   }
 }
 

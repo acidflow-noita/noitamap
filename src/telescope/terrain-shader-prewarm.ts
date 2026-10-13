@@ -82,6 +82,9 @@ async function warmShader(renderer: any) {
   const gl = renderer.gl;
   if (renderer.program) return;
   const started = performance.now();
+  const parallel = gl.getExtension?.("KHR_parallel_shader_compile");
+  const timing = { parallelCompletion: !!parallel, vertexCompileMs: 0,
+    fragmentCompileMs: 0, linkSubmitMs: 0, completionWaitMs: 0, finalizationMs: 0 };
   const program = gl.createProgram();
   const shaders: any[] = [];
   try {
@@ -92,11 +95,17 @@ async function warmShader(renderer: any) {
       const shader = gl.createShader(type);
       shaders.push(shader);
       gl.shaderSource(shader, source);
+      const compileStarted = performance.now();
       gl.compileShader(shader);
+      const compileMs = performance.now() - compileStarted;
+      if (type === gl.VERTEX_SHADER) timing.vertexCompileMs = compileMs;
+      else timing.fragmentCompileMs = compileMs;
       gl.attachShader(program, shader);
     }
+    const linkStarted = performance.now();
     gl.linkProgram(program);
-    const parallel = gl.getExtension?.("KHR_parallel_shader_compile");
+    timing.linkSubmitMs = performance.now() - linkStarted;
+    const waitStarted = performance.now();
     while (
       parallel &&
       !gl.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR)
@@ -105,6 +114,8 @@ async function warmShader(renderer: any) {
         throw new Error("Terrain shader compilation did not complete");
       await pause();
     }
+    timing.completionWaitMs = performance.now() - waitStarted;
+    const finalizeStarted = performance.now();
     if (!gl.getProgramParameter(program, gl.LINK_STATUS))
       throw new Error(
         `Terrain shader link failed: ${gl.getProgramInfoLog(program)}`,
@@ -125,6 +136,12 @@ async function warmShader(renderer: any) {
     renderer.program = program;
     renderer.uniforms = uniforms;
     renderer.shaderWarmupMs = performance.now() - started;
+    timing.finalizationMs = performance.now() - finalizeStarted;
+    // This record is emitted only when a context actually compiles a program.
+    // The viewport's historical shaderWarmupMs is also shown on warm reseeds.
+    console.info('[Instant terrain] Terrain shader startup', {
+      totalMs: renderer.shaderWarmupMs, ...timing,
+    });
   } catch (error) {
     gl.deleteProgram(program);
     throw error;

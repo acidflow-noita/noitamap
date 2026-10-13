@@ -1,0 +1,30 @@
+Noitamap native material resolver.
+
+The C algorithms and generated immutable tables are derived from Lymm's
+Telescope source, including the pinned vitaminmoo render-perf fork contained in
+lib/noita-telescope-vm. Upstream MIT attribution is reproduced in
+LICENSE-telescope.txt and must accompany any promoted source or binary.
+
+Copyright (c) 2026 Lymm
+
+Source algorithms: js/engine_resolve/topo2_resolve.js, perlin_noise.js,
+carve_noise.js, simplex_noise.js, band_select.js, chunk_wobble.js and
+material_field.js and lattice_builder.js. Vertical plane address translation
+follows src/telescope/plane-material-field.ts (also pinned in the manifest).
+Source tables: js/engine_resolve/engine_data.js.
+Exact source and compiled artifact SHA256 hashes are retained in
+build-identity.json. Vite validates them before building or starting development.
+
+The WASM core, band and ownership ports preserve the selected JavaScript
+reference's numeric semantics. This establishes source parity only; inherited
+Telescope inaccuracies are not independently proven correct against Noita.
+No game executable or scene artwork is bundled in these WASM artifacts.
+
+Compiler: WASI SDK 34, Clang, --target=wasm32-unknown-unknown, -O3,
+-ffp-contract=off -fno-fast-math. No relaxed SIMD or fast-math is used.
+Build with an external installed SDK:
+  WASI_SDK_PATH=/path/to/wasi-sdk node build_scripts/build-native-materials.mjs
+Check without a compiler:
+  node build_scripts/build-native-materials.mjs --check
+No compiler is downloaded by the application. The SDK's distribution carries
+its own toolchain licenses.

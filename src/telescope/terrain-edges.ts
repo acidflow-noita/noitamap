@@ -1,3 +1,8 @@
+import {
+  currentNativeEdges,
+  readyNativeEdges,
+  warmNativeEdges,
+} from "../native-map/edges";
 import Flatbush from "flatbush";
 import {
   EDGE_DECAL_HALO,
@@ -10,6 +15,7 @@ import { sceneMaterialGrid } from "./scene-material-grid";
 import { compositeTerrain } from "./terrain-backgrounds";
 import { readRGBA, writeRGBA } from "./terrain-scenes";
 import type { GLTerrainGeneration } from "./gl-terrain-tile-source";
+import type { ReadMaterialRect } from "./material-cache";
 export type TerrainMaterialAt = (x: number, worldY: number) => number;
 
 // Match the stamper's scan bounds: origins farther than the largest sprite's
@@ -26,6 +32,7 @@ const stampReach =
     );
   }, 0);
 const unusedHalo = Math.max(0, EDGE_DECAL_HALO - stampReach - 4);
+export const TERRAIN_MATERIAL_HALO = EDGE_DECAL_HALO - unusedHalo;
 
 /** Paint the existing render-perf EdgeGraphics pass into final leaf pixels,
  * not a zoom-gated overlay. The deterministic world-space pass includes a halo
@@ -37,8 +44,11 @@ export async function createTerrainEdges(
   config: Record<string, any>,
   width: number,
   materialAt?: TerrainMaterialAt,
+  readMaterials?: ReadMaterialRect,
 ) {
+  warmNativeEdges();
   await initEdgeDecalAtlas();
+  const nativeEdges = await readyNativeEdges();
   const field = materialAt
     ? null
     : createMaterialField(
@@ -74,9 +84,18 @@ export async function createTerrainEdges(
       const left = x - pad,
         top = y - pad;
       const materials = new Int16Array(pw * ph);
-      for (let py = unusedHalo; py < ph - unusedHalo; py++)
-        for (let px = unusedHalo; px < pw - unusedHalo; px++)
-          materials[py * pw + px] = sample(left + px, top + py);
+      if (readMaterials) {
+        readMaterials(
+          left + unusedHalo,
+          top + unusedHalo,
+          pw - unusedHalo * 2,
+          ph - unusedHalo * 2,
+          { data: materials, stride: pw, offset: unusedHalo * pw + unusedHalo },
+        );
+      } else
+        for (let py = unusedHalo; py < ph - unusedHalo; py++)
+          for (let px = unusedHalo; px < pw - unusedHalo; px++)
+            materials[py * pw + px] = sample(left + px, top + py);
       const sceneGrids = (index?.search(left, top, left + pw, top + ph) ?? [])
         .sort((a, b) => a - b)
         .map((id) => {
@@ -91,7 +110,10 @@ export async function createTerrainEdges(
           }
           return grid;
         });
-      const decals = stampEdgeDecals(materials, pw, ph, left, top, gen.seed, {
+      const stamp =
+        (nativeEdges?.enabled ? nativeEdges : currentNativeEdges())?.stamp ??
+        stampEdgeDecals;
+      const decals = stamp(materials, pw, ph, left, top, gen.seed, {
         chunkShiftX: (width * 256) % 512,
         chunkShiftY: 0,
         scenes: sceneGrids,

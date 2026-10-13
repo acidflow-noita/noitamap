@@ -8,6 +8,8 @@ import { dataArchivesPlugin } from "./build_scripts/vite-data-archives.ts";
 import { atlasChunksPlugin } from "./build_scripts/vite-atlas-chunks.ts";
 import { resolveLocalPro } from "./build_scripts/local-pro.ts";
 import { ignoreTaskScratch } from "./build_scripts/vite-watch.ts";
+import { nativeEdgesPlugin } from "./build_scripts/vite-native-edges.ts";
+import { nativeMaterialsPlugin } from "./build_scripts/vite-native-materials.ts";
 import { relative, resolve } from "node:path";
 import { createHash } from "node:crypto";
 
@@ -100,6 +102,8 @@ export default defineConfig({
     },
   },
   plugins: [
+    nativeMaterialsPlugin(import.meta.dirname),
+    nativeEdgesPlugin(import.meta.dirname),
     deliveryPlugin(),
     localeAssetsPlugin(import.meta.dirname),
     dataArchivesPlugin(import.meta.dirname),

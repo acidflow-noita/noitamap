@@ -44,6 +44,7 @@ vi.mock("noita-telescope-full-pixels/edge_decals.js", async () => {
       ),
   };
 });
+import { cacheMaterialAt } from "../src/telescope/material-cache";
 import { createTerrainEdges } from "../src/telescope/terrain-edges";
 import { MATERIAL_NAMES_BY_ID } from "../lib/noita-telescope-vm/js/engine_resolve/engine_data.js";
 import { GENERATOR_CONFIG } from "../lib/noita-telescope-vm/js/generator_config.js";
@@ -183,7 +184,9 @@ it("keeps edge pixels identical across independently rendered tile boundaries", 
 
 it("matches full-halo sampling for all edge materials, scene overlaps, seams and alpha", async () => {
   const ids = MATERIAL_NAMES_BY_ID.flatMap((name: string, id: number) =>
-    Object.prototype.hasOwnProperty.call(EDGE_ENTRIES_BY_MATERIAL, name) ? [id] : [],
+    Object.prototype.hasOwnProperty.call(EDGE_ENTRIES_BY_MATERIAL, name)
+      ? [id]
+      : [],
   );
   for (const [w, h] of [
     [1, 1],
@@ -267,6 +270,7 @@ it("matches full-halo sampling for all edge materials, scene overlaps, seams and
         for (let i = 0; i < expected.length; i += 4)
           expected.set([15, 30, 45, [0, 32, 127, 255][(i / 4) % 4]], i);
         const actual = expected.slice();
+        const bulkActual = expected.slice();
         const canPaint = (wx: number) => wx % 7 !== 0;
         for (let py = 0; py < h; py++)
           for (let px = 0; px < w; px++) {
@@ -283,6 +287,21 @@ it("matches full-halo sampling for all edge materials, scene overlaps, seams and
               );
           }
         edges.paint(actual, x, y, w, h, canPaint);
+        const cache = cacheMaterialAt(sample);
+        const bulkEdges = await createTerrainEdges(
+          g,
+          GENERATOR_CONFIG,
+          70,
+          cache.materialAt,
+          cache.readRect,
+        );
+        bulkEdges.paint(bulkActual, x, y, w, h, canPaint);
+        expect(
+          Buffer.from(bulkActual).equals(Buffer.from(expected)),
+          JSON.stringify({ x, y, w, h, withScenes, bulk: true }),
+        ).toBe(true);
+        // Scene overlays mutate only the copied rectangle, never the cache.
+        expect(cache.materialAt(x, y)).toBe(sample(x, y));
         expect(
           Buffer.from(actual).equals(Buffer.from(expected)),
           JSON.stringify({ x, y, w, h, withScenes }),

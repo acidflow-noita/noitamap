@@ -23,7 +23,7 @@ describe.skipIf(process.platform !== "linux")("shared terrain resources with nat
           const original = readFileSync(resolve(directory, 'gl/shaders.js'), 'utf8');
           const start = original.indexOf('        // Material-id output (edge-decal tiles, terrain_renderer.js');
           const end = original.indexOf('    }\n\n    ivec2 pos;', start);
-          const patched = standaloneTerrainShaders(directory);
+          const patched = standaloneTerrainShaders(directory, undefined, { optimize: false });
           const sharedStart = patched.indexOf('        // Noitamap: resolve once for color and material-id output.');
           const sharedEnd = patched.indexOf('    }\n\n    ivec2 pos;', sharedStart);
           if ([start, end, sharedStart, sharedEnd].some(n => n < 0)) throw new Error('Review terrain shader reference boundaries');

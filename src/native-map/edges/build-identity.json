@@ -1,0 +1,41 @@
+{
+  "abi": 1,
+  "compiler": "clang version 23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)\nTarget: wasm32-unknown-wasip1\nThread model: posix",
+  "flags": [
+    "--target=wasm32-unknown-unknown",
+    "-O3",
+    "-ffp-contract=off",
+    "-fno-fast-math",
+    "-mbulk-memory",
+    "-nostdlib",
+    "-Wl,--no-entry",
+    "-Wl,--export=abi_version",
+    "-Wl,--export=buffer_ptr",
+    "-Wl,--export=configure",
+    "-Wl,--export=start",
+    "-Wl,--export=scene",
+    "-Wl,--export-memory",
+    "-Wl,--initial-memory=16777216",
+    "-Wl,--max-memory=16777216",
+    "-Wl,-z,stack-size=131072"
+  ],
+  "attribution": "Copyright (c) 2026 Lymm; MIT, see LICENSE-telescope.txt and NOTICE.txt",
+  "scope": "Source parity with pinned Telescope edge_decals.js; original game decoration RNG/grass fidelity is not established by this port.",
+  "sha256": {
+    "build_scripts/build-native-edges.mjs": "e3397a10ee0f413ec9f69485a8efc56e120e5a296ae303dfc800ae48fc960718",
+    "build_scripts/native-edge-identity.mjs": "741e237fef3e555d0fd0d9425e14eb36c7a868f0f1095cf67b7f279514066f1e",
+    "src/native-map/edges/core.c": "7c8fa5d4f9304354fd1e944e7fbfb32f1465c7f4dc5568ad02459d72c8c2bfa5",
+    "src/native-map/edges/core.ts": "362476ae27007cb9ead0a8d5e37ad917386a7fc44026fbf3b121f92b7abef6f1",
+    "src/native-map/edges/data.ts": "678980d287a272eff19b001e511d3f34c7da67c53e5bf1c4e20e9d340097ea26",
+    "src/native-map/edges/types.ts": "389580088c64953d23fb41e79a4e8d2bd4a7f638daa8108c7a1bb1e64fb3b60b",
+    "src/native-map/edges/index.ts": "755021c43a55aa177ff991a28a79096a0d7e5bb7251595ed6d12198890a55410",
+    "lib/noita-telescope-vm/js/edge_decals.js": "b58862f4b74f20080092f1e31e12a5dcc2691de1c4841e0ede0f57de43fa8e0e",
+    "lib/noita-telescope-vm/js/engine_resolve/edge_data.js": "9b494a837abb389c3ba6fc3195e6ec196a36542012e6b6b6f1e4d12406db3a21",
+    "lib/noita-telescope-vm/js/engine_resolve/engine_data.js": "a2beaefdd1a4feb84e3784857ba4d210f8c15d0b02dee8bd13be7658ab10af41",
+    "lib/noita-telescope-vm/js/engine_resolve/chunk_wobble.js": "fe59dc60b2a1b887bea88f6cf3de1904407480c50af15b45d2136d9aa0d10ef0",
+    "lib/noita-telescope-vm/js/engine_resolve/simplex_noise.js": "4c176bc35fcd5a5de78df424d4a087622ab7d512a9c3745dce93bc2334a666e0",
+    "lib/noita-telescope-vm/js/pixel_scene_edge_flags.js": "a5fd3320985b2182156d4694bd83beae17d9d55b3b52e8f34188ace9342ad063",
+    "lib/noita-telescope-vm/data/edge_atlas.bin": "5c588a69625b46a6d6ea980b27f3bc07800786824e0de739350a8d37ac44c2b9",
+    "src/native-map/edges/core.wasm": "c2247b342193831fc7cedcd425339f08f2fa10d519b635df49a9b36642cdf81f"
+  }
+}

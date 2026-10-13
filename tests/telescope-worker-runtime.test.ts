@@ -104,6 +104,19 @@ afterAll(async () => {
 describe.sequential(
   "production PW worker with real seed generation and native rasterization (no browser)",
   () => {
+    it("keeps rendering assets out of cold full-pixel PW metadata preparation", async () => {
+      const result = await execute({ entry: workerEntry, output }, {
+        fullPixels: true, prepareOnly: true, seed: 1, pw: 1, ngPlus: 0,
+        gameMode: "normal", perks: {}, unlocks: null, dailySeed: false,
+        skipCosmeticScenes: false,
+      });
+      expect(result.data.success).toBe(true);
+      expect(result.data.pois).toEqual([]);
+      expect(result.data.pixelScenes).toEqual([]);
+      expect(result.missing).toEqual([]);
+      expect(result.requests.some((url: string) => url.includes("material_atlas"))).toBe(false);
+    }, 60000);
+
     it("returns the original worker stack and generation phase on failure", async () => {
       await expect(
         execute(

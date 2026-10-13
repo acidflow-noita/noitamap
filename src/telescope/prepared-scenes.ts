@@ -61,13 +61,15 @@ export function prepareSceneInputs(
 export async function installPreparedScenes(
   sceneModule: any,
   fullPixels: boolean,
-  inline = false,
+  metadataWorker = false,
 ): Promise<void> {
-  // Match upstream's asynchronous texture setup, independently of decoding.
-  void sceneModule.initPixelSceneTextures?.();
+  // PW workers need placement/spawn metadata only. Loading the rendering atlas
+  // here would allocate it independently in both workers on every cold visit.
+  // The main installation still warms textures independently of scene decoding.
+  if (!metadataWorker) void sceneModule.initPixelSceneTextures?.();
   installWorkerScenes(
     sceneModule,
-    await prepareSceneInputs(fullPixels, inline),
+    await prepareSceneInputs(fullPixels, metadataWorker),
     fullPixels,
   );
 }

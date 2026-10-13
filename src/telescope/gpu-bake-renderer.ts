@@ -67,6 +67,7 @@ export async function openGpuBakeRenderer(snapshot: any) {
           throw new Error("Missing native GPU readback; refusing to publish an empty tile");
         gpuMs += performance.now() - start;
         const finishStart = performance.now();
+        finisher.prefillMaterials(x, top, w, bottom - top);
         finisher.finish(pixels, x, top, w, bottom - top);
         finishingMs += performance.now() - finishStart;
         renderedPixels += w * (bottom - top);

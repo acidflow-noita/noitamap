@@ -33,36 +33,58 @@ export async function completeFile(path) {
  * transparent neighbors cannot inject black RGB or change cloud colors. */
 export function reduce2(pixels, width, height) {
   const w = Math.ceil(width / 2),
-    h = Math.ceil(height / 2),
-    out = Buffer.alloc(w * h * 4);
-  for (let y = 0; y < h; y++)
+    h = Math.ceil(height / 2);
+  const out = Buffer.alloc(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    const row0 = y * 2 * width * 4,
+      row1 = row0 + width * 4;
+    const secondRow = y * 2 + 1 < height;
     for (let x = 0; x < w; x++) {
-      let a = 0,
-        r = 0,
-        g = 0,
-        b = 0;
-      for (let dy = 0; dy < 2; dy++)
-        for (let dx = 0; dx < 2; dx++) {
-          const sx = x * 2 + dx,
-            sy = y * 2 + dy;
-          if (sx >= width || sy >= height) continue;
-          const i = (sy * width + sx) * 4,
-            alpha = pixels[i + 3];
-          a += alpha;
-          r += pixels[i] * alpha;
-          g += pixels[i + 1] * alpha;
-          b += pixels[i + 2] * alpha;
+      const p0 = row0 + x * 8,
+        p1 = p0 + 4,
+        p2 = row1 + x * 8,
+        p3 = p2 + 4;
+      const secondCol = x * 2 + 1 < width,
+        target = (y * w + x) * 4;
+      const a0 = pixels[p0 + 3],
+        a1 = secondCol ? pixels[p1 + 3] : 0;
+      const a2 = secondRow ? pixels[p2 + 3] : 0,
+        a3 = secondRow && secondCol ? pixels[p3 + 3] : 0;
+      const alpha = a0 + a1 + a2 + a3;
+      if (!alpha) continue;
+      if (alpha === 1020) {
+        out[target] =
+          (pixels[p0] + pixels[p1] + pixels[p2] + pixels[p3] + 2) >> 2;
+        out[target + 1] =
+          (pixels[p0 + 1] +
+            pixels[p1 + 1] +
+            pixels[p2 + 1] +
+            pixels[p3 + 1] +
+            2) >>
+          2;
+        out[target + 2] =
+          (pixels[p0 + 2] +
+            pixels[p1 + 2] +
+            pixels[p2 + 2] +
+            pixels[p3 + 2] +
+            2) >>
+          2;
+        out[target + 3] = 255;
+      } else {
+        for (let c = 0; c < 3; c++) {
+          let sum = pixels[p0 + c] * a0;
+          if (a1) sum += pixels[p1 + c] * a1;
+          if (a2) sum += pixels[p2 + c] * a2;
+          if (a3) sum += pixels[p3 + c] * a3;
+          out[target + c] = Math.round(sum / alpha);
         }
-      const i = (y * w + x) * 4;
-      if (a) {
-        out[i] = Math.round(r / a);
-        out[i + 1] = Math.round(g / a);
-        out[i + 2] = Math.round(b / a);
-        out[i + 3] = Math.round(a / 4);
+        out[target + 3] = (alpha + 2) >> 2;
       }
     }
+  }
   return { data: out, width: w, height: h };
 }
+
 export async function saveCore(path, pixels, width, height) {
   const png = await sharp(pixels, { raw: { width, height, channels: 4 } })
     .png({ compressionLevel: 1, adaptiveFiltering: false })

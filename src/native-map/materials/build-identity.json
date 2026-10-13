@@ -1,0 +1,42 @@
+{
+  "abi": 2,
+  "compiler": "clang version 23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)\nTarget: wasm32-unknown-wasip1\nThread model: posix",
+  "flags": [
+    "--target=wasm32-unknown-unknown",
+    "-DINCLUDE_BANDS",
+    "-DINCLUDE_OWNERSHIP",
+    "-DINCLUDE_VERTICAL",
+    "-O3",
+    "-ffp-contract=off",
+    "-fno-fast-math",
+    "-nostdlib",
+    "-Wl,--no-entry",
+    "-Wl,--export-memory",
+    "-Wl,--initial-memory=262144",
+    "-Wl,--max-memory=134217728",
+    "-Wl,-z,stack-size=65536"
+  ],
+  "attribution": "Copyright (c) 2026 Lymm; MIT, see LICENSE-telescope.txt and NOTICE.txt",
+  "sha256": {
+    "build_scripts/build-native-materials.mjs": "9420da7323f4628ac75fefed99ca4c22a1f5d91c30ab55dede4f0e1cd087571b",
+    "build_scripts/generate-native-material-tables.mjs": "0a779653a0d5739da6f0351dce1541509a60de69c7321fd1d6e76d5d45a633ed",
+    "src/native-map/materials/topo2.c": "328a761d4b93d194088fbcf382c7bb88530e9b211e9eeaaea4c85c67b809729c",
+    "src/native-map/materials/bands.c": "98cf6010099e24c3ede3116a52b9f28152744b50bc870c72a2ff92566a24b7a5",
+    "src/native-map/materials/ownership.c": "d5882360f59341d34ef9f6334bb86a6db5511bbf4029c71a92f4dc14bbd5597c",
+    "src/native-map/materials/vertical.c": "749b77d3711632b49531379ebbc096f130d92a1a05dbdeb3d1bfed82fe87d9cb",
+    "src/native-map/materials/index.ts": "18f937a749b7a64b52093de3aa2036aba3782812621d072c511cc552b1a2c65c",
+    "src/telescope/plane-material-field.ts": "a01e9bd1e01495ae209ca01fa5401afea29b163d3e0a72a6d83344c2a6b2cddb",
+    "src/native-map/materials/constants.h": "a8ba1f3d19b977eb24ebeaffff755f0fa7ce033ed7249c1dd7a3d26b45d79c57",
+    "src/native-map/materials/bands-data.h": "205ad81295b83fda76367b35e66d052c48d30bfab45bcce850f7e0b02d49a82b",
+    "lib/noita-telescope-vm/js/engine_resolve/engine_data.js": "a2beaefdd1a4feb84e3784857ba4d210f8c15d0b02dee8bd13be7658ab10af41",
+    "lib/noita-telescope-vm/js/engine_resolve/topo2_resolve.js": "5775a129be5931448f30bdf67b49f56e829145aab7368dc4e71908225119239e",
+    "lib/noita-telescope-vm/js/engine_resolve/perlin_noise.js": "3684615a0f4d8a8b9f46cd1537f16872e2af2ef840eec6a6b3405333d8e00ca3",
+    "lib/noita-telescope-vm/js/engine_resolve/carve_noise.js": "7943650f557fc22c40bc3474f13c7956a59e1fa4742ecd37a3a7482762c31fac",
+    "lib/noita-telescope-vm/js/engine_resolve/simplex_noise.js": "4c176bc35fcd5a5de78df424d4a087622ab7d512a9c3745dce93bc2334a666e0",
+    "lib/noita-telescope-vm/js/engine_resolve/band_select.js": "382769451bd6bc9c37d6c7d6b05d4db95cfafc690147b0423d34e2d95c2964c1",
+    "lib/noita-telescope-vm/js/engine_resolve/chunk_wobble.js": "fe59dc60b2a1b887bea88f6cf3de1904407480c50af15b45d2136d9aa0d10ef0",
+    "lib/noita-telescope-vm/js/engine_resolve/material_field.js": "241dd2e13582f4cfcc5fc1679453c7abe5ce4b4cd77e1018da44945232cf3bc7",
+    "lib/noita-telescope-vm/js/engine_resolve/lattice_builder.js": "7b9078926ed6b1c653258d55ce9794614df909a2668b8e57dbb61d0ddb654347",
+    "src/native-map/materials/owned-materials.wasm": "5d52e9af2b2e3141ee31e5c7a20c724c2a57aee8f17915e770382f5cd83eda75"
+  }
+}

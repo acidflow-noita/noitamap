@@ -1,0 +1,34 @@
+Noitamap optional native edge-decal stamper.
+
+Copyright (c) 2026 Lymm
+Derived from the pinned vitaminmoo render-perf Telescope fork in
+lib/noita-telescope-vm, under the MIT license reproduced in
+LICENSE-telescope.txt. That notice must accompany promoted source and binaries.
+
+Reference algorithms: js/edge_decals.js, including candidate order, position
+hashing, ray normals, sprite/stripe placement and scene-local overlays.
+Reference data: js/engine_resolve/edge_data.js, engine_data.js, and the existing
+edge_atlas.bin asset. Seam decisions retain chunk_wobble.js and
+pixel_scene_edge_flags.js in JavaScript. Runtime ray/angle tables use that
+runtime's JavaScript Math implementation, preserving the reference's operation
+order; they are not serialized from a different engine or compiler.
+
+This establishes source compatibility only. The reference uses deterministic
+position-seeded decoration randomness, not the original game's free-running
+RNG. This port does not add or independently validate real-game grass fidelity.
+No game executable, scene artwork, or atlas bytes are embedded in the WASM.
+
+build-identity.json pins the owned C/runtime/table sources, upstream reference
+sources, atlas and compiled artifact. Vite rejects stale inputs before builds
+and dev startup. The bake fingerprint includes the owned edge directory and
+edge atlas. The module has fixed 16 MiB memory and no imports or linked runtime.
+
+Compiler: external WASI SDK 34 Clang, wasm32-unknown-unknown, -O3,
+-ffp-contract=off -fno-fast-math -mbulk-memory -nostdlib.
+No fast-math or relaxed SIMD is used. Standard bulk-memory instructions may
+be used; module failure preserves the original JS path.
+
+Build with an installed SDK (none is downloaded by the application):
+  WASI_SDK_PATH=/path/to/wasi-sdk node build_scripts/build-native-edges.mjs
+Check without a compiler:
+  node build_scripts/build-native-edges.mjs --check
