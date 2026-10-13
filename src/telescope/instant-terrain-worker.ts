@@ -22,6 +22,7 @@ installTelescopeShim();
 installFetchInterceptor(true);
 
 let renderer: any;
+let nativeRenderer = false;
 let resources: any;
 let config: any;
 let warm: Promise<void> | undefined;
@@ -35,25 +36,22 @@ const outstanding = new Set<number>();
 
 function prewarm() {
   return (warm ??= (async () => {
-    const { prewarmTerrainShader, createTerrainWebGL2Context } =
-      await import("./terrain-shader-prewarm");
-    const canvas = new OffscreenCanvas(1, 1);
-    const gl = createTerrainWebGL2Context(canvas);
-    if (!gl) throw new Error("OffscreenCanvas WebGL2 unavailable");
-    renderer = { canvas, gl, initContext: () => true };
-    canvas.addEventListener("webglcontextlost", (event) => {
-      event.preventDefault();
-      renderer.contextLost = true;
-      renderer.textures = null;
-      renderer.program = null;
-    });
-    canvas.addEventListener("webglcontextrestored", () => {
-      renderer.contextLost = false;
-      renderer.sourceKey = null;
-    });
-    gl.disable(gl.BLEND);
-    gl.disable(gl.DEPTH_TEST);
-    await prewarmTerrainShader(renderer);
+    if (nativeRenderer) {
+      const { NativeTerrainRenderer } = await import('../native-map/gpu/terrain-renderer');
+      renderer = new NativeTerrainRenderer();
+      await renderer.prewarm();
+    } else {
+      const { prewarmTerrainShader, createTerrainWebGL2Context } = await import('./terrain-shader-prewarm');
+      const canvas = new OffscreenCanvas(1, 1), gl = createTerrainWebGL2Context(canvas);
+      if (!gl) throw Error('OffscreenCanvas WebGL2 unavailable');
+      renderer = { canvas, gl, initContext: () => true };
+      canvas.addEventListener('webglcontextlost', event => {
+        event.preventDefault(); renderer.contextLost = true; renderer.textures = null; renderer.program = null;
+      });
+      canvas.addEventListener('webglcontextrestored', () => { renderer.contextLost = false; renderer.sourceKey = null; });
+      gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
+      await prewarmTerrainShader(renderer);
+    }
   })());
 }
 
@@ -63,27 +61,25 @@ function loadResources() {
     // Shader-only prewarm must not evaluate the generator's archive-dependent
     // top-level imports while a cold data.zip download is still in flight.
     const [
-      { GLTerrainRenderer },
       { initMaterialAtlas },
       { GENERATOR_CONFIG },
       { SharedInstantTerrainResources },
     ] = await Promise.all([
-      import("noita-telescope-full-pixels/gl/terrain_renderer.js"),
       import("noita-telescope-full-pixels/gl/material_atlas.js"),
       import("noita-telescope-full-pixels/generator_config.js"),
       import("./shared-instant-terrain"),
     ]);
     await Promise.all([prewarm(), initMaterialAtlas()]);
     config = GENERATOR_CONFIG;
-    const warmed = renderer;
-    renderer = Object.assign(new GLTerrainRenderer(), {
-      canvas: warmed.canvas,
-      gl: warmed.gl,
-      program: warmed.program,
-      uniforms: warmed.uniforms,
-      shaderWarmupMs: warmed.shaderWarmupMs,
-      contextLost: warmed.contextLost ?? false,
-    });
+    if (!nativeRenderer) {
+      const { GLTerrainRenderer } = await import('noita-telescope-full-pixels/gl/terrain_renderer.js');
+      const warmed = renderer;
+      renderer = Object.assign(new GLTerrainRenderer(), {
+        canvas: warmed.canvas, gl: warmed.gl, program: warmed.program,
+        uniforms: warmed.uniforms, shaderWarmupMs: warmed.shaderWarmupMs,
+        contextLost: warmed.contextLost ?? false,
+      });
+    }
     resources = new SharedInstantTerrainResources(renderer);
   })());
 }
@@ -102,6 +98,7 @@ self.onmessage = ({ data }) => {
       await new Promise((resolve) => setTimeout(resolve, 0));
       if (cancelled.has(id)) throw new Error("Terrain request cancelled");
       if (type === "prewarm") {
+        if (!warm) nativeRenderer = data.nativeRenderer === true;
         await prewarm();
         self.postMessage({ id, shaderWarmupMs: renderer.shaderWarmupMs });
       } else if (type === 'prepare') {
@@ -136,6 +133,7 @@ self.onmessage = ({ data }) => {
         if (token !== latestToken) throw new DOMException('Obsolete clipping data', 'AbortError');
         self.postMessage({ id, packed }, [packed.data.buffer]);
       } else if (type === "init") {
+        if (!warm) nativeRenderer = data.nativeRenderer === true;
         await loadResources();
         if (token !== latestToken)
           throw new DOMException("Obsolete terrain generation", "AbortError");

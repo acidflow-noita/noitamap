@@ -36,7 +36,7 @@ describe.skipIf(process.platform !== 'linux')('production instant-terrain tile s
     expect(result.samples).toHaveLength(6);
     expect(result.initialTextureUploads).toBeGreaterThan(0);
     expect(result.textureUploads).toBe(result.initialTextureUploads * 2); // One shared texture set per lifecycle, including masked rerender.
-    expect(result.samples.every((sample: any) => sample.draws === 1 && sample.visible > 25)).toBe(true);
+    expect(result.samples.every((sample: any) => sample.draws >= 1 && sample.draws <= 5 && sample.visible > 25)).toBe(true);
     expect(result.samples.some((sample: any) => sample.kind === 'overview' && sample.retainedChangedPixels > 0)).toBe(true);
     expect(result.comparedPixels).toBeGreaterThan(200_000);
     expect(result.reuse).toMatchObject({ requests: 12, shaderDraws: 0 });

@@ -9,6 +9,7 @@ const C = {
   BLEND: 0x0be2,
   CLAMP_TO_EDGE: 0x812f,
   COLOR_BUFFER_BIT: 0x4000,
+  COLOR: 0x1800,
   COMPILE_STATUS: 0x8b81,
   DEPTH_TEST: 0x0b71,
   FLOAT: 0x1406,
@@ -16,6 +17,11 @@ const C = {
   INT: 0x1404,
   LINK_STATUS: 0x8b82,
   MAX_TEXTURE_SIZE: 0x0d33,
+  MAX_TEXTURE_IMAGE_UNITS: 0x8872,
+  FRAMEBUFFER: 0x8d40,
+  COLOR_ATTACHMENT0: 0x8ce0,
+  FRAMEBUFFER_COMPLETE: 0x8cd5,
+  SCISSOR_TEST: 0x0c11,
   NEAREST: 0x2600,
   R16UI: 0x8234,
   R32F: 0x822e,
@@ -158,6 +164,7 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
   let canvas = null;
   let targetContext = null;
   let draws = 0;
+  let boundFramebuffer = 0;
   const check = (label) => {
     const error = getError();
     if (error) throw new Error(`${label}: GLES error 0x${error.toString(16)}`);
@@ -169,12 +176,15 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
     bindTexture: "void glBindTexture(uint target, uint texture)",
     clear: "void glClear(uint mask)",
     clearColor: "void glClearColor(float r, float g, float b, float a)",
+    clearBufferuiv: "void glClearBufferuiv(uint buffer, int drawbuffer, const uint *value)",
     compileShader: "void glCompileShader(uint shader)",
     createProgram: "uint glCreateProgram()",
     createShader: "uint glCreateShader(uint type)",
     deleteProgram: "void glDeleteProgram(uint program)",
     deleteShader: "void glDeleteShader(uint shader)",
     disable: "void glDisable(uint capability)",
+    enable: "void glEnable(uint capability)",
+    scissor: "void glScissor(int x, int y, int width, int height)",
     getUniformLocation:
       "int glGetUniformLocation(uint program, const char *name)",
     linkProgram: "void glLinkProgram(uint program)",
@@ -185,6 +195,8 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
     texSubImage2D:
       "void glTexSubImage2D(uint target, int level, int x, int y, int w, int h, uint format, uint type, const void *data)",
     copyTexSubImage2D: "void glCopyTexSubImage2D(uint target, int level, int xoffset, int yoffset, int x, int y, int width, int height)",
+    framebufferTexture2D: "void glFramebufferTexture2D(uint target, uint attachment, uint textureTarget, uint texture, int level)",
+    checkFramebufferStatus: "uint glCheckFramebufferStatus(uint target)",
     uniform1f: "void glUniform1f(int location, float value)",
     uniform1i: "void glUniform1i(int location, int value)",
     uniform2f: "void glUniform2f(int location, float x, float y)",
@@ -206,6 +218,15 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
     };
   }
   gl.getError = getError;
+  const genFramebuffers = lib.func('void glGenFramebuffers(int count, _Out_ uint *framebuffers)');
+  const deleteFramebuffers = lib.func('void glDeleteFramebuffers(int count, const uint *framebuffers)');
+  const bindFramebuffer = lib.func('void glBindFramebuffer(uint target, uint framebuffer)');
+  gl.createFramebuffer = () => { const ids = [0]; genFramebuffers(1, ids); return ids[0]; };
+  gl.deleteFramebuffer = framebuffer => deleteFramebuffers(1, [framebuffer]);
+  gl.bindFramebuffer = (target, framebuffer) => {
+    boundFramebuffer = framebuffer || 0;
+    bindFramebuffer(target, framebuffer || 0); check('bindFramebuffer');
+  };
   gl.getParameter = (name) => {
     const value = [0];
     getInt(name, value);
@@ -238,10 +259,7 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
     programLog(program, text.length, null, text);
     return text.toString().split("\0")[0];
   };
-  gl.drawArrays = (...args) => {
-    draw(...args);
-    check("drawArrays");
-    draws++;
+  const captureCanvas = () => {
     const { width, height } = canvas;
     const data = new Uint8Array(width * height * 4);
     read(0, 0, width, height, C.RGBA, C.UNSIGNED_BYTE, data);
@@ -261,6 +279,10 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
       }
     canvas.__nativeGlesPixels = pixels;
     nativePut.call(targetContext, new ImageData(pixels, width, height), 0, 0);
+  };
+  gl.drawArrays = (...args) => {
+    draw(...args); check('drawArrays'); draws++;
+    if (!boundFramebuffer) captureCanvas();
   };
 
   return {

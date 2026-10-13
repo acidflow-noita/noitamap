@@ -10,7 +10,8 @@ try {
     phase: "bootstrap", latticeBuilds: [], coverage: [], uploads: [], compiles: [], creates: [], deletes: [],
   };
   graphics = createNativeGLES({ softwareOnly: true });
-  environment = installNativeTerrainEnvironment({ ...workerData, fullPixels: true });
+  environment = installNativeTerrainEnvironment({ ...workerData, fullPixels: true,
+    workerScript: new URL('../../build_scripts/native-terrain-worker.mjs', import.meta.url) });
   const create = document.createElement.bind(document), instrumented = new WeakSet();
   document.createElement = tag => {
     if (tag !== "canvas") return create(tag);

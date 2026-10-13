@@ -1,4 +1,5 @@
 import { probeDirectTerrainContext } from "./direct-terrain-capability";
+import { useNativeTerrainRenderer } from './native-renderer-setting';
 import type {
   GLTerrainDeps,
   GLTerrainGeneration,
@@ -21,6 +22,7 @@ export const INSTANT_RENDER_TIMEOUT_MS = 10_000;
 /** The worker owns its context across seeds. It transfers only finished tiles,
  * leaving 50+ MB lattices, uploads, compilation and GPU waits off the UI thread. */
 export class InstantTerrainWorkerClient {
+  private nativeRenderer = useNativeTerrainRenderer();
   private worker: Worker;
   private pending = new Map<number, Pending>();
   private id = 0;
@@ -92,7 +94,7 @@ export class InstantTerrainWorkerClient {
       this.pending.set(id, { resolve, reject, cleanup, cancelled: false });
       signal?.addEventListener("abort", abort, { once: true });
       try {
-        this.worker.postMessage({ id, type, ...payload }, transfer);
+        this.worker.postMessage({ id, type, nativeRenderer: this.nativeRenderer, ...payload }, transfer);
       } catch (error) {
         this.pending.delete(id);
         cleanup();
@@ -165,10 +167,18 @@ async function warmSlot(slot: Slot, deps?: GLTerrainDeps): Promise<void> {
       const probe = probeDirectTerrainContext();
       if (probe) {
         try {
-          const { prewarmTerrainShader } = await import('./terrain-shader-prewarm');
-          await prewarmTerrainShader(probe);
+          let renderer = probe;
+          if (useNativeTerrainRenderer()) {
+            const { NativeTerrainRenderer } = await import('../native-map/gpu/terrain-renderer');
+            renderer = new NativeTerrainRenderer(probe);
+            await renderer.prewarm();
+          } else {
+            const { prewarmTerrainShader } = await import('./terrain-shader-prewarm');
+            await prewarmTerrainShader(renderer);
+            slot.bareMain = true;
+          }
           if (slot.released) throw new DOMException('Terrain backend released', 'AbortError');
-          slot.main = probe; slot.bareMain = true; slot.direct = true;
+          slot.main = renderer; slot.direct = true;
           probe.canvas.addEventListener('webglcontextlost', () => {
             if (slot.released) return;
             slot.main.contextLost = true; slot.main.program = null; slot.main.textures = null;
@@ -208,23 +218,19 @@ async function warmSlot(slot: Slot, deps?: GLTerrainDeps): Promise<void> {
       if (!(await getDataZip()))
         throw new Error("Terrain assets unavailable for main-context prewarm");
     }
-    const [
-      { GLTerrainRenderer },
-      { initMaterialAtlas },
-      { prewarmTerrainShader },
-    ] = await Promise.all([
-      deps
-        ? Promise.resolve(deps)
-        : import("noita-telescope-full-pixels/gl/terrain_renderer.js"),
-      deps
-        ? Promise.resolve(deps)
-        : import("noita-telescope-full-pixels/gl/material_atlas.js"),
-      import("./terrain-shader-prewarm"),
-    ]);
+    const { initMaterialAtlas } = deps ?? await import('noita-telescope-full-pixels/gl/material_atlas.js');
     if (slot.released)
       throw new DOMException("Terrain backend released", "AbortError");
-    slot.main ??= new GLTerrainRenderer();
-    await Promise.all([initMaterialAtlas(), prewarmTerrainShader(slot.main)]);
+    if (useNativeTerrainRenderer()) {
+      const { NativeTerrainRenderer } = await import('../native-map/gpu/terrain-renderer');
+      slot.main ??= new NativeTerrainRenderer();
+      await Promise.all([initMaterialAtlas(), slot.main.prewarm()]);
+    } else {
+      const { GLTerrainRenderer } = deps ?? await import('noita-telescope-full-pixels/gl/terrain_renderer.js');
+      const { prewarmTerrainShader } = await import('./terrain-shader-prewarm');
+      slot.main ??= new GLTerrainRenderer();
+      await Promise.all([initMaterialAtlas(), prewarmTerrainShader(slot.main)]);
+    }
   })().catch((error) => {
     slot.warm = undefined;
     throw error;
@@ -253,7 +259,8 @@ export function releaseInstantTerrainBackend(): void {
     );
     if (slot.resources) slot.resources.invalidate();
     else slot.main?.invalidate?.(); // A shader-only context has no resource owner yet.
-    if (slot.main?.program) slot.main.gl.deleteProgram(slot.main.program);
+    if (slot.main?.dispose) slot.main.dispose();
+    else if (slot.main?.program) slot.main.gl.deleteProgram(slot.main.program);
     slot.main?.gl?.getExtension?.("WEBGL_lose_context")?.loseContext();
   }
   sharedSlot = undefined;
@@ -356,13 +363,19 @@ export async function prepareInstantTerrain(
           slot.worker = undefined;
           slot.workerWarm = undefined;
           slot.warm = undefined;
-          const [{ prewarmTerrainShader }] = await Promise.all([
-            import("./terrain-shader-prewarm"),
-            deps.initMaterialAtlas(),
-          ]);
+          await deps.initMaterialAtlas();
           current();
-          slot.main ??= new deps.GLTerrainRenderer();
-          await prewarmTerrainShader(slot.main);
+          if (useNativeTerrainRenderer()) {
+            const { NativeTerrainRenderer } = await import('../native-map/gpu/terrain-renderer');
+            current();
+            slot.main ??= new NativeTerrainRenderer();
+            await slot.main.prewarm();
+          } else {
+            const { prewarmTerrainShader } = await import('./terrain-shader-prewarm');
+            current();
+            slot.main ??= new deps.GLTerrainRenderer();
+            await prewarmTerrainShader(slot.main);
+          }
           current();
           slot.warm = Promise.resolve();
           console.warn(

@@ -3,12 +3,14 @@ import { generateDynamicMap } from '../../src/telescope/telescope-adapter';
 import { addInstantTerrain, clearInstantTerrain, INSTANT_TILE_SIZE } from '../../src/telescope/instant-terrain';
 import { createTerrainOwnership, WORLD_TOP, WORLD_HEIGHT } from '../../src/telescope/terrain-policy';
 import type { StaticTerrainMask } from '../../src/telescope/static-terrain-mask';
+import { NativeTerrainRenderer } from '../../src/native-map/gpu/terrain-renderer';
 
 function assert(value: unknown, message: string): asserts value {
   if (!value) throw new Error(message);
 }
 
 export async function verifyInstantTerrainRuntime(native: { draws(): number }) {
+  window.location.search += '&terrain-renderer=native';
   setFullPixelTerrainForBake(true);
   const generated = await generateDynamicMap({ seed: 42, ngPlus: 0, parallelWorlds: [0], unlocks: null });
   const gen = { ...generated, parallelWorlds: [0, -1, 1] };
@@ -21,10 +23,9 @@ export async function verifyInstantTerrainRuntime(native: { draws(): number }) {
   let textureUploads = 0, deletedTextures = 0;
   const instrumentedContexts = new WeakSet<object>();
   const renders: { renderer: any; view: any }[] = [];
-  const deps = {
-    GLTerrainRenderer: class extends GLTerrainRenderer {
-      initContext() {
-        const ready = super.initContext();
+  const initContext = NativeTerrainRenderer.prototype.initContext;
+  NativeTerrainRenderer.prototype.initContext = function () {
+        const ready = initContext.call(this);
         const gl = this.gl;
         if (!gl || instrumentedContexts.has(gl)) return ready;
         instrumentedContexts.add(gl);
@@ -32,14 +33,20 @@ export async function verifyInstantTerrainRuntime(native: { draws(): number }) {
         // bypasses the upstream renderer's resource-building entry point.
         for (const name of ['texImage2D', 'texSubImage2D']) {
           const original = gl[name].bind(gl);
-          gl[name] = (...parameters: any[]) => { textureUploads++; return original(...parameters); };
+          gl[name] = (...parameters: any[]) => {
+            // Count seed inputs separately from resizable per-frame ID targets.
+            if (!(name === 'texImage2D' && parameters[2] === gl.R16UI && parameters[8] === null)) textureUploads++;
+            return original(...parameters);
+          };
         }
         const deleteTexture = gl.deleteTexture.bind(gl);
         gl.deleteTexture = (texture: unknown) => { if (texture) deletedTextures++; return deleteTexture(texture); };
         return ready;
-      }
-      render(view: any) { renders.push({ renderer: this, view }); return super.render(view); }
-    },
+  };
+  const render = NativeTerrainRenderer.prototype.render;
+  NativeTerrainRenderer.prototype.render = function (view: any) { renders.push({ renderer: this, view }); return render.call(this, view); };
+  const deps = {
+    GLTerrainRenderer,
     initMaterialAtlas, GENERATOR_CONFIG, getWorldSize, getWorldCenter,
   };
   (globalThis as any).OpenSeadragon = { TileSource: class { constructor(options: any) { Object.assign(this, options); } } };
@@ -173,7 +180,8 @@ export async function verifyInstantTerrainRuntime(native: { draws(): number }) {
     const before = native.draws();
     const rendered = await request(item, tile).result;
     assert(!rendered.error && rendered.type === 'context2d', `Actual tile failed: ${rendered.error}`);
-    assert(native.draws() - before === 1, `Tile requested ${native.draws() - before} shader draws instead of one`);
+    const passes = native.draws() - before;
+    assert(passes >= 1 && passes <= 5, `Tile requested ${passes} passes instead of the material/liquid/color pipeline`);
     const view = viewFor(item, tile);
     const actual = rendered.context.getImageData(0, 0, view.width, view.height).data;
     const renderer = renders.at(-1)!.renderer;
@@ -192,7 +200,7 @@ export async function verifyInstantTerrainRuntime(native: { draws(): number }) {
     }
     assert(visible > 25, 'Terrain integration produced blank output');
     comparedPixels += checked;
-    return { view, actual, checked, visible, width: view.width, height: view.height, draws: 1, retainedChangedPixels };
+    return { view, actual, checked, visible, width: view.width, height: view.height, draws: passes, retainedChangedPixels };
   }
   const samples = [];
   try {

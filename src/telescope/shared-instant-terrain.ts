@@ -45,13 +45,13 @@ import {
   getWorldCenter,
   getWorldSize,
 } from "noita-telescope-full-pixels/utils.js";
-import { prewarmTerrainShader } from "./terrain-shader-prewarm";
 import { setTerrainPlane } from "./instant-terrain-plane";
 import type { VerticalPlane } from "./terrain-policy";
 import { createPlaneOwnership } from './terrain-policy';
 import { includeElevatorOwnership } from './terrain-elevator';
 import { findLiquidSurfaces, loadLiquidMaterialIds } from './liquid-surfaces';
 import { packLiquidSurfaces } from './gpu-liquid-surfaces';
+import { liquidProbeBounds } from '../native-map/gpu/liquid-bounds';
 import {
   packElevatorLattices,
   createElevatorChunkTexture,
@@ -123,7 +123,7 @@ export async function buildSharedTerrainUpload(layers: any[], biomeData: any, op
 
 type PlaneResources = { textures: Record<string, any>; chunks: Uint16Array };
 
-/** One context/program and one immutable source upload for all nine regions.
+/** One context and one immutable source upload for all nine regions.
  * Only five map-sized textures vary by vertical plane. The shader still uses
  * absolute noise coordinates and the host's translated lattice address. */
 export class SharedInstantTerrainResources {
@@ -203,7 +203,8 @@ export class SharedInstantTerrainResources {
       current();
       await Promise.all([
         initMaterialAtlas(),
-        prewarmTerrainShader(this.renderer),
+        this.renderer.prewarm ? this.renderer.prewarm() : import('./terrain-shader-prewarm')
+          .then(({ prewarmTerrainShader }) => prewarmTerrainShader(this.renderer)),
       ]);
       current();
       const started = performance.now();
@@ -219,6 +220,7 @@ export class SharedInstantTerrainResources {
         throw new Error('Liquid-surface shader is unavailable');
       this.liquidRow = liquids.liquidRow;
       this.liquidBytes = liquids.bytes;
+      renderer.liquidProbeBounds = liquidProbeBounds(liquids, width);
       const atlas = getMaterialAtlas();
       if (!atlas) throw new Error("Shared terrain material atlas unavailable");
       const own = (texture: any) => {
@@ -342,7 +344,8 @@ export class SharedInstantTerrainResources {
     this.renderer.engineChunkModes = resources.chunks;
     this.renderer.engineChunkWidth = this.renderer.mapWidth;
     setTerrainPlane(this.renderer, plane);
-    this.renderer.gl.uniform1i(this.liquidUniform, this.liquidRow);
+    if (this.renderer.setLiquidRow) this.renderer.setLiquidRow(this.liquidRow);
+    else this.renderer.gl.uniform1i(this.liquidUniform, this.liquidRow);
   }
 
   render(view: any) {
@@ -365,7 +368,7 @@ export class SharedInstantTerrainResources {
     this.generatorConfig = undefined;
     this.shafts = undefined;
     this.layers = this.biomes = this.key = this.pending = undefined;
-    // Upstream owns its framebuffer and remaining state, but must not delete
+    // The renderer owns its framebuffers and remaining state, but must not delete
     // the selected plane/common texture handles a second time.
     this.renderer.textures = null;
     this.renderer.invalidate();

@@ -8,7 +8,7 @@ import { SharedInstantTerrainResources } from '../../src/telescope/shared-instan
 import { createTerrainViewportCompositor, type TerrainViewportPlan } from '../../src/telescope/terrain-viewport-compositor';
 import { createRetainedViewportRenderer } from '../../src/telescope/retained-viewport-renderer';
 import { InstantTerrainCache } from '../../src/telescope/instant-terrain-cache';
-import { GLTerrainRenderer } from 'noita-telescope-full-pixels/gl/terrain_renderer.js';
+import { NativeTerrainRenderer } from '../../src/native-map/gpu/terrain-renderer';
 import { GENERATOR_CONFIG } from 'noita-telescope-full-pixels/generator_config.js';
 import { createInstantClip } from '../../src/telescope/instant-terrain-clip';
 
@@ -18,7 +18,7 @@ export async function run() {
   const masks: import("../../src/telescope/static-terrain-mask").StaticTerrainMask[]=await (bridge as any).__panSceneMasks(gen),shafts=await prepareElevatorShafts(gen);
   const owners=[-1,0,1].map(plane=>includeElevatorOwnership(createPlaneOwnership(gen.tileLayers,gen.biomeData.pixels,
     plane<0?gen.biomeData.heavenPixels:plane>0?gen.biomeData.hellPixels:gen.biomeData.pixels,GENERATOR_CONFIG,70),shafts,plane as -1|0|1));
-  const resources=new SharedInstantTerrainResources(new GLTerrainRenderer());
+  const resources=new SharedInstantTerrainResources(new NativeTerrainRenderer());
   await resources.ensureResources(gen.tileLayers,gen.biomeData,{seed:gen.seed,isNGP:false,gameMode:'normal',generatorConfig:GENERATOR_CONFIG,
     elevatorShafts:shafts,lut:{recolorMaterials:true,clearSpawnPixels:true}});
   const gpu = await createGPUViewportCompositor(resources.renderer, {owners,masks,center:35},

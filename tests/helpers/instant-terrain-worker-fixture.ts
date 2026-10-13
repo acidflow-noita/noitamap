@@ -11,6 +11,7 @@ import type { TerrainViewportPlan } from '../../src/telescope/terrain-viewport-c
 /** Run the actual shipped worker in native threads. The harness translates only
  * ImageBitmap transport to a transferred RGBA buffer; shader/resources are real. */
 export async function verifyInstantTerrainWorker() {
+  window.location.search += '&terrain-renderer=native';
   setFullPixelTerrainForBake(true);
   const started = performance.now();
   prewarmInstantTerrain();

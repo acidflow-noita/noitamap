@@ -1,6 +1,10 @@
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 
 const liquidSetup = vi.hoisted(() => ({ probe: vi.fn(), ids: vi.fn() }));
+const ownedRenderer = vi.hoisted(() => ({ create: vi.fn() }));
+vi.mock('../src/native-map/gpu/terrain-renderer', () => ({
+  NativeTerrainRenderer: class { constructor(context?: any) { return ownedRenderer.create(context); } },
+}));
 vi.mock('../src/telescope/direct-terrain-capability', () => ({ probeDirectTerrainContext: liquidSetup.probe }));
 vi.mock('../src/telescope/liquid-surfaces', () => ({ loadLiquidMaterialIds: liquidSetup.ids }));
 
@@ -67,6 +71,8 @@ beforeEach(() => {
   vi.resetModules();
   liquidSetup.probe.mockReset();
   liquidSetup.ids.mockReset().mockResolvedValue(new Set([9, 56]));
+  ownedRenderer.create.mockReset();
+  vi.stubGlobal('location', { search: '?terrain-renderer=native' });
   TestWorker.instances = [];
   TestWorker.initError = false;
   TestWorker.holdInit = false;
@@ -109,7 +115,9 @@ const deps = () => {
     render = render;
     setPlane = setPlane;
     ensureResources = build;
+    prewarm = async () => {};
   }
+  ownedRenderer.create.mockImplementation(context => Object.assign(new Renderer(), context));
   return {
     GLTerrainRenderer: Renderer,
     initMaterialAtlas: async () => {},
@@ -133,6 +141,23 @@ function directContext(d: ReturnType<typeof deps>) {
       deleteProgram: d.deleteProgram, getExtension: () => ({ loseContext: d.loseContext }) },
   });
 }
+
+it('keeps the existing renderer by default and sends that choice to the worker', async () => {
+  vi.stubGlobal('location', { search: '?terrain=gpu' });
+  const d = deps(); directContext(d);
+  const { prewarmInstantTerrain, prepareInstantTerrain, releaseInstantTerrainBackend } =
+    await import('../src/telescope/instant-terrain-backend');
+  await prewarmInstantTerrain();
+  const preparing = prepareInstantTerrain(generation(), d);
+  await vi.waitFor(() => expect(TestWorker.instances[0]?.sent[0]?.type).toBe('prepare'));
+  const worker = TestWorker.instances[0], request = worker.sent[0];
+  expect(request.nativeRenderer).toBe(false);
+  worker.reply({ id: request.id, upload: {} });
+  await preparing;
+  expect(ownedRenderer.create).not.toHaveBeenCalled();
+  expect(d.renderers).toHaveLength(1);
+  releaseInstantTerrainBackend();
+});
 
 it('passes the already loaded liquid classification to the CPU preparation worker', async () => {
   const d = deps(); directContext(d); TestWorker.strictClone = true;

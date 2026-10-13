@@ -11,7 +11,7 @@ it.skipIf(process.platform !== "linux")(
   async () => {
     const root = resolve(import.meta.dirname, "..");
     const bundle = await mkdtemp(resolve(tmpdir(), "noitamap-shader-parity-"));
-    const variants = [false, true].map((optimize) => {
+    const variants: any[] = [false, true].map((optimize) => {
       const source = standaloneTerrainShaders(
         resolve(root, "lib/noita-telescope-vm/js"),
         undefined,
@@ -23,6 +23,7 @@ it.skipIf(process.platform !== "linux")(
       )();
       return { name: optimize ? "optimized" : "reference", ...shaders };
     });
+    variants.push({ name: 'native' });
     try {
       await build({
         configFile: resolve(root, "vite.config.ts"),
@@ -113,15 +114,16 @@ it.skipIf(process.platform !== "linux")(
               ),
             ).toBe(true);
       expect(
-        samples.filter((sample: any) => sample.name === "reported-pool"),
+        samples.filter((sample: any) => sample.name === "reported-pool" && sample.variant === 'native'),
       ).toHaveLength(36);
       expect(
-        samples.filter((sample: any) => sample.name === "overview-filter"),
+        samples.filter((sample: any) => sample.name === "overview-filter" && sample.variant === 'native'),
       ).toHaveLength(10);
       console.log("[Terrain shader byte parity]", {
         comparisons: result.comparisonCount,
         bytes: result.comparedBytes,
         programs: result.programs,
+        warm1080pDrawsMs: result.warmFrames,
       });
     } finally {
       await rm(bundle, { recursive: true, force: true });

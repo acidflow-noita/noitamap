@@ -1,0 +1,18 @@
+Owned GPU terrain orchestration and split material/color programs.
+
+terrain-renderer.ts implements context/program/target lifetime and GPU pass
+orchestration. No runtime import of the Telescope renderer or combined shader.
+Input texture builders remain in the existing Noitamap resource adapter.
+
+terrain-programs.ts snapshots material/color arithmetic from the pinned
+lib/noita-telescope-vm/js/gl/shaders.js, corrected by Noitamap's
+build_scripts/vite-terrain-shaders.ts. That baseline derives from Lymm's Noita
+Telescope and vitaminmoo's render-perf work; see LICENSE-telescope.txt.
+Noitamap's existing RE-derived float constants, vertical/elevator and liquid
+corrections are retained. The development-only preparation script removes
+unreachable functions and supplies separate pass entry points. It is not run
+when the app opens or when a seed changes.
+
+Byte parity against the corrected reference establishes compatibility with that
+renderer; it does not establish new fidelity against the game. Scene, edge,
+background and marker integration remain the responsibility of the existing host.

@@ -6,6 +6,7 @@ import {
 } from "../../src/telescope/telescope-adapter";
 import { SharedInstantTerrainResources } from "../../src/telescope/shared-instant-terrain";
 import { GLTerrainRenderer } from "noita-telescope-full-pixels/gl/terrain_renderer.js";
+import { NativeTerrainRenderer } from '../../src/native-map/gpu/terrain-renderer';
 import {
   GENERATOR_CONFIG,
   BIOME_COLOR_TO_NAME,
@@ -34,6 +35,13 @@ export async function verifyTerrainShaderParity(native: any) {
     resources: any = new SharedInstantTerrainResources(renderer),
     programs: any[] = [];
   for (const source of native.variants) {
+    if (source.name === 'native') {
+      const owned = new NativeTerrainRenderer({ canvas: renderer.canvas, gl });
+      await owned.prewarm();
+      programs.push({ name: 'native', program: owned.program, uniforms: owned.uniforms,
+        owned, compileLinkMs: owned.shaderWarmupMs, firstDrawMs: null });
+      continue;
+    }
     const started = performance.now(),
       program = gl.createProgram(),
       stages = [];
@@ -88,7 +96,7 @@ export async function verifyTerrainShaderParity(native: any) {
     renderer.canvas.getContext("webgl2");
     const zoom = s.zoom ?? 1,
       before = performance.now();
-    const canvas = renderer.render({
+    const view = {
       width: s.width,
       height: s.height,
       camX:
@@ -103,8 +111,15 @@ export async function verifyTerrainShaderParity(native: any) {
       edgeNoise: true,
       materialTextures: true,
       engineTerrain: true,
-    });
-    if (ids) {
+    };
+    if (program.owned) {
+      for (const key of ['textures', 'resources', 'mapWidth', 'centerPx', 'worldSizeX', 'surfacePhase', 'liquidProbeBounds', 'engineChunkModes'])
+        program.owned[key] = renderer[key];
+      program.owned.setPlane(s.plane);
+      program.owned.setLiquidRow(resources.liquidRow);
+    }
+    const canvas = program.owned ? program.owned.render({ ...view, materialIdOut: ids }) : renderer.render(view);
+    if (ids && !program.owned) {
       gl.uniform1i(program.uniforms.u_materialIdOut, 1);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
@@ -119,6 +134,7 @@ export async function verifyTerrainShaderParity(native: any) {
   };
   const comparisons: any[] = [],
     cases: any[] = [];
+  const warmFrames: Record<string, number[]> = {};
   const settings = [
     { seed: 786433191, ngPlus: 0, gameMode: "normal" },
     { seed: 195331, ngPlus: 0, gameMode: "normal" },
@@ -279,6 +295,17 @@ export async function verifyTerrainShaderParity(native: any) {
         biomes: seen.size,
         liquidBytes: resources.stats.liquidBytes,
       });
+      if (options.seed === 786433191) {
+        const sample: Sample = { name: 'warm-frame', x: -6000, y: 0,
+          width: 1920, height: 1080, plane: 0, pw: 0 };
+        const measured = programs.filter(p => p.name === 'optimized' || p.name === 'native');
+        for (const program of measured) draw(program, sample);
+        for (let repeat = 0; repeat < 6; repeat++) {
+          for (const program of repeat % 2 ? [...measured].reverse() : measured) {
+            (warmFrames[program.name] ??= []).push(draw(program, sample).elapsedMs);
+          }
+        }
+      }
       native.progress(
         "verified " + options.seed + " " + samples.length + " windows",
       );
@@ -286,9 +313,12 @@ export async function verifyTerrainShaderParity(native: any) {
   } finally {
     resources.invalidate();
     releaseParallelWorlds();
-    for (const p of programs) gl.deleteProgram(p.program);
+    for (const p of programs) {
+      if (p.owned) p.owned.dispose(); else gl.deleteProgram(p.program);
+    }
   }
   return {
+    warmFrames,
     programs: programs.map(
       ({ name, compileLinkMs, shaderCompileMs, linkMs, firstDrawMs }) => ({
         name,
