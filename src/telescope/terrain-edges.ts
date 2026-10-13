@@ -4,12 +4,28 @@ import {
   initEdgeDecalAtlas,
   stampEdgeDecals,
 } from "noita-telescope-full-pixels/edge_decals.js";
+import { EDGE_IMAGES } from "noita-telescope-full-pixels/engine_resolve/edge_data.js";
 import { createMaterialField } from "noita-telescope-full-pixels/engine_resolve/material_field.js";
 import { sceneMaterialGrid } from "./scene-material-grid";
 import { compositeTerrain } from "./terrain-backgrounds";
 import { readRGBA, writeRGBA } from "./terrain-scenes";
 import type { GLTerrainGeneration } from "./gl-terrain-tile-source";
 export type TerrainMaterialAt = (x: number, worldY: number) => number;
+
+// Match the stamper's scan bounds: origins farther than the largest sprite's
+// reach cannot affect the kept tile. Its normal rays sample t=1..4, so only
+// four extra material pixels are needed beyond that scan. Keep the full decal
+// buffer/halo and paint order; skip only material samples nobody can read.
+const stampReach =
+  1 +
+  EDGE_IMAGES.reduce((reach: number, image: number[]) => {
+    const [, , w, h, , , flags] = image;
+    return Math.max(
+      reach,
+      flags & 2 ? h >> 1 : flags & 4 ? w >> 1 : Math.max(w >> 1, h >> 1),
+    );
+  }, 0);
+const unusedHalo = Math.max(0, EDGE_DECAL_HALO - stampReach - 4);
 
 /** Paint the existing render-perf EdgeGraphics pass into final leaf pixels,
  * not a zoom-gated overlay. The deterministic world-space pass includes a halo
@@ -58,8 +74,8 @@ export async function createTerrainEdges(
       const left = x - pad,
         top = y - pad;
       const materials = new Int16Array(pw * ph);
-      for (let py = 0; py < ph; py++)
-        for (let px = 0; px < pw; px++)
+      for (let py = unusedHalo; py < ph - unusedHalo; py++)
+        for (let px = unusedHalo; px < pw - unusedHalo; px++)
           materials[py * pw + px] = sample(left + px, top + py);
       const sceneGrids = (index?.search(left, top, left + pw, top + ph) ?? [])
         .sort((a, b) => a - b)

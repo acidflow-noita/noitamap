@@ -1,6 +1,11 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { readFile } from "node:fs/promises";
 vi.mock(
+  "noita-telescope-full-pixels/engine_resolve/edge_data.js",
+  async () =>
+    import("../lib/noita-telescope-vm/js/engine_resolve/edge_data.js"),
+);
+vi.mock(
   "noita-telescope-full-pixels/engine_resolve/engine_data.js",
   async () =>
     import("../lib/noita-telescope-vm/js/engine_resolve/engine_data.js"),
@@ -43,6 +48,13 @@ import { createTerrainEdges } from "../src/telescope/terrain-edges";
 import { MATERIAL_NAMES_BY_ID } from "../lib/noita-telescope-vm/js/engine_resolve/engine_data.js";
 import { GENERATOR_CONFIG } from "../lib/noita-telescope-vm/js/generator_config.js";
 import { sceneMaterialGrid } from "../src/telescope/scene-material-grid";
+import { EDGE_ENTRIES_BY_MATERIAL } from "../lib/noita-telescope-vm/js/engine_resolve/edge_data.js";
+import {
+  EDGE_DECAL_HALO,
+  stampEdgeDecals,
+} from "../lib/noita-telescope-vm/js/edge_decals.js";
+import { compositeTerrain } from "../src/telescope/terrain-backgrounds";
+import { readRGBA, writeRGBA } from "../src/telescope/terrain-scenes";
 const rock = MATERIAL_NAMES_BY_ID.indexOf("rock_static_wet");
 const gen = () => ({
   seed: 786433191,
@@ -167,4 +179,113 @@ it("keeps edge pixels identical across independently rendered tile boundaries", 
       );
   }
   expect(joined).toEqual(full);
+});
+
+it("matches full-halo sampling for all edge materials, scene overlaps, seams and alpha", async () => {
+  const ids = MATERIAL_NAMES_BY_ID.flatMap((name: string, id: number) =>
+    Object.prototype.hasOwnProperty.call(EDGE_ENTRIES_BY_MATERIAL, name) ? [id] : [],
+  );
+  for (const [w, h] of [
+    [1, 1],
+    [17, 31],
+    [128, 64],
+  ])
+    for (const [x, y] of [
+      [-529, -31760],
+      [-32, 480],
+      [487, 26105],
+      [-35855, 7157],
+      [35819, -18],
+    ])
+      for (const withScenes of [false, true]) {
+        const pad = EDGE_DECAL_HALO,
+          pw = w + pad * 2,
+          ph = h + pad * 2;
+        const left = x - pad,
+          top = y - pad;
+        const sample = (wx: number, wy: number) => {
+          const index = Math.floor(wx / 7) + Math.floor(wy / 11);
+          return (wx + wy) % 5 === 0
+            ? 0
+            : ids[((index % ids.length) + ids.length) % ids.length];
+        };
+        const g: any = gen();
+        if (withScenes) {
+          const source = new Uint8Array(pw * ph * 4);
+          const visual = source.slice();
+          for (let i = 0; i < pw * ph; i++) {
+            if (i % 3 === 0) continue; // untouched terrain
+            source.set(
+              i % 7 === 0 ? [0, 0, 66, 255] : [235, 205, 1, 255],
+              i * 4,
+            );
+            if (i % 9 === 0) visual.set([80, 100, 120, 255], i * 4);
+          }
+          g.sceneData = {
+            scenes: [0, 1].map((order) => ({
+              key: "general/halo-test",
+              name: "halo-test",
+              x: left + order * 3,
+              y: top + order * 7,
+              width: pw,
+              height: ph,
+            })),
+            sources: {
+              "general/halo-test": {
+                width: pw,
+                height: ph,
+                data: source,
+                visualArt: { width: pw, height: ph, data: visual },
+              },
+            },
+          };
+        }
+        const edges = await createTerrainEdges(g, GENERATOR_CONFIG, 70, sample);
+        const fullMaterials = new Int16Array(pw * ph);
+        for (let py = 0; py < ph; py++)
+          for (let px = 0; px < pw; px++)
+            fullMaterials[py * pw + px] = sample(left + px, top + py);
+        const decals = stampEdgeDecals(
+          fullMaterials,
+          pw,
+          ph,
+          left,
+          top,
+          g.seed,
+          {
+            inset: pad,
+            chunkShiftX: 0,
+            chunkShiftY: 0,
+            biomeData: g.biomeData,
+            mapWidth: 70,
+            scenes: g.sceneData?.scenes.map((scene: any) =>
+              sceneMaterialGrid(scene, g.sceneData.sources[scene.key]),
+            ),
+          },
+        );
+        const expected = new Uint8ClampedArray(w * h * 4);
+        for (let i = 0; i < expected.length; i += 4)
+          expected.set([15, 30, 45, [0, 32, 127, 255][(i / 4) % 4]], i);
+        const actual = expected.slice();
+        const canPaint = (wx: number) => wx % 7 !== 0;
+        for (let py = 0; py < h; py++)
+          for (let px = 0; px < w; px++) {
+            const source = ((py + pad) * pw + px + pad) * 4,
+              target = (py * w + px) * 4;
+            if (decals[source + 3] && canPaint(x + px))
+              writeRGBA(
+                expected,
+                target,
+                compositeTerrain(
+                  readRGBA(decals, source),
+                  readRGBA(expected, target),
+                ),
+              );
+          }
+        edges.paint(actual, x, y, w, h, canPaint);
+        expect(
+          Buffer.from(actual).equals(Buffer.from(expected)),
+          JSON.stringify({ x, y, w, h, withScenes }),
+        ).toBe(true);
+      }
 });
