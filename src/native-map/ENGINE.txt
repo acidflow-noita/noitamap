@@ -1,0 +1,42 @@
+Independent world generator, first implementation
+
+world.ts owns preparation and generation orchestration. asset-host.ts accepts a
+versioned, explicit asset reader. rules/ contains owned/adapted deterministic
+rules and tables with upstream provenance and license; it imports no Telescope
+application or renderer. The worker build rejects those dependencies, including
+lazy imports. Browser delivery reuses Noitamap's existing immutable asset pages
+without installing fetch interceptors or browser shims.
+
+One generator lives in each persistent worker. Requests are queued; seed,
+unlocks, mode and seasonal calendar are captured for each request. Cancellation
+is observed at region boundaries. Immutable assets survive seed changes; generated
+geometry buffers transfer to the client. Shared scene masks never transfer.
+A failed preparation causes the client to replace the worker before retrying.
+
+Output: native-world-description, containing geometry, elevator continuation,
+and separate POI/scene records for West/Main/East x Heaven/Main/Hell. It deliberately
+is not a completed image or tile source. The final material/scene/liquid/edge/POI
+composition and all zoom levels still need the independent GPU cooking pipeline.
+The existing HD map now obtains its generation data from this worker through
+the existing Noitamap adapter. The adapter retains the site's orb/boss/perk/marker
+postprocessing and supplies the existing renderer, so the UI and map controls stay
+the same. Approximate mode keeps its prior generation path. There is no separate
+generator page. The independent final-pixel GPU cooker remains unfinished.
+
+Browser inputs include explicitly emitted wand sprite distributions and RNG data,
+in addition to the existing immutable game-asset pages. Tests boot the actual
+production worker using emitted files only; source-directory reads cannot mask
+a missing deployment asset. No browser automation was performed.
+
+Verification: real worker differential comparison of all nine scene/POI regions
+for normal, restricted unlocks, NG+ plus seasonal rules, and Nightmare. It also
+transfers returned geometry away before reseeding to catch detached input buffers.
+Owned generation runs with browser globals and implicit fetch made unusable.
+Existing geometry fixtures additionally cover pinned Lymm and render-perf outputs.
+The normal map integration also matches frozen pre-change metadata and12completed
+512-square terrain/scene tiles across two seeds and full/Light world selection.
+This establishes compatibility for those cases, not complete game-capture fidelity.
+
+Accuracy authority remains versioned Noita behavior/captures. Current translated
+rules preserve known source behavior, including existing compatibility choices;
+removing their known inaccuracies still requires targeted RE/game evidence.

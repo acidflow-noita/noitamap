@@ -4,6 +4,8 @@ import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-
 import { loadTelescopeModules } from "./load-telescope";
 import { restorePreparedScenePixels } from './prepared-scene-pixels';
 import { useRenderPerfGeneration } from "../renderer_settings";
+import { NativeWorldClient } from "../native-map/client";
+import type { NativeWorldDescription } from "../native-map/world";
 /**
  * telescope-adapter.ts
  *
@@ -27,6 +29,7 @@ import { ParallelWorldWorkerPool } from "./pw-worker-pool";
 import { prepareAssetJobs } from "./background-idle";
 import { createGenerationCheckpoint, runGenerationTask, waitForGenerationWork, yieldGenerationTask } from "./generation-task";
 let parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
+let nativeWorldClient = new NativeWorldClient();
 
 // Telescope modules
 let geometry: import("../native-map/geometry").GeometryGenerator;
@@ -84,6 +87,7 @@ let loadTranslations: any;
 let findEyeMessages: any;
 let addStaticPixelScenes: any;
 let telescopeApp: any;
+let generationSettings: any;
 let BIOME_COLOR_LOOKUP: any;
 export let TILE_OVERLAY_COLORS: any;
 
@@ -317,6 +321,7 @@ async function _doInitTelescope(background?: AbortSignal): Promise<void> {
   findEyeMessages = eyeMessagesMod.findEyeMessages;
   addStaticPixelScenes = staticSpawnsMod.addStaticPixelScenes;
   telescopeApp = appMod.app;
+  generationSettings = settingsMod.appSettings;
   BIOME_COLOR_LOOKUP = imageProcessingMod.BIOME_COLOR_LOOKUP;
   TILE_OVERLAY_COLORS = imageProcessingMod.TILE_OVERLAY_COLORS;
 
@@ -416,11 +421,18 @@ async function _doInitTelescope(background?: AbortSignal): Promise<void> {
 export function releaseParallelWorlds(): void {
   parallelWorldWorkerPool.dispose();
   parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
+  nativeWorldClient.dispose();
+  nativeWorldClient = new NativeWorldClient();
 }
 
 /** Load side-world worker assets concurrently with the main thread. Single-world
  * callers (including the baker) do not allocate the extra scene tables. */
 export function prewarmParallelWorlds(worlds: number[] = [-1, 0, 1]): void {
+  if (useRenderPerfGeneration()) {
+    if (typeof Worker !== "undefined") void nativeWorldClient.prepare().catch(error =>
+      console.warn("[Native map] Generation preparation failed:", error));
+    return;
+  }
   if (typeof Worker === "undefined" || !worlds.some(pw => pw !== 0)) return;
   // Start the shared index read before creating workers; they reuse its
   // persistent bytes when available and can fetch on a cold/denied cache.
@@ -447,13 +459,22 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   // Keep its original pool so disposal rejects late dispatch rather than
   // starting workers in the new pool after the dynamic map has closed.
   const workerPool = parallelWorldWorkerPool;
+  const nativeClient = nativeWorldClient;
   prewarmParallelWorlds(opts.parallelWorlds);
   await initTelescope();
 
-  return runGenerationTask(() => generatePreparedMap(opts, workerPool));
+  return runGenerationTask(async () => {
+    const started = performance.now();
+    const native = useRenderPerfGeneration() ? await nativeClient.generate({
+      seed: opts.seed, ngPlus: opts.ngPlus, gameMode: (opts.gameMode ?? "normal") as "normal" | "nightmare",
+      unlocks: opts.unlocks, dailySeed: opts.dailySeed, parallelWorlds: opts.parallelWorlds,
+      calendar: { month: generationSettings.date.month, day: generationSettings.date.day },
+    }, opts.signal) : undefined;
+    return generatePreparedMap(opts, workerPool, native, started);
+  });
 }
 
-async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWorldWorkerPool): Promise<GenerationResult> {
+async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWorldWorkerPool, native?: NativeWorldDescription, started = performance.now()): Promise<GenerationResult> {
   opts.signal?.throwIfAborted(); // A request can be cancelled while queued.
   const seed = opts.seed;
   const ngPlus = opts.ngPlus ?? 0;
@@ -463,9 +484,9 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   const isNGP = ngPlus > 0;
 
   console.log(
-    `[Telescope] Generating: seed=${seed}, NG+=${ngPlus}, daily=${dailySeed}, PWs=${parallelWorlds.join(",")}`,
+    `[${native ? "Native map" : "Telescope"}] Generating: seed=${seed}, NG+=${ngPlus}, daily=${dailySeed}, PWs=${parallelWorlds.join(",")}`,
   );
-  const t0 = performance.now();
+  const t0 = started;
 
   // Set unlocks:
   //   daily seed                -> ALL unlocked (locked-in for daily fairness)
@@ -492,7 +513,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   if (!base) throw new Error("[Telescope] Biome map assets not loaded");
 
   // Step 1: Generate biome data
-  const biomeData = geometry.generateBiome({ seed, ngPlus, gameMode, signal: opts.signal });
+  const biomeData = native?.biomeData ?? geometry.generateBiome({ seed, ngPlus, gameMode, signal: opts.signal });
 
   // Debug: Log all unique colors to see if they match constants
   const uniqueColors = new Set(Array.from(biomeData.pixels));
@@ -610,10 +631,10 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
 
   // Step 2: Generate tiles
   // The historic host interface also lists fields attached after generation.
-  const tileLayers = await geometry.generateTiles({
+  const tileLayers = (native?.tileLayers ?? await geometry.generateTiles({
     pixels: biomeData.pixels, width: w, height: h, seed, ngPlus, gameMode,
     signal: opts.signal, yieldControl: createGenerationCheckpoint(opts.signal),
-  }) as unknown as TileLayer[];
+  })) as unknown as TileLayer[];
   await yieldGenerationTask(opts.signal);
 
   // Initialize pixel scene caches on each layer
@@ -624,15 +645,15 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   // The isolated last-row Power Plant stub continues downward through the
   // lower map. Generate its narrow strip once; scan its real placements instead
   // of leaving a fake second endpoint and a gap between the two copies.
-  const elevatorShafts = useRenderPerfGeneration() ? await prepareElevatorShafts({ tileLayers, biomeData, seed, ngPlus, isNGP, gameMode }) : [];
+  const elevatorShafts = native?.elevatorShafts ?? (useRenderPerfGeneration() ? await prepareElevatorShafts({ tileLayers, biomeData, seed, ngPlus, isNGP, gameMode }) : []);
   opts.signal?.throwIfAborted();
   opts.onTerrainReady?.({ seed, ngPlus, isNGP, worldSize, worldCenter,
     tileLayers, elevatorShafts, biomeData, parallelWorlds });
   const elevatorColumns = elevatorShafts.map(layer => layer.minX);
-  const elevatorSpawns = prescanSpawnFunctions(elevatorShafts, isNGP, gameMode).filter((spawn: any) => spawn.y >= 34 * 512 && spawn.y < 82 * 512);
+  const elevatorSpawns = native ? [] : prescanSpawnFunctions(elevatorShafts, isNGP, gameMode).filter((spawn: any) => spawn.y >= 34 * 512 && spawn.y < 82 * 512);
 
   // Step 3: Prescan spawn functions (once per seed, reused across PWs)
-  const tileSpawns = prescanSpawnFunctions(tileLayers, isNGP, gameMode);
+  const tileSpawns = native ? [] : prescanSpawnFunctions(tileLayers, isNGP, gameMode);
   await yieldGenerationTask(opts.signal);
 
   // Step 4: Scan each PW
@@ -650,11 +671,19 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   // Split parallel worlds into main (0) and background (-1, 1, etc)
   const mainWorlds = parallelWorlds.filter((w) => w === 0);
   const backgroundWorlds = parallelWorlds.filter((w) => w !== 0);
+  const nativeRegion = (pw: number, vertical: number) => {
+    const region = native?.regions.find(region => region.horizontal === pw && region.vertical === vertical);
+    if (!region) throw new Error(`Native generation omitted region ${pw},${vertical}`);
+    return region;
+  };
 
   // Persist two workers across seeds. They prepare immutable scenes directly
   // from the compact asset pack while the main thread initializes, avoiding
   // hundreds of MB of main-thread structured cloning per seed.
-  const workerPromises = backgroundWorlds.map(pw => workerPool.run({
+  const workerPromises = backgroundWorlds.map(pw => native ? Promise.resolve({
+    pw, pois: [0, -1, 1].flatMap(vertical => nativeRegion(pw, vertical).pois),
+    pixelScenes: [0, -1, 1].flatMap(vertical => nativeRegion(pw, vertical).scenes),
+  }) : workerPool.run({
     biomeData, tileSpawns, seed, ngPlus, pw, gameMode, perks,
     skipCosmeticScenes: false,
     unlocks: dailySeed || opts.unlocks == null ? null : opts.unlocks,
@@ -669,7 +698,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   for (const pw of mainWorlds) {
     const pwKey = `${pw},0`; // vertical PW always 0 for noitamap
 
-    const scanResults = scanSpawnFunctions(
+    const scanResults = native ? { generatedSpawns: nativeRegion(pw, 0).pois, finalPixelScenes: nativeRegion(pw, 0).scenes } : scanSpawnFunctions(
       biomeData,
       tileSpawns,
       seed,
@@ -681,12 +710,12 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
       gameMode,
     );
 
-    const specialPOIs = getSpecialPoIs(biomeData, seed, ngPlus, pw, 0, perks, gameMode);
+    const specialPOIs = native ? [] : getSpecialPoIs(biomeData, seed, ngPlus, pw, 0, perks, gameMode);
 
     pixelScenesByPW[pwKey] = scanResults.finalPixelScenes;
 
     // Add static pixel scenes (hardcoded positions like pyramid boss, fishing hut, etc.)
-    const staticResults = addStaticPixelScenes(seed, ngPlus, pw, 0, biomeData, false, perks, false, gameMode);
+    const staticResults = native ? null : addStaticPixelScenes(seed, ngPlus, pw, 0, biomeData, false, perks, false, gameMode);
     if (staticResults && staticResults.pixelScenes) {
       pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(staticResults.pixelScenes);
     }
@@ -695,6 +724,13 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
     // Also generate for heaven (pwVertical=-1) and hell (pwVertical=+1)
     const verticalPois: POI[] = [];
     for (const pvt of [-1, 1]) {
+      if (native) {
+        const region = nativeRegion(pw, pvt);
+        verticalPois.push(...region.pois);
+        pixelScenesByPW[pwKey].push(...region.scenes);
+        await yieldGenerationTask(opts.signal);
+        continue;
+      }
       // Special POIs for vertical PW (end shops)
       const vtSpecial = getSpecialPoIs(biomeData, seed, ngPlus, pw, pvt, perks, gameMode);
       if (vtSpecial && vtSpecial.length > 0) {
@@ -1513,7 +1549,14 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   }
 
   const t1 = performance.now();
-  console.log(`[Telescope] Generation complete in ${((t1 - t0) / 1000).toFixed(2)}s`);
+  if (native) {
+    for (const scenes of Object.values(pixelScenesByPW)) for (const scene of scenes) {
+      if (scene.imgElement === undefined && scene.key && PIXEL_SCENE_DATA?.[scene.key])
+        scene.imgElement = PIXEL_SCENE_DATA[scene.key].imgElement || null;
+    }
+    console.log("[Native map] World generation", native.timings);
+  }
+  console.log(`[${native ? "Native map" : "Telescope"}] Generation complete in ${((t1 - t0) / 1000).toFixed(2)}s`);
 
   return normalizeScenePOIs(completeGenerationBossPOIs({
     seed,

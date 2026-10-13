@@ -1,0 +1,17 @@
+Owned Noitamap generation rules
+
+Deterministic game rules and data tables initially adapted from
+Lymm/noita-telescope and vitaminmoo/render-perf (GPL-3.0). Original file hashes
+and source revision are recorded in provenance.json. LICENSE-telescope.txt
+preserves the upstream license. Upstream changes do not automatically alter
+these owned sources.
+
+Noitamap owns the lifecycle, explicit asset provider and worker scheduling.
+Application bootstrap, settings DOM, ZIP/fetch interception, canvas decoding
+and terrain-renderer entrypoints are excluded. Translated spawn/scene/item
+rules are retained for differential validation. Game behavior and captures,
+not compatibility alone, remain the accuracy authority.
+
+This is the world-description stage of the independent engine. A description
+is not a fully cooked map: final material/scene/edge/overview cooking is a
+separate required stage. No fast full-map claim follows from this extraction.

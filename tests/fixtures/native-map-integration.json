@@ -1,0 +1,131 @@
+{
+  "scope": "Prior deployed generator, unchanged map presentation. Canonical metadata plus completed native CPU tiles. Current outputs are compared to these frozen reference hashes.",
+  "sourceSha256": "d112f3f7a93c42251dbf07d8073aadddbb78c8dd4aac1ebbd2f743313565c723",
+  "fixedDate": "2026-10-13T12:00:00Z",
+  "cases": [
+    {
+      "options": {
+        "seed": 1103
+      },
+      "metadata": "5fadebed625d1c6ecc113a19b26dbebdf8a7867861cd6f226e5fdc3a5dddebea",
+      "counts": {
+        "0,0": 12220,
+        "-1,0": 12023,
+        "1,0": 12055
+      },
+      "pixels": [
+        {
+          "plane": -1,
+          "pw": -1,
+          "x": -39872,
+          "y": -24512,
+          "bytes": 1048576,
+          "hash": "0dc9a14bbe65b519e835cb24cf83bff49e30f100dc7c9826d8cbbdcc773ade3e"
+        },
+        {
+          "plane": -1,
+          "pw": 0,
+          "x": -4032,
+          "y": -24512,
+          "bytes": 1048576,
+          "hash": "52fde0bf00ba18dfadcdf0137ebd1ef7ab998b29540595f1018b82f76ce8ef44"
+        },
+        {
+          "plane": -1,
+          "pw": 1,
+          "x": 31808,
+          "y": -24512,
+          "bytes": 1048576,
+          "hash": "b61377463f81e704e17287922a6a13f817fa76dfc1724a2d51fd7c77f0f392d1"
+        },
+        {
+          "plane": 0,
+          "pw": -1,
+          "x": -36352,
+          "y": 512,
+          "bytes": 1048576,
+          "hash": "7fc0e96c49450f23587d09cf3bc0e596d347eb56f53ae44e5ba362f4ba720ff5"
+        },
+        {
+          "plane": 0,
+          "pw": 0,
+          "x": -512,
+          "y": 512,
+          "bytes": 1048576,
+          "hash": "0cd547fbaa446d6e478b5caed67f42e9f5be9cf26d5e245ceffc0cf33b4ce79b"
+        },
+        {
+          "plane": 0,
+          "pw": 1,
+          "x": 35328,
+          "y": 512,
+          "bytes": 1048576,
+          "hash": "072c197ad4aa68305bd819ab51d0709193e7f74545e9db7e3be3b5fd47c8a172"
+        },
+        {
+          "plane": 1,
+          "pw": -1,
+          "x": -39872,
+          "y": 24640,
+          "bytes": 1048576,
+          "hash": "84f1bd14f6726690da3a9365188fbd470669ed8df3c98e01f1cc8b1830b2eea2"
+        },
+        {
+          "plane": 1,
+          "pw": 0,
+          "x": -4032,
+          "y": 24640,
+          "bytes": 1048576,
+          "hash": "f0c2c6d877a75bb9bab951ad0a0c2e1beaa01a461eb697e00d7286a74d075aaf"
+        },
+        {
+          "plane": 1,
+          "pw": 1,
+          "x": 31808,
+          "y": 24640,
+          "bytes": 1048576,
+          "hash": "7b8f10284a77dc5ecb5ceefc37e4c4630668dae534aaf200bf431bde3b5aa681"
+        }
+      ]
+    },
+    {
+      "options": {
+        "seed": 11033,
+        "parallelWorlds": [
+          0
+        ],
+        "unlocks": []
+      },
+      "metadata": "91c806bbac89d7c71ab20575c9d2ecae099e4a0297539b12716de54e3f42648e",
+      "counts": {
+        "0,0": 12179
+      },
+      "pixels": [
+        {
+          "plane": -1,
+          "pw": 0,
+          "x": -4032,
+          "y": -24512,
+          "bytes": 1048576,
+          "hash": "aa763f974ed452cce4ede624ff78c51b0c012ae444ab4b61b1cdd6c1ae18980e"
+        },
+        {
+          "plane": 0,
+          "pw": 0,
+          "x": -512,
+          "y": 512,
+          "bytes": 1048576,
+          "hash": "269016b9376d2b83bce85efb010ec509a9c8429f1f659bf36c055b0798d718ba"
+        },
+        {
+          "plane": 1,
+          "pw": 0,
+          "x": -4032,
+          "y": 24640,
+          "bytes": 1048576,
+          "hash": "dd13916f7c621f77731c2270717214c213c2cd2fdd29882c852fa5800a99d3ba"
+        }
+      ]
+    }
+  ]
+}

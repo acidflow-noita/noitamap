@@ -19,7 +19,15 @@ export function installNativeTerrainEnvironment({
   bundle,
   workerScript,
   fullPixels = true,
+  fixedDate,
 }) {
+  if (fixedDate !== undefined) {
+    const OriginalDate = Date;
+    globalThis.Date = new Proxy(OriginalDate, {
+      construct(target, args, newTarget) { return Reflect.construct(target, args.length ? args : [fixedDate], newTarget); },
+      get(target, property, receiver) { return property === "now" ? () => fixedDate : Reflect.get(target, property, receiver); },
+    });
+  }
   const nodeProcess = process;
   // Fixtures select their fork explicitly (or enable the offline bake flag).
   // Never inherit browser HD defaults when this shim installs window.
@@ -134,6 +142,7 @@ export function installNativeTerrainEnvironment({
           bundle,
           entry: path,
           fullPixels,
+          fixedDate,
         },
       });
       children.add(this);

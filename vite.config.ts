@@ -10,6 +10,7 @@ import { resolveLocalPro } from "./build_scripts/local-pro.ts";
 import { ignoreTaskScratch } from "./build_scripts/vite-watch.ts";
 import { nativeEdgesPlugin } from "./build_scripts/vite-native-edges.ts";
 import { nativeMaterialsPlugin } from "./build_scripts/vite-native-materials.ts";
+import { nativeWorldBoundaryPlugin } from "./build_scripts/vite-native-world.ts";
 import { relative, resolve } from "node:path";
 import { createHash } from "node:crypto";
 
@@ -91,7 +92,7 @@ function workerOutputNames(): Plugin {
 export default defineConfig({
   worker: {
     format: "es",
-    plugins: () => [workerOutputNames(), shimTelescopePlugin, dataArchivesPlugin(import.meta.dirname), telescopeScenesPlugin(import.meta.dirname), telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")), atlasChunksPlugin(import.meta.dirname)],
+    plugins: () => [nativeWorldBoundaryPlugin(), workerOutputNames(), shimTelescopePlugin, dataArchivesPlugin(import.meta.dirname), telescopeScenesPlugin(import.meta.dirname), telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")), atlasChunksPlugin(import.meta.dirname)],
   },
   server: {
     watch: {
