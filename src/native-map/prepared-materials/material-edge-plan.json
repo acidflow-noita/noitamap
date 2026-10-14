@@ -1,0 +1,24 @@
+{
+  "abi": 1,
+  "moduleHash": "5108f6540c3a95df413d357efa9261ac39579148c3a4a4468e0b0deb65cf5e55",
+  "sources": {
+    "src/native-map/prepared-materials/plan.c": "8c2783616269a71eba8f3b0a8b7e3dd09c11b3dd904588ecdc8d81fb1cb055bb",
+    "src/native-map/prepared-materials/material-edge-plan.h": "317b0be85cf53cb9b8e92272450b8c1ddba362567b62fde38eb2f37c03a25d43",
+    "src/native-map/prepared-materials/stencil-codec.ts": "5804ba245a1f579b095569e9ffae1360faf38b7ab105cc1ff1182bfc7c321b05",
+    "src/native-map/materials/topo2.c": "328a761d4b93d194088fbcf382c7bb88530e9b211e9eeaaea4c85c67b809729c",
+    "src/native-map/materials/constants.h": "a8ba1f3d19b977eb24ebeaffff755f0fa7ce033ed7249c1dd7a3d26b45d79c57"
+  },
+  "flags": [
+    "--target=wasm32-unknown-unknown",
+    "-O3",
+    "-ffp-contract=off",
+    "-fno-fast-math",
+    "-nostdlib",
+    "-Wl,--no-entry",
+    "-Wl,--export-memory",
+    "-Wl,--initial-memory=262144",
+    "-Wl,--max-memory=2097152",
+    "-Wl,-z,stack-size=65536"
+  ],
+  "attribution": "Arithmetic derived from Lymm Telescope (MIT); see ../materials/LICENSE-telescope.txt and NOTICE.txt."
+}
