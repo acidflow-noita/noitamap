@@ -133,6 +133,37 @@ void main() {
   }
 }`;
 
+type ClipProgram = { program: WebGLProgram; uniforms: Record<string, WebGLUniformLocation | null> };
+const clipPrograms = new WeakMap<WebGL2RenderingContext, ClipProgram>();
+
+/** Programs belong to the persistent context; masks and textures belong to one
+ * generation. A restored context invalidates its old program handles. */
+function clippingProgram(gl: WebGL2RenderingContext): ClipProgram {
+  const cached = clipPrograms.get(gl);
+  if (cached && gl.isProgram(cached.program)) return cached;
+  const program = gl.createProgram();
+  if (!program) throw new Error('Clipping program allocation failed');
+  const shaders: WebGLShader[] = [];
+  try {
+    for (const [type, source] of [[gl.VERTEX_SHADER, vertex], [gl.FRAGMENT_SHADER, fragment]] as const) {
+      const shader = gl.createShader(type);
+      if (!shader) throw new Error('Clipping shader allocation failed');
+      shaders.push(shader);
+      gl.shaderSource(shader, source); gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader) ?? 'Clipping shader failed');
+      gl.attachShader(program, shader);
+    }
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program) ?? 'Clipping program failed');
+    const uniforms = Object.fromEntries(['color','data','dataWidth','gridSize','gridOrigin','originInt','originFrac','size','scale']
+      .map(name => [name, gl.getUniformLocation(program, 'u_' + name)]));
+    const entry = { program, uniforms };
+    clipPrograms.set(gl, entry);
+    return entry;
+  } catch (error) { gl.deleteProgram(program); throw error; }
+  finally { shaders.forEach(shader => gl.deleteShader(shader)); }
+}
+
 /** Compose the same procedural samples and authored-scene cutouts entirely on
  * the GPU. Navigation performs no PNG encoding, bitmap transfer or readPixels. */
 export async function createGPUViewportCompositor(
@@ -147,24 +178,16 @@ export async function createGPUViewportCompositor(
   const width = Math.min(1024, maximum), height = Math.max(1, Math.ceil(packed.data.length / (width * 4)));
   if (height > maximum) throw new Error('Terrain clipping texture exceeds GPU capacity');
   const payload = new Uint32Array(width * height * 4); payload.set(packed.data);
-  const shaders: WebGLShader[] = [];
-  const program = gl.createProgram()!;
+  const { program, uniforms } = clippingProgram(gl);
   const data = gl.createTexture()!, color = gl.createTexture()!;
+  const clearTarget = gl.createFramebuffer();
   let disposed = false, frameWidth = 0, frameHeight = 0, capacityWidth = 0, capacityHeight = 0, camera = '';
   const dispose = () => {
     if (disposed) return; disposed = true;
-    shaders.forEach(shader => gl.deleteShader(shader));
-    gl.deleteProgram(program); gl.deleteTexture(data); gl.deleteTexture(color);
+    gl.deleteTexture(data); gl.deleteTexture(color); gl.deleteFramebuffer(clearTarget);
   };
   try {
-    for (const [type, source] of [[gl.VERTEX_SHADER, vertex], [gl.FRAGMENT_SHADER, fragment]] as const) {
-      const shader = gl.createShader(type)!; shaders.push(shader);
-      gl.shaderSource(shader, source); gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader) ?? 'Clipping shader failed');
-      gl.attachShader(program, shader);
-    }
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program) ?? 'Clipping program failed');
+    if (!data || !color || !clearTarget) throw new Error('Clipping resources unavailable');
     const configure = (texture: WebGLTexture) => {
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -175,8 +198,6 @@ export async function createGPUViewportCompositor(
     gl.activeTexture(gl.TEXTURE0); configure(data);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32UI, width, height, 0, gl.RGBA_INTEGER, gl.UNSIGNED_INT, payload);
     configure(color);
-    const uniforms = Object.fromEntries(['color','data','dataWidth','gridSize','gridOrigin','originInt','originFrac','size','scale']
-      .map(name => [name, gl.getUniformLocation(program, 'u_' + name)]));
     return {
       bytes: payload.byteLength,
       render(resources: { setPlane(plane: -1 | 0 | 1): void; render(view: any): any }, plan: TerrainViewportPlan) {
@@ -190,6 +211,17 @@ export async function createGPUViewportCompositor(
             capacityWidth = Math.min(maximum, Math.ceil(frameWidth / 128) * 128);
             capacityHeight = Math.min(maximum, Math.ceil(frameHeight / 128) * 128);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, capacityWidth, capacityHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            // Initialize the entire allocation once on the GPU. Partial copies
+            // into a fresh null texture otherwise trigger Firefox's security
+            // clear at first use, including unused capacity around the frame.
+            gl.bindFramebuffer(gl.FRAMEBUFFER, clearTarget);
+            try {
+              gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, color, 0);
+              if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
+                throw new Error('Clipping texture initialization failed');
+              gl.disable(gl.SCISSOR_TEST);
+              gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+            } finally { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
           }
           for (const { plane, offsetY, view } of terrainViewportStrips(plan, inputs.center)) {
             resources.setPlane(plane);

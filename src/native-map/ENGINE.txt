@@ -23,14 +23,16 @@ postprocessing and supplies the existing renderer, so the UI and map controls st
 the same. Approximate mode keeps its prior generation path. There is no separate
 generator page. The independent final-pixel GPU cooker remains unfinished.
 
-An owned GPU renderer now lives in gpu/. The existing HD map can select it with
-terrain-renderer=native in the URL, followed by a reload. It splits material
+An owned GPU renderer now lives in gpu/. The existing HD map selects it on
+detected hardware GPUs. terrain-renderer=native/legacy can override selection
+after a reload; software/unknown adapters retain the legacy default. It splits material
 resolution from color/liquid composition and owns its contexts/programs/targets;
 input builders and higher-level scene/edge/marker composition remain shared with
 the current host. Arithmetic attribution and the preparation script are recorded
 in gpu/PROVENANCE.txt. This replaces rendering of requested rectangles, not the
-complete all-nine cooker. It remains opt-in: native software-GPU startup improved,
-but warm frame cost regressed. Target Windows/Firefox measurements are pending.
+complete all-nine cooker. The user's Windows/Firefox test reduced shader startup
+from 7.918s to 2.068s. New-seed first paint was 1.35s. Software-GPU warm frame cost
+regressed in native GLES, which is why that default remains separate.
 
 Browser inputs include explicitly emitted wand sprite distributions and RNG data,
 in addition to the existing immutable game-asset pages. Tests boot the actual

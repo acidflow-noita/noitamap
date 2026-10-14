@@ -23,7 +23,7 @@ function probe(): any | undefined {
   }
   canvas.addEventListener('webglcontextlost', event => event.preventDefault());
   gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
-  return { canvas, gl, initContext: () => !gl.isContextLost(), device: renderer };
+  return { canvas, gl, initContext: () => !gl.isContextLost(), device: renderer, hardware };
 }
 
 export function probeDirectTerrainContext(): any | undefined {

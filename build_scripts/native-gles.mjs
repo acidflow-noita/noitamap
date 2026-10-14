@@ -11,6 +11,7 @@ const C = {
   COLOR_BUFFER_BIT: 0x4000,
   COLOR: 0x1800,
   COMPILE_STATUS: 0x8b81,
+  CURRENT_PROGRAM: 0x8b8d,
   DEPTH_TEST: 0x0b71,
   FLOAT: 0x1406,
   FRAGMENT_SHADER: 0x8b30,
@@ -188,6 +189,7 @@ export function createNativeGLES({ requireHardware = false, softwareOnly = false
     getUniformLocation:
       "int glGetUniformLocation(uint program, const char *name)",
     linkProgram: "void glLinkProgram(uint program)",
+    isProgram: "uchar glIsProgram(uint program)",
     pixelStorei: "void glPixelStorei(uint name, int value)",
     texImage2D:
       "void glTexImage2D(uint target, int level, int format, int w, int h, int border, uint sourceFormat, uint type, const void *data)",

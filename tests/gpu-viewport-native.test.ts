@@ -28,5 +28,12 @@ it.skipIf(process.platform!=='linux')('matches Canvas terrain composition with G
 
     }
     expect(result.samples.reduce((n:any,s:any)=>n+s.visiblePixels,0)).toBeGreaterThan(1_000_000);
+    expect(result.initialCompiles).toBe(2);
+    expect(result.replacementCompiles).toBe(0);
+    expect(result.restoredCompiles).toBe(2);
+    expect(result.changedMaskApplied).toBe(true);
+    expect(result.olderOwnerPreserved).toBe(true);
+    expect(result.restoredProgramMatches).toBe(true);
+    expect(result.unsafePartialCopies).toBe(0);
   }finally{await rm(bundle,{recursive:true,force:true});}
 },120000);

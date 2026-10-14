@@ -134,27 +134,35 @@ const deps = () => {
   };
 };
 
-function directContext(d: ReturnType<typeof deps>) {
+function directContext(d: ReturnType<typeof deps>, hardware = true) {
   liquidSetup.probe.mockReturnValue({
+    hardware,
     canvas: { addEventListener: vi.fn() }, program: {},
     gl: { MAX_TEXTURE_SIZE: 0x0d33, getParameter: () => 4096, getError: () => 0,
       deleteProgram: d.deleteProgram, getExtension: () => ({ loseContext: d.loseContext }) },
   });
 }
 
-it('keeps the existing renderer by default and sends that choice to the worker', async () => {
-  vi.stubGlobal('location', { search: '?terrain=gpu' });
-  const d = deps(); directContext(d);
+it.each([
+  { search: '?terrain=gpu', hardware: true, native: true },
+  { search: '?terrain=gpu', hardware: false, native: false },
+  { search: '?terrain=gpu&terrain-renderer=legacy', hardware: true, native: false },
+  { search: '?terrain=gpu&terrain-renderer=native', hardware: false, native: true },
+])('selects the expected renderer for $search on hardware=$hardware', async ({ search, hardware, native }) => {
+  vi.stubGlobal('location', { search });
+  const d = deps(); directContext(d, hardware);
   const { prewarmInstantTerrain, prepareInstantTerrain, releaseInstantTerrainBackend } =
     await import('../src/telescope/instant-terrain-backend');
   await prewarmInstantTerrain();
   const preparing = prepareInstantTerrain(generation(), d);
   await vi.waitFor(() => expect(TestWorker.instances[0]?.sent[0]?.type).toBe('prepare'));
   const worker = TestWorker.instances[0], request = worker.sent[0];
-  expect(request.nativeRenderer).toBe(false);
+  // This worker prepares CPU input data for a direct context; the UI context
+  // owns the selected native or legacy renderer and its programs.
+  expect(request.nativeRenderer).toBe(search.includes('terrain-renderer=native'));
   worker.reply({ id: request.id, upload: {} });
   await preparing;
-  expect(ownedRenderer.create).not.toHaveBeenCalled();
+  expect(ownedRenderer.create).toHaveBeenCalledTimes(native ? 1 : 0);
   expect(d.renderers).toHaveLength(1);
   releaseInstantTerrainBackend();
 });

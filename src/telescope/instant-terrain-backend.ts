@@ -168,7 +168,7 @@ async function warmSlot(slot: Slot, deps?: GLTerrainDeps): Promise<void> {
       if (probe) {
         try {
           let renderer = probe;
-          if (useNativeTerrainRenderer()) {
+          if (useNativeTerrainRenderer(probe.hardware === true)) {
             const { NativeTerrainRenderer } = await import('../native-map/gpu/terrain-renderer');
             renderer = new NativeTerrainRenderer(probe);
             await renderer.prewarm();
