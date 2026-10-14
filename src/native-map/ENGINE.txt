@@ -99,3 +99,37 @@ This establishes compatibility for those cases, not complete game-capture fideli
 Accuracy authority remains versioned Noita behavior/captures. Current translated
 rules preserve known source behavior, including existing compatibility choices;
 removing their known inaccuracies still requires targeted RE/game evidence.
+
+Independent completed-pixel components (not enabled in the live map)
+
+complete-materials/ owns the full scalar material WASM resolver, explicit
+unresolved classifications, topology0 inputs, vertical-plane/shaft handling,
+noise-density and band selection. cook-inputs/ supplies owned lattice, atlas,
+legacy-color and foreground preparation. composition/ owns scene-source loading,
+whole-scene preparation, liquids, backgrounds, ownership, static masks and
+ordered world/seam/scene edge stamping. complete-world/ assembles those inputs
+from native-world-description into exact terrain/scenes-layer pages for all
+nine region addresses. Static captured artwork and POI drawing remain separate
+host layers; transparent capture cutouts are not newly generated artwork.
+
+A new seed20261014 passes11 actual completed-page comparisons spanning all nine
+regions, vault and a continued shaft:11,534,336 native RGBA bytes and110 stored
+mip levels match the independent CPU/JS-edge reference. Separate seed1337
+composition comparisons cover16 pages and15,796,236 RGBA bytes. The source's
+measured setup was2096ms and sampled page rasterization89–244ms. These costs
+confirm that a full scalar bake cannot be the instant new-seed implementation.
+
+cooked-pixels/ stores immutable final fragments, shares a prepared baseline
+between independent seed stores, and seals every required page and global mip
+before exposing a map. prepared-world/ composes constant/single-selector image
+alternatives during preparation, then binds the current seed into those final
+pixels. Its all-page owner rejects unprepared coverage when the reference-work
+budget is zero. cooked-view/ decodes sealed maps for OSD and stores reusable
+libraries separately from completed seeds. Neither decoder invokes generation.
+
+The missing performance-critical piece is the complete reusable Noita recipe
+catalog and its exact seed-dependent boundary/scene/edge bindings. No all-nine
+instant Noita cook is claimed by the generic compiler tests. These new engine
+components are not a deployable speed improvement yet; current site behavior
+and its existing renderer remain active. See prepared-world/README.txt for the
+preparation contract and complete-world/parity-result.json for measured scope.

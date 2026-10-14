@@ -1,0 +1,68 @@
+Owned world-decision to material/source-pixel preparation.
+
+Derived from Lymm Telescope / pinned vitaminmoo source (MIT), Copyright (c)
+2026 Lymm. Full license retained in LICENSE-telescope.txt. provenance.json
+records the exact source and local hashes; verify.mjs checks local identity.
+
+Runtime API (index.ts):
+  prepareWorldMaterialInputs(world, { generatorConfig, emptyTopology0 })
+    -> shared lattice, map dimensions/stride, inputs Map, forPlane(-1|0|1)
+  loadMaterialAtlas(assets) -> per-owner immutable-source atlas snapshot
+  loadLegacyColorPolicy(assets) -> foreground/noise/exception policy snapshot
+  createLegacyColorResolver(world, prepared, plane, config, atlas, policy)
+    -> colorAt(absoluteX, absoluteY), packed AARRGGBB
+  createBaseForegroundPainter({ materials, atlas, ownsTerrain, legacy? })
+    -> paintRect(...) returns RGBA, original material IDs/classes,
+       foreground classifications, and unresolvedCount
+
+The lattice port retains float32 density ramps, four header-row exclusion,
+material/spawn precedence, snapshot/toroidal neighbor-majority and strict ties,
+51/52-column truncating chunk copies, exact chunk claims and write order.
+All vertical planes share the original main Wang lattice; their biome maps
+broadcast row 0 or 47. Shaft local-grid rebasing and absolute noise coordinates
+follow the existing CPU helper. Raw indirection deliberately chooses the first
+matching region, whereas lattice population follows its own last-write rule.
+
+emptyTopology0 is required: engine-air preserves an empty engine field;
+legacy-fill explicitly enables the current CPU's constant-material stand-in.
+Neither mode invents missing Wang inputs or fills sceneOnly rooms. The painter
+requires explicit source ownership and does not compose backgrounds, scenes,
+liquids, static captures or edge decals. Those are later owned composition
+inputs. Static capture ownership/masks must be supplied by the cooker.
+
+Legacy color follows current CPU settings recolorMaterials=true and
+clearSpawnPixels=true. It preserves legacy biome wobble, symmetric edge-noise
+exceptions, source-main-map region claims, NG+ 32760px content stride versus
+32768px biome pitch, whole-region wrap, exact material phase, texel transparency
+and alpha. Direct RGB source reads replace only the palette/index-atlas carrier;
+the resulting source pixels are tested against the unmodified rawColorAt body.
+
+Resolved material air, intentional out-of-plane/forced air, owned raw color and
+raw air remain distinguishable. Missing modifier, unsupported configuration and
+out-of-carve-table results remain unresolved even when a legacy reader exists.
+No source pixel may be published as complete when unresolvedCount is nonzero.
+
+Atlas APIs include materialTexelRGBA (-1 for transparent), materialAlpha,
+materialFlatAlpha, materialFlatRGBA and materialRGBA (0 for material air or a
+transparent texel). Flat material-ID colors use the source engine metadata;
+texture flat colors use alpha-weighted means and rounded mean alpha. Named
+legacy conversion tables preserve material_data.json's last-name/color rules.
+
+Runtime files import only owned material metadata/API and the pure PNG decoder;
+there is no Telescope package/lib import, graphics object, DOM, or implicit
+asset-host installation. All six input asset reads are explicit loader calls.
+Legacy foreground lookup reads the authoritative game data/biome_impl PNGs;
+fork data/biome_maps copies are not substituted for delivered map colors.
+Callers keep prepared geometry and policy snapshots immutable while in use.
+
+Validation, Node 26 (no browser):
+  node src/native-map/cook-inputs/parity.mjs
+  node src/native-map/cook-inputs/verify.mjs
+
+parity.mjs uses the existing source generation helper only as a development
+oracle. It compares actual normal and NG+ world lattices, all plane host maps,
+generated lower shaft lattices, atlas phase/alpha, source raw colors and base
+foreground RGBA. parity-result.json records results and the material module
+identity. Inherited engine-material accuracy limits remain those documented by
+complete-materials; this does not establish independent game capture parity or
+instant completed-map generation.

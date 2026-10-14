@@ -1,0 +1,31 @@
+Noitamap independent ordered page composition.
+
+The page, scene, liquid and static-mask composition is adapted from the existing
+Noitamap terrain compositor (GPL-3.0), preserving its byte-level operation order.
+The strict edge adapter invokes the existing owned src/native-map/edges/core.wasm
+without a Telescope or JavaScript fallback. That module is derived from Lymm's
+Telescope fork (MIT); see ../edges/NOTICE.txt and ../edges/LICENSE-telescope.txt.
+The caller provides explicit material, scene, background, atlas and edge tables;
+this directory does not load Telescope runtime, browser state, or game assets.
+
+Reference sources: src/telescope/terrain-composition.ts, terrain-scenes.ts,
+terrain-edges.ts, terrain-backgrounds.ts, liquid-surfaces.ts and
+static-terrain-mask.ts; src/native-map/edges/core.ts and core.c.
+
+prepare-scenes.ts and the source definition/loader modules additionally adapt
+pixel_scene_generation.js, image_processing.js and poi_scanner.js from the owned
+Telescope rules copy. Copyright (c) 2026 Lymm, MIT license reproduced at
+../rules/LICENSE-telescope.txt. Keep that notice with redistributed sources.
+They retain ordered replacements, source-image semantics, density-band choices,
+visual-art blending, first-biome source catalog ownership, and metadata masks.
+They use explicit owned material/asset inputs and no global Telescope settings.
+
+world-policy.ts and liquid-inputs.ts preserve the Noitamap terrain/background
+ownership and liquid-run rules. world-resources.ts prepares explicit owned
+composition resources. edge-data.mjs is an attributed immutable copy of the
+pinned Telescope edge graphics data; edge-tables.ts preserves the existing owned
+edges/data.ts runtime table arithmetic and consumes local tables only.
+
+Compatibility here means the current completed renderer output. In particular,
+the edge algorithm uses its deterministic position-seeded decoration randomness,
+not an independently recovered real-game RNG stream.

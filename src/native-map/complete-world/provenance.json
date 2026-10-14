@@ -1,0 +1,27 @@
+{
+  "format": "owned-world-pages-v1",
+  "scope": "terrain-scenes-layer",
+  "exactReference": "Pinned source CPU terrain + JS edge oracle; captured static base excluded",
+  "hostPolicySource": "src/telescope/telescope-osd-bridge.ts + captured-gold-room.ts",
+  "sha256": {
+    "index.ts": "b51146df6e5eb703402111fe8168c6873bcaa47fa549dd795d232524410fb42e",
+    "scene-policy.ts": "8b4cb0ce9a0db65bd7600b2be27449cc648cb54bf8ea50f1e00f3b1e10765c8f",
+    "README.txt": "111c63d8b7d6a440a8f1cba2d0b7e7b33ade114ada50f67c4111384010e895cd",
+    "verify.mjs": "c8296ccc11591d536fa3409c3574179e943498cda5b357abb09941f77225b2ed",
+    "../complete-materials/build-identity.json": "572bec483b5696db20cf2ebf3e9f8c640eab762c55d8d0a3caacf986d421fd76",
+    "../complete-materials/complete-materials.wasm": "14248dc44db5cd73caf4e571eaf6b45928c12a7474425b381f4b16cf16adb0f7",
+    "../cook-inputs/provenance.json": "65791a8dfb651dd52a770d15e35b576e06eae3d8f663088d37b7d6d5b409bada",
+    "../composition/index.ts": "9e3c02f23a6def65dae8f06503d1bf8625cc2356ae70bffe348c84bb6229fe24",
+    "../composition/prepare-scenes.ts": "06600400ed7e0971ea7a93de7770b0fa5ebc513401b582016d31777b9fdfa248",
+    "../composition/scene-source-loader.ts": "e108eb611f2bbd96e83405ca2758904ff4aa8f5ea9eee6d0b011b38358c0735e",
+    "../composition/scene-source-definitions.ts": "cb7b7165abae3c83798de878352889bbfba7db48a52ba432a4ccd8b7b7e1eede",
+    "../composition/world-resources.ts": "87c16246a35150db3109a794556af2a216347f9293325198598065ca59e0868e",
+    "../composition/world-policy.ts": "822a7f8d15b1d2457e7cbce563ce64a16bffe85f93c2a7f459e00d5cf8253ee1",
+    "../composition/liquid-inputs.ts": "64aafe16c27a9019c278207f23b48ebb0a035ddda167b1120b2e646924d1ddb0",
+    "../composition/strict-edges.ts": "9137d41ae87277cdbf09c0d3ff637088dfd3b7755150aef2cbfba09eaa376e72",
+    "../edges/core.wasm": "c2247b342193831fc7cedcd425339f08f2fa10d519b635df49a9b36642cdf81f",
+    "../../../tests/complete-world-runtime.test.ts": "a66b769d9540a085521ea8ae29c936375732f481c8f794b8f9e6232e180c4d06",
+    "../../../tests/helpers/complete-world-runtime-fixture.ts": "2e16998f468d9989740a528170d1c4ba067926c0173ebccee10bc825d1d625a4",
+    "../../../tests/helpers/complete-world-runtime-worker.mjs": "748c175c430fd24db96ce4d411e09c5ea3b52c0f9bd1ea4cdf33559a73ff53bc"
+  }
+}

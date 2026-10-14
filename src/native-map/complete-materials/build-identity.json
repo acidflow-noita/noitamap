@@ -1,0 +1,59 @@
+{
+  "abi": 3,
+  "compiler": "clang version 23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)\nTarget: wasm32-unknown-wasip1\nThread model: posix",
+  "flags": [
+    "--target=wasm32-unknown-unknown",
+    "-DINCLUDE_BANDS",
+    "-DINCLUDE_OWNERSHIP",
+    "-DINCLUDE_VERTICAL",
+    "-O3",
+    "-ffp-contract=off",
+    "-fno-fast-math",
+    "-nostdlib",
+    "-Wl,--no-entry",
+    "-Wl,--export-memory",
+    "-Wl,--initial-memory=524288",
+    "-Wl,--max-memory=134217728",
+    "-Wl,-z,stack-size=65536"
+  ],
+  "referenceCommit": "9c587750c361e88583fe8df406d74136bbcc1dde",
+  "scope": "Owned source-parity scalar material field: topology0, topology2, bands, host policy, vertical planes and local shafts. Unresolved raw/legacy/unowned/config/input cases are explicit.",
+  "accuracyLimits": [
+    "Winter and _EMPTY_ modifier preparation omits runtime-RNG phase F; _EMPTY_ runtime chunk mutations are absent.",
+    "Preserves pinned source seed-halving thresholds and insideNoiseType=5 overrides.",
+    "Finite carve tables and unsupported configurations remain classified unresolved.",
+    "Host Math.sin/cos bytes preserve the current JS reference; no independent game or cross-engine equivalence claim.",
+    "Vertical material helper supports topology2 only, exactly as the existing source helper.",
+    "Material IDs are not completed art, scenes, decals, mips, or an instant full-map result."
+  ],
+  "referenceSha256": {
+    "task/native-wasm-topo0/topo0.c": "b067efefd201b15ede95cae195b0c51231937d3037e6edfdc42b1a39c774d983",
+    "task/native-wasm-topo0/topo0-data.h": "92c3ecd270fe031b56de85db4924a8f52b009ff315946af759fad3beec88f3fe",
+    "lib/noita-telescope-vm/js/engine_resolve/bitmap_caves.js": "712888529fd4892039d1a0cde02a9df4e258b0dc4b1e78dad1bc5b756accc412",
+    "lib/noita-telescope-vm/js/engine_resolve/topo0_resolve.js": "016b2d0ab1f533522ba7faeadf85e768ccdb19ddad53d11a86dddf938e063114",
+    "lib/noita-telescope-vm/js/engine_resolve/topo2_resolve.js": "5775a129be5931448f30bdf67b49f56e829145aab7368dc4e71908225119239e",
+    "lib/noita-telescope-vm/js/engine_resolve/chunk_wobble.js": "fe59dc60b2a1b887bea88f6cf3de1904407480c50af15b45d2136d9aa0d10ef0",
+    "lib/noita-telescope-vm/js/engine_resolve/band_select.js": "382769451bd6bc9c37d6c7d6b05d4db95cfafc690147b0423d34e2d95c2964c1",
+    "lib/noita-telescope-vm/js/engine_resolve/engine_data.js": "a2beaefdd1a4feb84e3784857ba4d210f8c15d0b02dee8bd13be7658ab10af41",
+    "src/telescope/plane-material-field.ts": "a01e9bd1e01495ae209ca01fa5401afea29b163d3e0a72a6d83344c2a6b2cddb"
+  },
+  "sha256": {
+    "topo2.c": "2f485466d07fe9da076f3fda85d7b9e9133f7cc8e126a456a09904ea5abb0416",
+    "topo0.c": "6074e1ae5c3c680e1297613d751a243c66a27a398df2d9092b06fdfd0b3e2683",
+    "vertical.c": "749b77d3711632b49531379ebbc096f130d92a1a05dbdeb3d1bfed82fe87d9cb",
+    "bands.c": "98cf6010099e24c3ede3116a52b9f28152744b50bc870c72a2ff92566a24b7a5",
+    "ownership.c": "a8758fbbf151d91a79c1f466100a348483cab741b0b91aeade26589f9d69fcd8",
+    "complete.c": "dceb10c96c503652b7c1517e7df0290fd617151d20130ad5798bb56272dc9c5b",
+    "constants.h": "a8ba1f3d19b977eb24ebeaffff755f0fa7ce033ed7249c1dd7a3d26b45d79c57",
+    "topo0-data.h": "92c3ecd270fe031b56de85db4924a8f52b009ff315946af759fad3beec88f3fe",
+    "bands-data.h": "205ad81295b83fda76367b35e66d052c48d30bfab45bcce850f7e0b02d49a82b",
+    "classifications.h": "1ad52bceb60450887f7ab954f94c8a6b01a1b69ff5c143010a3c7da313122969",
+    "index.ts": "511373c3fa96fda141c68a0625bcf3f55d0b4e3c476ce32b809ab263a5d48392",
+    "seed-modifiers.mjs": "d1c81c0d34f021f0673f1bb0ef1f133956c71413a6ffa5cc2d6b0ace4f8c2ec8",
+    "engine-data.mjs": "a2beaefdd1a4feb84e3784857ba4d210f8c15d0b02dee8bd13be7658ab10af41",
+    "NOTICE.txt": "efd64961c672e96df7daf58424b890bf42f042e89122e71a6ec2f6e924205a10",
+    "LICENSE-telescope.txt": "475de2f6fe77f32ebc46b6cdec6eb06f3acc1f3e245749deca62068e9dd684ff",
+    "build.mjs": "092b2dfb82aa6d8565b83edb8e9a07d3f182eec9e34ee44b259c52e35fd9f37f",
+    "complete-materials.wasm": "14248dc44db5cd73caf4e571eaf6b45928c12a7474425b381f4b16cf16adb0f7"
+  }
+}
