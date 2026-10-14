@@ -13,6 +13,26 @@ is observed at region boundaries. Immutable assets survive seed changes; generat
 geometry buffers transfer to the client. Shared scene masks never transfer.
 A failed preparation causes the client to replace the worker before retrying.
 
+world-pool.ts now distributes horizontal worlds across persistent owned workers,
+joining all requested Main/Heaven/Hell decisions before returning. Unknown/two-core
+or <=2 GiB devices use one worker; four-core or reported <=4 GiB devices cap at
+two; other devices use at most three. Light mode uses one. Inputs are snapshotted
+before preparation, results retain requested region order, and cancellation or a
+worker failure retires the whole request without accepting late sibling output.
+Only the primary worker returns geometry buffers. Each worker currently builds
+its own geometry/prescan internally; sharing that work remains a future change.
+
+2026-10-14 local Node worker diagnostics: normal multiworld requests took
+543–773 ms with one worker versus 285–500 ms with three. The compiled production
+pool also matched six normal/restricted/NG+/Nightmare/reordered/Light requests;
+its warmed normal samples measured 557–635 ms serial versus 279–390 ms parallel.
+The first production-pool comparison was 932/927 ms under concurrent validation
+work, so these results do not establish a cold-start improvement. Timings cover
+generation and messaging, not shader startup, presentation or all-nine cooking.
+Initial retained worker heap+ArrayBuffers were about70 MiB for one versus178 MiB
+for three in the standalone diagnostic; transient generation allocations are
+higher and browser usage may differ. Hardware selection bounds this tradeoff.
+
 Output: native-world-description, containing geometry, elevator continuation,
 and separate POI/scene records for West/Main/East x Heaven/Main/Hell. It deliberately
 is not a completed image or tile source. The final material/scene/liquid/edge/POI
@@ -44,6 +64,10 @@ for normal, restricted unlocks, NG+ plus seasonal rules, and Nightmare. It also
 transfers returned geometry away before reseeding to catch detached input buffers.
 Owned generation runs with browser globals and implicit fetch made unusable.
 Existing geometry fixtures additionally cover pinned Lymm and render-perf outputs.
+Production pool tests compare full geometry and ordered scene/POI data across
+actual emitted workers, including restricted unlocks, seasonal NG+, Nightmare,
+nonstandard world ordering and Light mode. Lifecycle tests cover cancellation,
+worker failure, input mutation, mismatched responses and disposal during work.
 The normal map integration also matches frozen pre-change metadata and12completed
 512-square terrain/scene tiles across two seeds and full/Light world selection.
 This establishes compatibility for those cases, not complete game-capture fidelity.

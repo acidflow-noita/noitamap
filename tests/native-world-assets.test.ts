@@ -26,5 +26,9 @@ it('boots the deployed native worker and generates maps using emitted assets onl
    expect(message.missing).toEqual([]);expect(message.data.world.regions).toHaveLength(parallelWorlds.length*3);
    expect(message.data.world.regions.reduce((n:number,r:any)=>n+r.scenes.length,0)).toBeGreaterThan(3000);
   }
+  worker.postMessage({id:4,type:'generate-regions',request:{seed:618,parallelWorlds:[1]}});
+  message=await next();expect(message.data?.ok,JSON.stringify(message.data?.error)+logs).toBe(true);
+  expect(message.missing).toEqual([]);expect(message.data.world.regions).toHaveLength(3);
+  for(const field of ['biomeData','tileLayers','elevatorShafts'])expect(message.data.world).not.toHaveProperty(field);
  }finally{await worker?.terminate();await rm(output,{recursive:true,force:true});}
 },120000);

@@ -4,7 +4,7 @@ import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-
 import { loadTelescopeModules } from "./load-telescope";
 import { restorePreparedScenePixels } from './prepared-scene-pixels';
 import { useRenderPerfGeneration } from "../renderer_settings";
-import { NativeWorldClient } from "../native-map/client";
+import { NativeWorldPool } from "../native-map/world-pool";
 import type { NativeWorldDescription } from "../native-map/world";
 /**
  * telescope-adapter.ts
@@ -29,7 +29,7 @@ import { ParallelWorldWorkerPool } from "./pw-worker-pool";
 import { prepareAssetJobs } from "./background-idle";
 import { createGenerationCheckpoint, runGenerationTask, waitForGenerationWork, yieldGenerationTask } from "./generation-task";
 let parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
-let nativeWorldClient = new NativeWorldClient();
+let nativeWorldClient = new NativeWorldPool();
 
 // Telescope modules
 let geometry: import("../native-map/geometry").GeometryGenerator;
@@ -422,14 +422,14 @@ export function releaseParallelWorlds(): void {
   parallelWorldWorkerPool.dispose();
   parallelWorldWorkerPool = new ParallelWorldWorkerPool(() => new PwWorker());
   nativeWorldClient.dispose();
-  nativeWorldClient = new NativeWorldClient();
+  nativeWorldClient = new NativeWorldPool();
 }
 
 /** Load side-world worker assets concurrently with the main thread. Single-world
  * callers (including the baker) do not allocate the extra scene tables. */
 export function prewarmParallelWorlds(worlds: number[] = [-1, 0, 1]): void {
   if (useRenderPerfGeneration()) {
-    if (typeof Worker !== "undefined") void nativeWorldClient.prepare().catch(error =>
+    if (typeof Worker !== "undefined") void nativeWorldClient.prepare(worlds).catch(error =>
       console.warn("[Native map] Generation preparation failed:", error));
     return;
   }

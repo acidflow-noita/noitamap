@@ -1,8 +1,8 @@
 import WorldWorker from "./world-worker?worker";
-import type { NativeWorldDescription, WorldRequest } from "./world";
+import type { NativeRegionDescription, NativeWorldDescription, WorldRequest } from "./world";
 
 interface Pending {
-  resolve(value: NativeWorldDescription | undefined): void;
+  resolve(value: NativeWorldDescription | NativeRegionDescription | undefined): void;
   reject(reason: unknown): void;
   cleanup(): void;
 }
@@ -33,7 +33,14 @@ export class NativeWorldClient {
     return await this.call("generate", request, signal) as NativeWorldDescription;
   }
 
-  private call(type: "prepare" | "generate", request?: WorldRequest, signal?: AbortSignal) {
+  async generateRegions(request: WorldRequest, signal?: AbortSignal): Promise<NativeRegionDescription> {
+    signal?.throwIfAborted();
+    await this.prepare();
+    signal?.throwIfAborted();
+    return await this.call("generate-regions", request, signal) as NativeRegionDescription;
+  }
+
+  private call(type: "prepare" | "generate" | "generate-regions", request?: WorldRequest, signal?: AbortSignal) {
     if (!this.worker) {
       const worker = this.createWorker();
       this.worker = worker;
@@ -49,7 +56,7 @@ export class NativeWorldClient {
       worker.onmessageerror = () => { if (this.worker === worker) this.fail(new Error("Invalid native worker response")); };
     }
     const id = this.nextId++, worker = this.worker;
-    return new Promise<NativeWorldDescription | undefined>((resolve, reject) => {
+    return new Promise<NativeWorldDescription | NativeRegionDescription | undefined>((resolve, reject) => {
       const abort = () => {
         this.pending.delete(id); signal?.removeEventListener("abort", abort);
         worker.postMessage({ type: "cancel", id });

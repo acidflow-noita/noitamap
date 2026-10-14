@@ -5,6 +5,9 @@ import { Canvas } from '@napi-rs/canvas';
 import { installNativeTerrainEnvironment } from '../../build_scripts/native-terrain-environment.mjs';
 const environment = installNativeTerrainEnvironment({ ...workerData, fullPixels: workerData.fullPixels ?? true,
   workerScript: new URL('../../build_scripts/native-terrain-worker.mjs',import.meta.url) });
+if (workerData.hardwareConcurrency !== undefined) Object.defineProperty(globalThis, 'navigator', {
+  value: { ...navigator, hardwareConcurrency: workerData.hardwareConcurrency }, configurable: true,
+});
 Canvas.prototype.convertToBlob = async function() { return new Blob([new Uint8Array(await this.encode('png'))], { type:'image/png' }); };
 globalThis.__warmSceneStore = new Map();
 globalThis.__watercaveFullPixels = workerData.fullPixels;

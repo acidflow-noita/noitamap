@@ -33,8 +33,11 @@ export interface NativeWorldDescription {
   tileLayers: any[];
   elevatorShafts: any[];
   regions: WorldRegion[];
-  timings: { geometryMs: number; placementsMs: number; totalMs: number };
+  timings: { geometryMs: number; placementsMs: number; totalMs: number; workers?: number };
 }
+
+/** Side workers return decisions only; the primary worker owns the shared geometry. */
+export type NativeRegionDescription = Omit<NativeWorldDescription, "biomeData" | "tileLayers" | "elevatorShafts">;
 
 let installed = false;
 

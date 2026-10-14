@@ -15,7 +15,7 @@ function transferables(value: unknown, buffers = new Set<ArrayBuffer>(), visited
 }
 
 worker.onmessage = async ({ data }: MessageEvent<{
-  id: number; type: "prepare" | "generate" | "cancel"; request?: WorldRequest;
+  id: number; type: "prepare" | "generate" | "generate-regions" | "cancel"; request?: WorldRequest;
 }>) => {
   if (data.type === "cancel") { requests.get(data.id)?.abort(); return; }
   const controller = new AbortController();
@@ -27,6 +27,13 @@ worker.onmessage = async ({ data }: MessageEvent<{
     else {
       if (!data.request) throw new Error("Missing world request");
       const world = await generator.generate(data.request, controller.signal);
+      if (data.type === "generate-regions") {
+        // Geometry is identical in every horizontal world. Do not clone or
+        // transfer duplicate layer buffers back from the side workers.
+        const { biomeData, tileLayers, elevatorShafts, ...regions } = world;
+        worker.postMessage({ id: data.id, ok: true, world: regions });
+        return;
+      }
       // Scene descriptors can reference immutable input masks. Never detach those.
       worker.postMessage({ id: data.id, ok: true, world }, transferables({
         biomeData: world.biomeData, tileLayers: world.tileLayers, elevatorShafts: world.elevatorShafts,
