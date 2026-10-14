@@ -181,7 +181,7 @@ export interface GenerateOptions {
    * This snapshot is not a complete map and must not be presented as one. */
   onTerrainReady?: (terrain: Pick<GenerationResult,
     "seed" | "ngPlus" | "isNGP" | "worldSize" | "worldCenter" | "tileLayers" |
-    "elevatorShafts" | "biomeData" | "parallelWorlds">) => void;
+    "elevatorShafts" | "biomeData" | "parallelWorlds"> & { gameMode?: string }) => void;
 }
 
 // ─── State ──────────────────────────────────────────────────────────────────
@@ -465,16 +465,25 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
 
   return runGenerationTask(async () => {
     const started = performance.now();
+    let terrainAnnounced = false;
+    // Concurrent GPU preparation helps the longer single-worker scan. With
+    // several generation workers, measured contention erased that benefit.
+    const overlapTerrain = nativeClient.workerCountFor(opts.parallelWorlds) === 1;
     const native = useRenderPerfGeneration() ? await nativeClient.generate({
       seed: opts.seed, ngPlus: opts.ngPlus, gameMode: (opts.gameMode ?? "normal") as "normal" | "nightmare",
       unlocks: opts.unlocks, dailySeed: opts.dailySeed, parallelWorlds: opts.parallelWorlds,
       calendar: { month: generationSettings.date.month, day: generationSettings.date.day },
-    }, opts.signal) : undefined;
-    return generatePreparedMap(opts, workerPool, native, started);
+    }, opts.signal, opts.onTerrainReady && overlapTerrain ? terrain => {
+      opts.signal?.throwIfAborted();
+      terrainAnnounced = true;
+      opts.onTerrainReady!({ ...terrain, isNGP: terrain.ngPlus > 0, parallelWorlds: opts.parallelWorlds ?? [-1, 0, 1] });
+    } : undefined) : undefined;
+    return generatePreparedMap(opts, workerPool, native, started, terrainAnnounced);
   });
 }
 
-async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWorldWorkerPool, native?: NativeWorldDescription, started = performance.now()): Promise<GenerationResult> {
+async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWorldWorkerPool, native?: NativeWorldDescription,
+  started = performance.now(), terrainAnnounced = false): Promise<GenerationResult> {
   opts.signal?.throwIfAborted(); // A request can be cancelled while queued.
   const seed = opts.seed;
   const ngPlus = opts.ngPlus ?? 0;
@@ -647,7 +656,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   // of leaving a fake second endpoint and a gap between the two copies.
   const elevatorShafts = native?.elevatorShafts ?? (useRenderPerfGeneration() ? await prepareElevatorShafts({ tileLayers, biomeData, seed, ngPlus, isNGP, gameMode }) : []);
   opts.signal?.throwIfAborted();
-  opts.onTerrainReady?.({ seed, ngPlus, isNGP, worldSize, worldCenter,
+  if (!terrainAnnounced) opts.onTerrainReady?.({ seed, ngPlus, isNGP, worldSize, worldCenter, gameMode,
     tileLayers, elevatorShafts, biomeData, parallelWorlds });
   const elevatorColumns = elevatorShafts.map(layer => layer.minX);
   const elevatorSpawns = native ? [] : prescanSpawnFunctions(elevatorShafts, isNGP, gameMode).filter((spawn: any) => spawn.y >= 34 * 512 && spawn.y < 82 * 512);

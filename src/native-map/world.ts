@@ -38,6 +38,8 @@ export interface NativeWorldDescription {
 
 /** Side workers return decisions only; the primary worker owns the shared geometry. */
 export type NativeRegionDescription = Omit<NativeWorldDescription, "biomeData" | "tileLayers" | "elevatorShafts">;
+export type NativeTerrainDescription = Pick<NativeWorldDescription,
+  "seed" | "ngPlus" | "gameMode" | "worldSize" | "worldCenter" | "biomeData" | "tileLayers" | "elevatorShafts">;
 
 let installed = false;
 
@@ -84,7 +86,8 @@ export async function createNativeWorldGenerator(assets: NativeAssets, yieldCont
   releaseDecodedInputImages();
   let queue: Promise<unknown> = Promise.resolve();
 
-  async function generate(request: WorldRequest, signal?: AbortSignal): Promise<NativeWorldDescription> {
+  async function generate(request: WorldRequest, signal?: AbortSignal,
+    onTerrainReady?: (terrain: NativeTerrainDescription) => void): Promise<NativeWorldDescription> {
     signal?.throwIfAborted();
     if (!Number.isInteger(request.seed) || request.seed < 0 || request.seed > 0xffffffff)
       throw new Error("Seed must be an unsigned 32-bit integer");
@@ -128,6 +131,11 @@ export async function createNativeWorldGenerator(assets: NativeAssets, yieldCont
       columns.includes(Math.floor((spawn.x + width * 256) / 512)))) : spawns;
     const shaftSpawns = rules.spawns.prescanSpawnFunctions(elevatorShafts, ngPlus > 0, gameMode)
       .filter((spawn: any) => spawn.y >= 34 * 512 && spawn.y < 82 * 512);
+    const worldSize = rules.coordinates.getWorldSize(ngPlus > 0, gameMode),
+      worldCenter = rules.coordinates.getWorldCenter(ngPlus > 0, gameMode);
+    // Every later placement uses the prescan records and biome map, never the
+    // layer buffers. The worker can now transfer those buffers exactly once.
+    onTerrainReady?.({ seed: request.seed, ngPlus, gameMode, worldSize, worldCenter, biomeData, tileLayers, elevatorShafts });
     const regions: WorldRegion[] = [];
     for (const horizontal of horizontalWorlds) for (const vertical of [0, -1, 1] as const) {
       await yieldControl();
@@ -154,17 +162,16 @@ export async function createNativeWorldGenerator(assets: NativeAssets, yieldCont
     signal?.throwIfAborted();
     const totalMs = performance.now() - start;
     return { kind: "native-world-description", revision: assets.revision, seed: request.seed,
-      ngPlus, gameMode, calendar, worldSize: rules.coordinates.getWorldSize(ngPlus > 0, gameMode),
-      worldCenter: rules.coordinates.getWorldCenter(ngPlus > 0, gameMode), biomeData,
+      ngPlus, gameMode, calendar, worldSize, worldCenter, biomeData,
       tileLayers, elevatorShafts, regions, timings: { geometryMs, placementsMs: totalMs - geometryMs, totalMs } };
   }
   return {
-    generate(request: WorldRequest, signal?: AbortSignal) {
+    generate(request: WorldRequest, signal?: AbortSignal, onTerrainReady?: (terrain: NativeTerrainDescription) => void) {
       const now = new Date();
       const snapshot = { ...request, unlocks: request.unlocks?.slice() ?? request.unlocks,
         parallelWorlds: request.parallelWorlds?.slice(),
         calendar: request.calendar ? { ...request.calendar } : { month: now.getMonth() + 1, day: now.getDate() } };
-      const pending = queue.then(() => generate(snapshot, signal));
+      const pending = queue.then(() => generate(snapshot, signal, onTerrainReady));
       queue = pending.catch(() => {});
       return pending;
     },

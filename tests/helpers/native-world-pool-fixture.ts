@@ -7,6 +7,8 @@ async function digest(world: NativeWorldDescription) {
     if (['imgElement', 'id', 'uuid', 'debugRngInfo'].includes(key)) return undefined;
     if (ArrayBuffer.isView(value)) return Array.from(new Uint8Array(value.buffer, value.byteOffset, value.byteLength));
     if (value instanceof Set) return [...value];
+    if (value && typeof value === 'object' && !Array.isArray(value))
+      return Object.fromEntries(Object.keys(value).sort().map(name => [name, value[name]]));
     return value;
   });
   return [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -24,8 +26,15 @@ export async function run() {
     for (const [index, request] of requests.entries()) {
       const measured: any[] = [];
       for (const [name, pool] of (index % 2 ? [['parallel', parallel], ['serial', serial]] : [['serial', serial], ['parallel', parallel]]) as [string, NativeWorldPool][]) {
-        const start = performance.now(), world = await pool.generate(request), elapsedMs = performance.now() - start;
+        let early: any, announcedAt = 0;
+        const start = performance.now(), world = await pool.generate(request, undefined, name === 'parallel' ? terrain => {
+          if (early) throw new Error('Repeated terrain notification');
+          early = terrain; announcedAt = performance.now() - start;
+        } : undefined), elapsedMs = performance.now() - start;
+        if (name === 'parallel' && (!early || early.tileLayers !== world.tileLayers || early.biomeData !== world.biomeData || announcedAt >= elapsedMs))
+          throw new Error('Terrain ownership or early notification changed');
         measured.push({ name, elapsedMs, timings: world.timings, hash: await digest(world),
+          terrainReadyMs: announcedAt,
           regions: world.regions.map(r => [r.horizontal, r.vertical, r.pois.length, r.scenes.length]) });
       }
       rows.push({ request, measured });

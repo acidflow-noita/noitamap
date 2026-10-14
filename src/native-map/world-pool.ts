@@ -1,5 +1,5 @@
 import { NativeWorldClient } from './client';
-import type { NativeRegionDescription, NativeWorldDescription, WorldRequest } from './world';
+import type { NativeRegionDescription, NativeTerrainDescription, NativeWorldDescription, WorldRequest } from './world';
 
 type Client = Pick<NativeWorldClient, 'prepare' | 'generate' | 'generateRegions' | 'dispose'>;
 
@@ -26,15 +26,20 @@ export class NativeWorldPool {
     if (!Number.isInteger(limit) || limit < 1 || limit > 3) throw new RangeError('Native worker limit must be 1..3');
   }
 
+  workerCountFor(worlds: number[] = [-1, 0, 1]): number {
+    return Math.min(this.limit, Math.max(1, worlds.length));
+  }
+
   async prepare(worlds: number[] = [-1, 0, 1]): Promise<void> {
     if (this.disposed) throw new Error('Native generator pool disposed');
-    const count = Math.min(this.limit, Math.max(1, worlds.length));
+    const count = this.workerCountFor(worlds);
     while (this.clients.length < count) this.clients.push(this.createClient());
     await Promise.all(this.clients.slice(0, count).map(client => client.prepare()));
     if (this.disposed) throw new Error('Native generator pool disposed');
   }
 
-  async generate(request: WorldRequest, signal?: AbortSignal): Promise<NativeWorldDescription> {
+  async generate(request: WorldRequest, signal?: AbortSignal,
+    onTerrainReady?: (terrain: NativeTerrainDescription) => void): Promise<NativeWorldDescription> {
     signal?.throwIfAborted();
     const worlds = [...(request.parallelWorlds ?? [-1, 0, 1])];
     if (!worlds.length || worlds.some(pw => !Number.isSafeInteger(pw)) || new Set(worlds).size !== worlds.length)
@@ -45,7 +50,7 @@ export class NativeWorldPool {
       calendar: request.calendar ? { ...request.calendar } : { month: now.getMonth() + 1, day: now.getDate() } };
     await this.prepare(worlds);
     signal?.throwIfAborted();
-    const count = Math.min(this.limit, worlds.length), controller = new AbortController();
+    const count = this.workerCountFor(worlds), controller = new AbortController();
     const cancel = () => controller.abort(signal?.reason);
     signal?.addEventListener('abort', cancel, { once: true });
     const started = performance.now();
@@ -54,7 +59,7 @@ export class NativeWorldPool {
       for (let index = 0; index < count; index++) {
         const parallelWorlds = worlds.slice(Math.floor(index * worlds.length / count), Math.floor((index + 1) * worlds.length / count));
         const input = { ...snapshot, parallelWorlds };
-        jobs.push(index === 0 ? this.clients[index].generate(input, controller.signal)
+        jobs.push(index === 0 ? this.clients[index].generate(input, controller.signal, onTerrainReady)
           : this.clients[index].generateRegions(input, controller.signal));
       }
       const results = await Promise.all(jobs);

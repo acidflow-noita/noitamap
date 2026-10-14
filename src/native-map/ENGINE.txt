@@ -33,6 +33,30 @@ Initial retained worker heap+ArrayBuffers were about70 MiB for one versus178 MiB
 for three in the standalone diagnostic; transient generation allocations are
 higher and browser usage may differ. Hardware selection bounds this tradeoff.
 
+The presentation profiler now follows the live HD route through backgrounds,
+terrain, scenes and marker drawing. In four isolated native processes (1/3/3/1
+generation workers, Mesa shader cache disabled), median warm presentation was
+1326 ms with one worker versus1045 ms with three. First-use medians were4310 ms
+versus4115 ms. All viewport hashes matched. This is a fixed-camera native GLES
+comparison, not Firefox timing or an all-nine pixel cook. Sampled process RSS
+was roughly1.4–1.7 GiB versus1.8–2.1 GiB; that includes Node and software GLES,
+not just the worker heaps, and is not a browser-memory estimate.
+
+For single-worker requests, geometry is now handed off after spawn prescanning,
+before placement scans. The worker transfers large layer buffers once and retains
+its small biome map; its final message carries placements. The client joins both
+messages using the same geometry objects. Cancellation and final identity checks
+still apply. GPU preparation can overlap placements; presentation still waits for
+all scenes and the existing complete-frame barrier. Multiworker requests retain
+the previous handoff timing because the measured overlap gain was inconclusive.
+Paired single-worker presentation tests saved about208 ms on first use and94 ms
+on warm seed changes (medians). This is incremental, not the instant-map goal.
+Normal/restricted/seasonal-NG+/Nightmare/reordered-world/Light data match the
+non-streaming control. The existing12completed-tile reference also matches.
+
+Run node build_scripts/profile-map-presentation.mjs for the native presentation
+comparison; build_scripts/map-presentation-profile.txt describes controls and limits.
+
 Output: native-world-description, containing geometry, elevator continuation,
 and separate POI/scene records for West/Main/East x Heaven/Main/Hell. It deliberately
 is not a completed image or tile source. The final material/scene/liquid/edge/POI

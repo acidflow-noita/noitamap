@@ -1,0 +1,41 @@
+Native map presentation profiling
+
+Run from the repository root with Node and the existing dependencies:
+  node build_scripts/profile-map-presentation.mjs
+This builds a temporary fixture, runs fresh processes in 1/3/3/1 worker order,
+and records task/native-engine/presentation-profile.json. Each process generates
+seeds618,11033,786433191. Every final viewport hash must match for a given seed.
+
+Compare the early terrain handoff at a fixed worker count:
+  node build_scripts/profile-map-presentation.mjs --order 1,1,1,1 --early off,on,on,off --out /tmp/early-single.json
+  node build_scripts/profile-map-presentation.mjs --order 3,3,3,3 --early off,on,on,off --out /tmp/early-parallel.json
+--early defaults to auto (the production policy). Overrides exist only in the
+temporary profiling bundle, never in the application's user interface.
+--seeds accepts a comma-separated uint32 list. --out selects the report path.
+
+Included: production generation and initialization, persistent workers, native
+GLES shader compilation/draws, terrain uploads/clipping, original background
+artwork, scene preparation and direct scene/marker drawing, and orb images.
+The actual first-paint callback is recorded separately from the final layer draw.
+Private phase wrappers record overlapping intervals; their durations must not be
+added as independent costs. The native canvas adapter includes GPU readback.
+
+Excluded: browser/DOM/CSS, actual OSD tile scheduling, CDN/network delay,
+IndexedDB persistence, URL/daily-seed lookup, speculative alternate unlock work,
+and animated portal effects. A fixed1280x720 camera uses the production direct
+layer drawing hooks. Input files come from the build output and local public/.
+This tests a completed visible frame, not all nine regions at native resolution.
+It does not establish Firefox, Windows, physical weak-device or game-capture parity.
+
+Each run uses a separate OS process, with MESA_SHADER_CACHE_DISABLE=true before
+native library initialization. Merely changing process.env inside a Node worker
+would not isolate the driver's state reliably. Warm cases retain the application's
+contexts, source assets and scene caches. The first sample is a fresh application
+session over the local filesystem; it is not a measured cold network download.
+Memory is sampled after drawing. RSS covers the whole process; heap/ArrayBuffer
+fields describe the main isolate. These are not peak or browser RAM figures.
+
+The default comparison retains all worlds/regions and rejects missing layers,
+blank output, fallback rendering, diagnostic errors and pixel-hash disagreement.
+The viewer adapter supplies only camera/event plumbing; rendering calls execute
+the existing application code. No browser automation is used.

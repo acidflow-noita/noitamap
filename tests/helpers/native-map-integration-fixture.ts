@@ -15,7 +15,8 @@ export async function run(){
  setFullPixelTerrainForBake(true);const cases=[];
  try{
   for(const options of [{seed:1103},{seed:11033,parallelWorlds:[0],unlocks:[]}]){
-   const gen=await generateDynamicMap(options),sceneData=await prepareTerrainSceneData(gen),pixels=[];
+   let terrain:any;const gen=await generateDynamicMap({...options,onTerrainReady(value){if(terrain)throw Error('Repeated terrain callback');terrain=value;}}),sceneData=await prepareTerrainSceneData(gen),pixels=[];
+   if(!terrain||terrain.tileLayers!==gen.tileLayers||terrain.biomeData!==gen.biomeData)throw Error('Early terrain identity changed');
    // Same map rendering code, actual scene inputs, all three vertical planes.
    for(const plane of [-1,0,1] as const){
     const data=await prepareTerrainPlane(gen,plane),terrain=await createCpuTerrain({...data,sceneData});
