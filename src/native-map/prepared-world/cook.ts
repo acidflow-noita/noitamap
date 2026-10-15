@@ -13,6 +13,8 @@ import { cookCheckpoints } from "./scheduling";
 export interface CookTerrainOptions {
   readonly baseline?: PixelStoreBaseline;
   readonly preparedRevision?: string;
+  /** Selected final pixels must belong to this exact cave-state digest too. */
+  readonly preparedGenerationStateDigest?: string | null;
   /** Already-selected final page roots belonging to the frozen baseline. This
    * API accepts data, not a callback that could hide scalar rasterization.
    * Selection must account for every input to the completed-page recipe. */
@@ -72,6 +74,8 @@ export async function cookTerrainSceneLayer(
     throw new Error("Prepared pixels and native source revisions differ");
   if (options.preparedPages && !options.baseline)
     throw new Error("Prepared pages require their frozen pixel library");
+  if (options.preparedPages && (options.preparedGenerationStateDigest ?? null) !== source.generationStateDigest)
+    throw new Error("Prepared pixels and native cave-state identities differ");
   const check = () => options.signal?.throwIfAborted();
   const checkpoints = cookCheckpoints(options.signal, options.yieldControl);
   check();
@@ -233,6 +237,7 @@ export async function cookTerrainSceneLayer(
     kind: "cooked-terrain-scenes-layer" as const,
     seed: source.seed,
     revision: source.revision,
+    generationStateDigest: source.generationStateDigest,
     map,
     preparedPages: addresses.length - referencePages,
     referencePages,

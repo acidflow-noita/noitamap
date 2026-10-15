@@ -9,6 +9,7 @@ const paths = [
   "../composition/scene-source-loader.ts", "../composition/scene-source-definitions.ts",
   "../composition/world-resources.ts", "../composition/world-policy.ts",
   "../composition/liquid-inputs.ts", "../composition/strict-edges.ts", "../edges/core.wasm",
+  "../game-state/index.ts", "../game-state/README.txt", "../../../tests/native-cave-state.test.ts",
   "../../../tests/complete-world-runtime.test.ts", "../../../tests/helpers/complete-world-runtime-fixture.ts",
   "../../../tests/helpers/complete-world-runtime-worker.mjs",
 ];

@@ -44,6 +44,8 @@ export class AppOSD {
   private failedItems: Set<any> = new Set();
 
   constructor(mountTo: HTMLElement, useWebGL: boolean) {
+    // The completed native pixel layer uses the existing ordered canvas hook.
+    if(new URLSearchParams(window.location.search).get('native')==='1')useWebGL=false;
     this.viewer = new OpenSeadragon.Viewer({
       element: mountTo,
       maxZoomPixelRatio: 70,

@@ -9,7 +9,9 @@ vi.mock('../src/data_sources/overlays', () => ({ isValidOverlayKey: () => false 
 vi.mock('../src/telescope/tile-cache', () => ({ getCachedGeneration: vi.fn(), cacheGeneration: vi.fn() }));
 vi.mock('../src/telescope/telescope-cache-version', () => ({ ensureTelescopeCacheVersion: vi.fn(async () => {}) }));
 vi.mock('../src/telescope/instant-terrain-backend', () => ({ prewarmInstantTerrain: vi.fn(), releaseInstantTerrainBackend: vi.fn() }));
-vi.mock('../src/telescope/telescope-adapter', () => ({ generateDynamicMap: vi.fn(), initTelescope: vi.fn(), prewarmParallelWorlds: vi.fn(), releaseParallelWorlds: vi.fn() }));
+vi.mock('../src/telescope/telescope-adapter', () => ({ generateDynamicMap: vi.fn(), adaptCompleteNativeWorld:vi.fn(), initTelescope: vi.fn(), prewarmParallelWorlds: vi.fn(), releaseParallelWorlds: vi.fn() }));
+vi.mock('../src/native-map/complete-client',()=>({completeMapClient:{generate:vi.fn(),dispose:vi.fn()},isCompleteNativeMapEnabled:()=>new URLSearchParams(location.search).get('native')==='1'}));
+vi.mock('../src/native-map/completed-presentation',()=>({completedNativePresentation:vi.fn(()=>async()=>{}),stopCompletedNativePresentation:vi.fn()}));
 vi.mock('../src/unlocks', () => ({ getUnlocksFromURL: () => null, unlocksChanged: vi.fn(), UNLOCK_KEYS: [], getUrlUnlockKind: vi.fn() }));
 vi.mock('../src/pillars-unlocks', () => ({ getPillarFlagsFromURL: vi.fn() }));
 vi.mock('../src/unlocks-toggle', () => ({ beginAltSeed: vi.fn(), prewarmAlt: vi.fn(), resetAltCache: vi.fn() }));
@@ -28,7 +30,9 @@ vi.mock('../src/game-translations/translator', () => ({ gameTranslator: {} }));
 import { fetchDailySeed, fetchPreviousDailySeed } from '../src/data_sources/daily_seed';
 import { parseURL, reorderParams, updateURLWithSeed } from '../src/data_sources/url';
 import { shouldUseBakedTerrain, isInstantTerrainEnabled } from '../src/renderer_settings';
-import { initTelescope, generateDynamicMap, prewarmParallelWorlds } from '../src/telescope/telescope-adapter';
+import { initTelescope, generateDynamicMap, adaptCompleteNativeWorld, prewarmParallelWorlds } from '../src/telescope/telescope-adapter';
+import {completeMapClient} from '../src/native-map/complete-client';
+import {completedNativePresentation} from '../src/native-map/completed-presentation';
 import { prewarmInstantTerrain } from '../src/telescope/instant-terrain-backend';
 import { prewarmAlt } from '../src/unlocks-toggle';
 import { getUrlUnlockKind } from '../src/unlocks';
@@ -51,6 +55,20 @@ beforeEach(() => {
 });
 
 describe('URL seed request ownership', () => {
+  it('routes the native test through completed pixels without old generation, warmup or seed-cache work',async()=>{
+    history.replaceState(null,'','/?m=dy&se=42&native=1');
+    const description={generationId:7,world:{seed:42},grid:{x:-53760,y:-31744,columns:210,rows:144,pageSize:512},timings:{},memory:{}};
+    const result={seed:42,ngPlus:0,isNGP:false,worldSize:70,worldCenter:35,tileLayers:[],biomeData:{},poisByPW:{},pixelScenesByPW:{},parallelWorlds:[-1,0,1]} as any;
+    vi.mocked(completeMapClient.generate).mockResolvedValue(description as any);vi.mocked(adaptCompleteNativeWorld).mockResolvedValue(result);
+    vi.mocked(renderGenerationResult).mockResolvedValue();vi.mocked(getAllPOIsFlat).mockReturnValue([]);
+    const pipeline=await import('../src/dynamic-map'),options={viewer:{},onLoadingChange:vi.fn(),onPOIsReady:vi.fn()};
+    expect(await pipeline.runDynamicMap(42,false,options)).toBe(result);
+    expect(completeMapClient.generate).toHaveBeenCalledOnce();expect(completeMapClient.generate).toHaveBeenCalledWith(expect.objectContaining({seed:42,parallelWorlds:[-1,0,1]}),expect.any(AbortSignal),expect.any(Function));
+    expect(adaptCompleteNativeWorld).toHaveBeenCalledWith(description.world,expect.objectContaining({seed:42}));
+    expect(initTelescope).not.toHaveBeenCalled();expect(generateDynamicMap).not.toHaveBeenCalled();expect(prewarmParallelWorlds).not.toHaveBeenCalled();expect(prewarmInstantTerrain).not.toHaveBeenCalled();
+    expect(getCachedGeneration).not.toHaveBeenCalled();expect(cacheGeneration).not.toHaveBeenCalled();expect(prefetchAllSceneBitmaps).not.toHaveBeenCalled();expect(prewarmAlt).not.toHaveBeenCalled();
+    expect(completedNativePresentation).toHaveBeenCalledWith(description,false);expect(vi.mocked(renderGenerationResult).mock.calls[0][12]).toEqual(expect.any(Function));
+  });
   it('requires a fresh published Daily for a floating drawing and does not invent a fallback seed', async () => {
     history.replaceState(null, '', '/?m=dy&ds=1');
     const { resolveSeed } = await import('../src/dynamic-map');

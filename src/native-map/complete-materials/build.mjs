@@ -11,6 +11,7 @@ const files = [
   "topo2.c", "topo0.c", "vertical.c", "bands.c", "ownership.c", "complete.c",
   "constants.h", "topo0-data.h", "bands-data.h", "classifications.h",
   "index.ts", "seed-modifiers.mjs", "engine-data.mjs", "NOTICE.txt", "LICENSE-telescope.txt", "build.mjs",
+  "../game-state/index.ts", "../game-state/README.txt",
 ];
 const referenceFiles = [
   "task/native-wasm-topo0/topo0.c", "task/native-wasm-topo0/topo0-data.h",
@@ -63,7 +64,7 @@ if (process.argv.includes("--check")) {
     referenceCommit: "9c587750c361e88583fe8df406d74136bbcc1dde",
     scope: "Owned source-parity scalar material field: topology0, topology2, bands, host policy, vertical planes and local shafts. Unresolved raw/legacy/unowned/config/input cases are explicit.",
     accuracyLimits: [
-      "Winter and _EMPTY_ modifier preparation omits runtime-RNG phase F; _EMPTY_ runtime chunk mutations are absent.",
+      "Default winter/_EMPTY_ preparation omits runtime-RNG phase F. Validated named-grid imports replace it at a captured instant; missing imported runtime grids stay unresolved. No historical chunk or full-run-state claim.",
       "Preserves pinned source seed-halving thresholds and insideNoiseType=5 overrides.",
       "Finite carve tables and unsupported configurations remain classified unresolved.",
       "Host Math.sin/cos bytes preserve the current JS reference; no independent game or cross-engine equivalence claim.",

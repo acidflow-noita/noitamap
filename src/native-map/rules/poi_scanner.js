@@ -1,6 +1,5 @@
 // Adapted into the owned Noitamap rules runtime. See NOTICE.txt for provenance.
 import { tileToWorldCoordinates, getBiomeAtWorldCoordinates, getResolvedBiome, getWorldCenter, getWorldSize } from "./utils.js";
-import { CHUNK_SIZE, TILE_SIZE, WORLD_CHUNK_CENTER_X, WORLD_CHUNK_CENTER_Y } from "./constants.js";
 import { GENERATOR_CONFIG } from "./generator_config.js";
 import { BIOME_SPAWN_FUNCTION_MAP } from "./spawn_function_config.js";
 import { getSpawnFunctionIndex, spawnSwitch } from "./spawn_functions.js";
@@ -21,6 +20,7 @@ import {
 } from './misc_generation.js';
 import { appSettings } from "./settings.js";
 import { PIXEL_SCENE_SPAWN_DATA } from "./pixel_scene_generation.js";
+import { preparedSpawnCoordinates, spawnScanPointAxis } from './spawn-coordinate-plan.js';
 
 // Prevent infinite loops with nested pixel scenes (which hopefully shouldn't happen...)
 const MAX_SCAN_CYCLES = 10;
@@ -39,12 +39,7 @@ const ORIGINAL_BIOME_SPAWNS = new Set([
 // Convert a world position to the wang tile pixel's scan point (increments of 10 pixels).
 // Checks for edge noise biome flips are done at this base scan point
 function getTileScanPoint(worldX, worldY) {
-    const axis = (w) => {
-        const phase = ((((Math.floor(w / 512) * 512) % 10) + 10) % 10);
-        const base = (((phase - w) % 10) + 10) % 10;
-        return w + (base >= 5 ? base : base + 10);
-    };
-    return { x: axis(worldX), y: axis(worldY) };
+    return { x: spawnScanPointAxis(worldX), y: spawnScanPointAxis(worldY) };
 }
 
 export function prescanPixelScene(imgData, sourceBiome) {
@@ -228,38 +223,6 @@ function getPixelSceneSpawnFunctionIndices(biomeData, biomeName, pixelScene, wor
     return { detectedSpawns, newPixelScenes, generatedSpawns };
 }
 
-// Return axis chunk bases that align with a wang tile pixel index on the spawn function scan grid.
-function getChunkBasesForTileIndexAxis(tileIndex, off) {
-    const out = [];
-    const lo = tileIndex * TILE_SIZE - off - 1;
-    const hi = tileIndex * TILE_SIZE - off + TILE_SIZE + 1;
-    for (let s = Math.ceil(lo); s <= hi; s++) {
-        if (Math.floor((s + off + 0.5) / TILE_SIZE) !== tileIndex) continue;
-        const cb = Math.floor(s / CHUNK_SIZE) * CHUNK_SIZE;
-        if ((((s - cb) % TILE_SIZE) + TILE_SIZE) % TILE_SIZE !== 0) continue;
-        if (!out.includes(cb)) out.push(cb);
-    }
-    return out;
-}
-// Conservative seam gate: keep a spawn only if its spawn pixel lands inside at least
-// one chunk candidate on both axes from the wang tile index mapping.
-function passesSpawnChunkGate(emitX, emitY, isNGP, gameMode) {
-    const offX = getWorldCenter(isNGP, gameMode) * CHUNK_SIZE;
-    const offY = WORLD_CHUNK_CENTER_Y * CHUNK_SIZE;
-    const half = TILE_SIZE / 2;
-    const cellX = Math.round((emitX + half + offX) / TILE_SIZE);
-    const cellY = Math.round((emitY + half + offY) / TILE_SIZE);
-    const rx = getChunkBasesForTileIndexAxis(cellX, offX);
-    const ry = getChunkBasesForTileIndexAxis(cellY, offY);
-    for (const cX of rx) {
-        if (!(cX <= emitX && emitX < cX + (CHUNK_SIZE - 1))) continue;
-        for (const cY of ry) {
-            if (cY <= emitY && emitY < cY + (CHUNK_SIZE - 1)) return true;
-        }
-    }
-    return false;
-}
-
 // Surprisingly this depends on NG0 vs NG+ but not on seed
 export function prescanSpawnFunctions(tileLayers, isNGP, gameMode='normal') {
     // TODO: Don't use clearSpawnPixels here, do it earlier
@@ -340,6 +303,7 @@ export function prescanSpawnFunctions(tileLayers, isNGP, gameMode='normal') {
 
 export function scanSpawnFunctions(biomeData, tileSpawns, worldSeed, ngPlusCount, pwIndex, pwIndexVertical, skipCosmeticScenes = true, perks={}, gameMode='normal') {
     const t0 = performance.now();
+    const coordinates = preparedSpawnCoordinates(ngPlusCount > 0, gameMode);
     let detectedSpawns = tileSpawns.map(spawn => ({...spawn, fromPixelScene: false,
         x: spawn.x + pwIndex*getWorldSize(ngPlusCount > 0, gameMode) * 512 - ((ngPlusCount > 0 || gameMode === 'nightmare') ? 8 * pwIndex : 0),
         y: spawn.y + pwIndexVertical*24570
@@ -348,7 +312,7 @@ export function scanSpawnFunctions(biomeData, tileSpawns, worldSeed, ngPlusCount
     // stride is 8px short of a whole chunk, so the offset above shifts spawns
     // relative to the chunk grid. A spawn sitting just inside a chunk in the main
     // world can end up outside one several parallel worlds over, so re-check it.
-    .filter(spawn => passesSpawnChunkGate(spawn.x, spawn.y, ngPlusCount > 0, gameMode));
+    .filter(spawn => coordinates.accepts(spawn.x, spawn.y));
     let generatedSpawns = [];
 
     let finalPixelScenes = [];

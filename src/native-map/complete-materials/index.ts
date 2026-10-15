@@ -4,6 +4,9 @@ import {
   bitmapNoiseNodeOffset,
   surfaceNoisePhase,
 } from "./seed-modifiers.mjs";
+import {
+  copyCaveStateModifiers, validateCaveStateBinding, type CaveStateBinding,
+} from "../game-state";
 
 export const COMPLETE_MATERIAL_ABI = 3;
 export const MATERIAL_UNRESOLVED = -1;
@@ -87,6 +90,9 @@ export interface CompleteMaterialInputs {
   plane?: { offsetY: number; shafts?: ReadonlyArray<CompleteMaterialShaft> };
   /** Optional captured or separately prepared inputs, with the same raw seed. */
   topology0?: Topology0SeedInputs;
+  /** Validated named runtime grids. Exclusive with a full topology0 override.
+   * This narrows a cave-input dependency; it is not a complete game snapshot. */
+  generationState?: CaveStateBinding;
   /** Optional finite exact tables. Out-of-table accesses stay unresolved. */
   carveTables?: CarveTables;
 }
@@ -105,6 +111,7 @@ export interface CompleteMaterialResolver {
   readonly memoryBytes: number;
   readonly maxWidth: number;
   readonly maxHeight: number;
+  readonly generationStateDigest: string | null;
   resolve(x: number, y: number, width: number, height: number): CompleteMaterialBatch;
   /** Density must be an exact f32 (as returned by computeMaterialNoiseDensityPoints).
    * A selector's no-match remains -1. IDs are borrowed until next band/density query. */
@@ -159,6 +166,9 @@ function assertGrid(grid: CompleteMaterialGrid): void {
 
 /** Uncached preparation, owned by the caller. Preserves the pinned source chain. */
 export function prepareTopology0Seed(seed: number): Topology0SeedInputs {
+  return topology0Seed(seed);
+}
+function topology0Seed(seed: number, overrides?: Partial<Record<ModifierKey, ModifierGrid | null>>): Topology0SeedInputs {
   assertSeed(seed);
   if (Object.keys(CAVES_SETUP).sort().join() !== MODIFIER_KEYS.join())
     throw new Error("Modifier descriptor order differs from the C tables");
@@ -166,7 +176,9 @@ export function prepareTopology0Seed(seed: number): Topology0SeedInputs {
     seed,
     surfacePhase: surfaceNoisePhase(seed),
     bitmapNoiseOffset: bitmapNoiseNodeOffset(seed),
-    modifiers: Object.fromEntries(MODIFIER_KEYS.map(key => [key, getModifierGrid(seed, key)])) as Topology0SeedInputs["modifiers"],
+    modifiers: Object.fromEntries(MODIFIER_KEYS.map(key => [key,
+      overrides && Object.hasOwn(overrides, key) ? overrides[key] : getModifierGrid(seed, key),
+    ])) as Topology0SeedInputs["modifiers"],
   };
 }
 
@@ -197,6 +209,10 @@ export async function createCompleteMaterialResolver(
   options: CompleteMaterialOptions = {},
 ): Promise<CompleteMaterialResolver> {
   assertSeed(input.seed);
+  const imported = input.generationState ? validateCaveStateBinding(input.generationState) : undefined;
+  if (imported && (input.topology0 || imported.context.seed !== input.seed ||
+      input.mapWidth !== (imported.context.ngPlus > 0 || imported.context.gameMode === "nightmare" ? 64 : 70)))
+    throw new Error("Captured cave inputs conflict with the material context or explicit topology0 inputs");
   const { lattice, mapWidth, parameters, plane } = input;
   const parameterCount = parameters.length;
   const vertical = plane !== undefined;
@@ -228,7 +244,8 @@ export async function createCompleteMaterialResolver(
       shafts.set(shaft.column, shaft);
     }
   }
-  const seedData = input.topology0 ?? (!plane ? prepareTopology0Seed(input.seed) : undefined);
+  const seedData = input.topology0 ?? (!plane ? topology0Seed(input.seed,
+    input.generationState ? copyCaveStateModifiers(input.generationState) : undefined) : undefined);
   if (seedData && (seedData.seed !== input.seed || !validTranslation(seedData.surfacePhase) || !validTranslation(seedData.bitmapNoiseOffset)))
     throw new RangeError("Topology0 inputs do not match the material seed");
   const tables = input.carveTables ?? (!plane ? prepareCarveTables() : undefined);
@@ -354,6 +371,7 @@ export async function createCompleteMaterialResolver(
     abi: COMPLETE_MATERIAL_ABI,
     memoryBytes: memory.byteLength + stagingBytes,
     maxWidth, maxHeight,
+    generationStateDigest: imported?.digest ?? null,
     selectBandPoints(points) { return bandQuery(points, false); },
     resolveCoverageBandPoints(points) { return bandQuery(points, true); },
     computeMaterialNoiseDensityPoints(points) {

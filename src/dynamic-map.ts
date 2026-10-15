@@ -15,7 +15,9 @@ import { isInstantTerrainEnabled, shouldUseBakedTerrain } from "./renderer_setti
 import { fetchDailySeed, fetchPreviousDailySeed } from "./data_sources/daily_seed";
 import { parseURL, updateURLWithSeed, clearSeedParams } from "./data_sources/url";
 import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
-import { generateDynamicMap, initTelescope, prewarmParallelWorlds, releaseParallelWorlds, type GenerationResult } from "./telescope/telescope-adapter";
+import { generateDynamicMap, adaptCompleteNativeWorld, initTelescope, prewarmParallelWorlds, releaseParallelWorlds, type GenerationResult } from "./telescope/telescope-adapter";
+import {completeMapClient,isCompleteNativeMapEnabled,type CompleteMapDescription} from './native-map/complete-client';
+import {completedNativePresentation,stopCompletedNativePresentation} from './native-map/completed-presentation';
 import { ensureTelescopeCacheVersion } from "./telescope/telescope-cache-version";
 import { prewarmInstantTerrain, releaseInstantTerrainBackend } from "./telescope/instant-terrain-backend";
 import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS, getUrlUnlockKind } from "./unlocks";
@@ -75,6 +77,7 @@ let lastResult: GenerationResult | null = null;
 let dynamicRendered: boolean = false;
 let generationToken: number = 0;
 let scenePrefetchLifetime: AbortController | undefined;
+let completeNativeRequest:AbortController|undefined;
 
 /** Get the seed currently displayed on the dynamic map */
 export function getCurrentDynamicSeed(): number | null {
@@ -261,13 +264,15 @@ async function runDynamicMapRequest(
 ): Promise<GenerationResult | null> {
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
   const runStarted = performance.now();
+  completeNativeRequest?.abort();completeNativeRequest=undefined;
+  const completeNative=isCompleteNativeMapEnabled();
   scenePrefetchLifetime?.abort();
   scenePrefetchLifetime = undefined;
   beginAltSeed(seed);
   opts.onMapReplacementStart?.();
   if (myToken !== generationToken) return null;
 
-  const noBaked = !shouldUseBakedTerrain(window.location.search);
+  const noBaked = completeNative || !shouldUseBakedTerrain(window.location.search);
   // These changes already require replacement, before Daily detection can
   // await the network. Stop old cooking/late attachments, retain drawn frames.
   const retiredEarly = seed !== currentSeed || currentAllowsBaked !== !noBaked || !dynamicRendered;
@@ -275,7 +280,7 @@ async function runDynamicMapRequest(
     dynamicRendered = false; // returning to this seed must restart its stopped renderer
     cancelPendingDynamicTerrain();
   }
-  if (noBaked && isInstantTerrainEnabled()) {
+  if (!completeNative && noBaked && isInstantTerrainEnabled()) {
     prewarmInstantTerrain();
     prewarmMapPresentation();
     prewarmParallelWorlds(isLightMode() ? [0] : undefined);
@@ -283,7 +288,7 @@ async function runDynamicMapRequest(
   // Explicit live GPU requests need these assets regardless of daily identity.
   // Download/decode them while the daily lookup runs, preserving its unlock rules.
   // Capture rejection immediately; an obsolete request may never await this work.
-  const earlyInit = noBaked && isInstantTerrainEnabled()
+  const earlyInit = !completeNative && noBaked && isInstantTerrainEnabled()
     ? initTelescope().then(() => null, error => ({ error }))
     : null;
 
@@ -344,6 +349,7 @@ async function runDynamicMapRequest(
   // The requested identity changes before assets/rendering finish. Until the
   // replacement completes, lastResult still belongs to the outgoing map.
   dynamicRendered = false;
+  stopCompletedNativePresentation();
 
   // Early GPU preparation replaces the shared renderer before the new map
   // reaches presentation. Retire the old cooker and lazy plane requests first;
@@ -446,7 +452,7 @@ async function runDynamicMapRequest(
   // join before presentation, and never attach it to a superseded map. A live
   // request needs no previous-daily lookup; the baked probe alone owns that.
   const backgroundReady = bakedProbePromise.then(async data => {
-    if (!data?.probe.baked && myToken === generationToken) {
+    if (!completeNative && !data?.probe.baked && myToken === generationToken) {
       await ensurePersistentBiomeBackgrounds(viewer, () => myToken === generationToken);
     }
   }).catch(error => console.warn("[DynamicMap] Biome background unavailable:", error));
@@ -483,10 +489,27 @@ async function runDynamicMapRequest(
 
     let t = performance.now();
     let result: GenerationResult | null = null;
+    let completedDescription:CompleteMapDescription|undefined;
     let restoreTerrain = false;
     const cacheKey = `${seed}-${unlockKey}`;
 
-    if (bakedData?.generation) {
+    if (completeNative) {
+      const controller=completeNativeRequest=new AbortController();
+      const now=new Date();
+      console.info('[Native complete] Generating all nine regions',{seed,unlocks:unlocks?.length??'all'});
+      completedDescription=await completeMapClient.generate({seed,ngPlus:0,gameMode:'normal',unlocks,dailySeed:isDaily,
+        parallelWorlds:[-1,0,1],calendar:{month:now.getMonth()+1,day:now.getDate()}},controller.signal,
+        progress=>{if(myToken===generationToken){
+          window.dispatchEvent(new CustomEvent('nativeMapProgress',{detail:progress}));
+          window.dispatchEvent(new CustomEvent('biomeGenerationProgress',{detail:{percentage:100*progress.completedPages/Math.max(1,progress.totalPages)}}));
+        }});
+      if(myToken!==generationToken)return null;
+      result=await adaptCompleteNativeWorld(completedDescription.world,{seed,ngPlus:0,gameMode:'normal',unlocks,dailySeed:isDaily,pillarFlags,
+        parallelWorlds:lightMode?[0]:[-1,0,1],signal:controller.signal});
+      if(myToken!==generationToken)return null;
+      (window as any).__nativeCompleteMap={seed,grid:completedDescription.grid,timings:completedDescription.timings,memory:completedDescription.memory};
+      console.info('[Native complete] Ready for presentation',(window as any).__nativeCompleteMap);
+    } else if (bakedData?.generation) {
       result = bakedData.generation;
       console.log(`[DynamicMap] Baked generation.json hit — reusing seed metadata`);
       // Seed the IDB cache so seed-report comparisons and tomorrow's
@@ -526,7 +549,7 @@ async function runDynamicMapRequest(
     }
     } // end telescope path
 
-    if (isInstantTerrainEnabled() && !bakedData?.probe.baked) {
+    if (!completeNative && isInstantTerrainEnabled() && !bakedData?.probe.baked) {
       // Cached generations did not pass through onTerrainReady. The backend
       // coalesces this with the early callback for newly generated seeds.
       void prepareInstantTerrainResources(result, () => myToken === generationToken).catch(error =>
@@ -610,7 +633,8 @@ async function runDynamicMapRequest(
     }
     await backgroundReady;
     if (myToken !== generationToken) return null;
-    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs, bakedAlreadyPainted, bakedDecorations, false, runStarted, restoreTerrain);
+    await renderGenerationResult(viewer as any, result, unlocks, isDaily, onFirstPaint, cacheKey, bakedDZIs, bakedAlreadyPainted, bakedDecorations, false, runStarted, restoreTerrain,
+      completedDescription?completedNativePresentation(completedDescription,lightMode):undefined);
     if (myToken !== generationToken) return null;
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;
@@ -643,7 +667,7 @@ async function runDynamicMapRequest(
     // Alternate unlock data is background work. Never compete with the first
     // map paint/compositing. Yield a frame and a task before starting it, and
     // discard this intent if the user has already changed seeds.
-    requestAnimationFrame(() => setTimeout(() => {
+    if(!completeNative)requestAnimationFrame(() => setTimeout(() => {
       if (myToken !== generationToken) return;
       void prewarmAlt(seed, isDaily, !bakedData?.probe.baked).catch((e) =>
         console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
@@ -652,7 +676,7 @@ async function runDynamicMapRequest(
 
     // Only live maps need scene preparation for future generations. A baked
     // daily (including yesterday's seed) already contains its rendered pixels.
-    if (!bakedData?.probe.baked) {
+    if (!completeNative && !bakedData?.probe.baked) {
       const lifetime = scenePrefetchLifetime = new AbortController();
       const gate = createScenePrefetchGate(viewer, lifetime.signal);
       void prefetchAllSceneBitmaps(() => myToken === generationToken, gate.wait)
@@ -668,6 +692,7 @@ async function runDynamicMapRequest(
       console.error("[DynamicMap] Pipeline failed:", err);
     return null;
   } finally {
+    if(myToken===generationToken)completeNativeRequest=undefined;
     // A superseded request does not own the replacement map's loading state.
     if (myToken === generationToken) onLoadingChange?.(false);
   }
@@ -696,6 +721,8 @@ export async function runDynamicMapFromURL(opts: DynamicMapOptions, requirePubli
  * Clear all dynamic overlays from the viewer.
  */
 export function clearDynamicMap(viewer: any): void {
+  completeNativeRequest?.abort();completeNativeRequest=undefined;
+  stopCompletedNativePresentation();completeMapClient.dispose();
   scenePrefetchLifetime?.abort();
   scenePrefetchLifetime = undefined;
   releaseParallelWorlds();

@@ -205,6 +205,7 @@ function retowerWands(pois: POI[]): void {
 
 let initialized = false;
 let initPromise: Promise<void> | null = null;
+let nativePoiInitialization: Promise<any> | null = null;
 let backgroundInitialization: AbortController | null = null;
 let biomeAssets: { ng0: Uint8Array | null; ngp: Uint8Array | null; nightmare: Uint8Array | null } = {
   ng0: null,
@@ -213,6 +214,65 @@ let biomeAssets: { ng0: Uint8Array | null; ngp: Uint8Array | null; nightmare: Ui
 };
 
 // ─── Initialization ─────────────────────────────────────────────────────────
+
+function installTelescopeModuleBindings(telescope: any): void {
+  BIOME_CONFIG = telescope.geometryMod.BIOME_CONFIG;
+  scanSpawnFunctions = telescope.poiScannerMod.scanSpawnFunctions;
+  getSpecialPoIs = telescope.poiScannerMod.getSpecialPoIs;
+  prescanSpawnFunctions = telescope.poiScannerMod.prescanSpawnFunctions;
+  PIXEL_SCENE_DATA = telescope.pixelSceneMod.PIXEL_SCENE_DATA;
+  ensureScenePixels = telescope.pixelSceneMod.ensureScenePixels;
+  loadPixelSceneData = telescope.pixelSceneMod.loadPixelSceneData;
+  recolorPixelSceneForBiome = telescope.pixelSceneMod.recolorPixelSceneForBiome;
+  recolorPixelScene = telescope.pixelSceneMod.recolorPixelScene;
+  MATERIAL_COLOR_CONVERSION = telescope.potionConfigMod.MATERIAL_COLOR_CONVERSION;
+  GENERATOR_CONFIG = telescope.genConfigMod.GENERATOR_CONFIG;
+  UNLOCKABLES = telescope.unlocksMod.UNLOCKABLES;
+  setUnlocks = telescope.unlocksMod.setUnlocks;
+  getWorldSize = telescope.utilsMod.getWorldSize;
+  getWorldCenter = telescope.utilsMod.getWorldCenter;
+  loadTranslations = telescope.translationsMod.loadTranslations;
+  findEyeMessages = telescope.eyeMessagesMod.findEyeMessages;
+  addStaticPixelScenes = telescope.staticSpawnsMod.addStaticPixelScenes;
+  telescopeApp = telescope.appMod.app;
+  generationSettings = telescope.settingsMod.appSettings;
+  BIOME_COLOR_LOOKUP = telescope.imageProcessingMod.BIOME_COLOR_LOOKUP;
+  TILE_OVERLAY_COLORS = telescope.imageProcessingMod.TILE_OVERLAY_COLORS;
+}
+
+/** Host names/decorations need compatibility tables, but a supplied world
+ * already owns every geometry and placement decision. No terrain, Wang inputs,
+ * scene textures, shaders, or generation workers are initialized here. */
+function prepareNativePoiCompatibility(): Promise<any> {
+  if (nativePoiInitialization) return nativePoiInitialization;
+  nativePoiInitialization = (async () => {
+    installTelescopeShim({ clearSpawnPixels: true, recolorMaterials: true,
+      enableEdgeNoise: true, fixHolyMountainEdgeNoise: true });
+    if (!await getDataZip()) throw new Error("[Native map] POI asset index failed to load");
+    installFetchInterceptor();
+    installImageSrcInterceptor();
+    const telescope = await loadTelescopeModules(true);
+    await telescope.translationsMod.loadTranslations();
+    return telescope;
+  })().catch(error => { nativePoiInitialization = null; throw error; });
+  return nativePoiInitialization;
+}
+
+function preparedMapHostBindings(modules?: any) {
+  if (!modules) return { BIOME_CONFIG, UNLOCKABLES, setUnlocks, getWorldSize, getWorldCenter,
+    BIOME_COLOR_LOOKUP, telescopeApp, findEyeMessages, PIXEL_SCENE_DATA };
+  return {
+    BIOME_CONFIG: modules.geometryMod.BIOME_CONFIG,
+    UNLOCKABLES: modules.unlocksMod.UNLOCKABLES,
+    setUnlocks: modules.unlocksMod.setUnlocks,
+    getWorldSize: modules.utilsMod.getWorldSize,
+    getWorldCenter: modules.utilsMod.getWorldCenter,
+    BIOME_COLOR_LOOKUP: modules.imageProcessingMod.BIOME_COLOR_LOOKUP,
+    telescopeApp: modules.appMod.app,
+    findEyeMessages: modules.eyeMessagesMod.findEyeMessages,
+    PIXEL_SCENE_DATA: modules.pixelSceneMod.PIXEL_SCENE_DATA,
+  };
+}
 
 /**
  * One-time setup: install DOM shim, fetch interceptor, load base assets.
@@ -272,19 +332,9 @@ async function _doInitTelescope(background?: AbortSignal): Promise<void> {
   const telescope = await loadTelescopeModules();
   measure("modules", modulesStarted);
   const geometryMod = telescope.geometryMod;
-  const poiScannerMod = telescope.poiScannerMod;
   const pixelSceneMod = telescope.pixelSceneMod;
-  const genConfigMod = telescope.genConfigMod;
-  const unlocksMod = telescope.unlocksMod;
-  const utilsMod = telescope.utilsMod;
-  const translationsMod = telescope.translationsMod;
-  const eyeMessagesMod = telescope.eyeMessagesMod;
-  const imageProcessingMod = telescope.imageProcessingMod;
-  const staticSpawnsMod = telescope.staticSpawnsMod;
   const pngSanitizerMod = telescope.pngSanitizerMod;
-  const appMod = telescope.appMod;
   const settingsMod = telescope.settingsMod;
-  const potionConfigMod = telescope.potionConfigMod;
 
   // 4b. Push our shim settings into telescope's centralized appSettings.
   //     Telescope refactored from reading DOM checkboxes directly to using
@@ -302,28 +352,7 @@ async function _doInitTelescope(background?: AbortSignal): Promise<void> {
     showEnemies: true,
   });
 
-  BIOME_CONFIG = geometryMod.BIOME_CONFIG;
-  scanSpawnFunctions = poiScannerMod.scanSpawnFunctions;
-  getSpecialPoIs = poiScannerMod.getSpecialPoIs;
-  prescanSpawnFunctions = poiScannerMod.prescanSpawnFunctions;
-  PIXEL_SCENE_DATA = pixelSceneMod.PIXEL_SCENE_DATA;
-  ensureScenePixels = pixelSceneMod.ensureScenePixels;
-  loadPixelSceneData = pixelSceneMod.loadPixelSceneData;
-  recolorPixelSceneForBiome = pixelSceneMod.recolorPixelSceneForBiome;
-  recolorPixelScene = pixelSceneMod.recolorPixelScene;
-  MATERIAL_COLOR_CONVERSION = potionConfigMod.MATERIAL_COLOR_CONVERSION;
-  GENERATOR_CONFIG = genConfigMod.GENERATOR_CONFIG;
-  UNLOCKABLES = unlocksMod.UNLOCKABLES;
-  setUnlocks = unlocksMod.setUnlocks;
-  getWorldSize = utilsMod.getWorldSize;
-  getWorldCenter = utilsMod.getWorldCenter;
-  loadTranslations = translationsMod.loadTranslations;
-  findEyeMessages = eyeMessagesMod.findEyeMessages;
-  addStaticPixelScenes = staticSpawnsMod.addStaticPixelScenes;
-  telescopeApp = appMod.app;
-  generationSettings = settingsMod.appSettings;
-  BIOME_COLOR_LOOKUP = imageProcessingMod.BIOME_COLOR_LOOKUP;
-  TILE_OVERLAY_COLORS = imageProcessingMod.TILE_OVERLAY_COLORS;
+  installTelescopeModuleBindings(telescope);
 
   // Enable all regions before scene prescanning. Seed/PRNG work starts only
   // after the source assets and translations have finished loading.
@@ -482,8 +511,63 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   });
 }
 
+/** Adapt the exact supplied native decisions to the existing host POI contract.
+ * This never requests another world or announces a partial terrain snapshot. */
+export async function adaptCompleteNativeWorld(world: NativeWorldDescription, opts: GenerateOptions): Promise<GenerationResult> {
+  opts.signal?.throwIfAborted();
+  const parallelWorlds = opts.parallelWorlds?.slice() ?? [-1, 0, 1];
+  const ngPlus = opts.ngPlus ?? 0, gameMode = opts.gameMode ?? "normal";
+  if (!world || world.kind !== "native-world-description" || typeof world.revision !== "string" || !world.revision ||
+    !Number.isInteger(opts.seed) || opts.seed < 0 || opts.seed > 0xffffffff || world.seed !== opts.seed ||
+    !Number.isSafeInteger(ngPlus) || ngPlus < 0 || world.ngPlus !== ngPlus || world.gameMode !== gameMode ||
+    !["normal", "nightmare"].includes(gameMode) || !parallelWorlds.length ||
+    parallelWorlds.some(pw => !Number.isSafeInteger(pw)) || new Set(parallelWorlds).size !== parallelWorlds.length ||
+    !Array.isArray(world.regions) || !Array.isArray(world.tileLayers) || !Array.isArray(world.elevatorShafts))
+    throw new Error("Native world identity does not match the requested map");
+  const expectedRegions = new Set(parallelWorlds.flatMap(pw => [-1, 0, 1].map(vertical => `${pw},${vertical}`)));
+  const suppliedRegions = new Set<string>();
+  for (const region of world.regions) {
+    const key = `${region.horizontal},${region.vertical}`;
+    if (!Number.isSafeInteger(region.horizontal) || ![-1, 0, 1].includes(region.vertical) || suppliedRegions.has(key) ||
+      !Array.isArray(region.pois) || !Array.isArray(region.scenes))
+      throw new Error("Native world has invalid region coverage");
+    suppliedRegions.add(key);
+    expectedRegions.delete(key);
+  }
+  if (expectedRegions.size || !world.calendar || !Number.isInteger(world.calendar.month) || world.calendar.month < 1 || world.calendar.month > 12 ||
+    !Number.isInteger(world.calendar.day) || world.calendar.day < 1 || world.calendar.day > 31)
+    throw new Error("Native world is incomplete");
+  const request = { ...opts, parallelWorlds, unlocks: opts.unlocks?.slice() ?? opts.unlocks,
+    pillarFlags: opts.pillarFlags?.slice() ?? opts.pillarFlags, onTerrainReady: undefined };
+  const modules = await prepareNativePoiCompatibility();
+  opts.signal?.throwIfAborted();
+  if (world.worldSize !== modules.utilsMod.getWorldSize(ngPlus > 0, gameMode) ||
+    world.worldCenter !== modules.utilsMod.getWorldCenter(ngPlus > 0, gameMode) ||
+    !(world.biomeData?.pixels instanceof Uint32Array) || world.biomeData.pixels.length !== world.worldSize * 48)
+    throw new Error("Native world dimensions do not match its options");
+  return runGenerationTask(async () => {
+    request.signal?.throwIfAborted();
+    modules.settingsMod.updateSettings({ gameMode, date: { ...world.calendar }, clearSpawnPixels: true,
+      recolorMaterials: true, enableEdgeNoise: true, fixHolyMountainEdgeNoise: true,
+      enableStaticPixelScenes: "all", skipCosmeticScenes: false, excludeTaikasauva: false,
+      excludeEdgeCases: false, showEnemies: true });
+    // Host conversion edits POI names/positions and concatenates scene lists.
+    // Keep those edits away from the world used by the completed pixel runtime.
+    const hostWorld: NativeWorldDescription = { ...world,
+      biomeData: { ...world.biomeData, pixels: world.biomeData.pixels.slice() },
+      tileLayers: world.tileLayers.map(layer => ({ ...layer })),
+      elevatorShafts: world.elevatorShafts.map(layer => ({ ...layer })),
+      regions: world.regions.filter(region => parallelWorlds.includes(region.horizontal)).map(region => ({ ...region, pois: structuredClone(region.pois),
+        scenes: region.scenes.map(scene => ({ ...scene, imgElement: null })) })),
+    };
+    return generatePreparedMap(request, parallelWorldWorkerPool, hostWorld, performance.now(), true, modules);
+  });
+}
+
 async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWorldWorkerPool, native?: NativeWorldDescription,
-  started = performance.now(), terrainAnnounced = false): Promise<GenerationResult> {
+  started = performance.now(), terrainAnnounced = false, compatibilityModules?: any): Promise<GenerationResult> {
+  const { BIOME_CONFIG, UNLOCKABLES, setUnlocks, getWorldSize, getWorldCenter,
+    BIOME_COLOR_LOOKUP, telescopeApp, findEyeMessages, PIXEL_SCENE_DATA } = preparedMapHostBindings(compatibilityModules);
   opts.signal?.throwIfAborted(); // A request can be cancelled while queued.
   const seed = opts.seed;
   const ngPlus = opts.ngPlus ?? 0;
@@ -519,7 +603,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   const h = useNGPDimensions ? BIOME_CONFIG.H_NGP : BIOME_CONFIG.H_NG0;
   const base = isNGP ? biomeAssets.ngp : gameMode === "nightmare" ? biomeAssets.nightmare : biomeAssets.ng0;
 
-  if (!base) throw new Error("[Telescope] Biome map assets not loaded");
+  if (!native && !base) throw new Error("[Telescope] Biome map assets not loaded");
 
   // Step 1: Generate biome data
   const biomeData = native?.biomeData ?? geometry.generateBiome({ seed, ngPlus, gameMode, signal: opts.signal });
@@ -671,7 +755,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   const perks: Record<string, any> = {}; // No perks active by default
 
   // Pre-load telescope modules needed for wand naming (avoid repeated dynamic imports in loop)
-  const telescopeMods = await loadTelescopeModules();
+  const telescopeMods = compatibilityModules ?? await loadTelescopeModules();
   opts.signal?.throwIfAborted();
   const { NollaPrng } = telescopeMods.nollaPrngMod;
   const { GUN_NAMES } = telescopeMods.wandConfigMod;

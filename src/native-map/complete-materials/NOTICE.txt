@@ -26,6 +26,18 @@ Known source limits: winter/_EMPTY_ omit runtime-RNG phase F; _EMPTY_ runtime
 chunk changes are absent. The source seed-halving threshold and inside-noise
 override are preserved. No independent game-pixel parity or instant-map claim.
 Optional captured topology0 inputs can replace the owned seed grids explicitly.
+Validated generationState also accepts the narrow named-grid interchange format
+in ../game-state/. Missing imported winter/_EMPTY_ grids remain unresolved. Its
+content digest must remain separate from seed-only map/cache identities. The
+current source-parity scalar chain supplies the other deterministic inputs.
+No real capture/exporter or end-user import UI is supplied by these APIs.
+
+2026-10-14 host integration identity refresh: index.ts, this notice, build.mjs
+and the new game-state module/docs changed; every existing C/header/WASM hash
+was checked against the preceding build identity before refreshing host hashes.
+The unchanged166198-byte ABI3 WASM was not rebuilt. Synthetic import validation
+and real-WASM explicit-input equivalence tests cover the new host boundary;
+this does not add a game-capture parity claim.
 
 Build (no compiler download):
   WASI_SDK_PATH=task/native-wasm-core/wasi-sdk-34.0-x86_64-linux \

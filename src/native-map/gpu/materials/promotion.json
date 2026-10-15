@@ -1,0 +1,83 @@
+{
+  "scope": "Path-only production promotion of the validated normal70-column GPU material runtime. Shader strings, arithmetic, classification and WASM bytes unchanged. Shared browser-safe buffer I/O replaces the native Dawn helper.",
+  "wasmSha256": "08b99dd968a9ef7a390d6c7b143973ca95b552648feca57038ff63a99d95cfda",
+  "runtime": {
+    "certified-engine.ts": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/certified-engine.ts",
+      "validatedSha256": "6eb8bd36b84efdf061b7886e6e21d11c19a6dea17c874ba52aadc77a9c59c8b7",
+      "promotedSha256": "ae20f4746b8efff8756022cb9fdab9f1296a5d711a99cd053339bcb7657eac4f"
+    },
+    "exact-corrector.ts": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/exact-corrector.ts",
+      "validatedSha256": "15c100f35e44febf83ae3ba1473b550e9ce2b4d3572741b8bce35235f58e7c3e",
+      "promotedSha256": "de111be90c94276bdfe745040ca6e22fd3f344b8e8390739295c49605071e01f"
+    },
+    "exact-legacy.ts": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/exact-legacy.ts",
+      "validatedSha256": "b85a5208c3c7e1dbe27081d9f819882a5bbef28ee45176ed2d2e90e195175cfd",
+      "promotedSha256": "be42230c252a193a00b3f2c986d1a0e54c934b79bd70d20981cdb16e6a659ce5"
+    },
+    "material-compute.mjs": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/material-compute.mjs",
+      "validatedSha256": "3924219b520725e04f7273a958a5c79d3a1db399f517b787f4374eb158e6488f",
+      "promotedSha256": "cb3a5c58afcb2219d64498e49ed13d4c88318ec183cdc953248b3d612f0a64a7"
+    },
+    "material-shader.mjs": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/material-shader.mjs",
+      "validatedSha256": "be9145abbc49c2e2bfa0b3fef4851f7c6252af7e343470318422182018c9215d",
+      "promotedSha256": "be9145abbc49c2e2bfa0b3fef4851f7c6252af7e343470318422182018c9215d"
+    },
+    "edge-samplers.mjs": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/edge-samplers.mjs",
+      "validatedSha256": "dff3f0139d5c1af11099144d704457c6e6fc9b15988daf94506e0c39c525ad90",
+      "promotedSha256": "dff3f0139d5c1af11099144d704457c6e6fc9b15988daf94506e0c39c525ad90"
+    },
+    "band-kernel.mjs": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/band-kernel.mjs",
+      "validatedSha256": "18b263175b9b766389969b89a4ec8484913aeeff5f9ced8e9c75a55969b26b0b",
+      "promotedSha256": "18b263175b9b766389969b89a4ec8484913aeeff5f9ced8e9c75a55969b26b0b"
+    },
+    "topology0-inputs.mjs": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/topology0-inputs.mjs",
+      "validatedSha256": "1b3369500ad0e0b1d3a99b5dfdbc43fe0505944a3fdc9351d1b65f68c4d640f4",
+      "promotedSha256": "1b3369500ad0e0b1d3a99b5dfdbc43fe0505944a3fdc9351d1b65f68c4d640f4"
+    },
+    "topology0-shader.mjs": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/topology0-shader.mjs",
+      "validatedSha256": "8c29138cf6c3984ddf3e59aa21e82efa7dc82f9552be5264a439df5b7b9653fc",
+      "promotedSha256": "8c29138cf6c3984ddf3e59aa21e82efa7dc82f9552be5264a439df5b7b9653fc"
+    },
+    "interval-noise.mjs": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/interval-noise.mjs",
+      "validatedSha256": "898b43ab9fdea43a107dd6d706bbe02399a7f383f8090cc0fa4d51cf5776aad2",
+      "promotedSha256": "898b43ab9fdea43a107dd6d706bbe02399a7f383f8090cc0fa4d51cf5776aad2"
+    },
+    "polka-hash.mjs": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/polka-hash.mjs",
+      "validatedSha256": "718c865b2072fd0ef0da3e7ee35e7691d37017b3cfea72c4017cb6e9272fd01a",
+      "promotedSha256": "718c865b2072fd0ef0da3e7ee35e7691d37017b3cfea72c4017cb6e9272fd01a"
+    },
+    "noise-tables.mjs": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/noise-tables.mjs",
+      "validatedSha256": "f1ed54c8d4883edacc19376d09a1ab1ead92209f3352ea61ad5bd5e1b0f32feb",
+      "promotedSha256": "f1ed54c8d4883edacc19376d09a1ab1ead92209f3352ea61ad5bd5e1b0f32feb"
+    },
+    "axis-cache.mjs": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/axis-cache.mjs",
+      "validatedSha256": "692099518d9736460e1f552cb808d490b5b209606e5614784c9e7917c2fd7efb",
+      "promotedSha256": "692099518d9736460e1f552cb808d490b5b209606e5614784c9e7917c2fd7efb"
+    },
+    "correct.c": {
+      "validatedSource": "task/native-biome-runtime/gpu-materials/correct.c",
+      "validatedSha256": "25cb886ca16cceffbe16683ece6fcd33e2a05a50da76f64a356635cd54b042b3",
+      "promotedSha256": "cfeda8c55ab5c834685d0364bd89d0a11c58d1ea436deae74834186f7ad0a51e"
+    }
+  },
+  "validation": {
+    "completedNativeRuns": "task/native-biome-runtime/world-fixture/result-20261016-all-batch8.json; result-20261017-all-batch8.json",
+    "axisByteParity": "task/native-biome-runtime/gpu-materials/axis-cache-check.json",
+    "samplers": "task/native-biome-runtime/gpu-materials/edge-sampler-gpu.json; edge-sampler-fields.json",
+    "legacy": "task/native-biome-runtime/gpu-materials/legacy-check.json"
+  },
+  "limits": "Source parity, not independently captured whole-game pixel fidelity. No browser performance claim. Runtime has no Node/Dawn/task import."
+}

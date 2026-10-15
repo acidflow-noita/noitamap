@@ -1,6 +1,7 @@
 // Derived from noita-telescope by Lymm (MIT); see LICENSE.
-// Source: Lymm 7fce46be8a5587fa88693d468046e236f862f5c7; algorithms unchanged
-// except explicit input/state ownership and removal of discarded raster output.
+// Source: Lymm 7fce46be8a5587fa88693d468046e236f862f5c7. Explicit input/state
+// ownership; bounded exact numeric RNG arithmetic replaces BigInt in the hot path.
+import { advanceRandomState } from './random-step.js';
 
 const _buf = new ArrayBuffer(8);
 const _dv = new DataView(_buf);
@@ -64,10 +65,7 @@ export class NollaPrng {
     // Turns out this is a much simpler way to get the same result, with some edge cases fixed
     let e = (r & 0xffffffff) >>> 0;
 
-    let _x = NollaPrng.f2i(x_) & 0x7fffffffffffffffn;
-    let _y = NollaPrng.f2i(y_) & 0x7fffffffffffffffn;
-
-    if (NollaPrng.i2f(_y) >= 102400.0 || NollaPrng.i2f(_x) <= 1.0) {
+    if (Math.abs(y_) >= 102400.0 || Math.abs(x_) <= 1.0) {
       r = y_ * 134217727.0;
     } else {
       let y__ = y_ * 3483.328;
@@ -96,10 +94,7 @@ export class NollaPrng {
   }
 
   Next() {
-    let s = BigInt(Math.floor(this.Seed));
-    let v4 = 16807n * s - 2147483647n * (s / 127773n);
-    if (v4 <= 0n) v4 += 2147483647n;
-    this.Seed = Number(v4);
+    this.Seed = advanceRandomState(this.Seed);
     return this.Seed / 2147483647.0;
   }
 

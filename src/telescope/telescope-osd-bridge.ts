@@ -5056,6 +5056,15 @@ async function addOrbOverlays(
   console.log(`[OSD Bridge] Added ${addedCount} orb overlays (${unlockSet ? 'unlock-aware' : 'all visible'})`);
 }
 
+/** Attach already completed terrain. Resolve after adding its OSD item; report
+ * first paint only after the complete viewport frame has been drawn. */
+export type CompletedTerrainRenderer = (
+  viewer: OSDViewer,
+  isCurrent: () => boolean,
+  onItem: (item: any) => void,
+  onFirstPaint: () => void,
+) => Promise<void>;
+
 export async function renderGenerationResult(
   viewer: OSDViewer,
   result: GenerationResult,
@@ -5078,13 +5087,20 @@ export async function renderGenerationResult(
   forceApproximateTerrain = false,
   generationStartedAt = performance.now(),
   restoreTerrain = false,
+  completedTerrain?: CompletedTerrainRenderer,
 ): Promise<void> {
   const generationId = ++currentGenerationId;
   cancelLiveSceneEncoding?.();
   const encoding = scenePngEncodings.batch();
   const sceneViewer = (viewer as any).viewer || viewer;
+  let completedTerrainRetired = false;
+  let retireCompletedTerrain: (() => void) | undefined;
   const cancelEncoding = () => {
     encoding.cancel();
+    if (completedTerrain) {
+      completedTerrainRetired = true;
+      retireCompletedTerrain?.();
+    }
     sceneViewer.removeHandler?.('before-destroy', cancelEncoding);
     if (cancelLiveSceneEncoding === cancelEncoding) cancelLiveSceneEncoding = undefined;
   };
@@ -5107,6 +5123,7 @@ export async function renderGenerationResult(
   });
   let completeTerrainDraw!: (drawn: boolean) => void;
   const terrainDrawn = new Promise<boolean>(resolve => { completeTerrainDraw = resolve; });
+  if (completedTerrain) retireCompletedTerrain = () => completeTerrainDraw(false);
   let fallbackRender: Promise<void> | undefined;
   clearPortalAnimations();
   clearInstantTerrain();
@@ -5116,7 +5133,7 @@ export async function renderGenerationResult(
   // Snapshot old dynamic items (tiled images + HTML overlays) BEFORE adding
   // new content. We'll remove them AFTER new content is fully in place,
   // so there's never a visible gap where biome backgrounds disappear.
-  const keepBiomeBackgrounds = (!bakedDZIs || bakedDZIs.length === 0) && !isGLTerrainEnabled();
+  const keepBiomeBackgrounds = !completedTerrain && (!bakedDZIs || bakedDZIs.length === 0) && !isGLTerrainEnabled();
   const oldWorldItems: any[] = [];
   try {
     const world = viewer.world;
@@ -5178,7 +5195,7 @@ export async function renderGenerationResult(
     }, 500);
   };
   const wrappedOnFirstPaint = () => {
-    if (currentGenerationId !== generationId || terrainPainted) return;
+    if (currentGenerationId !== generationId || completedTerrainRetired || terrainPainted) return;
     terrainPainted = true;
     cleanupOldItems();
     try {
@@ -5195,7 +5212,7 @@ export async function renderGenerationResult(
   const prepareMarkers = () => buildMarkerData(result).then(
     value => ({ value }), error => ({ error }),
   );
-  const markerDataReady = bakedDZIs?.length ? prepareMarkers() : undefined;
+  const markerDataReady = !completedTerrain && bakedDZIs?.length ? prepareMarkers() : undefined;
 
   // Biome layer: prefer baked DZIs from CF Static Assets workers when the
   // probe in dynamic-map.ts already validated them for this seed. Falls back
@@ -5211,7 +5228,18 @@ export async function renderGenerationResult(
     void work.then(built => built?.release(), () => {});
   };
   try {
-  if (bakedDZIs && bakedDZIs.length > 0) {
+  if (completedTerrain) {
+    awaitingTerrainDraw = true;
+    const isCurrent = () => currentGenerationId === generationId && !completedTerrainRetired;
+    await completedTerrain(viewer, isCurrent, item => {
+      if (!isCurrent()) {
+        try { viewer.world.removeItem(item); } catch {}
+        return;
+      }
+      dynamicTiledImages.add(item);
+    }, wrappedOnFirstPaint);
+    if (!isCurrent()) return;
+  } else if (bakedDZIs && bakedDZIs.length > 0) {
     if (bakedDZIsAlreadyOnScreen) {
       // dynamic-map painted these the moment the probe resolved. Just hook
       // them into our cleanup tracking so removeItem() works on next reseed.
@@ -5301,7 +5329,7 @@ export async function renderGenerationResult(
 
     // Pixel scenes render on top of biome overlays, below POI markers. When the
     // baked DZIs already carry scenes in their pixels, skip the live layer.
-    if (!bakedDecorations) {
+    if (!completedTerrain && !bakedDecorations) {
       // Native terrain paints repeated temples. Keep their coarse template
       // overlays only when using the approximate renderer, including fallback.
       const sceneResult = isGLTerrainEnabled() || awaitingTerrainDraw ? {
@@ -5365,7 +5393,7 @@ export async function renderGenerationResult(
 
       const emitItemsDone = markerRequest.completeProgress;
 
-      const visibleMarkerData = bakedDecorations
+      const visibleMarkerData = !completedTerrain && bakedDecorations
         ? legacyMimicMarkerData(markerData, result.bakedMimicSpritesVersionByPW) : markerData;
       if (!visibleMarkerData) {
         // New bakes include every sprite. Legacy bakes get only their missing

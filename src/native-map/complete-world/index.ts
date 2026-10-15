@@ -19,6 +19,7 @@ import {
   type StaticMask, type WorldCompositionResourceOptions,
 } from "../composition";
 import type { CompleteWorldScenePolicy, SceneLayers } from "./scene-policy";
+import { validateCaveStateBinding, type CaveStateBinding } from "../game-state";
 export * from "./scene-policy";
 export const COMPLETE_WORLD_VERSION = "owned-world-pages-v1";
 
@@ -54,6 +55,9 @@ export interface CompleteWorldOptions {
   generatorConfig: CookGeneratorConfig;
   hostPolicy: MaterialInputPolicy["emptyTopology0"];
   scenePolicy: CompleteWorldScenePolicy;
+  /** Named topology0 cave inputs captured coherently from the matching game.
+   * Separate from the asset revision and seed-only generation identity. */
+  generationState?: CaveStateBinding;
   pageSize?: number;
   requireAllNine?: boolean;
   /** Retained resolver/staging memory, independent from shared input geometry. */
@@ -78,6 +82,7 @@ export interface CompleteWorldStats {
 export interface CompleteWorldSource {
   readonly revision: string;
   readonly seed: number;
+  readonly generationStateDigest: string | null;
   readonly pageSize: number;
   readonly regions: readonly CompleteWorldRegion[];
   readonly scope: "terrain-scenes-layer";
@@ -126,6 +131,11 @@ export async function createCompleteWorldSource(
   check();
   if (world.kind !== "native-world-description" || !world.revision || world.revision !== options.assets.revision)
     throw new Error("Complete world and assets must have the same explicit revision");
+  const imported = options.generationState ? validateCaveStateBinding(options.generationState, {
+    seed: world.seed, ngPlus: world.ngPlus, gameMode: world.gameMode, assetsRevision: world.revision,
+  }) : undefined;
+  // Keep the validated token/identity, not a caller-owned mutable option object.
+  const generationState = imported ? Object.freeze({ state: imported, expected: imported.context }) : undefined;
   if (!options.scenePolicy || typeof options.scenePolicy.classify !== "function" || typeof options.scenePolicy.layers !== "function")
     throw new Error("Explicit scene selection/layer policy is required");
   const pageSize = options.pageSize ?? 512;
@@ -231,7 +241,7 @@ export async function createCompleteWorldSource(
     // Reserve the constructor's explicit worst-case cap before allocating it.
     const reservation = Math.min(128 * MiB, resolverBudget);
     while (stats.resolverBytes + reservation > resolverBudget && evictContext()) {}
-    const resolver = await createCompleteMaterialResolver(prepared.forPlane(plane), options.materialModule, { maxBytes: reservation });
+    const resolver = await createCompleteMaterialResolver({ ...prepared.forPlane(plane), generationState }, options.materialModule, { maxBytes: reservation });
     check(signal);
     const legacy = createLegacyColorResolver(world, prepared, plane, options.generatorConfig, atlas, legacyPolicy);
     const painter = createBaseForegroundPainter({ materials: resolver, atlas, ownsTerrain: composition.forPlane(plane).ownsTerrain, legacy });
@@ -335,7 +345,8 @@ export async function createCompleteWorldSource(
       width: Math.min(pageSize, region.width - address.column * pageSize), height: Math.min(pageSize, region.height - address.row * pageSize) };
   }
   const source: CompleteWorldSource = {
-    revision: world.revision, seed: world.seed, pageSize, regions: Object.freeze(regions), scope: "terrain-scenes-layer",
+    revision: world.revision, seed: world.seed, generationStateDigest: imported?.digest ?? null,
+    pageSize, regions: Object.freeze(regions), scope: "terrain-scenes-layer",
     get stats() { return { ...stats, sourceSceneBytes: loader.cacheBytes }; },
     *pageAddresses() {
       check();

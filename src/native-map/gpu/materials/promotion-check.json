@@ -1,0 +1,26 @@
+{
+  "scope": "Static browser-platform bundle and type/ABI checks; no browser or GPU execution.",
+  "typescript": "src/native-map/gpu/materials/tsconfig.json passed",
+  "identityAndABI": "build.mjs --check passed; no WASM imports, ABI3 exports present",
+  "browserBundle": {
+    "tool": "esbuild",
+    "platform": "browser",
+    "target": "es2022",
+    "runtimeInputCount": 21,
+    "nodeDawnTaskDependencies": [],
+    "outputs": [
+      {
+        "file": "correct-YGOOFDSG.wasm",
+        "bytes": 169590,
+        "sha256": "08b99dd968a9ef7a390d6c7b143973ca95b552648feca57038ff63a99d95cfda"
+      },
+      {
+        "file": "noitamap-material-promotion-entry.js",
+        "bytes": 348307,
+        "sha256": "645cbf6a3d56cf919547a15336bbc4eb1403eeb53b3c51ef0c8c1c2f464b47f7"
+      }
+    ]
+  },
+  "normalizedPromotion": "Every runtime source was verified against the validated manifest before path-only changes; exact originals preserved in baseline-before-production-promotion-20261014.",
+  "wasmByteIdentical": true
+}

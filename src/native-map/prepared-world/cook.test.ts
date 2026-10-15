@@ -23,6 +23,7 @@ function source(): CompleteWorldSource {
   return {
     revision: "test-assets",
     seed: 1103,
+    generationStateDigest: null,
     pageSize: 8,
     regions,
     scope: "terrain-scenes-layer",
@@ -129,6 +130,19 @@ describe("all-page native cook admission", () => {
     expect(world.renderPage).toHaveBeenCalledTimes(9);
     expect(result.map.width).toBe(24);
     expect(result.kind).toBe("cooked-terrain-scenes-layer");
+  });
+
+  it("separates captured-state final pages from seed-only and different-state pages", async () => {
+    const world = { ...source(), generationStateDigest: "a".repeat(64) }, store = new SharedPixelStore({ pageSize: 8 });
+    const root = store.solidBlock([1, 2, 3, 255]); store.commitPage(root);
+    const options = { baseline: store.freezePreparation(), preparedRevision: world.revision, maxReferencePixels: 0,
+      preparedPages: [...world.pageAddresses()].map(address => ({ address, root })) };
+    await expect(cookTerrainSceneLayer(world, options)).rejects.toThrow(/cave-state identities/);
+    await expect(cookTerrainSceneLayer(world, { ...options, preparedGenerationStateDigest: "b".repeat(64) })).rejects.toThrow(/cave-state identities/);
+    const cooked = await cookTerrainSceneLayer(world, { ...options, preparedGenerationStateDigest: world.generationStateDigest });
+    expect(cooked.generationStateDigest).toBe(world.generationStateDigest);
+    expect(cooked.map.ready).toBe(true);
+    expect(world.renderPage).not.toHaveBeenCalled();
   });
 
   it("does not expose a partial map on cancellation, incomplete addresses or mismatched revisions", async () => {

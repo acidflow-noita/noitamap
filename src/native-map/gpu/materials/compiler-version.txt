@@ -1,0 +1,5 @@
+clang version 23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)
+Target: wasm32-unknown-wasip1
+Thread model: posix
+InstalledDir: /home/w/Documents/git/noitamap/task/native-map/task/native-wasm-core/wasi-sdk-34.0-x86_64-linux/bin
+Configuration file: /home/w/Documents/git/noitamap/task/native-map/task/native-wasm-core/wasi-sdk-34.0-x86_64-linux/bin/clang.cfg
