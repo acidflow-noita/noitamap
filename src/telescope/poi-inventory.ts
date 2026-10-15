@@ -108,8 +108,12 @@ export function getAllPOIsFlat(
           entry.parentId = poi.id;
           if (isRewardOwner) entry.isBossReward = true;
           entry.biome = poiBiome(child) || position.biome;
-          entry.worldX = child.x ?? poi.x;
-          entry.worldY = child.y ?? poi.y;
+          // Daily loadout children can carry (0,0) potion RNG coordinates;
+          // their searchable world position is always Mina's spawn.
+          const isLoadout = poi.type === "starting_loadout";
+          entry.worldX = isLoadout ? poi.x : child.x ?? poi.x;
+          entry.worldY = isLoadout ? poi.y : child.y ?? poi.y;
+          if (isLoadout) { entry.x = poi.x; entry.y = poi.y; }
           flat.push(entry);
         }
       }

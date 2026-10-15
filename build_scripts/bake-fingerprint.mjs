@@ -7,6 +7,7 @@ export async function bakeCodeHash(root) {
   const fingerprint = createHash("sha256");
   for (const directory of [
     "src/telescope",
+    "src/telescope/starting-equipment",
     "src/native-map",
     "src/native-map/materials",
     "src/native-map/edges",

@@ -13,13 +13,21 @@ function spawn(role:string,requests:any[]=[]){
  return{worker,next:()=>failure?Promise.reject(failure):queued.length?Promise.resolve(queued.shift()):new Promise<any>((resolve,reject)=>waiting.push({resolve,reject}))};
 }
 it('generates nine regions without browser globals, preserves spawn/scene rules, and survives buffer transfers/reseeding',async()=>{
- const requests=[{seed:1103},{seed:11033,unlocks:[]},{seed:1337,ngPlus:1,calendar:{month:2,day:14}},{seed:333,gameMode:'nightmare'}];
+ const requests=[{seed:1103},{seed:11033,unlocks:[]},{seed:1337,ngPlus:1,calendar:{month:2,day:14}},{seed:333,gameMode:'nightmare'},
+  {seed:304782898,dailySeed:false,calendar:{month:10,day:15}},
+  {seed:304782898,dailySeed:true,calendar:{month:10,day:15}},
+  {seed:1,dailySeed:true,calendar:{month:5,day:1}}];
  const native=spawn('native',requests),reference=spawn('reference');
  try{
   await reference.next();let preparedReads=-1;
   for(const request of requests){
    const n=await native.next();expect(n.request).toEqual(request);expect(n.world.regions).toHaveLength(9);
    expect(n.world.kind).toBe('native-world-description');
+   if(request.seed===304782898) for(const region of n.world.regions){
+    const loadout=region.pois.find((p:any)=>p.type==='starting_loadout');
+    expect(loadout.items[2].material).toBe(request.dailySeed?'magic_liquid_random_polymorph':'water');
+   }
+   if(request.seed===1) expect(n.world.regions[0].pois.find((p:any)=>p.type==='starting_loadout').items[2].material).toBe('sima');
    if(preparedReads<0)preparedReads=n.reads;else expect(n.reads).toBe(preparedReads);
    reference.worker.postMessage({world:n.world,request});const r=await reference.next();
    if(r.hash!==n.hash)await writeFile('task/native-engine/parity-difference.json',JSON.stringify({request,native:n.world.regions,reference:r.regions}));

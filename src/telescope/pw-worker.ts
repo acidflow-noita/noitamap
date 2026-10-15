@@ -109,7 +109,7 @@ async function generateParallelWorld(e: MessageEvent) {
     const specialPOIs = getSpecialPoIs(biomeData, seed, ngPlus, pw, 0, perks, gameMode);
     
     // 3. Static Pixel Scenes
-    const staticResults = addStaticPixelScenes(seed, ngPlus, pw, 0, biomeData, false, perks, false, gameMode);
+    const staticResults = addStaticPixelScenes(seed, ngPlus, pw, 0, biomeData, false, perks, dailySeed, gameMode);
 
     let combinedPois = scanResults.generatedSpawns.concat(specialPOIs);
     let pixelScenes = scanResults.finalPixelScenes;
@@ -144,7 +144,7 @@ async function generateParallelWorld(e: MessageEvent) {
         pixelScenes = pixelScenes.concat(vtScan.finalPixelScenes);
       }
 
-      const vtResults = addStaticPixelScenes(seed, ngPlus, pw, pvt, biomeData, false, perks, false, gameMode);
+      const vtResults = addStaticPixelScenes(seed, ngPlus, pw, pvt, biomeData, false, perks, dailySeed, gameMode);
       if (vtResults && vtResults.pois) {
         verticalPois.push(...vtResults.pois);
       }

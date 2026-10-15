@@ -9,9 +9,7 @@ vi.mock('../src/data_sources/overlays', () => ({ isValidOverlayKey: () => false 
 vi.mock('../src/telescope/tile-cache', () => ({ getCachedGeneration: vi.fn(), cacheGeneration: vi.fn() }));
 vi.mock('../src/telescope/telescope-cache-version', () => ({ ensureTelescopeCacheVersion: vi.fn(async () => {}) }));
 vi.mock('../src/telescope/instant-terrain-backend', () => ({ prewarmInstantTerrain: vi.fn(), releaseInstantTerrainBackend: vi.fn() }));
-vi.mock('../src/telescope/telescope-adapter', () => ({ generateDynamicMap: vi.fn(), adaptCompleteNativeWorld:vi.fn(), initTelescope: vi.fn(), prewarmParallelWorlds: vi.fn(), releaseParallelWorlds: vi.fn() }));
-vi.mock('../src/native-map/complete-client',()=>({completeMapClient:{generate:vi.fn(),dispose:vi.fn()},isCompleteNativeMapEnabled:()=>new URLSearchParams(location.search).get('native')==='1'}));
-vi.mock('../src/native-map/completed-presentation',()=>({completedNativePresentation:vi.fn(()=>async()=>{}),stopCompletedNativePresentation:vi.fn()}));
+vi.mock('../src/telescope/telescope-adapter', () => ({ generateDynamicMap: vi.fn(), initTelescope: vi.fn(), prewarmParallelWorlds: vi.fn(), releaseParallelWorlds: vi.fn() }));
 vi.mock('../src/unlocks', () => ({ getUnlocksFromURL: () => null, unlocksChanged: vi.fn(), UNLOCK_KEYS: [], getUrlUnlockKind: vi.fn() }));
 vi.mock('../src/pillars-unlocks', () => ({ getPillarFlagsFromURL: vi.fn() }));
 vi.mock('../src/unlocks-toggle', () => ({ beginAltSeed: vi.fn(), prewarmAlt: vi.fn(), resetAltCache: vi.fn() }));
@@ -30,12 +28,11 @@ vi.mock('../src/game-translations/translator', () => ({ gameTranslator: {} }));
 import { fetchDailySeed, fetchPreviousDailySeed } from '../src/data_sources/daily_seed';
 import { parseURL, reorderParams, updateURLWithSeed } from '../src/data_sources/url';
 import { shouldUseBakedTerrain, isInstantTerrainEnabled } from '../src/renderer_settings';
-import { initTelescope, generateDynamicMap, adaptCompleteNativeWorld, prewarmParallelWorlds } from '../src/telescope/telescope-adapter';
-import {completeMapClient} from '../src/native-map/complete-client';
-import {completedNativePresentation} from '../src/native-map/completed-presentation';
+import { initTelescope, generateDynamicMap, prewarmParallelWorlds } from '../src/telescope/telescope-adapter';
 import { prewarmInstantTerrain } from '../src/telescope/instant-terrain-backend';
 import { prewarmAlt } from '../src/unlocks-toggle';
 import { getUrlUnlockKind } from '../src/unlocks';
+import { getPillarFlagsFromURL } from '../src/pillars-unlocks';
 import { probeBakedDZIs } from '../src/telescope/baked-dzi-loader';
 import { addBakedDZIsToOSD } from '../src/telescope/baked-dzi-loader';
 import { fetchBakedGeneration } from '../src/telescope/baked-generation';
@@ -52,23 +49,10 @@ beforeEach(() => {
   vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
   vi.mocked(isInstantTerrainEnabled).mockReturnValue(false);
   vi.mocked(getUrlUnlockKind).mockReturnValue(null);
+  vi.mocked(getPillarFlagsFromURL).mockReturnValue(null);
 });
 
 describe('URL seed request ownership', () => {
-  it('routes the native test through completed pixels without old generation, warmup or seed-cache work',async()=>{
-    history.replaceState(null,'','/?m=dy&se=42&native=1');
-    const description={generationId:7,world:{seed:42},grid:{x:-53760,y:-31744,columns:210,rows:144,pageSize:512},timings:{},memory:{}};
-    const result={seed:42,ngPlus:0,isNGP:false,worldSize:70,worldCenter:35,tileLayers:[],biomeData:{},poisByPW:{},pixelScenesByPW:{},parallelWorlds:[-1,0,1]} as any;
-    vi.mocked(completeMapClient.generate).mockResolvedValue(description as any);vi.mocked(adaptCompleteNativeWorld).mockResolvedValue(result);
-    vi.mocked(renderGenerationResult).mockResolvedValue();vi.mocked(getAllPOIsFlat).mockReturnValue([]);
-    const pipeline=await import('../src/dynamic-map'),options={viewer:{},onLoadingChange:vi.fn(),onPOIsReady:vi.fn()};
-    expect(await pipeline.runDynamicMap(42,false,options)).toBe(result);
-    expect(completeMapClient.generate).toHaveBeenCalledOnce();expect(completeMapClient.generate).toHaveBeenCalledWith(expect.objectContaining({seed:42,parallelWorlds:[-1,0,1]}),expect.any(AbortSignal),expect.any(Function));
-    expect(adaptCompleteNativeWorld).toHaveBeenCalledWith(description.world,expect.objectContaining({seed:42}));
-    expect(initTelescope).not.toHaveBeenCalled();expect(generateDynamicMap).not.toHaveBeenCalled();expect(prewarmParallelWorlds).not.toHaveBeenCalled();expect(prewarmInstantTerrain).not.toHaveBeenCalled();
-    expect(getCachedGeneration).not.toHaveBeenCalled();expect(cacheGeneration).not.toHaveBeenCalled();expect(prefetchAllSceneBitmaps).not.toHaveBeenCalled();expect(prewarmAlt).not.toHaveBeenCalled();
-    expect(completedNativePresentation).toHaveBeenCalledWith(description,false);expect(vi.mocked(renderGenerationResult).mock.calls[0][12]).toEqual(expect.any(Function));
-  });
   it('requires a fresh published Daily for a floating drawing and does not invent a fallback seed', async () => {
     history.replaceState(null, '', '/?m=dy&ds=1');
     const { resolveSeed } = await import('../src/dynamic-map');
@@ -98,6 +82,53 @@ describe('URL seed request ownership', () => {
     vi.mocked(hasDynamicOverlays).mockReturnValue(false);
     return vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
   }
+
+  it('uses the restored live renderer for an old native=1 test link', async () => {
+    const frame = livePipeline();
+    history.replaceState(null, '', '/?m=dy&se=42&native=1');
+    const pipeline = await import('../src/dynamic-map');
+    expect(await pipeline.runDynamicMap(42, false, { viewer: {} })).toMatchObject({ seed: 42 });
+    expect(generateDynamicMap).toHaveBeenCalledOnce();
+    expect(renderGenerationResult).toHaveBeenCalledOnce();
+    frame.mockRestore();
+  });
+  it('does not reuse a normal starting loadout for a daily run of the same seed', async () => {
+    const frame = livePipeline();
+    const pipeline = await import('../src/dynamic-map');
+    await pipeline.runDynamicMap(304782898, false, { viewer: {} });
+    const normal = vi.mocked(getCachedGeneration).mock.calls.at(-1)![0];
+    await pipeline.runDynamicMap(304782898, true, { viewer: {} });
+    const daily = vi.mocked(getCachedGeneration).mock.calls.at(-1)![0];
+    expect(normal).not.toBe(daily);
+    expect(daily).toContain('|daily-loadout-v1');
+    expect(daily).toBe(pipeline.dailyCacheKey(304782898));
+    expect(generateDynamicMap).toHaveBeenLastCalledWith(expect.objectContaining({ seed: 304782898, dailySeed: true }));
+    frame.mockRestore();
+  });
+  it('keeps concurrent background normal/daily comparisons and their cache entries separate', async () => {
+    const frame = livePipeline();
+    const pipeline = await import('../src/dynamic-map');
+    const normal = pipeline.ensureSeedCached(304782898, false);
+    const daily = pipeline.ensureSeedCached(304782898, true);
+    expect(daily).not.toBe(normal);
+    expect(pipeline.ensureSeedCached(304782898, true)).toBe(daily);
+    expect(await Promise.all([normal, daily])).toEqual([true, true]);
+    const keys = vi.mocked(cacheGeneration).mock.calls.map(call => call[0]);
+    expect(new Set(keys).size).toBe(2);
+    expect(keys).toContain(pipeline.dailyCacheKey(304782898));
+    expect(vi.mocked(generateDynamicMap).mock.calls.map(([request]) => request.dailySeed)).toEqual([false, true]);
+    frame.mockRestore();
+  });
+  it('retains explicit pillar identity in daily generation cache keys', async () => {
+    const frame = livePipeline();
+    const pipeline = await import('../src/dynamic-map');
+    await pipeline.runDynamicMap(304782898, true, { viewer: {} });
+    const defaults = vi.mocked(cacheGeneration).mock.calls.at(-1)![0];
+    vi.mocked(getPillarFlagsFromURL).mockReturnValue(['secret_orb']);
+    await pipeline.runDynamicMap(304782898, true, { viewer: {} });
+    expect(vi.mocked(cacheGeneration).mock.calls.at(-1)![0]).not.toBe(defaults);
+    frame.mockRestore();
+  });
 
   it.each(['success', 'failure'])('discards an obsolete URL seed lookup after leaving for a static map (%s)', async outcome => {
     const frame = livePipeline(), lookup = deferred<number>();

@@ -46,6 +46,9 @@ interface CachedGeneration {
   bakedMimicSpritesVersionByPW?: Record<number, number>;
   cacheKey: string;
   seed: number;
+  dailySeed?: boolean;
+  calendar?: { month: number; day: number };
+  startingLoadoutVersion?: number;
   timestamp: number;
   ngPlus: number;
   isNGP: boolean;
@@ -134,6 +137,9 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
     const entry: CachedGeneration = {
       cacheKey,
       seed,
+      dailySeed: result.dailySeed,
+      calendar: result.calendar,
+      startingLoadoutVersion: result.startingLoadoutVersion,
       timestamp: Date.now(),
       ngPlus: result.ngPlus,
       isNGP: result.isNGP,
@@ -224,6 +230,9 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
     return normalizeScenePOIs(completeGenerationBossPOIs({
       cacheKey: entry.cacheKey,
       seed: entry.seed,
+      dailySeed: entry.dailySeed,
+      calendar: entry.calendar,
+      startingLoadoutVersion: entry.startingLoadoutVersion,
       ngPlus: entry.ngPlus,
       isNGP: entry.isNGP,
       worldSize: entry.worldSize,

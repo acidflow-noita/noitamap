@@ -102,6 +102,5 @@ export function setFullPixelTerrainForBake(enabled: boolean): void {
 
 /** Baked pixels do not require live full-pixel generation to be enabled. */
 export function shouldUseBakedTerrain(search: string): boolean {
-  const params=new URLSearchParams(search);
-  return !params.has("nb")&&params.get('native')!=='1';
+  return !new URLSearchParams(search).has("nb");
 }

@@ -153,7 +153,7 @@ export async function createNativeWorldGenerator(assets: NativeAssets, yieldCont
         pois.push(...shaft.generatedSpawns); scenes.push(...shaft.finalPixelScenes);
       }
       const fixed = rules.statics.addStaticPixelScenes(request.seed, ngPlus, horizontal, vertical,
-        biomeData, false, {}, false, gameMode);
+        biomeData, false, {}, request.dailySeed ?? false, gameMode);
       pois.push(...(fixed?.pois ?? []));
       scenes.push(...(fixed?.pixelScenes ?? []));
       regions.push({ horizontal, vertical, pois,

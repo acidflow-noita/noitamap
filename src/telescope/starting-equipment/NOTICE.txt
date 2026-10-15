@@ -1,0 +1,14 @@
+Starting-equipment metadata helpers
+
+Derived from Lymm37/noita-telescope under the accompanying MIT license.
+Pinned reference: 7fce46be8a5587fa88693d468046e236f862f5c7.
+loadout.js retains getStartingLoadout from js/misc_generation.js; potion.js
+retains normal-potion rolls from js/potion_generation.js and their tables
+from js/potion_config.js. Calendar is passed explicitly to keep baked
+metadata reads independent of the renderer and its assets.
+rng.js copies js/nolla_prng.js without arithmetic changes. Original SHA256:
+b1ec3e634e8f8edbc77c6e026e2bc02ae93c268d20800a5afd4dc5dc96fc7cdb
+
+These helpers repair legacy daily starting-equipment metadata. Live
+generation continues to use the pinned Telescope rules with the correct
+isDaily argument. There is no native-map renderer dependency.

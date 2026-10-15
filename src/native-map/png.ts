@@ -18,13 +18,8 @@ export interface RawImageData {
  * Decode a PNG from an ArrayBuffer into raw RGBA pixel data.
  * Returns { data: Uint8ClampedArray, width, height } — same shape as
  * ImageData, so call sites can be swapped in without further changes.
- * Scene instructions/art can explicitly preserve invisible source RGB; the
- * default keeps the existing normalized display/background bytes.
  */
-export function decodePngToRgba(
-  buf: ArrayBuffer,
-  { preserveTransparentRGB = false }: { preserveTransparentRGB?: boolean } = {},
-): RawImageData {
+export function decodePngToRgba(buf: ArrayBuffer): RawImageData {
   const decoded = decode(new Uint8Array(buf));
   const { width, height, palette, transparency } = decoded;
 
@@ -38,7 +33,7 @@ export function decodePngToRgba(
       const idx = indices[i];
       const color = palette[idx];
       const rBase = i * 4;
-      if (color && (preserveTransparentRGB || (color[3] ?? 255) !== 0)) {
+      if (color && (color[3] ?? 255) !== 0) {
         rgba[rBase] = color[0] ?? 0;
         rgba[rBase + 1] = color[1] ?? 0;
         rgba[rBase + 2] = color[2] ?? 0;
@@ -68,16 +63,13 @@ export function decodePngToRgba(
     // it does NOT add an alpha channel. These are authored transparent pixels,
     // not visible purple/red/orange background paint. Compare at source bit
     // depth before 16-bit downconversion so near-key colors remain opaque.
-    const transparentKey =
-      (channels === 1 &&
-        transparency?.length === 1 &&
-        pixels[base] === transparency[0]) ||
-      (channels === 3 &&
-        transparency?.length === 3 &&
+    if (
+      (channels === 1 && transparency?.length === 1 && pixels[base] === transparency[0]) ||
+      (channels === 3 && transparency?.length === 3 &&
         pixels[base] === transparency[0] &&
         pixels[base + 1] === transparency[1] &&
-        pixels[base + 2] === transparency[2]);
-    if (transparentKey && !preserveTransparentRGB) continue; // normalized canvas pixels
+        pixels[base + 2] === transparency[2])
+    ) continue; // initialized RGBA = 0, matching transparent canvas pixels
 
     const get = (offset: number) => {
       const v = pixels[base + offset] ?? 0;
@@ -90,7 +82,7 @@ export function decodePngToRgba(
       rgba[rBase] = g;
       rgba[rBase + 1] = g;
       rgba[rBase + 2] = g;
-      rgba[rBase + 3] = transparentKey ? 0 : 255;
+      rgba[rBase + 3] = 255;
     } else if (channels === 2) {
       // Grayscale + Alpha
       const g = get(0);
@@ -103,12 +95,11 @@ export function decodePngToRgba(
       rgba[rBase] = get(0);
       rgba[rBase + 1] = get(1);
       rgba[rBase + 2] = get(2);
-      rgba[rBase + 3] = transparentKey ? 0 : 255;
+      rgba[rBase + 3] = 255;
     } else {
-      // Background/display callers retain Canvas normalization. Material and
-      // visual scene inputs can opt into the source decoder's invisible RGB.
+      // RGBA - must mirror Canvas premultiplied alpha: when alpha=0, RGB=0
       const a = get(3);
-      if (a === 0 && !preserveTransparentRGB) {
+      if (a === 0) {
         rgba[rBase] = 0;
         rgba[rBase + 1] = 0;
         rgba[rBase + 2] = 0;

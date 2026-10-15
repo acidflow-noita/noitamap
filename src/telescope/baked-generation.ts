@@ -3,6 +3,7 @@ import { normalizeScenePOIs } from "./scene-pois";
 import { getAllPOIsFlat } from "./poi-inventory";
 import { MIMIC_SPRITES_VERSION } from './poi-mimics';
 import { createReportInventorySnapshot, readReportInventorySnapshot, sliceReportInventorySnapshot, type ReportInventorySnapshot } from "../report-inventory";
+import { getStartingLoadout } from "./starting-equipment/loadout.js";
 /**
  * baked-generation.ts
  *
@@ -39,6 +40,9 @@ export interface BakedGenerationFile {
   /** Selected-seed counts, scoped to this file's horizontal worlds. */
   reportInventory?: ReportInventorySnapshot;
   seed: number;
+  dailySeed?: boolean;
+  calendar?: { month: number; day: number };
+  startingLoadoutVersion?: number;
   ngPlus: number;
   isNGP: boolean;
   worldSize: number;
@@ -99,6 +103,9 @@ export function serializeGenerationForBake(result: GenerationResult): BakedGener
     reportInventory: createReportInventorySnapshot(result.seed,
       getAllPOIsFlat(normalizeScenePOIs(completeGenerationBossPOIs(result))), result.parallelWorlds),
     seed: result.seed,
+    dailySeed: result.dailySeed,
+    calendar: result.calendar,
+    startingLoadoutVersion: result.startingLoadoutVersion,
     ngPlus: result.ngPlus,
     isNGP: result.isNGP,
     worldSize: result.worldSize,
@@ -113,7 +120,7 @@ export function serializeGenerationForBake(result: GenerationResult): BakedGener
 }
 
 /** Merge per-world slices and rebuild a render-ready GenerationResult. */
-export function hydrateBakedGeneration(files: BakedGenerationFile[]): GenerationResult {
+export function hydrateBakedGeneration(files: BakedGenerationFile[], daily = false): GenerationResult {
   const base = files[0];
   const poisByPW: Record<string, any[]> = {};
   const pixelScenesByPW: Record<string, any[]> = {};
@@ -121,8 +128,23 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[]): Generation
   const bakedMimicSpritesVersionByPW: Record<number, number> = {};
   const reportInventory: ReportInventorySnapshot = { version: 3, seed: base.seed, worlds: {} };
   let inventoryComplete = true;
+  let repairedLoadout = false;
   for (const f of files) {
-    Object.assign(poisByPW, f.poisByPW);
+    for (const [key, pois] of Object.entries(f.poisByPW)) {
+      // Older daily bakes hardcoded isDaily=false for static spawns. Repair
+      // only the loadout metadata; terrain/scenes/other loot remain reusable.
+      // Legacy artifacts do not record their calendar. In that case the helper
+      // deliberately follows today's local date, just like a live request;
+      // this does not reconstruct historical seasonal overrides. New bakes
+      // retain their exact generation calendar and already-correct loadout.
+      poisByPW[key] = daily && !(f.startingLoadoutVersion! >= 1) && f.ngPlus === 0
+        ? pois.map(poi => {
+            if (poi.type !== "starting_loadout") return poi;
+            repairedLoadout = true;
+            return { ...poi, items: getStartingLoadout(f.seed, true, "normal", f.calendar).items };
+          })
+        : pois;
+    }
     for (const [k, scenes] of Object.entries(f.pixelScenesByPW || {})) {
       pixelScenesByPW[k] = (scenes as any[]).map((s) => ({ ...s, imgElement: null }));
     }
@@ -148,8 +170,11 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[]): Generation
     }
   }
 
-  return normalizeScenePOIs(completeGenerationBossPOIs({
+  const result = normalizeScenePOIs(completeGenerationBossPOIs({
     seed: base.seed,
+    dailySeed: daily || base.dailySeed,
+    calendar: base.calendar,
+    startingLoadoutVersion: repairedLoadout ? 1 : base.startingLoadoutVersion,
     sage: files.find(file => (file.sage as any)?.seed === base.seed)?.sage,
     reportInventory: inventoryComplete ? reportInventory : undefined,
     bakedMimicSpritesVersionByPW,
@@ -166,6 +191,9 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[]): Generation
     pixelScenesByPW,
     eyes: undefined,
   })) as GenerationResult;
+  if (repairedLoadout) result.reportInventory = createReportInventorySnapshot(result.seed,
+    getAllPOIsFlat(result), result.parallelWorlds);
+  return result;
 }
 
 /**
@@ -189,7 +217,7 @@ export async function fetchBakedGeneration(
       }),
     );
     if (files.some((f) => !f)) return null;
-    return hydrateBakedGeneration(files as BakedGenerationFile[]);
+    return hydrateBakedGeneration(files as BakedGenerationFile[], true);
   } catch (e) {
     console.warn("[baked-generation] fetch failed:", e);
     return null;

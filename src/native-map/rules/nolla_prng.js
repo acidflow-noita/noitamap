@@ -1,6 +1,5 @@
 // Adapted into the owned Noitamap rules runtime. See NOTICE.txt for provenance.
 // js/nolla_prng.js
-import { advanceRandomState } from '../random-step.js';
 
 const _buf = new ArrayBuffer(8);
 const _dv = new DataView(_buf);
@@ -83,9 +82,10 @@ export class NollaPrng {
         // Turns out this is a much simpler way to get the same result, with some edge cases fixed
         let e = (r & 0xffffffff) >>> 0;
 
-        // Clearing the binary64 sign bit is abs, including signed zero and
-        // infinities. NaN remains false in both ordered comparisons.
-        if (Math.abs(y_) >= 102400.0 || Math.abs(x_) <= 1.0) {
+        let _x = NollaPrng.f2i(x_) & 0x7fffffffffffffffn;
+        let _y = NollaPrng.f2i(y_) & 0x7fffffffffffffffn;
+
+        if (NollaPrng.i2f(_y) >= 102400.0 || NollaPrng.i2f(_x) <= 1.0) {
             r = y_ * 134217727.0;
         } else {
             let y__ = y_ * 3483.328;
@@ -241,7 +241,10 @@ export class NollaPrng {
 
 
     Next() {
-        this.Seed = advanceRandomState(this.Seed);
+        let s = BigInt(Math.floor(this.Seed));
+        let v4 = 16807n * s - 2147483647n * (s / 127773n);
+        if (v4 <= 0n) v4 += 2147483647n;
+        this.Seed = Number(v4);
         return this.Seed / 2147483647.0;
     }
 

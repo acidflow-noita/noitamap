@@ -117,9 +117,8 @@ describe("full-pixel mode", () => {
       expect(shouldUseBakedTerrain("?ds=1")).toBe(true);
       expect(shouldUseBakedTerrain("?pds=1")).toBe(true);
       expect(shouldUseBakedTerrain("?se=42")).toBe(true);
+      expect(shouldUseBakedTerrain("?native=1&ds=1")).toBe(true);
       expect(shouldUseBakedTerrain("?nb=1")).toBe(false);
-      expect(shouldUseBakedTerrain("?native=1&ds=1")).toBe(false);
-      expect(shouldUseBakedTerrain("?native=0&ds=1")).toBe(true);
     }
   });
   it("selects a complete matching main-thread fork", async () => {

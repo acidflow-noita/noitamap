@@ -607,10 +607,11 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
           } else if (poi.type === "starting_loadout") {
             // Mina's loadout: spread horizontally, lifted above the player
             // sprite and nudged right so all three items stay clear of Mina.
+            // Daily potion x/y are RNG inputs (0,0), not its display position.
             const offsetPoi =
               count > 1
-                ? { ...innerItem, x: innerItem.x + (ci - (count - 1) / 2) * 18 + 6, y: innerItem.y - 51 }
-                : { ...innerItem, x: innerItem.x + 6, y: innerItem.y - 51 };
+                ? { ...innerItem, x: poi.x + (ci - (count - 1) / 2) * 18 + 6, y: poi.y - 51 }
+                : { ...innerItem, x: poi.x + 6, y: poi.y - 51 };
             addMarkerItem(items, offsetPoi, pw, worldCenter, atlas);
           } else if (ENEMY_SPAWN_TYPES.has(poi.type)) {
             // Enemy spawns: spread items in a small circle around the spawn point

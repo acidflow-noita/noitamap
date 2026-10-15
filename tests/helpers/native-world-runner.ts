@@ -50,7 +50,7 @@ if(workerData.role==='native'){
    if(vertical===0)special=scanner.getSpecialPoIs(biomeData,seed,ngPlus,horizontal,vertical,{},gameMode);
    const pois=vertical===0?[...scan.generatedSpawns,...special]:[...special,...scan.generatedSpawns],result=[...scan.finalPixelScenes];
    if(vertical===1&&shaft.length){const s=scanner.scanSpawnFunctions(biomeData,shaft,seed,ngPlus,horizontal,0,false,{},gameMode);pois.push(...s.generatedSpawns);result.push(...s.finalPixelScenes);}
-   const fixed=statics.addStaticPixelScenes(seed,ngPlus,horizontal,vertical,biomeData,false,{},false,gameMode);
+   const fixed=statics.addStaticPixelScenes(seed,ngPlus,horizontal,vertical,biomeData,false,{},request.dailySeed??false,gameMode);
    pois.push(...(fixed?.pois??[]));result.push(...(fixed?.pixelScenes??[]));
    regions.push({horizontal,vertical,pois,scenes:result});
   }

@@ -34,6 +34,8 @@ import atlas from "../src/data/atlas.json";
 import cubeFixture from "./fixtures/search/786433191-meditation-cube.json";
 import { normalizeScenePOIs } from "../src/telescope/scene-pois";
 import type { MarkerData } from "../src/telescope/poi-spatial-index";
+import { getStartingLoadout } from '../src/telescope/starting-equipment/loadout.js';
+import { getAllPOIsFlat } from '../src/telescope/poi-inventory';
 
 const atlasMap = atlas as Record<string, unknown>;
 const LIB_JS = join(__dirname, "..", "lib", "noita-telescope", "js");
@@ -161,6 +163,17 @@ const FIXTURES: Fixture[] = [
 ];
 
 describe("POI render coverage (real buildMarkerData)", () => {
+  it.each([false, true])('keeps the starting potion above Mina when daily=%s', async daily => {
+    const poi = getStartingLoadout(304782898, daily, 'normal', { month: 10, day: 15 });
+    const data = await buildMarkerData({ worldCenter: 35, poisByPW: { '0,0': [poi] } });
+    const potion = data.items.find(item => item.poi.item === 'potion');
+    expect(potion?.poi).toMatchObject({ x: 251, y: -132,
+      material: daily ? 'magic_liquid_random_polymorph' : 'water' });
+    const searchablePotion = getAllPOIsFlat({ poisByPW: { '0,0': [{ ...poi, biome: undefined }] } }).find(item => item.item === 'potion');
+    expect(searchablePotion).toMatchObject({ x: 227, y: -81, worldX: 227, worldY: -81 });
+    // Presentation/search normalization must not mutate the RNG source record.
+    if (daily) expect(poi.items[2]).toMatchObject({ x: 0, y: 0 });
+  });
   it.each([0, 1, 2, 3])('draws one Houre beside its crystal when Telescope emits %i ghost siblings', async count => {
     const ghosts = Array.from({ length: count }, () => ({ type: 'entity', entity: 'ghost', x: 100, y: 200 }));
     const crystal = { type: 'entity', entity: 'ghost_crystal', id: 'crystal', x: 100, y: 200 };
