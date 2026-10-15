@@ -143,6 +143,9 @@ export interface GenerationResult {
   /** Per-world decoration revision, retained when loading old daily bakes. */
   bakedMimicSpritesVersionByPW?: Record<number, number>;
   seed: number;
+  dailySeed?: boolean;
+  calendar?: { month: number; day: number };
+  startingLoadoutVersion?: number;
   ngPlus: number;
   isNGP: boolean;
   worldSize: number;
@@ -686,7 +689,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
     pixelScenesByPW[pwKey] = scanResults.finalPixelScenes;
 
     // Add static pixel scenes (hardcoded positions like pyramid boss, fishing hut, etc.)
-    const staticResults = addStaticPixelScenes(seed, ngPlus, pw, 0, biomeData, false, perks, false, gameMode);
+    const staticResults = addStaticPixelScenes(seed, ngPlus, pw, 0, biomeData, false, perks, dailySeed, gameMode);
     if (staticResults && staticResults.pixelScenes) {
       pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(staticResults.pixelScenes);
     }
@@ -717,7 +720,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
       }
 
       // Static pixel scenes (sky/hell temples)
-      const vtResults = addStaticPixelScenes(seed, ngPlus, pw, pvt, biomeData, false, perks, false, gameMode);
+      const vtResults = addStaticPixelScenes(seed, ngPlus, pw, pvt, biomeData, false, perks, dailySeed, gameMode);
       if (vtResults && vtResults.pixelScenes && vtResults.pixelScenes.length > 0) {
         pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(vtResults.pixelScenes);
       }
@@ -1517,6 +1520,9 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
 
   return normalizeScenePOIs(completeGenerationBossPOIs({
     seed,
+    dailySeed,
+    calendar: { ...telescopeMods.settingsMod.appSettings.date },
+    startingLoadoutVersion: 1,
     ngPlus,
     isNGP,
     worldSize,

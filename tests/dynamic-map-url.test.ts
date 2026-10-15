@@ -32,6 +32,7 @@ import { initTelescope, generateDynamicMap, prewarmParallelWorlds } from '../src
 import { prewarmInstantTerrain } from '../src/telescope/instant-terrain-backend';
 import { prewarmAlt } from '../src/unlocks-toggle';
 import { getUrlUnlockKind } from '../src/unlocks';
+import { getPillarFlagsFromURL } from '../src/pillars-unlocks';
 import { probeBakedDZIs } from '../src/telescope/baked-dzi-loader';
 import { addBakedDZIsToOSD } from '../src/telescope/baked-dzi-loader';
 import { fetchBakedGeneration } from '../src/telescope/baked-generation';
@@ -48,6 +49,7 @@ beforeEach(() => {
   vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
   vi.mocked(isInstantTerrainEnabled).mockReturnValue(false);
   vi.mocked(getUrlUnlockKind).mockReturnValue(null);
+  vi.mocked(getPillarFlagsFromURL).mockReturnValue(null);
 });
 
 describe('URL seed request ownership', () => {
@@ -80,6 +82,44 @@ describe('URL seed request ownership', () => {
     vi.mocked(hasDynamicOverlays).mockReturnValue(false);
     return vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
   }
+
+  it('does not reuse a normal starting loadout for a daily run of the same seed', async () => {
+    const frame = livePipeline();
+    const pipeline = await import('../src/dynamic-map');
+    await pipeline.runDynamicMap(304782898, false, { viewer: {} });
+    const normal = vi.mocked(getCachedGeneration).mock.calls.at(-1)![0];
+    await pipeline.runDynamicMap(304782898, true, { viewer: {} });
+    const daily = vi.mocked(getCachedGeneration).mock.calls.at(-1)![0];
+    expect(normal).not.toBe(daily);
+    expect(daily).toContain('|daily-loadout-v1');
+    expect(daily).toBe(pipeline.dailyCacheKey(304782898));
+    expect(generateDynamicMap).toHaveBeenLastCalledWith(expect.objectContaining({ seed: 304782898, dailySeed: true }));
+    frame.mockRestore();
+  });
+  it('keeps concurrent background normal/daily comparisons and their cache entries separate', async () => {
+    const frame = livePipeline();
+    const pipeline = await import('../src/dynamic-map');
+    const normal = pipeline.ensureSeedCached(304782898, false);
+    const daily = pipeline.ensureSeedCached(304782898, true);
+    expect(daily).not.toBe(normal);
+    expect(pipeline.ensureSeedCached(304782898, true)).toBe(daily);
+    expect(await Promise.all([normal, daily])).toEqual([true, true]);
+    const keys = vi.mocked(cacheGeneration).mock.calls.map(call => call[0]);
+    expect(new Set(keys).size).toBe(2);
+    expect(keys).toContain(pipeline.dailyCacheKey(304782898));
+    expect(vi.mocked(generateDynamicMap).mock.calls.map(([request]) => request.dailySeed)).toEqual([false, true]);
+    frame.mockRestore();
+  });
+  it('retains explicit pillar identity in daily generation cache keys', async () => {
+    const frame = livePipeline();
+    const pipeline = await import('../src/dynamic-map');
+    await pipeline.runDynamicMap(304782898, true, { viewer: {} });
+    const defaults = vi.mocked(cacheGeneration).mock.calls.at(-1)![0];
+    vi.mocked(getPillarFlagsFromURL).mockReturnValue(['secret_orb']);
+    await pipeline.runDynamicMap(304782898, true, { viewer: {} });
+    expect(vi.mocked(cacheGeneration).mock.calls.at(-1)![0]).not.toBe(defaults);
+    frame.mockRestore();
+  });
 
   it.each(['success', 'failure'])('discards an obsolete URL seed lookup after leaving for a static map (%s)', async outcome => {
     const frame = livePipeline(), lookup = deferred<number>();

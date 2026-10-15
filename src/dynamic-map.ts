@@ -100,13 +100,16 @@ export function getLastGenerationResult(): GenerationResult | null {
  *  the key the live daily render writes (including the light-mode suffix) so
  *  the seed-report comparison lookup hits. Dailies always render all-unlocked,
  *  so the unlock portion is always "all". */
+function generationCacheKey(seed: number, unlockKey: string, isDaily: boolean): string {
+  return `${seed}-${unlockKey}${isDaily ? "|daily-loadout-v1" : ""}`;
+}
 export function dailyCacheKey(seed: number): string {
-  return `${seed}-all${isLightMode() ? "|lm" : ""}`;
+  return generationCacheKey(seed, `all${isLightMode() ? "|lm" : ""}|p-`, true);
 }
 
 // Dedupe concurrent requests for the same seed; serialize the heavy
 // generations so at most one background gen runs at a time.
-const pendingSeedCaches = new Map<number, Promise<boolean>>();
+const pendingSeedCaches = new Map<string, Promise<boolean>>();
 let bgGenChain: Promise<unknown> = Promise.resolve();
 
 /**
@@ -117,11 +120,12 @@ let bgGenChain: Promise<unknown> = Promise.resolve();
  * cached (already present or freshly generated), false on failure.
  */
 export function ensureSeedCached(seed: number, isDaily: boolean): Promise<boolean> {
-  const existing = pendingSeedCaches.get(seed);
+  const lightMode = isLightMode();
+  const key = generationCacheKey(seed, `all${lightMode ? "|lm" : ""}|p-`, isDaily);
+  const existing = pendingSeedCaches.get(key);
   if (existing) return existing;
 
   const run = (async (): Promise<boolean> => {
-    const key = dailyCacheKey(seed);
     try {
       if (await getCachedGeneration(key)) return true;
     } catch {
@@ -135,7 +139,7 @@ export function ensureSeedCached(seed: number, isDaily: boolean): Promise<boolea
         ngPlus: 0,
         dailySeed: isDaily,
         unlocks: null,
-        parallelWorlds: isLightMode() ? [0] : undefined,
+        parallelWorlds: lightMode ? [0] : undefined,
       });
     });
     // Keep the serial chain alive even if this generation throws.
@@ -151,10 +155,10 @@ export function ensureSeedCached(seed: number, isDaily: boolean): Promise<boolea
       return false;
     })
     .finally(() => {
-      pendingSeedCaches.delete(seed);
+      pendingSeedCaches.delete(key);
     });
 
-  pendingSeedCaches.set(seed, run);
+  pendingSeedCaches.set(key, run);
   return run;
 }
 
@@ -484,10 +488,14 @@ async function runDynamicMapRequest(
     let t = performance.now();
     let result: GenerationResult | null = null;
     let restoreTerrain = false;
-    const cacheKey = `${seed}-${unlockKey}`;
+    // Daily equipment differs from a normal run of the same seed.
+    // Keep old daily records out of this lookup without clearing terrain assets.
+    let cacheKey = generationCacheKey(seed, unlockKey, isDaily);
 
     if (bakedData?.generation) {
       result = bakedData.generation;
+      // Daily/previous-daily artifacts remain daily even when ds=1 was omitted.
+      cacheKey = generationCacheKey(seed, unlockKey, true);
       console.log(`[DynamicMap] Baked generation.json hit — reusing seed metadata`);
       // Seed the IDB cache so seed-report comparisons and tomorrow's
       // "previous daily" lookups work offline (fire-and-forget).

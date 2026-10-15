@@ -163,6 +163,7 @@ async function prepare() {
 const fingerprint = createHash("sha256");
 for (const directory of [
   "src/telescope",
+  "src/telescope/starting-equipment",
   "lib/noita-telescope-vm/js",
   "lib/noita-telescope-vm/js/engine_resolve",
   "lib/noita-telescope-vm/js/gl",

@@ -11,6 +11,7 @@ import { hydrateBakedGeneration } from "../src/telescope/baked-generation";
 import { createReportInventorySnapshot, readReportInventorySnapshot, reportFindInventory, reportInventoryCount } from "../src/report-inventory";
 import { getAllPOIsFlat } from "../src/telescope/poi-inventory";
 import { planeAtWorldY } from "../src/telescope/terrain-planes";
+import { getStartingLoadout } from "../src/telescope/starting-equipment/loadout.js";
 
 async function runBake(root: string, out: string, extra: string[] = []) {
   const child = spawn(
@@ -100,6 +101,11 @@ it("prepares missing scene assets and the CI seed through the actual native bake
     expect(snapshot.decor.mimicSpritesVersion).toBe(1);
     expect(snapshot.metadata).toMatchObject({ version: 1, seed: snapshot.seed, ngPlus: 0, isNGP: false,
       worldSize: 70, worldCenter: 35, biomeDataW: 70, biomeDataH: 48, mimicSpritesVersion: 1 });
+    expect(snapshot.metadata).toMatchObject({ dailySeed: true, startingLoadoutVersion: 1,
+      calendar: { month: expect.any(Number), day: expect.any(Number) } });
+    const loadout = snapshot.metadata.poisByPW['0,0'].find((poi: any) => poi.type === 'starting_loadout');
+    expect(loadout).toMatchObject(getStartingLoadout(snapshot.seed, true, 'normal', snapshot.metadata.calendar));
+    expect(loadout.items).not.toEqual(getStartingLoadout(snapshot.seed, false, 'normal', snapshot.metadata.calendar).items);
     expect(readReportInventorySnapshot(snapshot.metadata.reportInventory, snapshot.seed, [-1, 0, 1])).not.toBeNull();
     expect(REPORT_INVENTORY_VERSION).toBe(3);
     expect(snapshot.metadata.reportInventory.version).toBe(REPORT_INVENTORY_VERSION);
