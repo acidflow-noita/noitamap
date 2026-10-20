@@ -1,3 +1,4 @@
+@layer custom {
 /* pro-accent.css - Pro-gated buttons & filter chips. Identity = an animated
    rainbow gradient BORDER over a raised-slate surface (no purple fills). The
    double-background trick: a solid slate layer clipped to padding-box is the
@@ -83,10 +84,8 @@
   transform: none;
 }
 
-/* Shared Pro-accent buttons (Get Pro, Drawing / Seed-Report toggles). The
-   !important beats Bootstrap's btn-outline-light variable styling. */
-.pro-accent.icon-button,
-.pro-accent.btn-outline-light,
+/* Shared Pro-accent buttons (Get Pro, Drawing / Seed-Report toggles). */
+.pro-accent.btn,
 #auth-container .pro-accent {
   border: 1.5px solid transparent !important;
   color: var(--pro-fg) !important;
@@ -100,8 +99,7 @@
     box-shadow 0.15s !important;
 }
 
-.pro-accent.icon-button:hover,
-.pro-accent.btn-outline-light:hover,
+.pro-accent.btn:hover,
 #auth-container .pro-accent:hover {
   background:
     linear-gradient(var(--pro-surface-hi), var(--pro-surface-hi)) padding-box,
@@ -113,9 +111,8 @@
 
 /* Toggle/active state - btn-check pattern + explicit .active. Lighter slate
    surface + stronger glow; the gradient border keeps panning. */
-.btn-check:checked + .pro-accent.btn-outline-light,
-.pro-accent.btn-outline-light.active,
-.pro-accent.icon-button.active {
+.pro-accent.btn-check:has(> input:checked),
+.pro-accent.btn.active {
   background:
     linear-gradient(var(--pro-surface-hi), var(--pro-surface-hi)) padding-box,
     var(--pro-gradient) border-box !important;
@@ -124,8 +121,8 @@
   color: var(--pro-fg) !important;
 }
 
-.btn-check:checked + .pro-accent.btn-outline-light:hover,
-.pro-accent.btn-outline-light.active:hover,
-.pro-accent.icon-button.active:hover {
+.pro-accent.btn-check:has(> input:checked):hover,
+.pro-accent.btn.active:hover {
   box-shadow: 0 0 0.75rem var(--pro-glow) !important;
+}
 }

@@ -1,4 +1,5 @@
-/* theme.css - design tokens (Tailwind 4.3 oklch). Loaded first, after Bootstrap. */
+/* Noitamap design tokens, loaded after Bootstrap's precompiled --bs-* theme.
+   Keep root tokens unlayered: Bootstrap also emits its root tokens outside layers. */
 :root {
   /* Neutrals (slate) */
   --bg:            oklch(0.129 0.042 264.695); /* slate-950 */
@@ -83,31 +84,117 @@
   --section-gap: .75rem;
   --panel-heading-size: 1rem;
   --section-heading-size: 1rem;
-  --bs-border-radius-sm: var(--control-radius);
 
   /* Frosted layer */
   --glass-bg:   oklch(0.208 0.042 265.755 / 0.85);
   --glass-blur: blur(0.5rem);
+}
 
-  /* Bootstrap variable overrides (migrated from style.css) */
-  --bs-dark: var(--surface-1);
-  --bs-dark-rgb: 15, 23, 42; /* rgb triplet REQUIRED by Bootstrap's internal rgba(var(--bs-dark-rgb), a); not a rendered literal. slate-900 */
-  --bs-secondary: var(--border-strong);
-  --bs-secondary-bg: var(--surface-2);
-  --bs-secondary-border-subtle: var(--border-strong);
+/* Noitamap theme overrides for Bootstrap 6. */
+:root {
+  /* Bootstrap 6 neutral surfaces and semantic colors. */
+  --bs-bg-body: var(--bg);
+  --bs-bg-1: var(--surface-1);
+  --bs-bg-2: var(--surface-2);
+  --bs-bg-3: var(--surface-2);
+  --bs-bg-4: var(--border-strong);
+  --bs-fg-body: var(--text);
+  --bs-fg-1: var(--text);
+  --bs-fg-2: var(--text-muted);
+  --bs-fg-3: var(--text-faint);
+  --bs-fg-4: var(--text-faint);
+  --bs-border-body: var(--border-strong);
+  --bs-border-subtle: var(--border);
+  --bs-border-muted: var(--border);
+  --bs-border-emphasized: var(--text-faint);
   --bs-border-color: var(--border-strong);
-  --bs-body-bg: var(--bg);
-  --bs-body-color: var(--text);
-  --bs-secondary-color: var(--text-muted);
-  --bs-tertiary-color: var(--text-faint);
-  --bs-tertiary-bg: var(--surface-2);
-  --bs-popover-bg: var(--surface-1) !important;
-  --bs-popover-border-color: var(--border-strong) !important;
-  --bs-popover-header-bg: var(--bg) !important;
-  --bs-popover-header-color: var(--text) !important;
-  --bs-popover-body-color: var(--text) !important;
+  --bs-border-color-translucent: var(--border);
+  --bs-radius-5: var(--radius-control);
+  --bs-radius-7: var(--radius-panel);
+  --bs-radius-pill: var(--radius-pill);
+
+  --bs-primary-base: var(--accent-strong);
+  --bs-primary-bg: var(--accent-strong);
+  --bs-primary-bg-subtle: var(--accent-bg);
+  --bs-primary-bg-muted: color-mix(in oklab, var(--accent-strong) 25%, var(--surface-1));
+  --bs-primary-fg: var(--accent-fg);
+  --bs-primary-fg-emphasis: var(--accent-fg);
+  --bs-primary-border: color-mix(in oklab, var(--accent-strong) 60%, var(--surface-1));
+  --bs-primary-focus-ring: color-mix(in oklab, var(--accent-strong) 45%, transparent);
+  --bs-primary-contrast: white;
+
+  --bs-secondary-base: var(--border-strong);
+  --bs-secondary-bg: var(--surface-2);
+  --bs-secondary-bg-subtle: var(--surface-1);
+  --bs-secondary-bg-muted: var(--surface-2);
+  --bs-secondary-fg: var(--text-muted);
+  --bs-secondary-fg-emphasis: var(--text);
+  --bs-secondary-border: var(--border-strong);
+  --bs-secondary-focus-ring: var(--bs-primary-focus-ring);
+  --bs-secondary-contrast: var(--text);
+
+  --bs-success-base: var(--daily-strong);
+  --bs-success-bg: var(--daily-strong);
+  --bs-success-bg-subtle: var(--success-bg);
+  --bs-success-bg-muted: color-mix(in oklab, var(--daily-strong) 25%, var(--surface-1));
+  --bs-success-fg: var(--success-fg);
+  --bs-success-fg-emphasis: var(--success-fg);
+  --bs-success-border: color-mix(in oklab, var(--daily-strong) 60%, var(--surface-1));
+  --bs-success-focus-ring: color-mix(in oklab, var(--daily-strong) 45%, transparent);
+  --bs-success-contrast: var(--bg);
+
+  --bs-warning-base: var(--warning-fg);
+  --bs-warning-bg: var(--warning-fg);
+  --bs-warning-bg-subtle: var(--warning-bg);
+  --bs-warning-bg-muted: color-mix(in oklab, var(--warning-fg) 25%, var(--surface-1));
+  --bs-warning-fg: var(--warning-fg);
+  --bs-warning-fg-emphasis: var(--warning-fg);
+  --bs-warning-border: color-mix(in oklab, var(--warning-fg) 60%, var(--surface-1));
+  --bs-warning-focus-ring: color-mix(in oklab, var(--warning-fg) 45%, transparent);
+  --bs-warning-contrast: var(--bg);
+
+  --bs-danger-base: var(--danger-fg);
+  --bs-danger-bg: var(--danger-fg);
+  --bs-danger-bg-subtle: var(--danger-bg);
+  --bs-danger-bg-muted: color-mix(in oklab, var(--danger-fg) 25%, var(--surface-1));
+  --bs-danger-fg: var(--danger-fg);
+  --bs-danger-fg-emphasis: var(--danger-fg);
+  --bs-danger-border: color-mix(in oklab, var(--danger-fg) 60%, var(--surface-1));
+  --bs-danger-focus-ring: color-mix(in oklab, var(--danger-fg) 45%, transparent);
+  --bs-danger-contrast: var(--bg);
+
+  --bs-info-base: var(--accent-strong);
+  --bs-info-bg: var(--accent-strong);
+  --bs-info-bg-subtle: var(--info-bg);
+  --bs-info-bg-muted: var(--bs-primary-bg-muted);
+  --bs-info-fg: var(--info-fg);
+  --bs-info-fg-emphasis: var(--info-fg);
+  --bs-info-border: var(--bs-primary-border);
+  --bs-info-focus-ring: var(--bs-primary-focus-ring);
+  --bs-info-contrast: white;
+
+  --bs-btn-input-sm-gap: var(--control-gap);
+  --bs-btn-input-sm-min-height: var(--control-height);
+  --bs-btn-input-sm-font-size: var(--control-font-size);
+  --bs-btn-input-sm-line-height: var(--control-line-height);
+  --bs-btn-input-sm-padding-x: var(--control-padding-x);
+  --bs-btn-input-sm-padding-y: var(--control-padding-y);
+  --bs-btn-input-sm-border-radius: var(--control-radius);
   --bs-body-font-family: Inter, sans-serif;
-  --bs-font-sans-serif: Inter, sans-serif;
+}
+
+@supports (font-variation-settings: normal) {
+  :root { --bs-body-font-family: InterVariable, sans-serif; }
+}
+
+/* Drawer tokens are also unlayered in the distributed Bootstrap stylesheet. */
+.mapNavbar .drawer {
+  --bs-drawer-bg: var(--surface-1);
+  --bs-drawer-color: var(--text);
+  --bs-drawer-border-color: var(--border-strong);
+  --bs-drawer-box-shadow: var(--shadow-panel);
+  --bs-drawer-inset: .5rem;
+  --bs-drawer-width: 28rem;
 }
 
 /* Animated rainbow gradient border for Pro surfaces. The double-background
@@ -121,8 +208,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   /* Gradient stays, panning stops. */
-  .pro-accent.btn-outline-light,
-  .pro-accent.icon-button,
+  .pro-accent.btn,
   #auth-container .pro-accent,
   #unifiedSearchFilterBox .high-value-filter-btn,
   #unifiedSearchFilterBox .alchemy-filter-btn,

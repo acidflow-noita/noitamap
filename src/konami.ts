@@ -1,3 +1,4 @@
+import * as bootstrap from "./bootstrap";
 const konamiCode = [
   'ArrowUp',
   'ArrowUp',

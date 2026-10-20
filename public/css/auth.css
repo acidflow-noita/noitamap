@@ -1,12 +1,13 @@
-/* auth.css - auth modal buttons. Patreon brand color preserved (oklch form). */
+@layer custom {
+/* auth.css - auth dialog buttons. Patreon brand color preserved (oklch form). */
 :root {
   --patreon: oklch(0.628 0.224 21.1); /* #FF424D brand */
   --twitch: oklch(0.512 0.226 296.5); /* #9146FF brand */
 }
 
-/* Shared sizing so every Patreon button (modal, drawing sidebar, seed report)
+/* Shared sizing so every Patreon button (dialog, drawing sidebar, seed report)
    is identical regardless of its container — one consistent pill width,
-   centered, with a sane max so it never stretches full-width in a wide modal. */
+   centered, with a sane max so it never stretches full-width in a wide dialog. */
 .btn-patreon,
 .btn-patron,
 .btn-twitch {
@@ -15,6 +16,9 @@
   margin-inline: auto;
   justify-content: center;
 }
+
+/* Keep the Beta badge anchored in both display modes. */
+.btn-twitch { position: relative; }
 
 /* Twitch sign-in button. Mirrors .btn-patreon in brand purple. */
 .btn-twitch {
@@ -59,7 +63,7 @@
   height: 18px;
 }
 
-/* Get Pro modal: two provider columns (Twitch | Patreon) with a faint "or"
+/* Get Pro dialog: two provider columns (Twitch | Patreon) with a faint "or"
    divider between them. Each column stacks its sign-in + subscribe buttons.
    Collapses to a single stacked column on narrow screens. Also reused by the
    seed-report locked view. */
@@ -87,6 +91,10 @@
   white-space: normal;
   overflow-wrap: anywhere;
   text-align: center;
+}
+.pro-col > .btn-twitch,
+.pro-col > .btn-patreon,
+.pro-col > .btn-patron {
   line-height: 1.35;
 }
 .pro-col > a > i,
@@ -106,10 +114,10 @@
   user-select: none;
 }
 /* Give translations room and share row heights between the two providers. */
-.modal-dialog.pro-dialog {
-  max-width: 46rem;
+.dialog.pro-dialog {
+  --bs-dialog-width: 46rem;
 }
-.pro-dialog .modal-body {
+.pro-dialog .dialog-body {
   padding: 1.5rem 2rem 2rem;
 }
 .pro-dialog .pro-columns {
@@ -144,6 +152,7 @@
 .pro-dialog .pro-col > button { grid-row: 1; }
 .pro-dialog .pro-col > a { grid-row: 2; }
 @media (max-width: 560px) {
+  .dialog.pro-dialog { --bs-dialog-margin: .5rem; }
   .pro-columns {
     flex-direction: column;
     align-items: center;
@@ -151,7 +160,7 @@
   .pro-or {
     justify-content: center;
   }
-  .pro-dialog .modal-body { padding: 1rem; }
+  .pro-dialog .dialog-body { padding: 1rem; }
   .pro-dialog .pro-columns { display: flex; }
   .pro-dialog .pro-col {
     display: flex;
@@ -225,4 +234,5 @@
 .btn-patron:hover {
   box-shadow: 0 0 0.6rem var(--pro-glow);
   color: var(--pro-fg);
+}
 }

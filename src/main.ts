@@ -1,3 +1,5 @@
+import * as bootstrap from "./bootstrap";
+bootstrap.installProBootstrapBridge();
 import { clearCreatureSpawnBiomeFocus, focusCreatureSpawnBiomes, frameCreatureSpawnBiomes, resolveCreatureSpawnBiomes } from "./data_sources/creature-spawn-biomes";
 import { setCreatureSpawnNavigation } from "./creature-spawn-navigation";
 import { mountCreatureSpawnNotice } from "./creature-spawn-notice";
@@ -196,6 +198,7 @@ import { authService } from "./auth/auth-service";
 import { DrawingUI } from "./drawing/drawing-ui";
 import { setDrawingMapOwnership } from './drawing/poi-interaction';
 import { createSeedReportButton } from "./seed-report-button";
+import { installProNavbarDismissal } from './pro-sidebar-navbar';
 import { placeBiomeBoundariesButton, placeMoreMenuLast } from "./overflow-menu";
 import { initChunkGrid, showChunkGrid, isChunkGridVisible } from "./drawing/chunk-grid";
 import { initSideworld, toggleSideworld, mapHasSideworld, resetSideworld } from "./sideworld";
@@ -453,7 +456,7 @@ startWhenReady(async () => {
   const authContainer = document.createElement("div");
   authContainer.id = "auth-container";
   // Find the container div that holds all the buttons
-  const buttonContainer = document.querySelector(".collapse.navbar-collapse .d-flex.flex-wrap");
+  const buttonContainer = document.querySelector(".navbar-controls");
   if (buttonContainer) {
     buttonContainer.appendChild(authContainer);
   }
@@ -985,6 +988,7 @@ startWhenReady(async () => {
   (proHooks as any).requestProLoad = loadProBundle;
 
   // Initialize Drawing UI (Brush Button)
+  installProNavbarDismissal();
   // This handles the "Get Pro" modal for unauthed users and loads the pro bundle for subscribers
   const drawingUI = new DrawingUI(authContainer, {
     onEnableDrawing: loadDrawing,
@@ -1128,7 +1132,7 @@ startWhenReady(async () => {
     if (!(currentMapLink instanceof HTMLElement)) return;
 
     // Remove "active" class from any nav links that still have it
-    document.querySelectorAll("#navLinksList .nav-link.active").forEach((el) => {
+    document.querySelectorAll("#navLinksList .menu-item.active").forEach((el) => {
       el.classList.remove("active");
     });
 
@@ -1242,7 +1246,7 @@ startWhenReady(async () => {
   // Initialize Bootstrap popovers (skip elements already initialised by
   // createDynamicUI / DrawingUI / UnifiedSearch to avoid the "Bootstrap
   // doesn't allow more than one instance per element" error).
-  for (const el of document.querySelectorAll('[data-bs-toggle="popover"]')) {
+  for (const el of document.querySelectorAll('[data-noitamap-popover]')) {
     if (!bootstrap.Popover.getInstance(el)) {
       new bootstrap.Popover(el);
     }
@@ -1250,14 +1254,14 @@ startWhenReady(async () => {
   // Touch devices can't "un-hover", so hover/focus popovers stay stuck open —
   // one global pointerup listener makes them tap-to-dismiss (mobile only).
   installPopoverTouchDismiss();
-  // The perfMode button uses data-bs-toggle="dropdown", so attach its popover
+  // The perfMode button uses data-bs-toggle="menu", so attach its popover
   // to the dropdown wrapper element.
   const perfModeBtn = document.getElementById("perfModeButton");
   const perfDropdownEl = document.getElementById("perfModeDropdown");
   if (perfDropdownEl && perfModeBtn) {
     const isPerfDropdownOpen = () =>
       perfModeBtn.getAttribute("aria-expanded") === "true" ||
-      !!perfDropdownEl.querySelector(".dropdown-menu.show");
+      !!perfDropdownEl.querySelector(".menu.show");
     const showPerfPopover = () => {
       if (isPerfDropdownOpen()) return;
       bootstrap.Popover.getInstance(perfDropdownEl)?.show();
@@ -1270,9 +1274,9 @@ startWhenReady(async () => {
     perfDropdownEl.addEventListener("focus", showPerfPopover);
     perfDropdownEl.addEventListener("blur", hidePerfPopover);
 
-    perfModeBtn.addEventListener("show.bs.dropdown", hidePerfPopover);
-    perfModeBtn.addEventListener("hidden.bs.dropdown", () => {
-      perfDropdownEl.querySelectorAll('[data-bs-toggle="popover"]').forEach((el: Element) => {
+    perfModeBtn.addEventListener("show.bs.menu", hidePerfPopover);
+    perfModeBtn.addEventListener("hidden.bs.menu", () => {
+      perfDropdownEl.querySelectorAll('[data-noitamap-popover]').forEach((el: Element) => {
         bootstrap.Popover.getInstance(el)?.hide();
       });
     });
@@ -1285,7 +1289,7 @@ startWhenReady(async () => {
       const target = e.target as Node;
       const inDropdown = perfDropdownEl.contains(target);
       if (isPerfDropdownOpen() && !inDropdown) {
-        bootstrap.Dropdown.getOrCreateInstance(perfModeBtn).hide();
+        bootstrap.Menu.getOrCreateInstance(perfModeBtn).hide();
       }
       if (!inDropdown && !perfDropdownEl.contains(target)) {
         hidePerfPopover();
@@ -1496,7 +1500,7 @@ startWhenReady(async () => {
         const toastElement = assertElementById("shareToast", HTMLElement);
         const toastBody = toastElement.querySelector(".toast-body");
         if (toastBody) {
-          toastBody.innerHTML = `<i class="bi bi-check-circle me-2"></i>${i18next.t("share.copied")}`;
+          toastBody.innerHTML = `<i class="bi bi-check-circle me-3"></i>${i18next.t("share.copied")}`;
         }
         const toast = new bootstrap.Toast(toastElement, {
           autohide: true,

@@ -107,3 +107,11 @@ describe('reused static POI popovers', () => {
     expect(biomePopover.dispose).not.toHaveBeenCalled();
   });
 });
+
+vi.mock('../src/bootstrap', () => ({
+  get Popover() { return (globalThis as any).bootstrap?.Popover; },
+  get Tooltip() { return (globalThis as any).bootstrap?.Tooltip; },
+  get Toast() { return (globalThis as any).bootstrap?.Toast; },
+  get Menu() { return (globalThis as any).bootstrap?.Menu; },
+  get Drawer() { return (globalThis as any).bootstrap?.Drawer; },
+}));

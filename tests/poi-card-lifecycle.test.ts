@@ -141,8 +141,8 @@ describe('POI card navigation ownership and cancellation', () => {
   });
 
   it.each(['toggle', 'item'])('lets a focused open dropdown %s consume Escape before the POI card', target => {
-    document.body.innerHTML = '<button id="toggle" data-bs-toggle="dropdown" aria-expanded="true">World</button>'
-      + '<div class="dropdown-menu show"><button id="item">Main</button></div>';
+    document.body.innerHTML = '<button id="toggle" data-bs-toggle="menu" aria-expanded="true">World</button>'
+      + '<div class="menu show"><button id="item">Main</button></div>';
     cards = new POICardLifecycle(() => seed, vi.fn());
     cards.begin('report');
     const capture = (event: KeyboardEvent) => { cards.handleEscape(event); };
@@ -162,7 +162,7 @@ describe('POI card navigation ownership and cancellation', () => {
   });
 
   it('closes the card on Escape from an already closed dropdown toggle even when Bootstrap prevents its default', () => {
-    document.body.innerHTML = '<button data-bs-toggle="dropdown" aria-expanded="false">World</button>';
+    document.body.innerHTML = '<button data-bs-toggle="menu" aria-expanded="false">World</button>';
     cards = new POICardLifecycle(() => seed, vi.fn());
     cards.begin('report');
     const bootstrapKey = (event: KeyboardEvent) => { event.preventDefault(); };

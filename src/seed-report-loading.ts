@@ -17,7 +17,7 @@ export function createSeedReportLoading(
       #${ID} [hidden]{display:none!important}
       #${ID} header{display:flex;align-items:center;justify-content:space-between;gap:var(--control-gap);padding:var(--panel-padding);border-bottom:1px solid var(--border-strong)}
       #${ID} h2{font-size:var(--panel-heading-size);font-weight:500;margin:0}
-      #${ID} .sr-loading-close{flex-shrink:0;width:var(--control-height);height:var(--control-height);padding:0}
+      #${ID} .sr-loading-close{flex-shrink:0}
       #${ID} .sr-loading-content{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:var(--panel-padding)}
       #${ID} .sr-loading-hint{color:var(--text-muted);font-size:var(--control-font-size)}
       #${ID} .sr-loading-placeholders{display:grid;grid-template-columns:1fr 1fr;gap:var(--control-gap);margin-top:var(--section-gap)}
@@ -42,8 +42,7 @@ export function createSeedReportLoading(
   title.textContent = i18next.t("seedReport.title", "Seed report");
   const close = document.createElement("button");
   close.type = "button";
-  close.className = "btn btn-sm btn-outline-light sr-loading-close";
-  close.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
+  close.className = "btn-close sr-loading-close";
   close.setAttribute("aria-label", i18next.t("seedReport.close", "Close"));
   close.addEventListener("click", onClose);
   header.append(title, close);
@@ -70,12 +69,12 @@ export function createSeedReportLoading(
   actions.className = "sr-loading-actions";
   const retry = document.createElement("button");
   retry.type = "button";
-  retry.className = "btn btn-sm btn-outline-light";
+  retry.className = "btn btn-sm btn-outline theme-secondary";
   retry.textContent = i18next.t("seedReport.retry", { defaultValue: "Retry" });
   retry.addEventListener("click", onRetry);
   const reload = document.createElement("button");
   reload.type = "button";
-  reload.className = "btn btn-sm btn-outline-light";
+  reload.className = "btn btn-sm btn-outline theme-secondary";
   reload.textContent = i18next.t("seedReport.reload", {
     defaultValue: "Reload page",
   });

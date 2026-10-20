@@ -1,7 +1,8 @@
+import * as bootstrap from "./bootstrap";
 /** A delayed hover popover must not cover the loading panel after a click. */
 export function dismissLoadingPopover(label: Element | null): void {
   if (!label) return;
-  const popover = (window as any).bootstrap?.Popover?.getInstance(label);
+  const popover = bootstrap?.Popover?.getInstance(label);
   if (!popover) return;
   popover.hide();
   if (label.matches(":hover")) {

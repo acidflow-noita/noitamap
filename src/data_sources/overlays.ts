@@ -456,7 +456,7 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: Point
   headerContainer.appendChild(nameElement);
 
   const shareBtn = document.createElement("button");
-  shareBtn.className = "btn btn-sm btn-outline-secondary";
+  shareBtn.className = "btn btn-sm btn-outline theme-secondary";
   shareBtn.style.cssText = `
     display: flex; align-items: center; justify-content: center; 
     padding: 2px 8px; font-size: 12px; background: rgba(255,255,255,0.1); 
@@ -474,7 +474,7 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: Point
     navigator.clipboard.writeText(finalUrl);
     
     // Feedback
-    shareBtn.innerHTML = '<i class="bi bi-check2 text-success"></i>';
+    shareBtn.innerHTML = '<i class="bi bi-check2 fg-success"></i>';
     setTimeout(() => { shareBtn.innerHTML = '<i class="bi bi-share"></i>'; }, 2000);
   };
   headerContainer.appendChild(shareBtn);

@@ -53,7 +53,7 @@ describe('translation refresh preserves programmatically owned popovers', () => 
     translations.listeners = [];
     Popover.instances.clear();
     vi.stubGlobal('bootstrap', { Popover, Tooltip: Popover });
-    document.body.innerHTML = '<div class="collapse navbar-collapse"><div class="d-flex flex-wrap"></div></div>';
+    document.body.innerHTML = '<div class="collapse navbar-collapse"><div class="d-flex flex-wrap navbar-controls"></div></div>';
   });
   afterEach(() => {
     document.body.replaceChildren();
@@ -121,7 +121,7 @@ describe('translation refresh preserves programmatically owned popovers', () => 
 
   it('leaves a custom report popover available for its owner to dispose after translation', async () => {
     const link = document.createElement('a');
-    link.setAttribute('data-bs-toggle', 'popover');
+    link.setAttribute("data-noitamap-popover", "");
     link.setAttribute('data-popover-owner', 'seed-report');
     document.body.appendChild(link);
     const body = document.createElement('div');
@@ -139,7 +139,7 @@ describe('translation refresh preserves programmatically owned popovers', () => 
     const { attachHoverPopover, dismissPopovers } = await import('../src/popover-util');
     const root = document.createElement('div');
     const badge = document.createElement('span');
-    if (declarative) badge.dataset.bsToggle = 'popover';
+    if (declarative) badge.dataset.noitamapPopover = '';
     root.appendChild(badge); document.body.appendChild(root);
     attachHoverPopover(badge, 'Always casts', 'bottom');
     const original = Popover.getInstance(badge)!;
@@ -160,3 +160,11 @@ describe('translation refresh preserves programmatically owned popovers', () => 
     expect((badge as any).__disposePopover).toBeUndefined();
   });
 });
+
+vi.mock('../src/bootstrap', () => ({
+  get Popover() { return (globalThis as any).bootstrap?.Popover; },
+  get Tooltip() { return (globalThis as any).bootstrap?.Tooltip; },
+  get Toast() { return (globalThis as any).bootstrap?.Toast; },
+  get Menu() { return (globalThis as any).bootstrap?.Menu; },
+  get Drawer() { return (globalThis as any).bootstrap?.Drawer; },
+}));

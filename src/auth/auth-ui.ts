@@ -1,12 +1,13 @@
 /**
- * Auth UI - Login button and "Get Pro" modal for navbar
+ * Auth UI - Login button and "Get Pro" dialog for navbar
  */
 
 import { authService, AuthState } from "./auth-service";
 import i18next from "../i18n";
+import * as bootstrap from "../bootstrap";
 
 // Twitch login is fully wired (worker + service) but HIDDEN in the UI until
-// Twitch platform approval lands. Flip to true to reveal the modal button; no
+// Twitch platform approval lands. Flip to true to reveal the dialog button; no
 // other change needed. While false, no Twitch markup renders and no Twitch
 // translation keys are referenced, so nothing leaks to users.
 const TWITCH_ENABLED = true;
@@ -34,6 +35,9 @@ const PATREON_SYMBOL_WHITE = `
 export class AuthUI {
   private container: HTMLElement;
   private button: HTMLElement | null = null;
+  private buttonUpdate = 0;
+  private menuCleanup: Promise<void> | null = null;
+  private menuHidden: Promise<void> | null = null;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -63,7 +67,7 @@ export class AuthUI {
     wrapper.id = "auth-button-wrapper";
     // Initial state placeholder
     wrapper.innerHTML = `
-      <button id="authButton" class="btn btn-sm btn-outline-light" type="button">
+      <button id="authButton" class="btn btn-sm btn-outline theme-inverse" type="button">
         <img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon">
         <span class="auth-text">${i18next.t("auth.getPro", "Get Pro")}</span>
       </button>
@@ -71,89 +75,94 @@ export class AuthUI {
 
     const button = wrapper.querySelector("#authButton") as HTMLElement;
     button.addEventListener("click", () => this.handleClick());
+    button.addEventListener("hide.bs.menu", (event) => {
+      if (event.defaultPrevented || this.menuHidden) return;
+      let finish!: () => void;
+      this.menuHidden = new Promise<void>((resolve) => { finish = resolve; });
+      const onHidden = () => {
+        this.menuHidden = null;
+        finish();
+      };
+      button.addEventListener("hidden.bs.menu", onHidden, { once: true });
+      queueMicrotask(() => {
+        if (event.defaultPrevented) {
+          button.removeEventListener("hidden.bs.menu", onHidden);
+          onHidden();
+        }
+      });
+    });
 
     return wrapper;
   }
 
-  private updateButton(state: AuthState): void {
+  private async updateButton(state: AuthState): Promise<void> {
     if (!this.button) return;
 
+    const update = ++this.buttonUpdate;
     const btn = this.button.querySelector("#authButton") as HTMLElement;
 
+    // Keep the old menu attached until its exit transition finishes. Auth and
+    // language changes can arrive together, so only render the latest update.
+    const existingMenu = bootstrap.Menu.getInstance(btn);
+    if (existingMenu) {
+      btn.removeAttribute("data-bs-toggle");
+      // hide() is a no-op if an automatic close is already transitioning.
+      this.menuCleanup ??= (this.menuHidden ?? existingMenu.hide()).then(() => existingMenu.dispose());
+      await this.menuCleanup;
+      this.menuCleanup = null;
+    }
+    if (update !== this.buttonUpdate) return;
+    this.button.querySelector(".menu")?.remove();
+
     if (state.authenticated) {
-      // Show username with dropdown
-      btn.className = "btn btn-sm btn-outline-success dropdown-toggle";
-      btn.setAttribute("data-bs-toggle", "dropdown");
+      // Show the account menu.
+      btn.className = "btn btn-sm btn-outline theme-success";
+      btn.setAttribute("data-bs-toggle", "menu");
       btn.setAttribute("aria-expanded", "false");
       btn.innerHTML = `<i class="bi bi-person-check me-1"></i> <span class="auth-text">${i18next.t("auth.yourAccount", "Your account")}</span>`;
 
-      // Always rebuild dropdown to pick up language changes
-      // Dispose old Bootstrap Dropdown instance so it doesn't hold a stale menu reference
-      // @ts-ignore
-      const existingBsDropdown = bootstrap.Dropdown.getInstance(btn);
-      if (existingBsDropdown) existingBsDropdown.dispose();
-
-      let dropdown = this.button.querySelector(".dropdown-menu");
-      if (dropdown) dropdown.remove();
-
-      dropdown = document.createElement("ul");
-      dropdown.className = "dropdown-menu dropdown-menu-end";
+      const menu = document.createElement("div");
+      menu.className = "menu";
       const providerLabel = state.provider === "twitch" ? "Twitch" : "Patreon";
-      dropdown.innerHTML = `
-          <li><span class="dropdown-item-text text-secondary small"><i class="bi bi-box-arrow-in-right me-1"></i>${i18next.t("auth.yourAccount", "Your account")}: ${providerLabel}</span></li>
+      menu.innerHTML = `
+          <span class="menu-header fg-secondary small"><i class="bi bi-box-arrow-in-right me-1"></i>${i18next.t("auth.yourAccount", "Your account")}: ${providerLabel}</span>
           ${
             state.isSubscriber
-              ? `<li><span class="dropdown-item-text text-success small"><img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon">${i18next.t("auth.proActive", "Pro active")}</span></li>`
-              : `<li><button class="dropdown-item small" id="upgradeProBtn"><i class="bi bi-star me-1"></i>${i18next.t("auth.subscribeCta", "Upgrade to Pro")}</button></li>`
+              ? `<span class="menu-header fg-success small"><img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon">${i18next.t("auth.proActive", "Pro active")}</span>`
+              : `<button class="menu-item small" id="upgradeProBtn" type="button"><i class="bi bi-star me-1"></i>${i18next.t("auth.subscribeCta", "Upgrade to Pro")}</button>`
           }
-          <li><hr class="dropdown-divider"></li>
-          <li><button class="dropdown-item" id="logoutBtn"><i class="bi bi-box-arrow-right me-1"></i>${i18next.t("auth.signOut", "Sign out")}</button></li>
+          <hr class="menu-divider">
+          <button class="menu-item" id="logoutBtn" type="button"><i class="bi bi-box-arrow-right me-1"></i>${i18next.t("auth.signOut", "Sign out")}</button>
         `;
-      this.button.appendChild(dropdown);
-      this.button.classList.add("dropdown");
+      this.button.appendChild(menu);
 
-      // Reinitialize Bootstrap Dropdown with the new menu
-      // @ts-ignore
-      new bootstrap.Dropdown(btn);
+      new bootstrap.Menu(btn, { placement: "bottom-end" });
 
       // Bind logout handler
-      const logoutBtn = dropdown.querySelector("#logoutBtn");
+      const logoutBtn = menu.querySelector("#logoutBtn");
       logoutBtn?.addEventListener("click", (e) => {
         e.preventDefault();
         this.handleLogout();
       });
-      dropdown.querySelector("#upgradeProBtn")?.addEventListener("click", () => AuthUI.showGetProModal());
+      menu.querySelector("#upgradeProBtn")?.addEventListener("click", () => AuthUI.showGetProModal());
     } else {
-      // Show "Get Pro" button
-      // We keep the "Get Pro" style for the navbar button to match the theme,
-      // but the MODAL will have the Patreon branded button.
-      // Alternatively, we could make THIS button Patreon branded too?
-      // "Get Pro" usually implies a call to action.
-      // Let's keep it as "Get Pro" (standard style) but the modal has the official login button.
-
-      btn.className = "btn btn-sm btn-outline-light pro-accent";
+      btn.className = "btn btn-sm btn-outline theme-inverse pro-accent";
       btn.removeAttribute("data-bs-toggle");
       btn.removeAttribute("aria-expanded");
       btn.innerHTML = `<img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon"> <span class="auth-text">${i18next.t("auth.getPro", "Get Pro")}</span>`;
-      this.button.classList.remove("dropdown");
-
-      // Remove dropdown if exists
-      const dropdown = this.button.querySelector(".dropdown-menu");
-      if (dropdown) dropdown.remove();
     }
   }
 
   public static showGetProModal(): void {
-    // Remove existing modal if any
+    // Repeated requests share the current dialog and its pending transitions.
     const existing = document.getElementById("getProModal");
-    if (existing) existing.remove();
+    if (existing) return;
 
-    const modal = document.createElement("div");
-    modal.id = "getProModal";
-    modal.className = "modal fade";
-    modal.tabIndex = -1;
-    modal.setAttribute("aria-labelledby", "getProModalLabel");
-    modal.setAttribute("aria-hidden", "true");
+    const dialog = document.createElement("dialog");
+    dialog.id = "getProModal";
+    dialog.className = "dialog dialog-scrollable pro-dialog";
+    dialog.setAttribute("data-bs-theme", "dark");
+    dialog.setAttribute("aria-labelledby", "getProModalLabel");
 
     // Two provider columns: Twitch (left) and Patreon (right), each with a
     // "sign in" and a "subscribe" button, separated by a faint "or". When
@@ -161,71 +170,88 @@ export class AuthUI {
     const state = authService.getState();
     const twitchLoginHtml = state.provider === "twitch"
       ? ""
-      : `<button id="twitchLoginBtn" class="btn-twitch justify-content-center">
+      : `<button id="twitchLoginBtn" class="btn btn-solid theme-primary btn-twitch justify-content-center" type="button">
           ${TWITCH_SYMBOL_WHITE}
           <span class="pro-provider-label">${i18next.t("auth.loginWithTwitch", "Sign in with Twitch")}</span>
         </button>`;
     const patreonLoginHtml = state.provider === "patreon"
       ? ""
-      : `<button id="patreonLoginBtn" class="btn-patreon justify-content-center">
+      : `<button id="patreonLoginBtn" class="btn btn-solid theme-primary btn-patreon justify-content-center" type="button">
           ${PATREON_SYMBOL_WHITE}
           <span class="pro-provider-label">${i18next.t("auth.loginWithPatreon", "Sign in with Patreon")}</span>
         </button>`;
     const twitchColumnHtml = TWITCH_ENABLED
       ? `<div class="pro-col">
               ${twitchLoginHtml}
-              <a href="https://www.twitch.tv/products/wuote" target="_blank" rel="noopener noreferrer" class="btn-patron justify-content-center">
+              <a href="https://www.twitch.tv/products/wuote" target="_blank" rel="noopener noreferrer" class="btn btn-outline theme-secondary btn-patron justify-content-center">
                 <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span class="pro-provider-label">${i18next.t("auth.subscribeTwitch", "Subscribe on Twitch")}</span>
               </a>
             </div>
             <div class="pro-or">${i18next.t("auth.or", "or")}</div>`
       : "";
 
-    modal.innerHTML = `
-      <div class="modal-dialog modal-dialog-centered pro-dialog">
-        <div class="modal-content bg-dark text-light">
-          <div class="modal-header border-0 pb-0">
-            <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body pt-0">
-            <p class="text-center text-light mb-3">${i18next.t("auth.proDescription", "Drawing tools and other Pro features are available to supporters.")}</p>
-            <div class="pro-columns">
-              ${twitchColumnHtml}
-              <div class="pro-col">
-                ${patreonLoginHtml}
-                <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn-patron justify-content-center">
-                  <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span class="pro-provider-label">${i18next.t("auth.becomePatron", "Become a Patron")}</span>
-                </a>
-              </div>
-            </div>
+    dialog.innerHTML = `
+      <div class="dialog-header border-0 pb-0">
+        <h2 id="getProModalLabel" class="dialog-title visually-hidden">${i18next.t("auth.getPro", "Get Pro")}</h2>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="dialog" aria-label="Close"></button>
+      </div>
+      <div class="dialog-body pt-0">
+        <p class="text-center mb-5">${i18next.t("auth.proDescription", "Drawing tools and other Pro features are available to supporters.")}</p>
+        <div class="pro-columns">
+          ${twitchColumnHtml}
+          <div class="pro-col">
+            ${patreonLoginHtml}
+            <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn btn-outline theme-secondary btn-patron justify-content-center">
+              <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span class="pro-provider-label">${i18next.t("auth.becomePatron", "Become a Patron")}</span>
+            </a>
           </div>
         </div>
       </div>
     `;
 
-    document.body.appendChild(modal);
+    document.body.appendChild(dialog);
 
-    const bsModal = new bootstrap.Modal(modal);
-    bsModal.show();
+    const bsDialog = new bootstrap.Dialog(dialog);
+    let disposed = false;
+    let loginPending = false;
+    const dispose = () => {
+      if (disposed) return;
+      disposed = true;
+      bsDialog.dispose();
+      dialog.remove();
+    };
 
-    // Bind Patreon login handler
-    modal.querySelector("#patreonLoginBtn")?.addEventListener("click", () => {
-      bsModal.hide();
-      authService.login();
+    // Dismissal through Escape, the backdrop, or the close button uses the data
+    // API. Provider clicks instead dispose after their hide promise settles.
+    dialog.addEventListener("hidden.bs.dialog", () => {
+      if (!loginPending) dispose();
+    }, { once: true });
+    const shown = bsDialog.show();
+
+    const login = async (startLogin: () => void) => {
+      if (loginPending || disposed) return;
+      loginPending = true;
+      await shown;
+      if (disposed) return;
+      await bsDialog.hide();
+      if (dialog.open) {
+        loginPending = false;
+        return;
+      }
+      dispose();
+      startLogin();
+    };
+
+    dialog.querySelector("#patreonLoginBtn")?.addEventListener("click", () => {
+      void login(() => authService.login());
     });
 
     // Bind Twitch login handler (only present when TWITCH_ENABLED)
     if (TWITCH_ENABLED) {
-      modal.querySelector("#twitchLoginBtn")?.addEventListener("click", () => {
-        bsModal.hide();
-        authService.loginTwitch();
+      dialog.querySelector("#twitchLoginBtn")?.addEventListener("click", () => {
+        void login(() => authService.loginTwitch());
       });
     }
-
-    // Clean up on hide
-    modal.addEventListener("hidden.bs.modal", () => {
-      modal.remove();
-    });
   }
 
   private handleClick(): void {

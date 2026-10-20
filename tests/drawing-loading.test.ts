@@ -123,3 +123,11 @@ it("replaces the skeleton in one frame instead of sliding two sidebars over each
   expect(panel.classList.contains("open")).toBe(true);
   await vi.waitFor(() => expect(panel.style.transition).toBe("transform 0.3s"));
 });
+
+vi.mock('../src/bootstrap', () => ({
+  get Popover() { return (globalThis as any).bootstrap?.Popover; },
+  get Tooltip() { return (globalThis as any).bootstrap?.Tooltip; },
+  get Toast() { return (globalThis as any).bootstrap?.Toast; },
+  get Menu() { return (globalThis as any).bootstrap?.Menu; },
+  get Drawer() { return (globalThis as any).bootstrap?.Drawer; },
+}));

@@ -3,10 +3,12 @@ import { resolve } from "node:path";
 
 /** Prefer the private checkout inside this workspace; retain the sibling layout. */
 export function resolveLocalPro(noitamapRoot: string) {
-  const root = [
+  const requested = process.env.NOITAMAP_PRO_ROOT;
+  const root = (requested ? [resolve(noitamapRoot, requested)] : [
     resolve(noitamapRoot, "task/noitamap-pro"),
     resolve(noitamapRoot, "../noitamap-pro"),
-  ].find((candidate) => existsSync(resolve(candidate, "src/pro-entry.ts")));
+  ]).find((candidate) => existsSync(resolve(candidate, "src/pro-entry.ts")));
+  if (requested && !root) throw new Error(`NOITAMAP_PRO_ROOT does not contain src/pro-entry.ts: ${requested}`);
 
   return {
     root,

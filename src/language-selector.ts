@@ -6,14 +6,14 @@ import { updateTranslations } from './i18n-dom';
 export function createLanguageSelector() {
   const languageSelector = assertElementById('language-selector', HTMLDivElement);
   const languageSelectorButton = assertElementById('languageSelectorButton', HTMLButtonElement);
-  const languageLinksList = assertElementById('languageLinksList', HTMLUListElement);
+  const languageLinksList = assertElementById('languageLinksList', HTMLDivElement);
 
   const updateLanguageSelectorUI = () => {
     const currentLanguage = i18next.language as SupportedLanguage;
     const langInfo = SUPPORTED_LANGUAGES[currentLanguage] || SUPPORTED_LANGUAGES.en;
 
     // Show current language
-    let buttonContent = `<img src="./flags/${langInfo.flag}.svg" class="flag-icon me-2" style="width: 16px; height: 12px;">`;
+    let buttonContent = `<img src="./flags/${langInfo.flag}.svg" class="flag-icon" style="width: 16px; height: 12px;">`;
     languageSelectorButton.innerHTML = buttonContent;
 
     Array.from(languageLinksList.querySelectorAll('a')).forEach(a => {
@@ -31,16 +31,14 @@ export function createLanguageSelector() {
   languageLinksList.replaceChildren();
 
   Object.entries(SUPPORTED_LANGUAGES).forEach(([code, { name, flag }]) => {
-    const li = document.createElement('li');
     const a = document.createElement('a');
     a.href = '#';
-    a.classList.add('dropdown-item', 'd-flex', 'justify-content-between', 'align-items-center');
+    a.classList.add('menu-item', 'd-flex', 'justify-content-between', 'align-items-center');
     a.dataset.lang = code;
 
-    a.innerHTML = `<span><img src="./flags/${flag}.svg" class="flag-icon me-2" style="width: 16px; height: 12px;">${name}</span>`;
+    a.innerHTML = `<span><img src="./flags/${flag}.svg" class="flag-icon me-3" style="width: 16px; height: 12px;">${name}</span>`;
 
-    li.appendChild(a);
-    languageLinksList.appendChild(li);
+    languageLinksList.appendChild(a);
   });
 
   languageLinksList.addEventListener('click', e => {

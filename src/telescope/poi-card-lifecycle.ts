@@ -20,12 +20,12 @@ export class POICardLifecycle {
     // Bootstrap's focused dropdown is the top interaction layer. Its own
     // key handler closes the menu and returns focus before the card closes.
     if (event.target instanceof Element && event.target.closest(
-      '.dropdown-menu.show, [data-bs-toggle="dropdown"][aria-expanded="true"]',
+      '.menu.show, [data-bs-toggle="menu"][aria-expanded="true"]',
     )) return false;
     // Bootstrap also preventDefault()s Escape on an already closed toggle,
     // without consuming it. Allow that next Escape to dismiss the card.
     const closedDropdownToggle = event.target instanceof Element
-      && event.target.closest('[data-bs-toggle="dropdown"][aria-expanded="false"]');
+      && event.target.closest('[data-bs-toggle="menu"][aria-expanded="false"]');
     if (event.defaultPrevented && !closedDropdownToggle) return false;
     event.preventDefault();
     event.stopPropagation();

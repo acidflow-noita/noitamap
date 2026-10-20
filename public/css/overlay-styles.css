@@ -1,3 +1,4 @@
+@layer custom {
 .osOverlayHighlight {
   background-color: rgba(56, 162, 204, 0.401);
   border: rgba(255, 0, 0, 0.1) dashed 1px;
@@ -169,13 +170,6 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
 }
 
 /* ─── Extended-info section (pro-gated) ─────────────────────────────────── */
-
-/* Modal must render above the marker tooltip (z-index: 10000) and OSD overlay
-   popups so the auth/login modal isn't visually buried under the popup the
-   user clicked the CTA from. Bootstrap's default modal z-index (1055) loses
-   to the marker tooltip. */
-.modal { z-index: 100000 !important; }
-.modal-backdrop { z-index: 99999 !important; }
 
 /* Bartender material-type colors — matched 1:1 with bartender's custom.css. */
 .material-type-solid  { color: oklch(70.9% 0.01 56.259); }
@@ -546,4 +540,5 @@ img[src$="spatial_awareness_special_spot.png"] {
 #creature-spawn-notice .btn {
   max-inline-size: 100%;
   white-space: normal;
+}
 }

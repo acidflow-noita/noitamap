@@ -1,7 +1,10 @@
-/* Drawing Sidebar Styles */
+@layer custom {
+/* Drawing layout and Bootstrap 6 controls. Legacy class aliases also support
+   an independently cached Pro bundle during rollout. */
 
 /* Selected drawing tool: tint icon with current brush color (except move) */
-.drawing-toolbar .btn-check:checked + .btn-outline-light[data-tool]:not([data-tool="move"]) {
+.drawing-toolbar .btn-check:has(> input:checked)[data-tool]:not([data-tool="move"]),
+.drawing-toolbar input.btn-check:checked + .btn-outline-light[data-tool]:not([data-tool="move"]) {
   color: var(--drawing-color, var(--accent-fg));
 }
 
@@ -22,23 +25,39 @@
 /* Colour swatches are 24px samples, not full-size toolbar controls. */
 .drawing-sidebar .btn[data-color] { min-height: 24px; min-width: 24px; padding: 0; }
 
+.drawing-sidebar .btn-outline.theme-danger,
 .drawing-sidebar .btn-outline-danger {
+  --bs-btn-bg: transparent;
+  --bs-btn-disabled-bg: transparent;
   --bs-btn-color: var(--danger-fg);
   --bs-btn-border-color: color-mix(in oklch, var(--danger-fg) 40%, transparent);
   --bs-btn-hover-color: var(--danger-fg);
   --bs-btn-hover-bg: var(--danger-bg);
   --bs-btn-hover-border-color: color-mix(in oklch, var(--danger-fg) 60%, transparent);
+  --bs-btn-active-color: var(--danger-fg);
+  --bs-btn-active-bg: var(--danger-bg);
+  --bs-btn-active-border-color: color-mix(in oklch, var(--danger-fg) 60%, transparent);
 }
 
+.drawing-sidebar .btn-outline.theme-info,
 .drawing-sidebar .btn-outline-info {
+  --bs-btn-bg: transparent;
+  --bs-btn-disabled-bg: transparent;
   --bs-btn-color: var(--accent-fg);
   --bs-btn-border-color: color-mix(in oklch, var(--accent-strong) 40%, transparent);
   --bs-btn-hover-color: var(--accent-fg);
   --bs-btn-hover-bg: var(--accent-bg);
   --bs-btn-hover-border-color: color-mix(in oklch, var(--accent-strong) 60%, transparent);
+  --bs-btn-active-color: var(--accent-fg);
+  --bs-btn-active-bg: var(--accent-bg);
+  --bs-btn-active-border-color: color-mix(in oklch, var(--accent-strong) 60%, transparent);
+  --bs-btn-disabled-color: var(--text-faint);
+  --bs-btn-disabled-border-color: var(--border);
 }
 
 /* Disabled buttons: fade border so they look less prominent than active ones */
+.drawing-sidebar .btn-outline.theme-danger:disabled,
+.drawing-sidebar .btn-outline.theme-danger.disabled,
 .drawing-sidebar .btn-outline-danger:disabled,
 .drawing-sidebar .btn-outline-danger.disabled {
   --bs-btn-disabled-border-color: var(--border);
@@ -49,6 +68,8 @@
 /* Soften sidebar header border */
 .drawing-sidebar .sidebar-header {
   padding: var(--panel-padding) !important;
+}
+.drawing-sidebar .sidebar-header {
   border-color: var(--border-strong) !important;
 }
 
@@ -125,10 +146,6 @@
   transform: translateX(-50%) translateY(0);
 }
 
-.drawing-toolbar .btn-check + .btn {
-  border-radius: var(--radius-control) !important;
-}
-
 .drawing-toolbar .btn {
   border-radius: var(--radius-control) !important;
   min-width: var(--control-height);
@@ -175,8 +192,7 @@
   gap: var(--control-gap);
 }
 
-.drawing-sidebar .btn-group.flex-wrap > .btn,
-.drawing-sidebar .btn-group.flex-wrap > .btn-check + .btn {
+.drawing-sidebar .btn-group.flex-wrap > .btn {
   flex: 0 0 auto;
   border-radius: var(--radius-control) !important;
 }
@@ -456,3 +472,4 @@ label[data-tool="text"] {
 .drawing-sidebar .sidebar-section > :is(h5, h6) { font-size: var(--section-heading-size); }
 .drawing-sidebar .sidebar-section + .sidebar-section { padding-top: var(--section-gap); }
 .drawing-toolbar .btn > i { font-size: var(--control-icon-size); }
+}

@@ -83,3 +83,11 @@ describe('native card navigation inside the real OSD mouse tracker', () => {
     expect(link.href).toBe('https://noita.wiki.gg/wiki/Rotta');
   });
 });
+
+vi.mock('../src/bootstrap', () => ({
+  get Popover() { return (globalThis as any).bootstrap?.Popover; },
+  get Tooltip() { return (globalThis as any).bootstrap?.Tooltip; },
+  get Toast() { return (globalThis as any).bootstrap?.Toast; },
+  get Menu() { return (globalThis as any).bootstrap?.Menu; },
+  get Drawer() { return (globalThis as any).bootstrap?.Drawer; },
+}));

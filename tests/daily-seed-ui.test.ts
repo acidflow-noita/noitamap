@@ -49,7 +49,7 @@ describe('seed colours follow asynchronously published daily identity', () => {
     dynamicMap.run.mockReset();
     Popover.instances.clear();
     vi.stubGlobal('bootstrap', { Popover });
-    document.body.innerHTML = '<div class="collapse navbar-collapse"><div class="d-flex flex-wrap"></div></div>';
+    document.body.innerHTML = '<div class="collapse navbar-collapse"><div class="d-flex flex-wrap navbar-controls"></div></div>';
   });
   afterEach(() => {
     document.body.replaceChildren();
@@ -164,7 +164,7 @@ describe('daily buttons return diagnostic live URLs to baked routing', () => {
     vi.stubGlobal('bootstrap', { Popover });
     vi.stubGlobal('fetch', vi.fn(async (url: string) =>
       new Response(String(url.includes('previous') ? PREVIOUS : TODAY))));
-    document.body.innerHTML = '<div class="collapse navbar-collapse"><div class="d-flex flex-wrap"></div></div>';
+    document.body.innerHTML = '<div class="collapse navbar-collapse"><div class="d-flex flex-wrap navbar-controls"></div></div>';
   });
   afterEach(() => {
     vi.clearAllTimers();
@@ -220,7 +220,7 @@ describe('seed entry and map focus', () => {
     dynamicMap.run.mockReset().mockImplementation(async (seed, daily, opts) => { opts.onSeedResolved?.(seed, daily); return null; });
     vi.stubGlobal('bootstrap', { Popover }); Popover.instances.clear();
     vi.stubGlobal('fetch', vi.fn(async () => new Response(String(TODAY))));
-    document.body.innerHTML = '<div class="collapse navbar-collapse"><div class="d-flex flex-wrap"></div></div><div id="map-canvas" tabindex="0"></div>';
+    document.body.innerHTML = '<div class="collapse navbar-collapse"><div class="d-flex flex-wrap navbar-controls"></div></div><div id="map-canvas" tabindex="0"></div>';
   });
   afterEach(() => {
     vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals();
@@ -302,3 +302,11 @@ describe('seed entry and map focus', () => {
     expect(input.classList.contains('seed-daily')).toBe(false);
   });
 });
+
+vi.mock('../src/bootstrap', () => ({
+  get Popover() { return (globalThis as any).bootstrap?.Popover; },
+  get Tooltip() { return (globalThis as any).bootstrap?.Tooltip; },
+  get Toast() { return (globalThis as any).bootstrap?.Toast; },
+  get Menu() { return (globalThis as any).bootstrap?.Menu; },
+  get Drawer() { return (globalThis as any).bootstrap?.Drawer; },
+}));

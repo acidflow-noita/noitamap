@@ -1,3 +1,4 @@
+import * as bootstrap from "../bootstrap";
 import { clearPortalAnimations, installPortalAnimations } from "../portals";
 import { canOpenPOIFromCanvas, drawingOwnsMapPointer, onDrawingMapOwnershipChange } from "../drawing/poi-interaction";
 import { onProSidebarIntent } from "../pro-sidebar-intent";
@@ -2958,7 +2959,7 @@ function mountMarkerCard(card: HTMLElement, viewer: any, anchor: CardAnchor, req
   if (reportCardReturn) {
     const back = document.createElement('button');
     back.type = 'button';
-    back.className = 'btn btn-sm btn-outline-light poi-card-back';
+    back.className = 'btn btn-sm btn-outline theme-secondary poi-card-back';
     back.textContent = i18next.t('seedReport.v3.backToReport', reportCardReturn.label);
     back.onclick = event => { event.stopPropagation(); (card as any).__close?.(); };
     card.querySelector('.poi-card-controls')?.prepend(back);
@@ -3000,7 +3001,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
 
   const shareBtn = document.createElement('button');
   shareBtn.type = 'button';
-  shareBtn.className = 'btn btn-sm btn-outline-light poi-card-icon-button';
+  shareBtn.className = 'btn btn-sm btn-outline theme-secondary poi-card-icon-button';
   shareBtn.innerHTML = '<i class="bi bi-share"></i>';
   shareBtn.title = i18next.t('share.copyLink', { defaultValue: 'Copy direct link' });
   shareBtn.setAttribute('aria-label', shareBtn.title);
@@ -3048,13 +3049,15 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     //    so the cursor can transit between the trigger and the popover panel
     //    without flicker.
     const attachHoverPopover = (el: HTMLElement, getTitle: () => string, getBody: () => string) => {
-      const bs = (window as any).bootstrap;
+      const bs = bootstrap;
       if (!bs?.Popover) return;
       el.setAttribute('data-popover-owner', 'poi-unlocks');
       el.setAttribute('data-bs-placement', 'bottom');
       el.setAttribute('data-bs-title', getTitle());
       el.setAttribute('data-bs-content', getBody());
       new bs.Popover(el, {
+        title: getTitle,
+        content: getBody,
         trigger: 'hover',
         placement: 'bottom',
         delay: { show: 80, hide: 120 },
@@ -3064,8 +3067,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
         try {
           const inst = bs.Popover.getInstance(el);
           if (!inst) return;
-          inst._config.title = getTitle();
-          inst._config.content = getBody();
+          inst.setContent({ '.popover-header': getTitle(), '.popover-body': getBody() });
           el.setAttribute('data-bs-title', getTitle());
           el.setAttribute('data-bs-content', getBody());
         } catch {
@@ -3133,7 +3135,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     for (const b of buttons) {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'btn btn-sm btn-outline-light poi-card-icon-button';
+      btn.className = 'btn btn-sm btn-outline theme-secondary poi-card-icon-button';
       btn.innerHTML = `<i class="bi ${b.icon}"></i>`;
       const modDisabled = b.desc === 'mod' && !modAvailable;
       // Daily: lock everything but "all" — dailies are always all-unlocked.
@@ -3207,7 +3209,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
 
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
-  closeBtn.className = 'btn btn-sm btn-outline-light poi-card-icon-button';
+  closeBtn.className = 'btn btn-sm btn-outline theme-secondary poi-card-icon-button';
   closeBtn.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
   closeBtn.setAttribute('aria-label', i18next.t('seedReport.close', 'Close'));
 
@@ -3233,7 +3235,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const a = assoc;
       const pillarBtn = document.createElement('button');
       pillarBtn.type = 'button';
-      pillarBtn.className = 'btn btn-sm btn-outline-light poi-card-pillar-button';
+      pillarBtn.className = 'btn btn-sm btn-outline theme-secondary poi-card-pillar-button';
       pillarBtn.innerHTML =
         '<i class="bi bi-bookmark-star"></i><span>' + i18next.t('poi.pillarSingular', 'Achievement pillar') + '</span>';
       pillarBtn.title = i18next.t('poi.pillarGoto', 'Show on map');
@@ -3283,7 +3285,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     e.stopPropagation();
     const finalUrl = (window as any).getShareUrl((poi as any).id);
     navigator.clipboard.writeText(finalUrl);
-    shareBtn.innerHTML = '<i class="bi bi-check2 text-success"></i>';
+    shareBtn.innerHTML = '<i class="bi bi-check2 fg-success"></i>';
     setTimeout(() => {
       shareBtn.innerHTML = '<i class="bi bi-share"></i>';
     }, 2000);
@@ -4903,7 +4905,7 @@ function showOrbTooltip(
   controls.className = 'poi-card-controls';
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
-  closeBtn.className = 'btn btn-sm btn-outline-light poi-card-icon-button';
+  closeBtn.className = 'btn btn-sm btn-outline theme-secondary poi-card-icon-button';
   closeBtn.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
   closeBtn.setAttribute('aria-label', i18next.t('seedReport.close', 'Close'));
   closeBtn.onclick = e => {

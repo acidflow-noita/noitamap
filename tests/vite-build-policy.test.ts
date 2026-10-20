@@ -7,6 +7,7 @@ import { browserTelescopeSource } from "../build_scripts/vite-telescope-browser"
 import { partitionAtlas } from "../build_scripts/vite-atlas-chunks";
 import { createRequire } from "node:module";
 import { encode } from "fast-png";
+import { resolveLocalPro } from '../build_scripts/local-pro';
 
 const root = resolve(import.meta.dirname, "..");
 
@@ -266,9 +267,10 @@ describe("browser build boundaries", () => {
     const output = result.output as any[];
     // Even when a private checkout exists locally, public production builds
     // must load hosted Pro on demand, never bundle the local private entry.
+    const privateRoot = resolveLocalPro(root).root?.replace(/\\/g, '/');
     for (const file of output.filter((file) => file.type === "chunk")) {
       expect(
-        Object.keys(file.modules).some((id) => id.includes("/noitamap-pro/")),
+        Object.keys(file.modules).some((id) => id.includes("/noitamap-pro/") || privateRoot && id.startsWith(privateRoot + '/')),
         file.fileName,
       ).toBe(false);
     }

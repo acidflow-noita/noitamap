@@ -14,6 +14,12 @@ beforeEach(() => {
   document.body.append(controls);
   style = document.createElement('style');
   style.textContent = css; document.head.append(style);
+  // jsdom parses cascade layers but does not apply their declarations. Flatten
+  // this stylesheet's single custom layer for the existing selector assertions.
+  style.textContent = Array.from(style.sheet!.cssRules).map(rule =>
+    rule.constructor.name === 'CSSLayerBlockRule'
+      ? Array.from((rule as CSSGroupingRule).cssRules).map(child => child.cssText).join('\n')
+      : rule.cssText).join('\n');
 });
 afterEach(() => { updateOverflowMenu('regular-main-branch'); document.body.replaceChildren(); style.remove(); });
 
@@ -24,7 +30,7 @@ describe('Performance submenu in the overflow menu', () => {
     input.checked = true;
     updateOverflowMenu('dynamic-main-branch');
     expect(original.parentElement?.id).toBe('more-menu-controls');
-    const menu = original.querySelector<HTMLElement>('.dropdown-menu')!;
+    const menu = original.querySelector<HTMLElement>('.menu')!;
     menu.classList.add('show');
     // jsdom validates selector/cascade, not browser layout or Popper geometry.
     const computed = getComputedStyle(menu);
@@ -33,7 +39,7 @@ describe('Performance submenu in the overflow menu', () => {
     expect(computed.overflow).toBe('visible');
     expect(computed.maxHeight).toBe('none');
     expect(getComputedStyle(original).flexBasis).toBe('100%');
-    expect(getComputedStyle(menu.querySelector('.dropdown-item')!).whiteSpace).toBe('normal');
+    expect(getComputedStyle(menu.querySelector('.menu-text > label')!).whiteSpace).toBe('normal');
     updateOverflowMenu('regular-main-branch');
     expect(original.parentElement?.className).toBe('navbar');
     expect(original.querySelector('#lightModeToggle')).toBe(input);
@@ -41,12 +47,14 @@ describe('Performance submenu in the overflow menu', () => {
     expect(getComputedStyle(menu).position).not.toBe('static');
   });
   it('scopes the mobile scroll/anchor rule to the outer menu, not nested dropdowns', () => {
-    const media = Array.from(style.sheet!.cssRules).filter(rule => rule instanceof CSSMediaRule) as CSSMediaRule[];
+    const collectMedia = (rules: CSSRuleList): CSSMediaRule[] => Array.from(rules).flatMap(rule =>
+      rule instanceof CSSMediaRule ? [rule] : 'cssRules' in rule ? collectMedia((rule as CSSGroupingRule).cssRules) : []);
+    const media = collectMedia(style.sheet!.cssRules);
     const mobile = media.find(rule => rule.conditionText === '(max-width: 575px)')!;
     const rules = Array.from(mobile.cssRules) as CSSStyleRule[];
-    const outer = rules.find(rule => rule.selectorText === '#more-menu > .dropdown-menu')!;
+    const outer = rules.find(rule => rule.selectorText === '#more-menu > .menu')!;
     expect(outer.style.getPropertyValue('overflow-y')).toBe('auto');
-    expect(rules.some(rule => rule.selectorText === '#more-menu .dropdown-menu')).toBe(false);
+    expect(rules.some(rule => rule.selectorText === '#more-menu .menu')).toBe(false);
     expect(document.getElementById('moreMenuButton')!.dataset.bsAutoClose).toBe('outside');
     expect(document.getElementById('perfModeButton')!.dataset.bsAutoClose).toBe('outside');
   });

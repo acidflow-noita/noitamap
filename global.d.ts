@@ -2,10 +2,8 @@ import type OSD from 'openseadragon';
 import type EEventEmitter2 from 'eventemitter2';
 import FFlexSearch from 'flexsearch';
 import type { IndexOptionsForDocumentSearch } from 'flexsearch';
-import bbootstrap from 'bootstrap';
 
 declare global {
-  export const bootstrap = bbootstrap;
 
   export namespace FlexSearch {
     export type Document = FFlexSearch.Document;

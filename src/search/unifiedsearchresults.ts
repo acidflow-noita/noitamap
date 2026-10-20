@@ -241,7 +241,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
     // "Indexing" notice at the bottom
     const notice = document.createElement("li");
     notice.className = "search-indexing-notice";
-    notice.innerHTML = `<span class="spinner-border spinner-border-sm text-secondary" role="status"></span><span>Loading data…</span>`;
+    notice.innerHTML = `<span class="spinner-border spinner-border-sm fg-secondary" role="status"></span><span>Loading data…</span>`;
     this.wrapper.appendChild(notice);
   }
 
@@ -635,7 +635,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
             if ((result as any).chunksAway != null && !isNaN((result as any).chunksAway)) {
               const chunksAway = Number((result as any).chunksAway) || 0;
               const proximitySpan = document.createElement("span");
-              proximitySpan.className = "ms-2 text-secondary proximity-hint";
+              proximitySpan.className = "ms-2 fg-secondary proximity-hint";
               proximitySpan.style.fontSize = "0.8em";
               proximitySpan.dataset.chunksAway = String(chunksAway);
               proximitySpan.textContent = i18next.t("search.chunksAway", "~{{count}} chunks away", { count: chunksAway });

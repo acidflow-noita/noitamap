@@ -1,6 +1,7 @@
+import * as bootstrap from "./bootstrap";
 import i18next from "./i18n";
 
-const bs = () => (window as any).bootstrap;
+const bs = () => bootstrap;
 
 const nativeLinks = new WeakSet<HTMLElement>();
 
@@ -38,7 +39,7 @@ export function attachHoverPopover(
   el.setAttribute('data-popover-owner', options.owner ?? 'hover-help');
   const trigger = options.focus ? 'hover focus' : 'hover';
   if (options.focus) {
-    el.dataset.bsToggle = 'popover';
+    el.dataset.noitamapPopover = '';
     el.dataset.bsTrigger = trigger;
   }
   // A DOM title lets branded links include their logo without interpolating
@@ -117,7 +118,7 @@ export function attachWikiLinkPopover(link: HTMLAnchorElement): void {
 
 /**
  * Dispose every popover within `root` (inclusive). Handles both
- * `data-bs-toggle="popover"` instances and manually-managed ones tagged with
+ * `data-noitamap-popover` instances and manually-managed ones tagged with
  * `__disposePopover`. Call before tearing down a subtree that hosts popovers.
  */
 export function dismissPopovers(root: HTMLElement): void {
@@ -130,7 +131,7 @@ export function dismissPopovers(root: HTMLElement): void {
     } catch { /* A removed instance must not prevent cleanup of its siblings. */ }
   };
   visit(root);
-  root.querySelectorAll('[data-bs-toggle="popover"], [data-popover-owner]').forEach(visit);
+  root.querySelectorAll('[data-noitamap-popover], [data-popover-owner]').forEach(visit);
 }
 
 /** Hide panels on a temporarily hidden card without destroying its triggers. */
@@ -141,14 +142,14 @@ export function hidePopovers(root: HTMLElement): void {
     try { lib.Popover.getInstance(element)?.hide(); } catch { /* already removed */ }
   };
   hide(root);
-  root.querySelectorAll('[data-bs-toggle="popover"], [data-popover-owner]').forEach(hide);
+  root.querySelectorAll('[data-noitamap-popover], [data-popover-owner]').forEach(hide);
 }
 
 /** Hide every currently-open Bootstrap popover in the document. */
 function hideAllPopovers(except?: Element | null): void {
   const lib = bs();
   if (!lib?.Popover) return;
-  document.querySelectorAll('[data-bs-toggle="popover"]').forEach((el) => {
+  document.querySelectorAll('[data-noitamap-popover]').forEach((el) => {
     if (el === except) return;
     try {
       lib.Popover.getInstance(el)?.hide();
@@ -175,7 +176,7 @@ const isTouchPrimary = () =>
 const isActionable = (el: Element | null): boolean =>
   !!el &&
   el.matches(
-    'a, label, input, textarea, select, [href], [role="button"], [data-bs-toggle="dropdown"], [data-bs-toggle="collapse"]',
+    'a, label, input, textarea, select, [href], [role="button"], [data-bs-toggle="menu"], [data-bs-toggle="drawer"]',
   );
 
 /**
@@ -222,7 +223,7 @@ export function installPopoverTouchDismiss(): void {
       if (!lib?.Popover) return;
 
       const trigger = (e.target as Element | null)?.closest?.(
-        '[data-bs-toggle="popover"]',
+        '[data-noitamap-popover]',
       ) as HTMLElement | null;
 
       if (!trigger) {

@@ -1,3 +1,4 @@
+import * as bootstrap from "./bootstrap";
 import i18next from './i18n';
 import { updateMapLinkTranslations } from './nav';
 import { refreshOverlayTranslations } from './data_sources/overlays';
@@ -61,7 +62,7 @@ export function updateTranslations() {
     }
   });
 
-  const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+  const popoverTriggerList = document.querySelectorAll('[data-noitamap-popover]');
   popoverTriggerList.forEach(popoverTriggerEl => {
     // The owner (for example dynamic-seed or seed-report) handles refresh and
     // disposal. Reconstructing here would discard its JS-only HTML/content.

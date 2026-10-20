@@ -20,7 +20,7 @@ beforeEach(() => {
   vi.useFakeTimers(); vi.setSystemTime(new Date('2026-09-24T12:00:00Z'));
   translations.language = 'en'; Popover.instances.clear(); Popover.created = 0;
   vi.stubGlobal('bootstrap', { Popover });
-  document.body.innerHTML = '<button id="selector"></button><ul id="navLinksList"></ul>';
+  document.body.innerHTML = '<button id="selector"></button><div id="navLinksList"></div>';
 });
 afterEach(() => { document.body.replaceChildren(); Popover.instances.clear(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
@@ -38,10 +38,10 @@ describe('map navigation UI during camera movement', () => {
   it('disposes old badges when map, language, daily date or metadata actually changes', () => {
     const root = document.getElementById('selector')!, render = createMapSelectorRenderer(root);
     const checkReplacement = (change: () => void) => {
-      const old = [...root.querySelectorAll('[data-bs-toggle="popover"]')];
+      const old = [...root.querySelectorAll('[data-noitamap-popover]')];
       change();
       expect(old.every(node => !Popover.getInstance(node))).toBe(true);
-      expect(Popover.instances.size).toBe(root.querySelectorAll('[data-bs-toggle="popover"]').length);
+      expect(Popover.instances.size).toBe(root.querySelectorAll('[data-noitamap-popover]').length);
       expect([...Popover.instances.keys()].every(node => node.isConnected)).toBe(true);
     };
     render('dynamic-main-branch');
@@ -132,3 +132,11 @@ describe('map navigation UI during camera movement', () => {
     expect(runPriority).toHaveBeenCalledOnce(); expect(toolbar).toHaveBeenCalledTimes(3);
   });
 });
+
+vi.mock('../src/bootstrap', () => ({
+  get Popover() { return (globalThis as any).bootstrap?.Popover; },
+  get Tooltip() { return (globalThis as any).bootstrap?.Tooltip; },
+  get Toast() { return (globalThis as any).bootstrap?.Toast; },
+  get Menu() { return (globalThis as any).bootstrap?.Menu; },
+  get Drawer() { return (globalThis as any).bootstrap?.Drawer; },
+}));

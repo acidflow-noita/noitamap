@@ -1,10 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { resolveLocalPro } from "../build_scripts/local-pro";
 
 const fixtures: string[] = [];
+beforeEach(() => vi.stubEnv('NOITAMAP_PRO_ROOT', ''));
 
 async function checkoutFixture() {
   const dir = await mkdtemp(resolve(tmpdir(), "noitamap-pro-layout-"));
@@ -21,12 +22,23 @@ async function addPro(root: string) {
 }
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await Promise.all(
     fixtures.splice(0).map((dir) => rm(dir, { recursive: true, force: true })),
   );
 });
 
 describe("local Pro checkout resolution", () => {
+  it('selects the explicit paired worktree and rejects a missing override', async () => {
+    const root = await checkoutFixture();
+    const paired = resolve(root, '../pro-bootstrap6');
+    await addPro(paired);
+    await addPro(resolve(root, 'task/noitamap-pro'));
+    vi.stubEnv('NOITAMAP_PRO_ROOT', '../pro-bootstrap6');
+    expect(resolveLocalPro(root).root).toBe(paired);
+    vi.stubEnv('NOITAMAP_PRO_ROOT', '../missing');
+    expect(() => resolveLocalPro(root)).toThrow('NOITAMAP_PRO_ROOT');
+  });
   it("keeps public-only checkouts on the hosted loader path", async () => {
     const root = await checkoutFixture();
     const local = resolveLocalPro(root);

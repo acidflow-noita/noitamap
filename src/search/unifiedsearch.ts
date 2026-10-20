@@ -1,3 +1,4 @@
+import * as bootstrap from "../bootstrap";
 import { installSearchShortcut } from "./search-shortcut";
 import { getPoiPreviewItems } from "../telescope/poi-inventory";
 import { loadSpritesheetAndAtlas, FIRST_FRAME_SIZE } from "../telescope/poi-spatial-index";
@@ -144,7 +145,7 @@ function appendAlchemyStubs(filterBox: HTMLElement): void {
     const contentKey = `alchemy.${kind}.content`;
     const proOnlyKey = `alchemy.${kind}.proOnly`;
     const defaultTitle = kind === "ap" ? "Alchemic Precursor" : "Lively Concoction";
-    label.dataset.bsToggle = "popover";
+    label.dataset.noitamapPopover = '';
     label.dataset.bsPlacement = "bottom";
     label.dataset.bsTrigger = "hover focus";
     label.dataset.bsHtml = "true";
@@ -182,7 +183,7 @@ function appendAlchemyStubs(filterBox: HTMLElement): void {
           ? `${defaultTitle} recipe finder. Pro feature — sign in to unlock.`
           : `Find the nearest ingredients for the ${defaultTitle} recipe.`,
       );
-      const existing = (window as any).bootstrap?.Popover?.getInstance(label);
+      const existing = bootstrap?.Popover?.getInstance(label);
       if (existing) {
         existing.setContent({
           ".popover-header": label.dataset.bsTitle!,
@@ -201,7 +202,7 @@ function appendAlchemyStubs(filterBox: HTMLElement): void {
         return;
       }
       // Dismiss hover/focus popover so it doesn't linger on top of results.
-      const pop = (window as any).bootstrap?.Popover?.getInstance(label);
+      const pop = bootstrap?.Popover?.getInstance(label);
       if (pop) pop.hide();
       // Keep focus on the search input so the overlay's :focus-within check
       // doesn't let hideOverlay() close the results.
@@ -316,7 +317,7 @@ function appendHighValueStub(filterBox: HTMLElement, search?: UnifiedSearch): vo
   const proOnlyKey = "highValueFilter.proOnly";
   const defaultTitle = "High-value items";
 
-  label.dataset.bsToggle = "popover";
+  label.dataset.noitamapPopover = '';
   label.dataset.bsPlacement = "bottom";
   label.dataset.bsTrigger = "hover focus";
   label.dataset.bsHtml = "true";
@@ -350,7 +351,7 @@ function appendHighValueStub(filterBox: HTMLElement, search?: UnifiedSearch): vo
         ? `${defaultTitle}. Pro feature — sign in to unlock.`
         : "Highlight rare spells, orbs, and landmark items. Matching markers are scaled up and glow; others are dimmed.",
     );
-    const existing = (window as any).bootstrap?.Popover?.getInstance(label);
+    const existing = bootstrap?.Popover?.getInstance(label);
     if (existing) {
       existing.setContent({
         ".popover-header": label.dataset.bsTitle!,
@@ -406,7 +407,7 @@ function appendHighValueStub(filterBox: HTMLElement, search?: UnifiedSearch): vo
       AuthUI.showGetProModal();
       return;
     }
-    const pop = (window as any).bootstrap?.Popover?.getInstance(label);
+    const pop = bootstrap?.Popover?.getInstance(label);
     if (pop) pop.hide();
 
     const alreadyActive = label.classList.contains("active");
@@ -812,8 +813,8 @@ export class UnifiedSearch extends EventEmitter2 {
     if (!filterBox) return;
 
     // Dispose existing popovers
-    filterBox.querySelectorAll('[data-bs-toggle="popover"]').forEach((el: Element) => {
-      const existing = (window as any).bootstrap?.Popover?.getInstance(el);
+    filterBox.querySelectorAll('[data-noitamap-popover]').forEach((el: Element) => {
+      const existing = bootstrap?.Popover?.getInstance(el);
       if (existing) existing.dispose();
     });
     filterBox.replaceChildren();
@@ -883,7 +884,7 @@ export class UnifiedSearch extends EventEmitter2 {
       const filterLabel = document.createElement("label");
       filterLabel.tabIndex = 0;
       const labelText = FILTER_LABELS[filter.type] || filter.type;
-      filterLabel.dataset.bsToggle = "popover";
+      filterLabel.dataset.noitamapPopover = '';
       filterLabel.dataset.bsPlacement = "bottom";
       filterLabel.dataset.bsTrigger = "hover";
       filterLabel.dataset.bsHtml = "true";
@@ -930,7 +931,7 @@ export class UnifiedSearch extends EventEmitter2 {
 
     // Initialize Bootstrap popovers
     // @ts-ignore
-    filterBox.querySelectorAll('[data-bs-toggle="popover"]').forEach((el: HTMLElement) => new bootstrap.Popover(el));
+    filterBox.querySelectorAll('[data-noitamap-popover]').forEach((el: HTMLElement) => new bootstrap.Popover(el));
 
     // Re-bind filter checkbox events
     this.bindFilterEvents();
@@ -981,9 +982,9 @@ export class UnifiedSearch extends EventEmitter2 {
       label.dataset.bsTitle = title;
       label.dataset.bsContent = FILTER_DESCRIPTIONS[type] || title;
       // Dispose and re-create popover with new content
-      const existing = (window as any).bootstrap?.Popover?.getInstance(label);
+      const existing = bootstrap?.Popover?.getInstance(label);
       if (existing) existing.dispose();
-      new (window as any).bootstrap.Popover(label);
+      new bootstrap.Popover(label);
     }
   }
 
@@ -1849,7 +1850,7 @@ export class UnifiedSearch extends EventEmitter2 {
       filterLabel.tabIndex = 0;
       const labelText = FILTER_LABELS[filter.type] || filter.type;
       // Use Bootstrap popover instead of plain title
-      filterLabel.dataset.bsToggle = "popover";
+      filterLabel.dataset.noitamapPopover = '';
       filterLabel.dataset.bsPlacement = "bottom";
       filterLabel.dataset.bsTrigger = "hover";
       filterLabel.dataset.bsHtml = "true";
@@ -1902,7 +1903,7 @@ export class UnifiedSearch extends EventEmitter2 {
 
     // Initialize Bootstrap popovers on all filter labels
     // @ts-ignore
-    filterBox.querySelectorAll('[data-bs-toggle="popover"]').forEach((el: HTMLElement) => new bootstrap.Popover(el));
+    filterBox.querySelectorAll('[data-noitamap-popover]').forEach((el: HTMLElement) => new bootstrap.Popover(el));
 
     const searchResultsUL = document.createElement("ul");
     searchResultsUL.id = "unifiedSearchResults";
@@ -1969,7 +1970,7 @@ export class UnifiedSearch extends EventEmitter2 {
       searchResults.resetScroll();
     });
 
-    searchInput.closest('.navbar-collapse')?.addEventListener('shown.bs.collapse', () => {
+    searchInput.closest('.drawer')?.addEventListener('shown.bs.drawer', () => {
       if (isOverlayVisible) positionOverlay();
     });
 

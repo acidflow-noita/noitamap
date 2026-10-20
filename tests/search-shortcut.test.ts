@@ -120,16 +120,17 @@ describe('map search keyboard shortcut', () => {
     expect(edit).not.toHaveBeenCalled();
   });
 
-  it('reveals the collapsed mobile toolbar before focusing', () => {
+  it('reveals the mobile drawer before focusing', async () => {
     const menu = document.createElement('div');
-    menu.className = 'navbar-collapse';
+    menu.className = 'drawer';
     menu.style.display = 'none';
     input.parentElement!.before(menu);
     menu.appendChild(input.parentElement!);
-    const show = vi.fn(() => { menu.style.display = 'block'; });
-    vi.stubGlobal('bootstrap', { Collapse: { getOrCreateInstance: () => ({ show }) } });
+    const show = vi.fn(async () => { menu.style.display = 'block'; });
+    vi.stubGlobal('bootstrap', { Drawer: { getOrCreateInstance: () => ({ show }) } });
     expect(press().defaultPrevented).toBe(true);
     expect(show).toHaveBeenCalledOnce();
+    await Promise.resolve();
     expect(document.activeElement).toBe(input);
   });
 
@@ -149,3 +150,11 @@ describe('map search keyboard shortcut', () => {
     expect(press().defaultPrevented).toBe(false);
   });
 });
+
+vi.mock('../src/bootstrap', () => ({
+  get Popover() { return (globalThis as any).bootstrap?.Popover; },
+  get Tooltip() { return (globalThis as any).bootstrap?.Tooltip; },
+  get Toast() { return (globalThis as any).bootstrap?.Toast; },
+  get Menu() { return (globalThis as any).bootstrap?.Menu; },
+  get Drawer() { return (globalThis as any).bootstrap?.Drawer; },
+}));

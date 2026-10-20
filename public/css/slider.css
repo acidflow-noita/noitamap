@@ -1,3 +1,4 @@
+@layer custom {
 /* Comparison slider */
 .m-image-slider__viewer {
   height: 100%;
@@ -56,4 +57,5 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
 }

@@ -1,3 +1,4 @@
+import * as bootstrap from "./bootstrap";
 import { EventEmitter2 } from "eventemitter2";
 import { MapName } from "./data_sources/tile_data";
 import { AppOSD, ZoomPos } from "./app_osd";
@@ -134,7 +135,7 @@ export class App extends EventEmitter2 {
         }
 
         // Restore original popover attributes for enabled buttons
-        overlayLabel.setAttribute("data-bs-toggle", "popover");
+        overlayLabel.setAttribute("data-noitamap-popover", "");
         overlayLabel.setAttribute("data-bs-placement", "bottom");
         overlayLabel.setAttribute("data-bs-trigger", "hover focus");
         overlayLabel.setAttribute("data-i18n-title", `${key}.title`);

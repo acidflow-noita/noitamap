@@ -1,3 +1,4 @@
+import * as bootstrap from "./bootstrap";
 import { requestProSidebar, onProSidebarIntent } from "./pro-sidebar-intent";
 import { createSeedReportLoading } from "./seed-report-loading";
 import { dismissLoadingPopover } from "./pro-loading-feedback";
@@ -28,25 +29,25 @@ export function createSeedReportButton(
   if (document.getElementById(BTN_ID)) return;
 
   const wrap = document.createElement("div");
-  wrap.className = "btn-group me-2";
+  wrap.className = "btn-group me-3";
   wrap.id = "seed-report-ui-wrapper";
   wrap.innerHTML = `
-    <input type="checkbox" class="btn-check" id="${BTN_ID}" autocomplete="off">
-    <label class="icon-button btn btn-sm btn-outline-light text-nowrap pro-accent" for="${BTN_ID}"
-      data-bs-toggle="popover" data-bs-placement="bottom" data-bs-trigger="hover focus"
+        <label class="btn-check icon-button btn btn-sm btn-outline theme-secondary text-nowrap pro-accent" for="${BTN_ID}"
+      data-noitamap-popover data-bs-placement="bottom" data-bs-trigger="hover focus"
       data-i18n-title="seedReport.toggle.title"
       data-bs-title="${i18next.t("seedReport.toggle.title", "Seed report")}"
       data-i18n-content="seedReport.toggle.content"
       data-bs-content="${i18next.t("seedReport.toggle.content", "Per-PW, per-biome stats for the current seed.")}">
+      <input type="checkbox" id="${BTN_ID}" autocomplete="off">
       <i class="bi bi-bar-chart-line"></i>
     </label>
   `;
   anchor.parentNode?.insertBefore(wrap, anchor);
 
   const label = wrap.querySelector("label");
-  if (label && (window as any).bootstrap?.Popover) {
+  if (label && bootstrap?.Popover) {
     try {
-      new (window as any).bootstrap.Popover(label);
+      new bootstrap.Popover(label);
     } catch {
       /* noop */
     }

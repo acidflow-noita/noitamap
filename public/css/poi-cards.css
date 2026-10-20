@@ -1,3 +1,4 @@
+@layer custom {
 /* POI cards share the menu/report surface and control scale. */
 .marker-tooltip {
   position: fixed;
@@ -169,3 +170,4 @@
   vertical-align: -.125em;
 }
 .creature-spawn-missing { display: block; color: var(--text-muted); font-size: inherit; }
+}

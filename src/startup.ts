@@ -29,7 +29,7 @@ export function showStartupFailure(error: unknown, message: string, retryLabel: 
   text.textContent = message;
   const retry = document.createElement('button');
   retry.type = 'button';
-  retry.className = 'btn btn-outline-light';
+  retry.className = 'btn btn-outline theme-secondary';
   retry.textContent = retryLabel;
   retry.addEventListener('click', () => window.location.reload());
   panel.append(text, retry);

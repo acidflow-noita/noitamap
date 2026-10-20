@@ -1,3 +1,4 @@
+@layer custom {
 .search-result img {
   width: 32px;
   height: 32px;
@@ -158,4 +159,5 @@
 
 #unifiedSearchResults .list-group-item:last-child {
   border-bottom: none;
+}
 }

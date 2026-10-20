@@ -49,7 +49,7 @@ beforeEach(async () => {
   vi.resetModules(); vi.resetAllMocks(); vi.useFakeTimers();
   vi.stubGlobal('bootstrap', { Popover });
   vi.stubGlobal('requestAnimationFrame', vi.fn());
-  document.body.innerHTML = '<div class="collapse navbar-collapse"><div class="d-flex flex-wrap"></div></div>';
+  document.body.innerHTML = '<div class="collapse navbar-collapse"><div class="d-flex flex-wrap navbar-controls"></div></div>';
   history.replaceState(null, '', '/?m=dy&se=41');
   ui = await import('../src/dynamic_ui'); map = await import('../src/dynamic-map');
   daily = await import('../src/data_sources/daily_seed');
@@ -255,3 +255,11 @@ describe('Daily toolbar lookup ownership', () => {
     expect(requests).not.toHaveBeenCalled(); expect(error).toHaveBeenCalledOnce();
   });
 });
+
+vi.mock('../src/bootstrap', () => ({
+  get Popover() { return (globalThis as any).bootstrap?.Popover; },
+  get Tooltip() { return (globalThis as any).bootstrap?.Tooltip; },
+  get Toast() { return (globalThis as any).bootstrap?.Toast; },
+  get Menu() { return (globalThis as any).bootstrap?.Menu; },
+  get Drawer() { return (globalThis as any).bootstrap?.Drawer; },
+}));

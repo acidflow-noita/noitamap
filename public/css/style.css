@@ -1,3 +1,4 @@
+@layer custom {
 #renderer-form {
   display: none !important;
 }
@@ -6,22 +7,26 @@ body,
 html {
   margin: 0px;
   padding: 0px;
-  background-color: var(--bs-body-bg);
+  background-color: var(--bs-bg-body);
   overflow: hidden;
 }
 
-.popover .popover-arrow::after {
-  border-bottom-color: var(--surface-1) !important;
-  border-top-color: var(--surface-1) !important;
+.popover {
+  --bs-popover-bg: var(--surface-1);
+  --bs-popover-border-color: var(--border-strong);
+  --bs-popover-header-bg: var(--bg);
+  --bs-popover-header-color: var(--text);
+  --bs-popover-body-color: var(--text);
+  --bs-popover-box-shadow: var(--shadow-pop);
 }
 
-.popover .popover-arrow::before {
-  border-bottom-color: var(--border-strong) !important;
-  border-top-color: var(--border-strong) !important;
-}
-
-.popover-header {
-  border-bottom: 1px solid var(--border-strong) !important;
+.dialog {
+  --bs-dialog-bg: var(--surface-1);
+  --bs-dialog-color: var(--text);
+  --bs-dialog-border-color: var(--border-strong);
+  --bs-dialog-header-border-color: var(--border-strong);
+  --bs-dialog-footer-border-color: var(--border-strong);
+  --bs-dialog-box-shadow: var(--shadow-panel);
 }
 
 .pro-icon {
@@ -42,11 +47,12 @@ html {
 /* Let inputs and translated labels shrink within the available toolbar width. */
 .mapNavbar,
 .mapNavbar > .container-fluid,
-.mapNavbar .navbar-collapse,
-.mapNavbar .navbar-collapse > .d-flex {
+.mapNavbar .drawer-body,
+.mapNavbar .navbar-controls {
   min-inline-size: 0;
   max-inline-size: 100%;
 }
+.mapNavbar .drawer { min-inline-size: 0; }
 
 /* Logo is a brand link, not selectable content — a drag-select starting on the
    map shouldn't sweep it into the highlight. */
@@ -65,42 +71,42 @@ html {
   --bs-btn-hover-bg: var(--warning-bg);
 }
 
-/* ── Dropdown menus: match Tailwind 4 dark palette ──────────────────────── */
+/* ── Menus: shared dark palette ─────────────────────────────────────────── */
 
 /* Custom badges to override ugly bootstrap colors in the map dropdown and the
    map selector button (icon-only badges). Palette shared so the button reflects
    the selected map's badge colors exactly. */
-.dropdown-menu .badge.text-bg-primary,
-.map-badge-icon-only.text-bg-primary {
+.menu .badge.theme-primary,
+.map-badge-icon-only.theme-primary {
   background-color: var(--warning-bg) !important;
   color: var(--warning-fg) !important;
   border: 1px solid oklch(0.555 0.163 48.998) !important; /* amber-800 */
 }
 
-.dropdown-menu .badge.text-bg-success,
-.map-badge-icon-only.text-bg-success {
+.menu .badge.theme-success,
+.map-badge-icon-only.theme-success {
   background-color: var(--daily-bg) !important;
   color: var(--daily-fg) !important;
   border: 1px solid oklch(0.508 0.118 165.612) !important; /* emerald-800 */
 }
 
-.dropdown-menu .badge.text-bg-info,
-.map-badge-icon-only.text-bg-info {
+.menu .badge.theme-info,
+.map-badge-icon-only.theme-info {
   background-color: var(--info-bg) !important;
   color: var(--info-fg) !important;
   border: 1px solid oklch(0.424 0.199 265.638) !important; /* blue-800 */
 }
 
-.dropdown-menu .badge.text-bg-light,
-.map-badge-icon-only.text-bg-light {
+.menu .badge.theme-secondary,
+.map-badge-icon-only.theme-secondary {
   background-color: var(--surface-1) !important;
   color: var(--text-muted) !important;
   border: 1px solid var(--surface-2) !important;
 }
 
-/* Date badge generated dynamically in nav.ts uses border-info-subtle */
-.dropdown-menu .badge.border-info-subtle,
-.map-badge-icon-only.border-info-subtle {
+/* Dates stay quiet beside the map identity badges. */
+.menu .map-badge-date,
+.map-badge-icon-only.map-badge-date {
   background-color: transparent !important;
   color: var(--text-faint) !important;
   border-color: var(--border-strong) !important;
@@ -115,6 +121,7 @@ html {
   justify-content: center;
   width: 1.35em;
   height: 1.35em;
+  min-height: 0;
   padding: 0;
   font-size: 0.85em;
   line-height: 1;
@@ -129,30 +136,33 @@ html {
   margin-left: 0.25rem;
 }
 
-.dropdown-menu {
-  --bs-dropdown-link-active-bg: var(--control-active-bg);
-  --bs-dropdown-link-active-color: var(--control-active-fg);
+.menu {
+  --bs-menu-bg: var(--surface-1);
+  --bs-menu-color: var(--text-muted);
+  --bs-menu-item-hover-bg: var(--control-hover-bg);
+  --bs-menu-item-hover-color: var(--control-hover-fg);
+  --bs-menu-item-active-bg: var(--control-active-bg);
+  --bs-menu-item-active-color: var(--control-active-fg);
   background-color: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-panel);
 }
 
-.dropdown-item,
-.dropdown-menu .nav-link {
+.menu-item {
   color: var(--text-muted);
 }
 
-.dropdown-item:focus,
-.dropdown-item:hover {
+.menu-item:focus,
+.menu-item:hover {
   background-color: var(--control-hover-bg);
   color: var(--control-hover-fg);
 }
 
 /* Active state inside dropdowns (maps, language, etc.) */
-.dropdown-menu .nav-link.active,
-.dropdown-menu .nav-link.active:focus,
-.dropdown-menu .nav-link.active:hover {
+.menu-item.active,
+.menu-item.active:focus,
+.menu-item.active:hover {
   background-color: var(--control-active-bg);
   color: var(--control-active-fg);
 }
@@ -178,12 +188,6 @@ html {
   width: 100%;
 }
 
-.menu img {
-  float: left;
-  width: 62px;
-  height: 60px;
-}
-
 :root {
   font-family: Inter, sans-serif;
   font-feature-settings:
@@ -207,8 +211,6 @@ html {
 
 @supports (font-variation-settings: normal) {
   :root {
-    --bs-body-font-family: InterVariable, sans-serif;
-    --bs-font-sans-serif: InterVariable, sans-serif;
     font-family: InterVariable, sans-serif;
   }
 }
@@ -312,13 +314,6 @@ body.toggle-hidden div.osOverlayHighlight {
   align-items: center;
   justify-content: center;
   min-height: var(--control-height);
-}
-
-/* Bootstrap's .d-none is a single class (0-1-0) and loses to .icon-button.btn
-   (0-2-0) above, so overlay buttons hidden for the current map stayed visible.
-   Match that specificity to make hiding actually take effect. */
-.icon-button.btn.d-none {
-  display: none;
 }
 
 .icon-runfast {
@@ -551,7 +546,7 @@ body.toggle-hidden div.osOverlayHighlight {
   flex-shrink: 0;
 }
 
-#map-selector .dropdown-toggle {
+#map-selector [data-bs-toggle="menu"] {
   inline-size: 100%;
   min-inline-size: 0;
   text-align: left;
@@ -573,6 +568,9 @@ body.toggle-hidden div.osOverlayHighlight {
   align-items: center;
   justify-content: center;
   margin-left: -1px !important;
+}
+
+#overlay-selector .btn {
   border-left: 1px solid var(--bs-border-color) !important;
   border-right: 1px solid var(--bs-border-color) !important;
 }
@@ -624,13 +622,13 @@ body.toggle-hidden div.osOverlayHighlight {
   max-inline-size: min(28rem, 100%);
 }
 
-@media (min-width: 992px) {
+@media (min-width: 1024px) {
   #map-menu-controls {
     flex-wrap: nowrap !important;
   }
 }
 
-@media (max-width: 991.98px) {
+@media (max-width: 1023.98px) {
   #map-menu-controls > #search-form {
     flex-basis: 100%;
     max-inline-size: 100%;
@@ -643,8 +641,7 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 /* Make overlay button images grayscale when disabled */
-#overlay-selector input:disabled + label i,
-#overlay-selector input[disabled] + label i,
+#overlay-selector .btn-check:has(> input:disabled) i,
 #overlay-selector .btn:disabled i,
 #overlay-selector .btn[disabled] i,
 #overlay-selector .btn.disabled i {
@@ -802,24 +799,18 @@ body.toggle-hidden div.osOverlayHighlight {
 
 /* ── Dynamic map toolbar ─────────────────────────────────────────────────── */
 
-/* Daily / prev-daily buttons carry Bootstrap's btn-outline-info / -warning
-   base classes, whose --bs-btn-* palette (cyan / amber) would otherwise leak
-   through in focus/active/disabled states. Override the full variable set so
-   the button is one consistent hue everywhere — and use --daily-fg / --prev-fg
-   so it matches the seed-input tint and the seed-report links exactly. */
+/* Daily and previous-daily controls keep the same hue through loading,
+   focus and selection, matching their seed-input and report-link colors. */
 #dynamicDailySeedButton {
   --bs-btn-color: var(--daily-fg);
   --bs-btn-border-color: color-mix(in oklch, var(--daily-fg) 35%, transparent);
   --bs-btn-hover-color: var(--daily-fg);
   --bs-btn-hover-bg: var(--daily-bg);
   --bs-btn-hover-border-color: color-mix(in oklch, var(--daily-fg) 50%, transparent);
-  --bs-btn-focus-border-color: color-mix(in oklch, var(--daily-fg) 50%, transparent);
   --bs-btn-active-color: var(--daily-fg);
   --bs-btn-active-bg: var(--daily-bg);
   --bs-btn-active-border-color: color-mix(in oklch, var(--daily-fg) 50%, transparent);
-  /* Disabled state fires on every load (setBusy disables the button while
-     busy); without these it falls back to btn-outline-info's cyan and the
-     button flickers blue mid-load. */
+  /* Keep the daily identity while setBusy disables the button during loads. */
   --bs-btn-disabled-color: var(--daily-fg);
   --bs-btn-disabled-border-color: color-mix(in oklch, var(--daily-fg) 35%, transparent);
 }
@@ -830,7 +821,6 @@ body.toggle-hidden div.osOverlayHighlight {
   --bs-btn-hover-color: var(--prev-fg);
   --bs-btn-hover-bg: var(--prev-bg);
   --bs-btn-hover-border-color: color-mix(in oklch, var(--prev-fg) 50%, transparent);
-  --bs-btn-focus-border-color: color-mix(in oklch, var(--prev-fg) 50%, transparent);
   --bs-btn-active-color: var(--prev-fg);
   --bs-btn-active-bg: var(--prev-bg);
   --bs-btn-active-border-color: color-mix(in oklch, var(--prev-fg) 50%, transparent);
@@ -839,11 +829,11 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 #dynamicDailySeedButton:focus-visible {
-  box-shadow: 0 0 0 .2rem color-mix(in oklch, var(--daily-fg) 25%, transparent);
+  outline-color: color-mix(in oklch, var(--daily-fg) 45%, transparent);
 }
 
 #dynamicPrevDailySeedButton:focus-visible {
-  box-shadow: 0 0 0 .2rem color-mix(in oklch, var(--prev-fg) 25%, transparent);
+  outline-color: color-mix(in oklch, var(--prev-fg) 45%, transparent);
 }
 
 /* Seed input -- daily seed colored, custom seed white */
@@ -872,9 +862,6 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 /* Generate button: match sidebar disabled styling */
-#dynamicGenerateButton {
-}
-
 #dynamicGenerateButton:disabled {
   --bs-btn-disabled-border-color: var(--border);
   --bs-btn-disabled-color: var(--text-faint);
@@ -1057,11 +1044,10 @@ body.toggle-hidden div.osOverlayHighlight {
 
 /* Force every navbar dropdown menu above the right-edge sidebars (Seed
  * Report at z-index 990, Drawing at 990). Bootstrap's default
- * --bs-dropdown-zindex of 1000 should be enough but Popper-positioned menus
- * sometimes end up in a different stacking context — pin them explicitly. */
-.navbar .dropdown-menu,
-#auth-container .dropdown-menu,
-#auth-button-wrapper .dropdown-menu {
+ * --bs-menu-zindex of 1000 should be enough, but pin menu stacking explicitly. */
+.navbar .menu,
+#auth-container .menu,
+#auth-button-wrapper .menu {
   z-index: 1100 !important;
 }
 
@@ -1093,95 +1079,49 @@ body.toggle-hidden div.osOverlayHighlight {
 /* (intentionally left blank — #auth-button-wrapper is handled above with
    z-index: auto so it doesn't cover navbar dropdown menus.) */
 
-/* ── Bootstrap switches inside dropdown items (perf mode menu) ───────────── */
-/* Bootstrap's .form-check-input[type=checkbox] on a switch has margin-left:-2.5em
-   by default, which bleeds left past the dropdown edge. Reset both margins and
-   use flexbox so the thumb sits fully inside the menu. */
-#perfModeDropdown .dropdown-item.form-check.form-switch {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  padding-left: 1rem;
+/* Performance switches sit in menu text rows so each label remains a
+   native form label and clicking a control keeps the menu open. */
+#perfModeDropdown .menu-text.form-field {
+  padding-block: .5rem;
+  padding-inline: var(--control-padding-x);
+}
+#perfModeDropdown .menu-text > label {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
-#perfModeDropdown .dropdown-item.form-check.form-switch .form-check-input {
-  margin-top: 0;
-  margin-left: 0; /* cancel Bootstrap's -2.5em that causes left-side clipping */
-  flex-shrink: 0;
-  position: static;
+/* Floating UI places menus within the available viewport. Keep wide controls
+   and long translations scrollable within that space on small screens. */
+.mapNavbar .menu {
+  max-inline-size: calc(100vw - 2rem);
 }
-
-/* Mobile: perf-mode menu would otherwise extend past the right edge of the
-   viewport because it's left-aligned to a button that sits in the middle of
-   the wrapped navbar. Anchor it to the .navbar (closest positioned ancestor)
-   with safe horizontal insets so the full menu stays on-screen. */
 @media (max-width: 575px) {
-  #perfModeDropdown {
-    position: static;
-  }
-  #perfModeDropdown .dropdown-menu {
-    left: 0.5rem;
-    right: 0.5rem;
-    top: 100%;
-    width: auto;
-    max-width: calc(100vw - 1rem);
-    margin-top: 0.25rem;
-  }
-
-  /* Same problem for the "..." overflow menu: it's dropdown-menu-end anchored
-     to a button that sits mid-navbar once controls wrap, so Popper pushes it
-     off the right edge. Anchor it to the navbar and pin it inside the viewport.
-     The reparented controls row (perf, overlays, share, etc.) is wide, so let
-     the menu scroll vertically instead of growing past the screen. */
-  #more-menu {
-    position: static;
-  }
-  #more-menu > .dropdown-menu {
-    left: 0.5rem;
-    right: 0.5rem;
-    top: 100%;
-    width: auto;
-    max-width: calc(100vw - 1rem);
-    max-height: 80vh;
+  #more-menu > .menu {
+    max-height: 70dvh;
     overflow-y: auto;
-    margin-top: 0.25rem;
   }
-  /* Keep the reparented controls wrapping inside the menu rather than forcing
-     it wider than the screen. */
   #more-menu-controls {
     max-width: 100%;
   }
 }
 
-/* A dropdown cannot escape the mobile overflow menu's scroll clipping merely
-   by raising its z-index. Expand Performance in normal flow inside that menu.
-   Scope these rules to relocated controls so the navbar dropdown stays normal. */
-#more-menu-controls #perfModeDropdown:has(> .dropdown-menu.show) {
+/* Nested Performance controls expand in flow to avoid the overflow menu's
+   scroll clipping. The outer menu retains Floating UI positioning. */
+#more-menu-controls #perfModeDropdown:has(> .menu.show) {
   flex: 1 0 100%;
   min-width: 0;
 }
-
-#more-menu-controls #perfModeDropdown > .dropdown-menu {
+#more-menu-controls #perfModeDropdown > .menu {
   position: static !important;
   inset: auto !important;
-  transform: none !important; /* also neutralize a cached Popper transform */
+  transform: none !important;
   width: 100%;
   min-width: 0;
   max-width: 100%;
   max-height: none;
   overflow: visible;
-  margin: 0.25rem 0 0;
-}
-
-#more-menu-controls #perfModeDropdown .dropdown-item {
-  white-space: normal;
-}
-
-#more-menu-controls #perfModeDropdown .form-check-label {
-  min-width: 0;
-  overflow-wrap: anywhere;
+  margin: .25rem 0 0;
 }
 
 /* Frame for the QLC sideworld overlay (see src/sideworld.ts).
@@ -1195,4 +1135,5 @@ body.toggle-hidden div.osOverlayHighlight {
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.55),
     0 0 18px rgba(120, 210, 255, 0.35);
+}
 }

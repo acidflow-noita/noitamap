@@ -16,10 +16,10 @@ export function mountCreatureSpawnNotice(
   message.setAttribute('role', 'status');
   const upgrade = document.createElement('button');
   upgrade.type = 'button';
-  upgrade.className = 'btn btn-sm btn-outline-light';
+  upgrade.className = 'btn btn-sm btn-outline theme-secondary';
   const close = document.createElement('button');
   close.type = 'button';
-  close.className = 'btn btn-sm btn-outline-light creature-spawn-notice-close';
+  close.className = 'btn btn-sm btn-outline theme-secondary creature-spawn-notice-close';
   const icon = document.createElement('i');
   icon.className = 'bi bi-x-lg';
   icon.setAttribute('aria-hidden', 'true');

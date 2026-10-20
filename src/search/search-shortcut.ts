@@ -1,4 +1,5 @@
 import './search-shortcut.css';
+import * as bootstrap from '../bootstrap';
 
 export type SearchShortcut = { updateHint(label: string): void; dispose(): void };
 
@@ -40,8 +41,8 @@ export function installSearchShortcut(input: HTMLInputElement, label: string): S
   input.setAttribute('aria-keyshortcuts', '/ Control+/ Meta+/');
 
   const blockedByModal = () => Array.from(doc.querySelectorAll(
-    'dialog[open], [aria-modal="true"], .modal.show',
-  )).some(isVisible);
+    'dialog[open], [aria-modal="true"]',
+  )).some(element => !element.contains(input) && isVisible(element));
 
   const canFocus = () => input.isConnected && !input.disabled && !input.readOnly
     && !input.closest('[inert], [hidden]') && !blockedByModal();
@@ -52,10 +53,14 @@ export function installSearchShortcut(input: HTMLInputElement, label: string): S
   };
 
   function revealAndFocus(): void {
-    const menu = input.closest<HTMLElement>('.navbar-collapse');
+    const menu = input.closest<HTMLElement>('.drawer');
     if (menu && view.getComputedStyle(menu).display === 'none') {
-      const Collapse = (view as any).bootstrap?.Collapse;
-      if (Collapse) Collapse.getOrCreateInstance(menu, { toggle: false }).show();
+      if (bootstrap.Drawer) {
+        void bootstrap.Drawer.getOrCreateInstance(menu).show().then(() => {
+          if (canFocus()) focus();
+        });
+      }
+      return;
     }
     focus();
   }
@@ -77,9 +82,9 @@ export function installSearchShortcut(input: HTMLInputElement, label: string): S
     const path = event.composedPath();
     if (path.some(node => node instanceof Element && isEditing(node))
       || isEditing(doc.activeElement) || !canFocus()) return;
-    const menu = input.closest<HTMLElement>('.navbar-collapse');
+    const menu = input.closest<HTMLElement>('.drawer');
     const canReveal = menu && view.getComputedStyle(menu).display === 'none'
-      && !!(view as any).bootstrap?.Collapse;
+      && !!bootstrap.Drawer;
     if (!isVisible(input) && !canReveal) return;
 
     // Synchronous and non-passive: focusing first would not cancel Quick Find.

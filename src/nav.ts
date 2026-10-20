@@ -2,8 +2,9 @@ import { getAllMapDefinitions } from './data_sources/map_definitions';
 import { assertElementById, formatDate } from './util';
 import type { Badge, MapDefinition } from './data_sources/map_definitions';
 import i18next from './i18n';
+import * as bootstrap from './bootstrap';
 
-export const NAV_LINK_IDENTIFIER = 'nav-link';
+export const NAV_LINK_IDENTIFIER = 'map-nav-link';
 
 export const isNavLink = (el: HTMLElement) => el.classList.contains(NAV_LINK_IDENTIFIER);
 
@@ -28,7 +29,7 @@ const getMapBadges = (def: MapDefinition, iconOnly: boolean): { badges: Badge[];
   const dateStr = isDynamic ? new Date().toISOString().slice(0, 10) : def.patchDate;
   badges.push({
     label: formatDate(dateStr, i18next.language),
-    class: ['border', 'border-info-subtle'],
+    class: ['border', 'border-subtle', 'map-badge-date'],
     icon: iconOnly ? 'bi bi-calendar3' : undefined,
   });
   return { badges, isDynamic, dateBadgeIndex: badges.length - 1 };
@@ -54,7 +55,7 @@ const createBadgeSpan = (badge: Badge, isDynamic: boolean, iconOnly: boolean, is
     ? i18next.t(badge.labelKey, { defaultValue: badge.label })
     : badge.label;
 
-  span.dataset.bsToggle = 'popover';
+  span.dataset.noitamapPopover = '';
   span.dataset.bsPlacement = 'bottom';
   span.dataset.bsTrigger = 'hover';
   span.dataset.bsHtml = 'true';
@@ -92,13 +93,11 @@ export const renderMapBadges = (parent: HTMLElement, def: MapDefinition, iconOnl
   });
 };
 
-/** Re-initialize bootstrap popovers on any .badge[data-bs-toggle="popover"] under `root`. */
+/** Re-initialize bootstrap popovers on any .badge[data-noitamap-popover] under `root`. */
 export const refreshBadgePopovers = (root: HTMLElement): void => {
-  root.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
-    // @ts-ignore
+  root.querySelectorAll('[data-noitamap-popover]').forEach(el => {
     const existing = bootstrap.Popover.getInstance(el);
     if (existing) existing.dispose();
-    // @ts-ignore
     new bootstrap.Popover(el);
   });
 };
@@ -106,8 +105,7 @@ export const refreshBadgePopovers = (root: HTMLElement): void => {
 /** Bootstrap retains registered elements until dispose; removing their DOM
  * alone leaks both the badge and its event handlers. */
 const disposeBadgePopovers = (root: HTMLElement): void => {
-  root.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
-    // @ts-ignore
+  root.querySelectorAll('[data-noitamap-popover]').forEach(el => {
     bootstrap.Popover.getInstance(el)?.dispose();
   });
 };
@@ -127,7 +125,7 @@ export const createMapSelectorRenderer = (root: HTMLElement) => {
     root.removeAttribute('data-i18n');
     root.replaceChildren();
     root.classList.add('d-inline-flex', 'align-items-center', 'gap-1');
-    const label = document.createElement('span'); label.className = 'me-2'; label.textContent = getMapLabel(def);
+    const label = document.createElement('span'); label.className = 'me-3'; label.textContent = getMapLabel(def);
     root.append(label);
     renderMapBadges(root, def, true);
     refreshBadgePopovers(root);
@@ -162,15 +160,14 @@ export const refreshMapSelectorDate = (render: () => void): (() => void) => {
   };
 };
 
-const buildDropdownLink = (mapName: string, def: MapDefinition): HTMLAnchorElement => {
+const buildMenuLink = (mapName: string, def: MapDefinition): HTMLAnchorElement => {
   const a = document.createElement('a');
-  a.classList.add(NAV_LINK_IDENTIFIER, 'text-nowrap', 'dropdown-item', 'd-flex', 'align-items-center', 'gap-1');
+  a.classList.add(NAV_LINK_IDENTIFIER, 'text-nowrap', 'menu-item', 'd-flex', 'align-items-center', 'gap-1');
   a.href = '#';
-  a.dataset.bsToggle = 'pill';
   a.dataset.mapKey = mapName;
 
   const labelSpan = document.createElement('span');
-  labelSpan.className = 'me-2';
+  labelSpan.className = 'me-3';
   labelSpan.textContent = getMapLabel(def);
   a.appendChild(labelSpan);
 
@@ -178,39 +175,37 @@ const buildDropdownLink = (mapName: string, def: MapDefinition): HTMLAnchorEleme
   return a;
 };
 
-export const createMapLinks = (): HTMLUListElement => {
-  const navLinksUl = assertElementById('navLinksList', HTMLUListElement);
-  disposeBadgePopovers(navLinksUl);
-  navLinksUl.replaceChildren();
+export const createMapLinks = (): HTMLDivElement => {
+  const navLinks = assertElementById('navLinksList', HTMLDivElement);
+  disposeBadgePopovers(navLinks);
+  navLinks.replaceChildren();
 
   for (const [mapName, def] of getAllMapDefinitions()) {
-    const li = document.createElement('li');
-    li.appendChild(buildDropdownLink(mapName, def));
-    navLinksUl.appendChild(li);
+    navLinks.appendChild(buildMenuLink(mapName, def));
   }
 
-  return navLinksUl;
+  return navLinks;
 };
 
 // Function to update map link translations
 export const updateMapLinkTranslations = (): void => {
-  const navLinksUl = assertElementById('navLinksList', HTMLUListElement);
+  const navLinks = assertElementById('navLinksList', HTMLDivElement);
   for (const [mapName, def] of getAllMapDefinitions()) {
-    const link = navLinksUl.querySelector(`[data-map-key="${mapName}"]`) as HTMLAnchorElement | null;
+    const link = navLinks.querySelector(`[data-map-key="${mapName}"]`) as HTMLAnchorElement | null;
     if (!link) continue;
     const wasActive = link.classList.contains('active');
     disposeBadgePopovers(link);
     link.replaceChildren();
 
     const labelSpan = document.createElement('span');
-    labelSpan.className = 'me-2';
+    labelSpan.className = 'me-3';
     labelSpan.textContent = getMapLabel(def);
     link.appendChild(labelSpan);
 
     renderMapBadges(link, def, false);
     if (wasActive) link.classList.add('active');
   }
-  refreshBadgePopovers(navLinksUl);
+  refreshBadgePopovers(navLinks);
 };
 
 // Utility to get short map name for selection

@@ -15,7 +15,7 @@
  */
 
 const DYNAMIC_MAP_NAME = "dynamic-main-branch";
-const NARROW_DESKTOP_QUERY = "(min-width: 992px) and (max-width: 1199.98px)";
+const NARROW_DESKTOP_QUERY = "(min-width: 1024px) and (max-width: 1279.98px)";
 
 // Navbar element ids to tuck into the more-menu on the dynamic map, in the
 // order they should appear inside the menu. The overlay group is the bulky
@@ -38,14 +38,12 @@ let inMenu = false;
 let activeMap = "";
 let narrowDesktop: MediaQueryList | undefined;
 
-/** The spoiler-free control is a btn-check <input> + a <label for=...> pair.
- *  Return both so they move together (the input carries the state/listeners,
- *  the label is what the user sees/clicks). */
+/** Move the v6 nested label/input as one control, preserving listeners and state. */
 function resolveElements(id: string): HTMLElement[] {
   if (id === "spoilerFreeToggle") {
     const input = document.getElementById("spoilerFreeToggle");
     const label = document.querySelector<HTMLElement>('label[for="spoilerFreeToggle"]');
-    return [input, label].filter((e): e is HTMLElement => !!e);
+    return label?.contains(input) ? [label] : [input, label].filter((e): e is HTMLElement => !!e);
   }
   const el = document.getElementById(id);
   return el ? [el] : [];

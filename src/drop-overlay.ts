@@ -15,7 +15,7 @@ export function setupDropOverlay(i18next: any, loadProCallback: () => Promise<bo
         <div class="drop-zone-types">${i18next.t("drawing.import.dropHintImportTypes", "WebP or JSON")}</div>
       </div>
       <div class="drop-zone-loading" style="display:none">
-        <div class="spinner-border text-light" role="status"></div>
+        <div class="spinner-border fg-body" role="status"></div>
       </div>
     </div>
     <div class="drop-zone drop-zone-vectorize">
@@ -25,7 +25,7 @@ export function setupDropOverlay(i18next: any, loadProCallback: () => Promise<bo
         <div class="drop-zone-types">${i18next.t("drawing.import.dropHintVectorizeTypes", "Drop or Ctrl+V: PNG, JPG, WebP, GIF, BMP, ICO")}</div>
       </div>
       <div class="drop-zone-loading" style="display:none">
-        <div class="spinner-border text-light" role="status"></div>
+        <div class="spinner-border fg-body" role="status"></div>
         <div class="drop-zone-progress"></div>
       </div>
     </div>

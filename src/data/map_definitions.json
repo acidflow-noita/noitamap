@@ -7,7 +7,7 @@
       {
         "label": "Magic",
         "labelKey": "badges.magic",
-        "class": "text-bg-primary",
+        "class": "theme-primary",
         "icon": "bi bi-magic"
       }
     ],
@@ -23,7 +23,7 @@
       {
         "label": "Latest",
         "labelKey": "badges.latest",
-        "class": "text-bg-success",
+        "class": "theme-success",
         "icon": "bi bi-check-circle-fill"
       }
     ],
@@ -39,7 +39,7 @@
       {
         "label": "Latest",
         "labelKey": "badges.latest",
-        "class": "text-bg-success",
+        "class": "theme-success",
         "icon": "bi bi-check-circle-fill"
       }
     ],
@@ -55,7 +55,7 @@
       {
         "label": "Latest",
         "labelKey": "badges.latest",
-        "class": "text-bg-success",
+        "class": "theme-success",
         "icon": "bi bi-check-circle-fill"
       }
     ],
@@ -71,7 +71,7 @@
       {
         "label": "Mod",
         "labelKey": "badges.mod",
-        "class": "text-bg-light",
+        "class": "theme-secondary",
         "icon": "bi bi-tools"
       }
     ],
@@ -87,7 +87,7 @@
       {
         "label": "Mod",
         "labelKey": "badges.mod",
-        "class": "text-bg-light",
+        "class": "theme-secondary",
         "icon": "bi bi-tools"
       }
     ],
@@ -104,7 +104,7 @@
       {
         "label": "Mod",
         "labelKey": "badges.mod",
-        "class": "text-bg-light",
+        "class": "theme-secondary",
         "icon": "bi bi-tools"
       }
     ],
@@ -121,7 +121,7 @@
       {
         "label": "Mod",
         "labelKey": "badges.mod",
-        "class": "text-bg-light",
+        "class": "theme-secondary",
         "icon": "bi bi-tools"
       }
     ],
@@ -138,7 +138,7 @@
       {
         "label": "Mod",
         "labelKey": "badges.mod",
-        "class": "text-bg-light",
+        "class": "theme-secondary",
         "icon": "bi bi-tools"
       }
     ],
@@ -155,7 +155,7 @@
       {
         "label": "Mod",
         "labelKey": "badges.mod",
-        "class": "text-bg-light",
+        "class": "theme-secondary",
         "icon": "bi bi-tools"
       }
     ],
@@ -172,7 +172,7 @@
       {
         "label": "Mod",
         "labelKey": "badges.mod",
-        "class": "text-bg-light",
+        "class": "theme-secondary",
         "icon": "bi bi-tools"
       }
     ],
@@ -189,7 +189,7 @@
       {
         "label": "Mod",
         "labelKey": "badges.mod",
-        "class": "text-bg-light",
+        "class": "theme-secondary",
         "icon": "bi bi-tools"
       }
     ],
@@ -205,7 +205,7 @@
       {
         "label": "Latest",
         "labelKey": "badges.latest",
-        "class": "text-bg-success",
+        "class": "theme-success",
         "icon": "bi bi-check-circle-fill"
       }
     ],
