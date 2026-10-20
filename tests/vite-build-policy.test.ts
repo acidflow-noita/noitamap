@@ -265,6 +265,26 @@ describe("browser build boundaries", () => {
     });
     expect(warnings).toEqual([]);
     const output = result.output as any[];
+    // Check the deployed stylesheet order, including unbundled public links.
+    // Vite moves bundled CSS links to the end of <head>; that used to register
+    // `custom` before Bootstrap's `components` and override badge sizing/theme.
+    const html = String(output.find(file => file.fileName === 'index.html')?.source);
+    const styles: string[] = [];
+    for (const [link] of html.matchAll(/<link\b[^>]*>/g)) {
+      if (!/\brel=["']stylesheet["']/.test(link)) continue;
+      const href = link.match(/\bhref=["']([^"']+)["']/)?.[1];
+      if (!href?.startsWith('/') || href.startsWith('//')) continue;
+      const bundled = output.find(file => `/${file.fileName}` === href);
+      styles.push(bundled ? String(bundled.source) : await readFile(resolve(root, `public${href}`), 'utf8'));
+    }
+    const css = styles.join('\n');
+    const layers = [...new Set([...css.matchAll(/@layer\s+([^;{]+)[;{]/g)]
+      .flatMap(match => match[1].split(',').map(name => name.trim())))];
+    expect(layers).toContain('components');
+    expect(layers.indexOf('custom')).toBeGreaterThan(layers.indexOf('components'));
+    expect(layers.indexOf('utilities')).toBeGreaterThan(layers.indexOf('custom'));
+    expect([...css.matchAll(/--bs-bg-body:\s*([^;}]+)/g)].at(-1)?.[1]).toBe('var(--bg)');
+
     // Even when a private checkout exists locally, public production builds
     // must load hosted Pro on demand, never bundle the local private entry.
     const privateRoot = resolveLocalPro(root).root?.replace(/\\/g, '/');
