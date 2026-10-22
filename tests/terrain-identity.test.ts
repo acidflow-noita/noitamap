@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { retainedTerrainIdentity, retainedTerrainIdentityAsync } from '../src/telescope/retained-terrain';
 import { TERRAIN_VERSION } from '../src/telescope/terrain-policy';
 
-const prefix = `${TERRAIN_VERSION}/retained-hd-v1-9c58775`;
+const prefix = `${TERRAIN_VERSION}/retained-hd-v3-level-pools-229a7eb`;
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 function generation(buffer: ArrayBufferView): any {
   return { seed: 42, isNGP: false, gameMode: 'normal',
@@ -11,7 +11,7 @@ function generation(buffer: ArrayBufferView): any {
 }
 
 // Golden identities from the original byte-at-a-time implementation. These
-// protect compatibility with already stored native terrain, not timing/JIT behavior.
+// protect content hashing within the current native-terrain revision, not timing/JIT behavior.
 const zeroVectors: Array<[number, string]> = [
   [0, "7c36f384-802559a"],
   [1, "d62c49fc-86ae7da"],

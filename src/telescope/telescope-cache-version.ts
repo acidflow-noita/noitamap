@@ -1,6 +1,6 @@
 import { clearCache } from "./tile-cache";
 
-const LIB_VERSION = "2026-09-28-telescope-7fce46b-render-perf-9c58775";
+const LIB_VERSION = "2026-10-22-telescope-9e8b8a0-render-perf-229a7eb";
 let pending: Promise<void> | undefined;
 
 /** Share this barrier between asset initialization and generation-cache reads.
