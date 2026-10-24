@@ -4841,7 +4841,9 @@
     "seedTooltipCustom": "В Noita чуть больше 2 миллиардов реальных сидов. Подходит любое целое число от 1 до 2 147 483 647. Сегодняшний ежедневный сид показан <span style=\"color:var(--daily-fg);font-weight:600\">зелёным</span>, вчерашний - <span style=\"color:var(--prev-fg);font-weight:600\">оранжевым</span>.",
     "previousDaily": "Предыдущий ежедневный сид",
     "previousDailyDescription": "Загрузить вчерашний ежедневный сид игры",
-    "seedTooltipPreviousDaily": "Это вчерашний сид ежедневного забега"
+    "seedTooltipPreviousDaily": "Это вчерашний сид ежедневного забега",
+    "bakeUnavailableTitle": "Готовая карта ежедневного забега недоступна",
+    "bakeUnavailableDescription": "Карта этого ежедневного забега, создаваемая на сервере, недоступна. Возможно, обработка ещё идёт или завершилась с ошибкой. Если проблема сохраняется, сообщите WUOTE в канале {{channel}}."
   },
   "alive_wand": "(живая палочка)",
   "konami": {

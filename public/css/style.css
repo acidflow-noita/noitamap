@@ -861,6 +861,11 @@ body.toggle-hidden div.osOverlayHighlight {
   color: var(--prev-fg);
 }
 
+#dynamicSeedInput.seed-bake-unavailable {
+  color: var(--danger-fg);
+  border-color: var(--danger-fg);
+}
+
 /* Generate button: match sidebar disabled styling */
 #dynamicGenerateButton:disabled {
   --bs-btn-disabled-border-color: var(--border);

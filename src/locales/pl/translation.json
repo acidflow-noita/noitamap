@@ -4841,7 +4841,9 @@
     "seedTooltipCustom": "Noita ma nieco ponad 2 miliardy prawdziwych seedow. Kazda liczba calkowita od 1 do 2 147 483 647 jest poprawnym seedem. Dzisiejszy seed dzienny jest wyswietlany na <span style=\"color:var(--daily-fg);font-weight:600\">zielonym</span>, wczorajszy na <span style=\"color:var(--prev-fg);font-weight:600\">pomarańczowym</span>.",
     "previousDaily": "Poprzedni dzienny seed",
     "previousDailyDescription": "Zaladuj wczorajszy dzienny seed gry",
-    "seedTooltipPreviousDaily": "To jest seed wczorajszego dziennego biegu"
+    "seedTooltipPreviousDaily": "To jest seed wczorajszego dziennego biegu",
+    "bakeUnavailableTitle": "Gotowa mapa dziennej rozgrywki jest niedostępna",
+    "bakeUnavailableDescription": "Mapa przygotowywana na serwerze dla tej dziennej rozgrywki jest niedostępna. Generowanie może nadal trwać lub zakończyło się błędem. Jeśli problem nie ustąpi, powiadom WUOTE na kanale {{channel}}."
   },
   "alive_wand": "(zywa rozdzka)",
   "konami": {

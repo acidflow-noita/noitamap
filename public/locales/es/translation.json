@@ -4841,7 +4841,9 @@
     "seedTooltipCustom": "Noita tiene algo mas de 2 mil millones de seeds reales. Cualquier numero entero del 1 al 2.147.483.647 es una seed valida. La seed diaria de hoy se muestra en <span style=\"color:var(--daily-fg);font-weight:600\">verde</span>; la de ayer en <span style=\"color:var(--prev-fg);font-weight:600\">naranja</span>.",
     "previousDaily": "Seed diaria anterior",
     "previousDailyDescription": "Cargar la seed diaria de ayer",
-    "seedTooltipPreviousDaily": "Esta es la seed de la carrera diaria de ayer"
+    "seedTooltipPreviousDaily": "Esta es la seed de la carrera diaria de ayer",
+    "bakeUnavailableTitle": "Mapa diario precalculado no disponible",
+    "bakeUnavailableDescription": "El mapa precalculado en el servidor para esta partida diaria no está disponible. Puede que el cálculo siga en curso o haya fallado. Si el problema persiste, avisa a WUOTE en {{channel}}."
   },
   "alive_wand": "(varita viva)",
   "konami": {

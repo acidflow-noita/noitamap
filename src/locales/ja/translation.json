@@ -4841,7 +4841,9 @@
     "seedTooltipCustom": "Noita には20億を超える実在のシードがあります。1から2,147,483,647までの整数なら有効なシードです。今日のデイリーシードは<span style=\"color:var(--daily-fg);font-weight:600\">緑色</span>、昨日のデイリーシードは<span style=\"color:var(--prev-fg);font-weight:600\">オレンジ色</span>で表示されます。",
     "previousDaily": "前回のデイリーシード",
     "previousDailyDescription": "昨日のデイリーシードを読み込む",
-    "seedTooltipPreviousDaily": "これは昨日のデイリーランのシードです"
+    "seedTooltipPreviousDaily": "これは昨日のデイリーランのシードです",
+    "bakeUnavailableTitle": "事前生成されたデイリーマップを利用できません",
+    "bakeUnavailableDescription": "このデイリーラン用にサーバーで生成されるマップを利用できません。生成処理がまだ実行中か、失敗した可能性があります。問題が続く場合は、{{channel}} で WUOTE にお知らせください。"
   },
   "alive_wand": "(生きている杖)",
   "konami": {

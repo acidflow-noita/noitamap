@@ -6,7 +6,7 @@ const dynamicMap = vi.hoisted(() => ({
   getCurrentSeed: vi.fn<() => number | null>(),
   run: vi.fn(),
 }));
-vi.mock('i18next', () => ({ default: { t: (key: string) => key, on: vi.fn() } }));
+vi.mock('i18next', () => ({ default: { t: vi.fn((key: string) => key), on: vi.fn() } }));
 vi.mock('../src/data_sources/overlays', () => ({ isValidOverlayKey: () => false }));
 vi.mock('../src/dynamic-map', () => ({ getCurrentDynamicSeed: dynamicMap.getCurrentSeed,
   getCompletedDynamicSeed: dynamicMap.getCurrentSeed, runDynamicMap: dynamicMap.run }));
@@ -16,7 +16,8 @@ vi.mock('../src/overflow-menu', () => ({ updateOverflowMenu: vi.fn() }));
 class Popover {
   static instances = new Map<Element, Popover>();
   static getInstance(element: Element) { return this.instances.get(element) ?? null; }
-  constructor(element: Element) { Popover.instances.set(element, this); }
+  constructor(private element: Element, readonly config: any = {}) { Popover.instances.set(element, this); }
+  dispose() { Popover.instances.delete(this.element); }
 }
 
 const TODAY = 239365546;
@@ -35,6 +36,75 @@ async function createToolbar(viewer: any = {}) {
   const input = document.getElementById('dynamicSeedInput') as HTMLInputElement;
   return { ...daily, ...ui, input };
 }
+
+describe('daily bake warning in the seed input', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    dynamicMap.getCurrentSeed.mockReset().mockReturnValue(null);
+    Popover.instances.clear();
+    vi.stubGlobal('bootstrap', { Popover });
+    vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+      new Response(String(url.includes('previous') ? PREVIOUS : TODAY))));
+    document.body.innerHTML = '<div class="navbar-controls"></div>';
+  });
+  afterEach(() => { document.body.replaceChildren(); vi.unstubAllGlobals(); });
+
+  it.each([
+    ['daily', TODAY], ['previous-daily', PREVIOUS],
+  ] as const)('warns for the selected %s and clears after a successful retry', async (prefix, seed) => {
+    const { input, setDynamicUISeed, fetchDailySeed, fetchPreviousDailySeed } = await createToolbar();
+    const { beginDailyBakeCheck } = await import('../src/telescope/daily-bake-status');
+    await Promise.all([fetchDailySeed(), fetchPreviousDailySeed()]);
+    setDynamicUISeed(seed, true);
+    const report = beginDailyBakeCheck(prefix, seed);
+    expect(input.classList.contains('seed-bake-unavailable')).toBe(false);
+    report('unavailable');
+    expect(input.classList.contains('seed-bake-unavailable')).toBe(true);
+    expect(input.getAttribute('data-bs-title')).toBe('dynamicMap.bakeUnavailableTitle');
+    expect(input.getAttribute('aria-label')).toContain('dynamicMap.bakeUnavailableTitle');
+    const popover = Popover.getInstance(input)!;
+    expect(popover.config.content()).toBe('dynamicMap.bakeUnavailableDescription');
+    const translations = (await import('i18next')).default;
+    expect(translations.t).toHaveBeenCalledWith('dynamicMap.bakeUnavailableDescription', {
+      channel: '<a href="https://discord.com/channels/815275910478692402/1292529534423535666" target="_blank" rel="noopener noreferrer">#noitamap-discussion</a>',
+    });
+    const refreshTranslations = vi.mocked(translations.on).mock.calls.find(([event]) => event === 'languageChanged')![1];
+    refreshTranslations();
+    expect(input.classList.contains('seed-bake-unavailable')).toBe(true);
+    expect(Popover.getInstance(input)!.config.content()).toBe('dynamicMap.bakeUnavailableDescription');
+    expect(input.dataset.bsTrigger).toBe('hover focus');
+    beginDailyBakeCheck(prefix, seed)('ready');
+    expect(input.classList.contains('seed-bake-unavailable')).toBe(false);
+    expect(Popover.getInstance(input)!.config.content()).toBe('dynamicMap.seedTooltipCustom');
+  });
+
+  it('shows a probe failure that arrived before the toolbar was created', async () => {
+    const { beginDailyBakeCheck } = await import('../src/telescope/daily-bake-status');
+    beginDailyBakeCheck('daily', TODAY)('unavailable');
+    const { input, setDynamicUISeed, fetchDailySeed } = await createToolbar();
+    setDynamicUISeed(TODAY, true);
+    await fetchDailySeed();
+    expect(input.classList.contains('seed-bake-unavailable')).toBe(true);
+  });
+
+  it('removes the warning from edited/custom seeds and ignores unrelated failures', async () => {
+    const { input, setDynamicUISeed, fetchDailySeed } = await createToolbar();
+    const { beginDailyBakeCheck } = await import('../src/telescope/daily-bake-status');
+    await fetchDailySeed();
+    setDynamicUISeed(TODAY, true);
+    const report = beginDailyBakeCheck('daily', TODAY);
+    report('unavailable');
+    input.value = '42';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    report('unavailable');
+    expect(input.classList.contains('seed-bake-unavailable')).toBe(false);
+    expect(input.getAttribute('data-bs-content')).toBe('dynamicMap.seedTooltipCustom');
+    setDynamicUISeed(43, false);
+    report('unavailable');
+    expect(input.classList.contains('seed-bake-unavailable')).toBe(false);
+    expect(input.value).toBe('43');
+  });
+});
 
 function expectKind(input: HTMLInputElement, kind: 'today' | 'previous' | null) {
   expect(input.classList.contains('seed-daily')).toBe(kind === 'today');
@@ -205,8 +275,12 @@ describe('daily buttons return diagnostic live URLs to baked routing', () => {
     await createToolbar();
     dynamicMap.getCurrentSeed.mockClear();
     const originalURL = window.location.href;
-    (document.getElementById(id) as HTMLButtonElement).click();
-    await vi.waitFor(() => expect(dynamicMap.getCurrentSeed).toHaveBeenCalled());
+    const button = document.getElementById(id) as HTMLButtonElement;
+    button.click();
+    // Wait for the async seed lookup and finally block, not the synchronous
+    // getCurrentSeed call made when the button first enters its busy state.
+    await vi.waitFor(() => expect(button.disabled).toBe(false));
+    expect(dynamicMap.getCurrentSeed).toHaveBeenCalled();
     expect(dynamicMap.run).not.toHaveBeenCalled();
     expect(window.location.href).toBe(originalURL);
   });

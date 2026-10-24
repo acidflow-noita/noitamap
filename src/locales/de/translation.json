@@ -4841,7 +4841,9 @@
     "seedTooltipCustom": "Noita hat etwas mehr als 2 Milliarden echte Seeds. Jede ganze Zahl von 1 bis 2.147.483.647 ist ein gueltiger Seed. Der heutige tagliche Seed wird in <span style=\"color:var(--daily-fg);font-weight:600\">Grün</span> angezeigt, der von gestern in <span style=\"color:var(--prev-fg);font-weight:600\">Orange</span>.",
     "previousDaily": "Vorheriger taeglicher Seed",
     "previousDailyDescription": "Den taeglichen Spiel-Seed von gestern laden",
-    "seedTooltipPreviousDaily": "Dies ist der taegliche Lauf-Seed von gestern"
+    "seedTooltipPreviousDaily": "Dies ist der taegliche Lauf-Seed von gestern",
+    "bakeUnavailableTitle": "Vorberechnete Tageskarte nicht verfügbar",
+    "bakeUnavailableDescription": "Die auf dem Server vorberechnete Karte für diesen täglichen Lauf ist nicht verfügbar. Die Berechnung läuft möglicherweise noch oder ist fehlgeschlagen. Falls das Problem bestehen bleibt, informiere bitte WUOTE in {{channel}}."
   },
   "alive_wand": "(lebender Zauberstab)",
   "konami": {

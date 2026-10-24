@@ -612,7 +612,9 @@
       "label": "Lymm's Telescope",
       "title": "Advanced Mode",
       "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
-    }
+    },
+    "bakeUnavailableTitle": "Daily map bake unavailable",
+    "bakeUnavailableDescription": "The server-side bake for this daily map is unavailable. It may still be running or may have failed. If this persists, please let WUOTE know in {{channel}}."
   },
   "badges": {
     "latest": "Latest",

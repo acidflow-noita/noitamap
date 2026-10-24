@@ -13,6 +13,7 @@ import { getCurrentDynamicSeed, getCompletedDynamicSeed, runDynamicMap } from ".
 import type { DynamicMapOptions } from "./dynamic-map";
 import { isSpoilerFree } from "./spoiler-free";
 import { updateOverflowMenu } from "./overflow-menu";
+import { getDailyBakeStatus, subscribeDailyBakeStatus } from './telescope/daily-bake-status';
 
 const NERD_MODE_URL = "https://lymm37.github.io/noita-telescope/";
 const DYNAMIC_MAP_NAME = "dynamic-main-branch";
@@ -41,6 +42,7 @@ let generatePopoverInstance: any = null;
 let resolvedInputSeed: number | null = null;
 let seedInputEdited = false;
 let unsubscribeDailyIdentity: (() => void) | undefined;
+let unsubscribeDailyBakeStatus: (() => void) | undefined;
 let loadingStripRevision = 0;
 let loadingStripHideTimer: ReturnType<typeof setTimeout> | undefined;
 let loadingStripHideElement: HTMLElement | undefined;
@@ -117,7 +119,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   seedInput.setAttribute("data-noitamap-popover", "");
   seedInput.setAttribute("data-popover-owner", "dynamic-seed");
   seedInput.setAttribute("data-bs-placement", "bottom");
-  seedInput.setAttribute("data-bs-trigger", "hover");
+  seedInput.setAttribute("data-bs-trigger", "hover focus");
   seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder"));
   seedInput.setAttribute("data-bs-content", i18next.t("dynamicMap.seedTooltipCustom"));
   seedInput.addEventListener("keydown", (ev) => {
@@ -139,6 +141,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
       seedInput.value = digits;
       seedInput.classList.remove("seed-daily");
       seedInput.classList.remove("seed-prev-daily");
+      seedInput.classList.remove("seed-bake-unavailable");
       updateSeedTooltip("custom");
     }
     updateGenerateButtonState();
@@ -195,7 +198,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   // @ts-ignore
   if (prevDailySeedBtn) new bootstrap.Popover(prevDailySeedBtn);
   // @ts-ignore -- html+no-sanitize so the inline-coloured "teal"/"dark yellow" words render
-  seedTooltipInstance = new bootstrap.Popover(seedInput, { html: true, sanitize: false });
+  seedTooltipInstance = createSeedPopover(seedInput);
   // @ts-ignore
   generatePopoverInstance = new bootstrap.Popover(generateWrapper);
 
@@ -204,6 +207,8 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   resolvedInputSeed = null;
   unsubscribeDailyIdentity?.();
   unsubscribeDailyIdentity = subscribeDailySeedIdentity(refreshSeedIdentity);
+  unsubscribeDailyBakeStatus?.();
+  unsubscribeDailyBakeStatus = subscribeDailyBakeStatus(refreshSeedIdentity);
 
   // Re-translate the entire toolbar whenever the language changes
   i18next.on("languageChanged", refreshDynamicUITranslations);
@@ -228,12 +233,10 @@ function refreshDynamicUITranslations(): void {
     prevDailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.previousDailyDescription"));
   }
 
-  // Seed input -- popover always describes the valid seed range, regardless
-  // of daily/previous/custom flavour (that distinction is conveyed by colour).
+  // Keep an active daily-bake warning when the language changes.
   if (seedInput) {
     seedInput.placeholder = i18next.t("dynamicMap.placeholder");
-    seedInput.setAttribute("data-bs-title", i18next.t("dynamicMap.placeholder"));
-    seedInput.setAttribute("data-bs-content", i18next.t("dynamicMap.seedTooltipCustom"));
+    updateSeedTooltip("custom");
   }
 
   // Generate button text + wrapper popover
@@ -261,7 +264,8 @@ function refreshDynamicUITranslations(): void {
       const existing = bootstrap.Popover.getInstance(el);
       if (existing) existing.dispose();
       // @ts-ignore -- seed input needs html+no-sanitize to colour the swatch words
-      new bootstrap.Popover(el, el === seedInput ? { html: true, sanitize: false } : undefined);
+      if (el === seedInput) seedTooltipInstance = createSeedPopover(seedInput);
+      else new bootstrap.Popover(el);
     });
   });
 }
@@ -672,20 +676,39 @@ function refreshSeedIdentity(): void {
   const identity = getCachedDailySeedIdentity(resolvedInputSeed);
   seedInput.classList.toggle("seed-daily", identity === 'today');
   seedInput.classList.toggle("seed-prev-daily", identity === 'previous');
+  const prefix = identity === 'today' ? 'daily' : identity === 'previous' ? 'previous-daily' : null;
+  seedInput.classList.toggle("seed-bake-unavailable", !!prefix && getDailyBakeStatus(prefix, resolvedInputSeed) === 'unavailable');
+  updateSeedTooltip("custom");
 }
 
 // ─── Seed Tooltip ────────────────────────────────────────────────────────────
 
 let seedTooltipInstance: any = null;
 
+function createSeedPopover(element: HTMLInputElement) {
+  return new bootstrap.Popover(element, {
+    html: true, sanitize: false,
+    title: () => element.getAttribute('data-bs-title') || '',
+    content: () => element.getAttribute('data-bs-content') || '',
+    delay: { show: 80, hide: 150 },
+  });
+}
+
 function updateSeedTooltip(_kind: SeedKind): void {
   if (!seedInput) return;
-  // The seed input popover always describes the valid seed range; the
-  // daily/previous/custom distinction is shown via the input colour instead.
-  const text = i18next.t("dynamicMap.seedTooltipCustom");
+  const unavailable = seedInput.classList.contains('seed-bake-unavailable');
+  const title = i18next.t(unavailable ? 'dynamicMap.bakeUnavailableTitle' : 'dynamicMap.placeholder');
+  const channel = '<a href="https://discord.com/channels/815275910478692402/1292529534423535666" target="_blank" rel="noopener noreferrer">#noitamap-discussion</a>';
+  const text = unavailable
+    ? i18next.t('dynamicMap.bakeUnavailableDescription', { channel })
+    : i18next.t("dynamicMap.seedTooltipCustom");
+  seedInput.setAttribute("data-bs-title", title);
   seedInput.setAttribute("data-bs-content", text);
+  seedInput.setAttribute('aria-label', unavailable ? `${i18next.t('dynamicMap.placeholder')}: ${title}` : i18next.t('dynamicMap.placeholder'));
 
   const tip = (bootstrap.Popover.getInstance(seedInput) as unknown as { tip?: HTMLElement } | null)?.tip;
+  const header = tip?.querySelector('.popover-header');
+  if (header) header.textContent = title;
   const body = tip?.querySelector('.popover-body');
   // This is the same trusted translation HTML used by the initial popover.
   if (body) body.innerHTML = text;

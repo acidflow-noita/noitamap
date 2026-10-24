@@ -4841,7 +4841,9 @@
     "seedTooltipCustom": "Noita ha poco piu di 2 miliardi di seed reali. Qualsiasi numero intero da 1 a 2.147.483.647 e un seed valido. Il seed giornaliero di oggi e mostrato in <span style=\"color:var(--daily-fg);font-weight:600\">verde</span>; quello di ieri in <span style=\"color:var(--prev-fg);font-weight:600\">arancione</span>.",
     "previousDaily": "Seed giornaliero precedente",
     "previousDailyDescription": "Carica il seed giornaliero di ieri",
-    "seedTooltipPreviousDaily": "Questo e il seed della corsa giornaliera di ieri"
+    "seedTooltipPreviousDaily": "Questo e il seed della corsa giornaliera di ieri",
+    "bakeUnavailableTitle": "Mappa giornaliera precalcolata non disponibile",
+    "bakeUnavailableDescription": "La mappa precalcolata sul server per questa partita giornaliera non è disponibile. Il calcolo potrebbe essere ancora in corso oppure non essere riuscito. Se il problema persiste, avvisa WUOTE in {{channel}}."
   },
   "alive_wand": "(bacchetta vivente)",
   "konami": {

@@ -1,5 +1,6 @@
 import { isGLTerrainEnabled } from "../renderer_settings";
 import { TERRAIN_VERSION } from "./terrain-policy";
+import { beginDailyBakeCheck } from './daily-bake-status';
 /**
  * baked-dzi-loader.ts
  *
@@ -109,7 +110,7 @@ async function fetchWorldManifest(
 ): Promise<PerWorldManifest | null> {
   try {
     const origin = originFor(prefix, world);
-    const resp = await fetch(`${origin}/manifest.json`, { signal });
+    const resp = await fetch(`${origin}/manifest.json`, { signal: signal ?? AbortSignal.timeout(15000) });
     if (!resp.ok) return null;
     const m = (await resp.json()) as PerWorldManifest;
     if (!m || typeof m.seed !== 'number' || !Array.isArray(m.regions) || m.regions.length === 0) {
@@ -134,19 +135,24 @@ export async function probeBakedDZIs(
   seed: number,
   signal?: AbortSignal
 ): Promise<BakedDziProbeResult> {
+  const report = isLocalBakeView() ? undefined : beginDailyBakeCheck(prefix, seed);
+  const finish = (result: BakedDziProbeResult): BakedDziProbeResult => {
+    report?.(signal?.aborted ? 'unknown' : result.baked ? 'ready' : 'unavailable');
+    return result;
+  };
   const manifests = await Promise.all(WORLDS.map(w => fetchWorldManifest(prefix, w, signal)));
 
   for (let i = 0; i < WORLDS.length; i++) {
     const m = manifests[i];
-    if (!m) return { baked: false, reason: `manifest missing/invalid for ${prefix}-${WORLDS[i]}` };
+    if (!m) return finish({ baked: false, reason: `manifest missing/invalid for ${prefix}-${WORLDS[i]}` });
     if (isGLTerrainEnabled() && (m.terrainVersion !== TERRAIN_VERSION || m.complete !== true)) {
-      return { baked: false, reason: `${prefix}-${WORLDS[i]} is not a completed ${TERRAIN_VERSION} bake` };
+      return finish({ baked: false, reason: `${prefix}-${WORLDS[i]} is not a completed ${TERRAIN_VERSION} bake` });
     }
     if (m.seed !== seed) {
-      return {
+      return finish({
         baked: false,
         reason: `${prefix}-${WORLDS[i]} manifest seed ${m.seed} != requested ${seed}`,
-      };
+      });
     }
   }
 
@@ -177,7 +183,7 @@ export async function probeBakedDZIs(
     }
   }
   const fullPixelsBaked = manifests.every(m => m?.terrainVersion === TERRAIN_VERSION && m.complete === true);
-  return { baked: true, prefix, placements, decorationsBaked, fullPixelsBaked };
+  return finish({ baked: true, prefix, placements, decorationsBaked, fullPixelsBaked });
 }
 
 /**

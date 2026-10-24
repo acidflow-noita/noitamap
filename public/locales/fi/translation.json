@@ -4841,7 +4841,9 @@
     "seedTooltipCustom": "Noitassa on reilut 2 miljardia oikeaa siementa. Mika tahansa kokonaisluku valilta 1-2 147 483 647 kelpaa siemeneksi. Taman paivan paivittainen siemen nakyy <span style=\"color:var(--daily-fg);font-weight:600\">vihreänä</span>, eilisen <span style=\"color:var(--prev-fg);font-weight:600\">oranssina</span>.",
     "previousDaily": "Edellinen paivittainen siemen",
     "previousDailyDescription": "Lataa eilisen paivan pelisiemen",
-    "seedTooltipPreviousDaily": "Tama on eilisen paivittaisen kierroksen siemen"
+    "seedTooltipPreviousDaily": "Tama on eilisen paivittaisen kierroksen siemen",
+    "bakeUnavailableTitle": "Päivittäisen pelin esilaskettu kartta ei ole saatavilla",
+    "bakeUnavailableDescription": "Tämän päivittäisen pelin palvelimella esilaskettu kartta ei ole saatavilla. Laskenta voi olla vielä kesken tai epäonnistunut. Jos ongelma jatkuu, ilmoita siitä WUOTElle kanavalla {{channel}}."
   },
   "alive_wand": "(elava sauva)",
   "konami": {

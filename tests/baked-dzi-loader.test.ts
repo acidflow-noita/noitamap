@@ -4,6 +4,7 @@ import {
   probeBakedDZIs,
 } from "../src/telescope/baked-dzi-loader";
 import { TERRAIN_VERSION } from "../src/telescope/terrain-policy";
+import { getDailyBakeStatus } from '../src/telescope/daily-bake-status';
 import {
   isGLTerrainEnabled,
   isInstantTerrainEnabled,
@@ -14,6 +15,45 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("baked DZI rendering", () => {
+  it.each(['missing', 'stale', 'invalid', 'network'])(
+    'reports an unavailable bake when a world manifest is %s', async failure => {
+      vi.stubGlobal('fetch', vi.fn(async () => {
+        if (failure === 'network') throw new TypeError('Network unavailable');
+        return {
+          ok: failure !== 'missing',
+          json: async () => failure === 'invalid' ? {} : { seed: 900, regions: [{}] },
+        };
+      }));
+      expect((await probeBakedDZIs('daily', 901)).baked).toBe(false);
+      expect(getDailyBakeStatus('daily', 901)).toBe('unavailable');
+      expect(getDailyBakeStatus('daily', 900)).toBeNull();
+    },
+  );
+
+  it('does not report a cancelled probe as a failed daily bake', async () => {
+    const controller = new AbortController();
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      controller.abort();
+      throw new DOMException('Cancelled', 'AbortError');
+    }));
+    await probeBakedDZIs('daily', 902, controller.signal);
+    expect(getDailyBakeStatus('daily', 902)).toBe('unknown');
+  });
+
+  it('keeps a successful retry when an older probe fails later', async () => {
+    let release!: () => void;
+    const waiting = new Promise<void>(resolve => { release = resolve; });
+    vi.stubGlobal('fetch', vi.fn(async () => { await waiting; return { ok: false }; }));
+    const old = probeBakedDZIs('daily', 903);
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({
+      seed: 903, regions: [{ pw: 0, dzi: 'map.dzi', minX: 0, minY: 0, fullW: 35840 }],
+    }) })));
+    await probeBakedDZIs('daily', 903);
+    release();
+    await old;
+    expect(getDailyBakeStatus('daily', 903)).toBe('ready');
+  });
+
   it.each(["daily", "previous-daily"] as const)(
     "loads published %s bakes independently of the live GPU cache revision",
     async (prefix) => {
@@ -52,6 +92,7 @@ describe("baked DZI rendering", () => {
       expect(isGLTerrainEnabled()).toBe(false);
       const result = await probeBakedDZIs(prefix, 239365546);
       expect(result.baked).toBe(true);
+      expect(getDailyBakeStatus(prefix, 239365546)).toBe('ready');
       if (result.baked) {
         expect(result.decorationsBaked).toBe(true);
         expect(result.placements.map(p => p.pw)).toEqual([-1, 0, 1]);

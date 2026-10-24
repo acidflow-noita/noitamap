@@ -4841,7 +4841,9 @@
     "seedTooltipCustom": "Noita ma o neco vic nez 2 miliardy realnych seedu. Platny seed je libovolne cele cislo od 1 do 2 147 483 647. Dnesni denni seed je zobrazen <span style=\"color:var(--daily-fg);font-weight:600\">zelené</span>, vcerejsi denni seed <span style=\"color:var(--prev-fg);font-weight:600\">oranžové</span>.",
     "previousDaily": "Predchozi denni seed",
     "previousDailyDescription": "Nacist vcerejsi denni herni seed",
-    "seedTooltipPreviousDaily": "Toto je seed vcerejsiho denniho behu"
+    "seedTooltipPreviousDaily": "Toto je seed vcerejsiho denniho behu",
+    "bakeUnavailableTitle": "Předpočítaná mapa denní hry není dostupná",
+    "bakeUnavailableDescription": "Mapa předpočítaná na serveru pro tuto denní hru není dostupná. Výpočet možná stále probíhá nebo selhal. Pokud problém přetrvává, dejte vědět WUOTE v kanálu {{channel}}."
   },
   "alive_wand": "(ziva hulka)",
   "konami": {

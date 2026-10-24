@@ -4841,7 +4841,9 @@
     "seedTooltipCustom": "Noita heeft ruim 2 miljard echte seeds. Elk geheel getal van 1 tot 2.147.483.647 is een geldige seed. De dagelijkse seed van vandaag wordt in <span style=\"color:var(--daily-fg);font-weight:600\">groen</span> getoond; die van gisteren in <span style=\"color:var(--prev-fg);font-weight:600\">oranje</span>.",
     "previousDaily": "Vorige dagelijkse seed",
     "previousDailyDescription": "Laad de dagelijkse game-seed van gisteren",
-    "seedTooltipPreviousDaily": "Dit is de dagelijkse run-seed van gisteren"
+    "seedTooltipPreviousDaily": "Dit is de dagelijkse run-seed van gisteren",
+    "bakeUnavailableTitle": "Vooraf berekende dagelijkse kaart niet beschikbaar",
+    "bakeUnavailableDescription": "De op de server vooraf berekende kaart voor deze dagelijkse run is niet beschikbaar. De berekening is mogelijk nog bezig of mislukt. Laat het WUOTE weten in {{channel}} als het probleem aanhoudt."
   },
   "alive_wand": "(levende toverstaf)",
   "konami": {

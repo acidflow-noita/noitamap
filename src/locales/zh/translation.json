@@ -4841,7 +4841,9 @@
     "seedTooltipCustom": "Noita 拥有 20 多亿个真实种子。1 到 2,147,483,647 之间的任意整数都是有效种子。今天的每日种子显示为<span style=\"color:var(--daily-fg);font-weight:600\">绿色</span>，昨天的每日种子显示为<span style=\"color:var(--prev-fg);font-weight:600\">橙色</span>。",
     "previousDaily": "上一个每日种子",
     "previousDailyDescription": "加载昨天的每日种子",
-    "seedTooltipPreviousDaily": "这是昨天每日跑的种子"
+    "seedTooltipPreviousDaily": "这是昨天每日跑的种子",
+    "bakeUnavailableTitle": "预生成的每日地图暂不可用",
+    "bakeUnavailableDescription": "服务器为本次每日挑战预生成的地图暂不可用。生成任务可能仍在运行，也可能已失败。如果问题持续存在，请在 {{channel}} 中告知 WUOTE。"
   },
   "alive_wand": "(活体魔杖)",
   "konami": {
