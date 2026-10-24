@@ -60,6 +60,7 @@ import {
   TILE_OVERLAY_COLORS,
 } from './telescope-adapter';
 import { getDataZip } from '../data-archive';
+import { readTelescopeAsset } from './telescope-assets';
 import { installTelescopeShim } from './telescope-dom-shim';
 import { installFetchInterceptor, installImageSrcInterceptor } from './telescope-data-bridge';
 import { decodePngToRgba, rgbaToPngBlobUrl, rgbaToPngBlob } from './png-decode';
@@ -2394,7 +2395,6 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
   await ensureTelescopeModules();
   const scenes = renderableScenes(result).filter(scene => !scene.key.startsWith('static_tile/'));
   const sources: Record<string, TerrainSceneSource> = {};
-  const zip = await getDataZip();
   for (const scene of scenes) {
     if (sources[scene.key]) continue;
     const raw = await ensurePixelSceneData(scene.key);
@@ -2403,12 +2403,11 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
     const override = pixelSceneConfig.layerOverrides[scene.name] || pixelSceneConfig.layerOverrides[scene.key];
     let backgroundArt = null;
     if ((override?.background ?? pixelSceneConfig.layers.background) && raw.backgroundArt) {
-      // The fork records engine data paths under data/backgrounds/; the main
-      // game archive keeps them under their original data/ directory instead.
-      const path = raw.backgroundArt.replace(/^data\/backgrounds\//, 'data/');
-      const file = zip?.file(path);
-      if (!file) throw new Error(`Missing scene background: ${path}`);
-      backgroundArt = await decodePngToRgba(await file.async('arraybuffer'));
+      // Engine backgrounds live in the main archive; spliced backgrounds
+      // (including both moons) use the prepared pixel-scene archive instead.
+      const file = await readTelescopeAsset(raw.backgroundArt);
+      if (!file) throw new Error(`Missing scene background: ${raw.backgroundArt}`);
+      backgroundArt = decodePngToRgba(await file.arrayBuffer());
     }
     sources[scene.key] = {
       data: (override?.mid ?? pixelSceneConfig.layers.mid) ? raw.imgElement : new Uint8Array(raw.imgElement.length),

@@ -6,6 +6,8 @@ import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { deserialize } from "node:v8";
+import JSZip from "jszip";
+import { decodePngToRgba } from "../src/telescope/png-decode";
 import { writeBakedWorldMetadata, readBakedWorldMetadata, REPORT_INVENTORY_VERSION } from "../build_scripts/baked-world-metadata.mjs";
 import { hydrateBakedGeneration } from "../src/telescope/baked-generation";
 import { createReportInventorySnapshot, readReportInventorySnapshot, reportFindInventory, reportInventoryCount } from "../src/report-inventory";
@@ -19,7 +21,7 @@ async function runBake(root: string, out: string, extra: string[] = []) {
     [
       "--enable-source-maps",
       resolve(root, "build_scripts/build-full-pixel-bake.mjs"),
-      "--seed=1483922992",
+      "--seed=453975114",
       `--out=${out}`,
       "--concurrency=2",
       "--prepare-only",
@@ -83,20 +85,31 @@ it("prepares missing scene assets and the CI seed through the actual native bake
       await readFile(resolve(out, "prepared.json"), "utf8"),
     );
     expect(prepared).toMatchObject({
-      seed: 1483922992,
+      seed: 453975114,
       width: 35840,
       height: 73728,
     });
     const snapshot = deserialize(
       await readFile(resolve(out, "generation.bin")),
     );
-    expect(snapshot.seed).toBe(1483922992);
+    expect(snapshot.seed).toBe(453975114);
     expect(Object.keys(snapshot.planes).sort()).toEqual(["-1", "0", "1"]);
     for (const plane of Object.values(snapshot.planes) as any[]) {
       expect(plane.tileLayers.length).toBeGreaterThan(0);
       expect(plane.biomeData.pixels.length).toBeGreaterThan(0);
     }
     expect(Object.keys(snapshot.sceneData.sources).length).toBeGreaterThan(0);
+    // Telescope's spliced backgrounds use pixel_scenes.zip, not data.zip.
+    // The actual CI entrypoint must export their authored pixels, not omit them.
+    const sceneArchive = await JSZip.loadAsync(await readFile(resolve(root, "public/pixel_scenes.zip")));
+    for (const name of ["moon", "moon_dark"]) {
+      const expected = decodePngToRgba(await sceneArchive.file(`spliced/${name}_background.png`)!.async("arraybuffer"));
+      const scene = snapshot.sceneData.scenes.find((scene: { name: string; key: string }) => scene.name === name);
+      expect(scene, name).toBeDefined();
+      const actual = snapshot.sceneData.sources[scene.key].backgroundArt;
+      expect([actual.width, actual.height], name).toEqual([expected.width, expected.height]);
+      expect(Buffer.from(actual.data), name).toEqual(Buffer.from(expected.data));
+    }
     expect(snapshot.decor.cells.length).toBeGreaterThan(0);
     expect(snapshot.decor.mimicSpritesVersion).toBe(1);
     expect(snapshot.metadata).toMatchObject({ version: 1, seed: snapshot.seed, ngPlus: 0, isNGP: false,
@@ -177,7 +190,7 @@ it("prepares missing scene assets and the CI seed through the actual native bake
     const reused = await runBake(root, out, ["--resume"]);
     expect(reused.code, reused.logs).toBe(0);
     expect(JSON.parse(await readFile(resolve(out, "benchmark.json"), "utf8"))).toMatchObject({
-      seed: 1483922992, prepareOnly: true, resumed: true,
+      seed: 453975114, prepareOnly: true, resumed: true,
     });
     expect(await Promise.all(sceneFiles.map(async file => (await stat(resolve(scenes, file))).mtimeMs))).toEqual(sceneTimes);
 

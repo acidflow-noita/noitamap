@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import JSZip from "jszip";
 import { readFile } from "node:fs/promises";
 import { decodePngToRgba } from "../src/telescope/png-decode";
-import { clearTelescopeAssetCache } from "../src/telescope/telescope-assets";
+import { clearTelescopeAssetCache, readTelescopeAsset } from "../src/telescope/telescope-assets";
 import { normalizeTelescopePath } from "../src/telescope/telescope-asset-paths";
 const archives = vi.hoisted(() => new Map<string, any>());
 vi.mock("../src/data-archive", () => ({
@@ -73,6 +73,31 @@ const loadRealArchives = () =>
   ).then((entries) => new Map(entries)));
 
 describe("repaired asset paths use real authored pixels", () => {
+  it("resolves all configured scene backgrounds from their authored archives", async () => {
+    for (const [key, zip] of await loadRealArchives()) archives.set(key, zip);
+    const { SCENE_BACKGROUNDS, SCENE_BACKGROUNDS_BY_BIOME } =
+      await import("../lib/noita-telescope-vm/js/pixel_scene_backgrounds.js");
+    const paths = new Set<string>([
+      ...Object.values(SCENE_BACKGROUNDS),
+      ...Object.values(SCENE_BACKGROUNDS_BY_BIOME).flatMap(entries => Object.values(entries)),
+    ]);
+    expect(paths.has("data/pixel_scenes/spliced/moon_background.png")).toBe(true);
+    expect(paths.has("data/pixel_scenes/spliced/moon_dark_background.png")).toBe(true);
+    for (const path of paths) {
+      const spliced = path.startsWith("data/pixel_scenes/");
+      const archive = archives.get(spliced ? "pixel_scenes" : "main");
+      const canonical = spliced ? path.slice("data/pixel_scenes/".length)
+        : path.replace(/^data\/backgrounds\//, "data/");
+      const expected = await archive.file(canonical).async("uint8array");
+      const file = await readTelescopeAsset(path);
+      expect(file, path).not.toBeNull();
+      const bytes = await file!.arrayBuffer();
+      expect(new Uint8Array(bytes), path).toEqual(expected);
+      const image = decodePngToRgba(bytes);
+      expect(image.width * image.height, path).toBeGreaterThan(1);
+    }
+  });
+
   it("preserves the spliced directory when falling back to the main archive", async () => {
     const main = (await loadRealArchives()).get("main")!;
     archives.set("main", main);
