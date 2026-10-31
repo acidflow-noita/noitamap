@@ -4856,7 +4856,10 @@
     "bakeFailedDescription": "De voorbereiding van de dagelijkse kaart is mislukt. Je kunt de kaart nog steeds in je browser genereren. Meld dit in {{channel}}.",
     "bakeCanceledDescription": "De voorbereiding van de dagelijkse kaart is geannuleerd. Je kunt de kaart nog steeds in je browser genereren.",
     "bakeReadyDescription": "De voorbereiding is voltooid, maar de kaart kon niet worden geladen. Probeer de pagina te vernieuwen.",
-    "bakeLastUpdate": "Laatste statusupdate: {{time}}."
+    "bakeLastUpdate": "Laatste statusupdate: {{time}}.",
+    "bakeReadyTitle": "Dagelijkse kaart klaar",
+    "bakeAvailableDescription": "Deze dagelijkse kaart is volledig voorbereid en klaar.",
+    "bakeScheduleDescription": "Dagelijkse kaarten zijn meestal rond {{time}} (jouw lokale tijd) klaar, ongeveer 15 minuten na de dagelijkse wissel."
   },
   "alive_wand": "(levende toverstaf)",
   "konami": {

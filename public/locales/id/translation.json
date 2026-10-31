@@ -4856,7 +4856,10 @@
     "bakeFailedDescription": "Persiapan peta harian gagal. Anda tetap dapat membuat peta di browser. Laporkan masalah ini di {{channel}}.",
     "bakeCanceledDescription": "Persiapan peta harian dibatalkan. Anda tetap dapat membuat peta di browser.",
     "bakeReadyDescription": "Persiapan selesai, tetapi peta tidak dapat dimuat. Coba muat ulang halaman.",
-    "bakeLastUpdate": "Pembaruan status terakhir: {{time}}."
+    "bakeLastUpdate": "Pembaruan status terakhir: {{time}}.",
+    "bakeReadyTitle": "Peta harian siap",
+    "bakeAvailableDescription": "Peta harian ini sudah sepenuhnya disiapkan dan siap digunakan.",
+    "bakeScheduleDescription": "Peta harian biasanya siap sekitar {{time}} (waktu lokal Anda), sekitar 15 menit setelah pembaruan harian."
   },
   "alive_wand": "(tongkat hidup)",
   "konami": {

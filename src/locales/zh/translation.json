@@ -4856,7 +4856,10 @@
     "bakeFailedDescription": "每日地图准备失败。你仍可在浏览器中生成地图。请在{{channel}}反馈此问题。",
     "bakeCanceledDescription": "每日地图准备已取消。你仍可在浏览器中生成地图。",
     "bakeReadyDescription": "准备已完成，但无法加载地图。请尝试刷新页面。",
-    "bakeLastUpdate": "上次状态更新：{{time}}。"
+    "bakeLastUpdate": "上次状态更新：{{time}}。",
+    "bakeReadyTitle": "每日地图已就绪",
+    "bakeAvailableDescription": "此每日地图已全部准备完成。",
+    "bakeScheduleDescription": "每日地图通常会在每日更新约15分钟后，即{{time}}（你的当地时间）左右准备完成。"
   },
   "alive_wand": "(活体魔杖)",
   "konami": {

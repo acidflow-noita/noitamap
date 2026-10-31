@@ -4856,7 +4856,10 @@
     "bakeFailedDescription": "デイリーマップの準備に失敗しました。ブラウザーでのマップ生成は引き続き利用できます。{{channel}}で問題を報告してください。",
     "bakeCanceledDescription": "デイリーマップの準備がキャンセルされました。ブラウザーでのマップ生成は引き続き利用できます。",
     "bakeReadyDescription": "準備は完了しましたが、マップを読み込めませんでした。ページを再読み込みしてください。",
-    "bakeLastUpdate": "最終ステータス更新：{{time}}。"
+    "bakeLastUpdate": "最終ステータス更新：{{time}}。",
+    "bakeReadyTitle": "デイリーマップの準備完了",
+    "bakeAvailableDescription": "このデイリーマップは準備がすべて完了しています。",
+    "bakeScheduleDescription": "デイリーマップは通常、更新から約15分後の{{time}}（お住まいの地域の時刻）ごろに準備が完了します。"
   },
   "alive_wand": "(生きている杖)",
   "konami": {

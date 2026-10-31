@@ -4856,7 +4856,10 @@
     "bakeFailedDescription": "Příprava denní mapy selhala. Mapu lze stále vygenerovat v prohlížeči. Nahlaste prosím problém v {{channel}}.",
     "bakeCanceledDescription": "Příprava denní mapy byla zrušena. Mapu lze stále vygenerovat v prohlížeči.",
     "bakeReadyDescription": "Příprava je dokončena, ale mapu se nepodařilo načíst. Zkuste stránku obnovit.",
-    "bakeLastUpdate": "Poslední aktualizace stavu: {{time}}."
+    "bakeLastUpdate": "Poslední aktualizace stavu: {{time}}.",
+    "bakeReadyTitle": "Denní mapa je připravena",
+    "bakeAvailableDescription": "Tato denní mapa je kompletně připravena.",
+    "bakeScheduleDescription": "Denní mapy bývají připravené kolem {{time}} (váš místní čas), přibližně 15 minut po denní aktualizaci."
   },
   "alive_wand": "(ziva hulka)",
   "konami": {

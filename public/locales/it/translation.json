@@ -4856,7 +4856,10 @@
     "bakeFailedDescription": "La preparazione della mappa giornaliera non è riuscita. Puoi comunque generare la mappa nel browser. Segnala il problema in {{channel}}.",
     "bakeCanceledDescription": "La preparazione della mappa giornaliera è stata annullata. Puoi comunque generare la mappa nel browser.",
     "bakeReadyDescription": "La preparazione è terminata, ma non è stato possibile caricare la mappa. Prova a ricaricare la pagina.",
-    "bakeLastUpdate": "Ultimo aggiornamento dello stato: {{time}}."
+    "bakeLastUpdate": "Ultimo aggiornamento dello stato: {{time}}.",
+    "bakeReadyTitle": "Mappa giornaliera pronta",
+    "bakeAvailableDescription": "Questa mappa giornaliera è completamente preparata e pronta.",
+    "bakeScheduleDescription": "Le mappe giornaliere sono solitamente pronte intorno alle {{time}} (la tua ora locale), circa 15 minuti dopo l’aggiornamento giornaliero."
   },
   "alive_wand": "(bacchetta vivente)",
   "konami": {

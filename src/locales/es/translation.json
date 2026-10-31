@@ -4856,7 +4856,10 @@
     "bakeFailedDescription": "No se pudo preparar el mapa diario. Aún puedes generar el mapa en el navegador. Informa del problema en {{channel}}.",
     "bakeCanceledDescription": "Se canceló la preparación del mapa diario. Aún puedes generar el mapa en el navegador.",
     "bakeReadyDescription": "La preparación ha terminado, pero no se pudo cargar el mapa. Prueba a recargar la página.",
-    "bakeLastUpdate": "Última actualización del estado: {{time}}."
+    "bakeLastUpdate": "Última actualización del estado: {{time}}.",
+    "bakeReadyTitle": "Mapa diario listo",
+    "bakeAvailableDescription": "Este mapa diario está completamente preparado y listo.",
+    "bakeScheduleDescription": "Los mapas diarios suelen estar listos sobre las {{time}} (tu hora local), unos 15 minutos después de la actualización diaria."
   },
   "alive_wand": "(varita viva)",
   "konami": {

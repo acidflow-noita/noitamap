@@ -4856,7 +4856,10 @@
     "bakeFailedDescription": "Förberedelsen av dagens karta misslyckades. Du kan fortfarande generera kartan i webbläsaren. Rapportera problemet i {{channel}}.",
     "bakeCanceledDescription": "Förberedelsen av dagens karta avbröts. Du kan fortfarande generera kartan i webbläsaren.",
     "bakeReadyDescription": "Förberedelsen är klar, men kartan kunde inte laddas. Prova att ladda om sidan.",
-    "bakeLastUpdate": "Senaste statusuppdatering: {{time}}."
+    "bakeLastUpdate": "Senaste statusuppdatering: {{time}}.",
+    "bakeReadyTitle": "Dagens karta är klar",
+    "bakeAvailableDescription": "Dagens karta är helt förberedd och klar.",
+    "bakeScheduleDescription": "Dagens karta är normalt klar omkring {{time}} (din lokala tid), cirka 15 minuter efter det dagliga bytet."
   },
   "alive_wand": "(levande trollstav)",
   "konami": {

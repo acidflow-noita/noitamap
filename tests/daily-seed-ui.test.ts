@@ -49,6 +49,18 @@ describe('daily bake warning in the seed input', () => {
   });
   afterEach(() => { document.body.replaceChildren(); vi.unstubAllGlobals(); });
 
+  it.each([['daily', TODAY], ['previous-daily', PREVIOUS]] as const)('shows bake information for a ready %s without requiring a failure first', async (prefix, seed) => {
+    const { input, setDynamicUISeed, fetchDailySeed, fetchPreviousDailySeed } = await createToolbar();
+    await Promise.all([fetchDailySeed(), fetchPreviousDailySeed()]);
+    const { beginDailyBakeCheck } = await import('../src/telescope/daily-bake-status');
+    beginDailyBakeCheck(prefix, seed)('ready');
+    setDynamicUISeed(seed, true);
+    expect(input.classList.contains('seed-bake-unavailable')).toBe(false);
+    expect(input.getAttribute('data-bs-title')).toBe('dynamicMap.bakeReadyTitle');
+    expect(Popover.getInstance(input)!.config.content()).toBe('dynamicMap.bakeAvailableDescription dynamicMap.bakeScheduleDescription');
+    expect(input.getAttribute('data-bs-content')).not.toContain('seedTooltipCustom');
+  });
+
   it.each([
     ['daily', TODAY], ['previous-daily', PREVIOUS],
   ] as const)('warns for the selected %s and clears after a successful retry', async (prefix, seed) => {
@@ -76,7 +88,7 @@ describe('daily bake warning in the seed input', () => {
     expect(input.dataset.bsTrigger).toBe('hover focus');
     beginDailyBakeCheck(prefix, seed)('ready');
     expect(input.classList.contains('seed-bake-unavailable')).toBe(false);
-    expect(Popover.getInstance(input)!.config.content()).toBe('dynamicMap.seedTooltipCustom');
+    expect(Popover.getInstance(input)!.config.content()).toBe('dynamicMap.bakeAvailableDescription dynamicMap.bakeScheduleDescription');
   });
 
   it('shows a probe failure that arrived before the toolbar was created', async () => {
@@ -108,7 +120,7 @@ describe('daily bake warning in the seed input', () => {
     beginDailyBakeCheck('daily', TODAY)('ready');
     expect(input.classList.contains('seed-bake-pending')).toBe(false);
     expect(input.classList.contains('seed-bake-unavailable')).toBe(false);
-    expect(input.getAttribute('data-bs-title')).toBe('dynamicMap.placeholder');
+    expect(input.getAttribute('data-bs-title')).toBe('dynamicMap.bakeReadyTitle');
   });
 
   it('removes the warning from edited/custom seeds and ignores unrelated failures', async () => {

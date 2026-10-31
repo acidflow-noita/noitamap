@@ -4856,7 +4856,10 @@
     "bakeFailedDescription": "La préparation de la carte du jour a échoué. Vous pouvez toujours générer la carte dans votre navigateur. Signalez le problème dans {{channel}}.",
     "bakeCanceledDescription": "La préparation de la carte du jour a été annulée. Vous pouvez toujours générer la carte dans votre navigateur.",
     "bakeReadyDescription": "La préparation est terminée, mais la carte n’a pas pu être chargée. Essayez de recharger la page.",
-    "bakeLastUpdate": "Dernière mise à jour du statut : {{time}}."
+    "bakeLastUpdate": "Dernière mise à jour du statut : {{time}}.",
+    "bakeReadyTitle": "Carte du jour prête",
+    "bakeAvailableDescription": "Cette carte du jour est entièrement préparée et prête.",
+    "bakeScheduleDescription": "Les cartes du jour sont généralement prêtes vers {{time}} (votre heure locale), environ 15 minutes après le changement quotidien."
   },
   "alive_wand": "(baguette vivante)",
   "konami": {

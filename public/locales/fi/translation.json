@@ -4856,7 +4856,10 @@
     "bakeFailedDescription": "Päivittäisen kartan valmistelu epäonnistui. Voit silti luoda kartan selaimessasi. Ilmoita ongelmasta kanavalla {{channel}}.",
     "bakeCanceledDescription": "Päivittäisen kartan valmistelu peruttiin. Voit silti luoda kartan selaimessasi.",
     "bakeReadyDescription": "Valmistelu on valmis, mutta karttaa ei voitu ladata. Kokeile ladata sivu uudelleen.",
-    "bakeLastUpdate": "Viimeisin tilapäivitys: {{time}}."
+    "bakeLastUpdate": "Viimeisin tilapäivitys: {{time}}.",
+    "bakeReadyTitle": "Päivittäinen kartta on valmis",
+    "bakeAvailableDescription": "Tämä päivittäinen kartta on kokonaan valmisteltu ja valmis.",
+    "bakeScheduleDescription": "Päivittäiset kartat ovat yleensä valmiita noin {{time}} (paikallista aikaasi), noin 15 minuuttia päivittäisen vaihdon jälkeen."
   },
   "alive_wand": "(elava sauva)",
   "konami": {

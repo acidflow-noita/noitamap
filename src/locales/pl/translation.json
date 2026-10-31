@@ -4856,7 +4856,10 @@
     "bakeFailedDescription": "Nie udało się przygotować mapy dnia. Nadal możesz wygenerować mapę w przeglądarce. Zgłoś problem na {{channel}}.",
     "bakeCanceledDescription": "Anulowano przygotowanie mapy dnia. Nadal możesz wygenerować mapę w przeglądarce.",
     "bakeReadyDescription": "Przygotowanie zakończone, ale nie udało się wczytać mapy. Spróbuj odświeżyć stronę.",
-    "bakeLastUpdate": "Ostatnia aktualizacja statusu: {{time}}."
+    "bakeLastUpdate": "Ostatnia aktualizacja statusu: {{time}}.",
+    "bakeReadyTitle": "Mapa dnia jest gotowa",
+    "bakeAvailableDescription": "Ta mapa dnia jest w pełni przygotowana i gotowa.",
+    "bakeScheduleDescription": "Mapy dnia są zwykle gotowe około {{time}} (Twój czas lokalny), mniej więcej 15 minut po codziennej zmianie."
   },
   "alive_wand": "(zywa rozdzka)",
   "konami": {

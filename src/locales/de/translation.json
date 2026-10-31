@@ -4856,7 +4856,10 @@
     "bakeFailedDescription": "Die Vorbereitung der täglichen Karte ist fehlgeschlagen. Du kannst die Karte weiterhin im Browser erzeugen. Bitte melde dies in {{channel}}.",
     "bakeCanceledDescription": "Die Vorbereitung der täglichen Karte wurde abgebrochen. Du kannst die Karte weiterhin im Browser erzeugen.",
     "bakeReadyDescription": "Die Vorbereitung ist abgeschlossen, aber die Karte konnte nicht geladen werden. Versuche, die Seite neu zu laden.",
-    "bakeLastUpdate": "Letzte Statusmeldung: {{time}}."
+    "bakeLastUpdate": "Letzte Statusmeldung: {{time}}.",
+    "bakeReadyTitle": "Tägliche Karte bereit",
+    "bakeAvailableDescription": "Diese tägliche Karte ist vollständig vorbereitet und bereit.",
+    "bakeScheduleDescription": "Tägliche Karten sind normalerweise gegen {{time}} (deine Ortszeit) bereit, etwa 15 Minuten nach dem täglichen Wechsel."
   },
   "alive_wand": "(lebender Zauberstab)",
   "konami": {
