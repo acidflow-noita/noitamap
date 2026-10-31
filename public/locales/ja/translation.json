@@ -4842,8 +4842,21 @@
     "previousDaily": "前回のデイリーシード",
     "previousDailyDescription": "昨日のデイリーシードを読み込む",
     "seedTooltipPreviousDaily": "これは昨日のデイリーランのシードです",
-    "bakeUnavailableTitle": "事前生成されたデイリーマップを利用できません",
-    "bakeUnavailableDescription": "このデイリーラン用にサーバーで生成されるマップを利用できません。生成処理がまだ実行中か、失敗した可能性があります。問題が続く場合は、{{channel}} で WUOTE にお知らせください。"
+    "bakeUnavailableTitle": "準備済みのデイリーマップを利用できません",
+    "bakeUnavailableDescription": "準備状況を確認できません。通常の完了目安は{{time}}（お住まいの地域の時刻）で、デイリー更新の約15分後です。",
+    "bakeRunningTitle": "デイリーマップを準備中",
+    "bakeWaitingTitle": "デイリーマップの公開待ち",
+    "bakePublishingTitle": "デイリーマップを公開中",
+    "bakeFailedTitle": "デイリーマップの準備に失敗",
+    "bakeCanceledTitle": "デイリーマップの準備がキャンセルされました",
+    "bakeRunningDescription": "デイリーマップを準備しています。約15分かかります。準備完了予定：{{time}}（お住まいの地域の時刻）。",
+    "bakeDelayedDescription": "最後の更新時点では準備中でした。完了予定時刻の{{time}}を過ぎています。",
+    "bakeWaitingDescription": "準備が完了し、マップの公開を待っています。",
+    "bakePublishingDescription": "準備が完了しました。マップを公開しています。",
+    "bakeFailedDescription": "デイリーマップの準備に失敗しました。ブラウザーでのマップ生成は引き続き利用できます。{{channel}}で問題を報告してください。",
+    "bakeCanceledDescription": "デイリーマップの準備がキャンセルされました。ブラウザーでのマップ生成は引き続き利用できます。",
+    "bakeReadyDescription": "準備は完了しましたが、マップを読み込めませんでした。ページを再読み込みしてください。",
+    "bakeLastUpdate": "最終ステータス更新：{{time}}。"
   },
   "alive_wand": "(生きている杖)",
   "konami": {

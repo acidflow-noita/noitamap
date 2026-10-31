@@ -65,9 +65,10 @@ describe('daily bake warning in the seed input', () => {
     const popover = Popover.getInstance(input)!;
     expect(popover.config.content()).toBe('dynamicMap.bakeUnavailableDescription');
     const translations = (await import('i18next')).default;
-    expect(translations.t).toHaveBeenCalledWith('dynamicMap.bakeUnavailableDescription', {
+    expect(translations.t).toHaveBeenCalledWith('dynamicMap.bakeUnavailableDescription', expect.objectContaining({
       channel: '<a href="https://discord.com/channels/815275910478692402/1292529534423535666" target="_blank" rel="noopener noreferrer">#noitamap-discussion</a>',
-    });
+      time: expect.any(String),
+    }));
     const refreshTranslations = vi.mocked(translations.on).mock.calls.find(([event]) => event === 'languageChanged')![1];
     refreshTranslations();
     expect(input.classList.contains('seed-bake-unavailable')).toBe(true);
@@ -85,6 +86,29 @@ describe('daily bake warning in the seed input', () => {
     setDynamicUISeed(TODAY, true);
     await fetchDailySeed();
     expect(input.classList.contains('seed-bake-unavailable')).toBe(true);
+  });
+
+  it.each(['running', 'publishing', 'waiting', 'failed', 'canceled'] as const)('shows a reported %s state, then trusts a successful map probe', async phase => {
+    const now = Date.now();
+    vi.mocked(fetch).mockImplementation(async (input: any) => String(input).includes('/status.json')
+      ? Response.json({ schemaVersion: 1, entries: [{ seed: TODAY, phase,
+        requestedAt: new Date(now - 60_000).toISOString(), startedAt: new Date(now - 60_000).toISOString(),
+        updatedAt: new Date(now).toISOString(), expectedReadyAt: new Date(now + 14 * 60_000).toISOString(),
+        expiresAt: new Date(now + 60 * 60_000).toISOString() }] })
+      : new Response(String(String(input).includes('previous') ? PREVIOUS : TODAY)));
+    const { input, setDynamicUISeed, fetchDailySeed } = await createToolbar();
+    await fetchDailySeed(); setDynamicUISeed(TODAY, true);
+    const { beginDailyBakeCheck, refreshDailyBakeProgress } = await import('../src/telescope/daily-bake-status');
+    beginDailyBakeCheck('daily', TODAY)('unavailable');
+    await refreshDailyBakeProgress();
+    const title = `dynamicMap.bake${phase[0].toUpperCase()}${phase.slice(1)}Title`;
+    expect(input.getAttribute('data-bs-title')).toBe(title);
+    expect(input.classList.contains('seed-bake-pending')).toBe(['running','publishing','waiting'].includes(phase));
+    expect(input.getAttribute('data-bs-content')).not.toContain('gitlab');
+    beginDailyBakeCheck('daily', TODAY)('ready');
+    expect(input.classList.contains('seed-bake-pending')).toBe(false);
+    expect(input.classList.contains('seed-bake-unavailable')).toBe(false);
+    expect(input.getAttribute('data-bs-title')).toBe('dynamicMap.placeholder');
   });
 
   it('removes the warning from edited/custom seeds and ignores unrelated failures', async () => {

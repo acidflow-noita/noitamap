@@ -4842,8 +4842,21 @@
     "previousDaily": "Seed diaria anterior",
     "previousDailyDescription": "Carregar a seed diaria de ontem",
     "seedTooltipPreviousDaily": "Esta e a seed da corrida diaria de ontem",
-    "bakeUnavailableTitle": "Mapa diário pré-calculado indisponível",
-    "bakeUnavailableDescription": "O mapa pré-calculado no servidor para esta partida diária está indisponível. O cálculo pode ainda estar em andamento ou ter falhado. Se o problema persistir, avise WUOTE em {{channel}}."
+    "bakeUnavailableTitle": "Mapa diário preparado indisponível",
+    "bakeUnavailableDescription": "O status da preparação está indisponível. A previsão habitual é {{time}} (seu horário local), cerca de 15 minutos após a atualização diária.",
+    "bakeRunningTitle": "Preparando o mapa diário",
+    "bakeWaitingTitle": "Mapa diário aguardando publicação",
+    "bakePublishingTitle": "Publicando o mapa diário",
+    "bakeFailedTitle": "Falha na preparação do mapa diário",
+    "bakeCanceledTitle": "Preparação do mapa diário cancelada",
+    "bakeRunningDescription": "Preparando o mapa diário. Aguarde cerca de 15 minutos. Previsão de conclusão: {{time}} (seu horário local).",
+    "bakeDelayedDescription": "Segundo a última atualização, a preparação continua. A previsão de {{time}} já passou.",
+    "bakeWaitingDescription": "A preparação terminou; o mapa aguarda publicação.",
+    "bakePublishingDescription": "A preparação terminou. O mapa está sendo publicado.",
+    "bakeFailedDescription": "Falha na preparação do mapa diário. Você ainda pode gerar o mapa no navegador. Informe o problema em {{channel}}.",
+    "bakeCanceledDescription": "A preparação do mapa diário foi cancelada. Você ainda pode gerar o mapa no navegador.",
+    "bakeReadyDescription": "A preparação terminou, mas não foi possível carregar o mapa. Tente recarregar a página.",
+    "bakeLastUpdate": "Última atualização do status: {{time}}."
   },
   "alive_wand": "(varinha viva)",
   "konami": {

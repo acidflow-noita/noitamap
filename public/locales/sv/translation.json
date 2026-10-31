@@ -4842,8 +4842,21 @@
     "previousDaily": "Foregaende dagliga seed",
     "previousDailyDescription": "Ladda gardagens spel-seed",
     "seedTooltipPreviousDaily": "Detta ar gardagens dagliga lopps seed",
-    "bakeUnavailableTitle": "Förberäknad daglig karta är inte tillgänglig",
-    "bakeUnavailableDescription": "Den serverberäknade kartan för denna dagliga omgång är inte tillgänglig. Beräkningen kan fortfarande pågå eller ha misslyckats. Meddela WUOTE i {{channel}} om problemet kvarstår."
+    "bakeUnavailableTitle": "Den förberedda dagliga kartan är inte tillgänglig",
+    "bakeUnavailableDescription": "Status för förberedelsen är inte tillgänglig. Kartan beräknas normalt vara klar omkring {{time}} (din lokala tid), cirka 15 minuter efter det dagliga bytet.",
+    "bakeRunningTitle": "Förbereder dagens karta",
+    "bakeWaitingTitle": "Dagens karta väntar på publicering",
+    "bakePublishingTitle": "Publicerar dagens karta",
+    "bakeFailedTitle": "Förberedelsen av dagens karta misslyckades",
+    "bakeCanceledTitle": "Förberedelsen av dagens karta avbröts",
+    "bakeRunningDescription": "Dagens karta förbereds. Räkna med cirka 15 minuter. Beräknad klartid: {{time}} (din lokala tid).",
+    "bakeDelayedDescription": "Enligt den senaste uppdateringen pågår förberedelsen fortfarande. Den beräknade tiden {{time}} har passerat.",
+    "bakeWaitingDescription": "Förberedelsen är klar; kartan väntar på publicering.",
+    "bakePublishingDescription": "Förberedelsen är klar. Kartan publiceras.",
+    "bakeFailedDescription": "Förberedelsen av dagens karta misslyckades. Du kan fortfarande generera kartan i webbläsaren. Rapportera problemet i {{channel}}.",
+    "bakeCanceledDescription": "Förberedelsen av dagens karta avbröts. Du kan fortfarande generera kartan i webbläsaren.",
+    "bakeReadyDescription": "Förberedelsen är klar, men kartan kunde inte laddas. Prova att ladda om sidan.",
+    "bakeLastUpdate": "Senaste statusuppdatering: {{time}}."
   },
   "alive_wand": "(levande trollstav)",
   "konami": {

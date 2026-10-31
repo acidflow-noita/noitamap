@@ -4842,8 +4842,21 @@
     "previousDaily": "Predchozi denni seed",
     "previousDailyDescription": "Nacist vcerejsi denni herni seed",
     "seedTooltipPreviousDaily": "Toto je seed vcerejsiho denniho behu",
-    "bakeUnavailableTitle": "Předpočítaná mapa denní hry není dostupná",
-    "bakeUnavailableDescription": "Mapa předpočítaná na serveru pro tuto denní hru není dostupná. Výpočet možná stále probíhá nebo selhal. Pokud problém přetrvává, dejte vědět WUOTE v kanálu {{channel}}."
+    "bakeUnavailableTitle": "Připravená denní mapa není dostupná",
+    "bakeUnavailableDescription": "Stav přípravy není dostupný. Obvyklý čas dokončení je {{time}} (váš místní čas), přibližně 15 minut po denní aktualizaci.",
+    "bakeRunningTitle": "Připravuje se denní mapa",
+    "bakeWaitingTitle": "Denní mapa čeká na zveřejnění",
+    "bakePublishingTitle": "Zveřejňuje se denní mapa",
+    "bakeFailedTitle": "Příprava denní mapy selhala",
+    "bakeCanceledTitle": "Příprava denní mapy byla zrušena",
+    "bakeRunningDescription": "Připravuje se denní mapa. Počítejte přibližně s 15 minutami. Odhad dokončení: {{time}} (váš místní čas).",
+    "bakeDelayedDescription": "Podle poslední zprávy příprava stále probíhá. Odhadovaný čas {{time}} již uplynul.",
+    "bakeWaitingDescription": "Příprava je dokončena; mapa čeká na zveřejnění.",
+    "bakePublishingDescription": "Příprava je dokončena. Mapa se zveřejňuje.",
+    "bakeFailedDescription": "Příprava denní mapy selhala. Mapu lze stále vygenerovat v prohlížeči. Nahlaste prosím problém v {{channel}}.",
+    "bakeCanceledDescription": "Příprava denní mapy byla zrušena. Mapu lze stále vygenerovat v prohlížeči.",
+    "bakeReadyDescription": "Příprava je dokončena, ale mapu se nepodařilo načíst. Zkuste stránku obnovit.",
+    "bakeLastUpdate": "Poslední aktualizace stavu: {{time}}."
   },
   "alive_wand": "(ziva hulka)",
   "konami": {

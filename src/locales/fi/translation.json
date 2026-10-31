@@ -4842,8 +4842,21 @@
     "previousDaily": "Edellinen paivittainen siemen",
     "previousDailyDescription": "Lataa eilisen paivan pelisiemen",
     "seedTooltipPreviousDaily": "Tama on eilisen paivittaisen kierroksen siemen",
-    "bakeUnavailableTitle": "Päivittäisen pelin esilaskettu kartta ei ole saatavilla",
-    "bakeUnavailableDescription": "Tämän päivittäisen pelin palvelimella esilaskettu kartta ei ole saatavilla. Laskenta voi olla vielä kesken tai epäonnistunut. Jos ongelma jatkuu, ilmoita siitä WUOTElle kanavalla {{channel}}."
+    "bakeUnavailableTitle": "Valmisteltu päivittäinen kartta ei ole saatavilla",
+    "bakeUnavailableDescription": "Valmistelun tilaa ei ole saatavilla. Tavallinen tavoiteaika on {{time}} (paikallista aikaasi), noin 15 minuuttia päivittäisen vaihdon jälkeen.",
+    "bakeRunningTitle": "Päivittäistä karttaa valmistellaan",
+    "bakeWaitingTitle": "Päivittäinen kartta odottaa julkaisua",
+    "bakePublishingTitle": "Päivittäistä karttaa julkaistaan",
+    "bakeFailedTitle": "Päivittäisen kartan valmistelu epäonnistui",
+    "bakeCanceledTitle": "Päivittäisen kartan valmistelu peruttiin",
+    "bakeRunningDescription": "Päivittäistä karttaa valmistellaan. Varaa tähän noin 15 minuuttia. Arvioitu valmistumisaika: {{time}} (paikallista aikaasi).",
+    "bakeDelayedDescription": "Viimeisimmän tiedon mukaan valmistelu jatkuu. Arvioitu valmistumisaika {{time}} on jo mennyt.",
+    "bakeWaitingDescription": "Valmistelu on valmis; kartta odottaa julkaisua.",
+    "bakePublishingDescription": "Valmistelu on valmis. Karttaa julkaistaan.",
+    "bakeFailedDescription": "Päivittäisen kartan valmistelu epäonnistui. Voit silti luoda kartan selaimessasi. Ilmoita ongelmasta kanavalla {{channel}}.",
+    "bakeCanceledDescription": "Päivittäisen kartan valmistelu peruttiin. Voit silti luoda kartan selaimessasi.",
+    "bakeReadyDescription": "Valmistelu on valmis, mutta karttaa ei voitu ladata. Kokeile ladata sivu uudelleen.",
+    "bakeLastUpdate": "Viimeisin tilapäivitys: {{time}}."
   },
   "alive_wand": "(elava sauva)",
   "konami": {

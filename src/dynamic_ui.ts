@@ -13,7 +13,8 @@ import { getCurrentDynamicSeed, getCompletedDynamicSeed, runDynamicMap } from ".
 import type { DynamicMapOptions } from "./dynamic-map";
 import { isSpoilerFree } from "./spoiler-free";
 import { updateOverflowMenu } from "./overflow-menu";
-import { getDailyBakeStatus, subscribeDailyBakeStatus } from './telescope/daily-bake-status';
+import { getDailyBakeStatus, getDailyBakeProgress, refreshDailyBakeProgress, subscribeDailyBakeStatus } from './telescope/daily-bake-status';
+import { localBakeTime, scheduledBakeReadyAt } from './telescope/daily-bake-progress';
 
 const NERD_MODE_URL = "https://lymm37.github.io/noita-telescope/";
 const DYNAMIC_MAP_NAME = "dynamic-main-branch";
@@ -141,7 +142,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
       seedInput.value = digits;
       seedInput.classList.remove("seed-daily");
       seedInput.classList.remove("seed-prev-daily");
-      seedInput.classList.remove("seed-bake-unavailable");
+      seedInput.classList.remove("seed-bake-unavailable", "seed-bake-pending");
       updateSeedTooltip("custom");
     }
     updateGenerateButtonState();
@@ -678,14 +679,27 @@ function refreshSeedIdentity(): void {
   seedInput.classList.toggle("seed-prev-daily", identity === 'previous');
   const prefix = identity === 'today' ? 'daily' : identity === 'previous' ? 'previous-daily' : null;
   seedInput.classList.toggle("seed-bake-unavailable", !!prefix && getDailyBakeStatus(prefix, resolvedInputSeed) === 'unavailable');
+  const progress = getDailyBakeProgress(resolvedInputSeed);
+  seedInput.classList.toggle('seed-bake-pending', seedInput.classList.contains('seed-bake-unavailable')
+    && !!progress && ['running', 'waiting', 'publishing'].includes(progress.phase));
   updateSeedTooltip("custom");
 }
 
 // ─── Seed Tooltip ────────────────────────────────────────────────────────────
 
 let seedTooltipInstance: any = null;
+const bakePopoverHosts = new WeakSet<HTMLInputElement>();
 
 function createSeedPopover(element: HTMLInputElement) {
+  if (!bakePopoverHosts.has(element)) {
+    bakePopoverHosts.add(element);
+    element.addEventListener('show.bs.popover', () => {
+      if (element.classList.contains('seed-bake-unavailable')) {
+        refreshSeedIdentity(); // Update elapsed estimates even if the cached report has not changed.
+        void refreshDailyBakeProgress();
+      }
+    });
+  }
   return new bootstrap.Popover(element, {
     html: true, sanitize: false,
     title: () => element.getAttribute('data-bs-title') || '',
@@ -697,11 +711,20 @@ function createSeedPopover(element: HTMLInputElement) {
 function updateSeedTooltip(_kind: SeedKind): void {
   if (!seedInput) return;
   const unavailable = seedInput.classList.contains('seed-bake-unavailable');
-  const title = i18next.t(unavailable ? 'dynamicMap.bakeUnavailableTitle' : 'dynamicMap.placeholder');
+  const progress = unavailable && resolvedInputSeed !== null ? getDailyBakeProgress(resolvedInputSeed) : null;
+  const phase = progress?.phase;
+  const statusTitle = phase && phase !== 'ready' ? `dynamicMap.bake${phase[0].toUpperCase()}${phase.slice(1)}Title` : 'dynamicMap.bakeUnavailableTitle';
+  const title = i18next.t(unavailable ? statusTitle : 'dynamicMap.placeholder');
   const channel = '<a href="https://discord.com/channels/815275910478692402/1292529534423535666" target="_blank" rel="noopener noreferrer">#noitamap-discussion</a>';
-  const text = unavailable
-    ? i18next.t('dynamicMap.bakeUnavailableDescription', { channel })
+  const prefix = resolvedInputSeed !== null && getCachedDailySeedIdentity(resolvedInputSeed) === 'previous' ? 'previous-daily' : 'daily';
+  const expected = progress?.expectedReadyAt ?? scheduledBakeReadyAt(prefix);
+  const time = localBakeTime(expected, i18next.language);
+  const description = phase === 'running' && Date.parse(expected) < Date.now() ? 'dynamicMap.bakeDelayedDescription'
+    : phase ? `dynamicMap.bake${phase[0].toUpperCase()}${phase.slice(1)}Description` : 'dynamicMap.bakeUnavailableDescription';
+  let text = unavailable
+    ? i18next.t(description, { channel, time })
     : i18next.t("dynamicMap.seedTooltipCustom");
+  if (progress) text += ' ' + i18next.t('dynamicMap.bakeLastUpdate', { time: localBakeTime(progress.updatedAt, i18next.language) });
   seedInput.setAttribute("data-bs-title", title);
   seedInput.setAttribute("data-bs-content", text);
   seedInput.setAttribute('aria-label', unavailable ? `${i18next.t('dynamicMap.placeholder')}: ${title}` : i18next.t('dynamicMap.placeholder'));

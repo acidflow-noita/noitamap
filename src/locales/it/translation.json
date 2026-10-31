@@ -4842,8 +4842,21 @@
     "previousDaily": "Seed giornaliero precedente",
     "previousDailyDescription": "Carica il seed giornaliero di ieri",
     "seedTooltipPreviousDaily": "Questo e il seed della corsa giornaliera di ieri",
-    "bakeUnavailableTitle": "Mappa giornaliera precalcolata non disponibile",
-    "bakeUnavailableDescription": "La mappa precalcolata sul server per questa partita giornaliera non è disponibile. Il calcolo potrebbe essere ancora in corso oppure non essere riuscito. Se il problema persiste, avvisa WUOTE in {{channel}}."
+    "bakeUnavailableTitle": "Mappa giornaliera preparata non disponibile",
+    "bakeUnavailableDescription": "Lo stato della preparazione non è disponibile. L’orario abitualmente previsto è {{time}} (la tua ora locale), circa 15 minuti dopo l’aggiornamento giornaliero.",
+    "bakeRunningTitle": "Preparazione della mappa giornaliera",
+    "bakeWaitingTitle": "Mappa giornaliera in attesa di pubblicazione",
+    "bakePublishingTitle": "Pubblicazione della mappa giornaliera",
+    "bakeFailedTitle": "Preparazione della mappa giornaliera non riuscita",
+    "bakeCanceledTitle": "Preparazione della mappa giornaliera annullata",
+    "bakeRunningDescription": "La mappa giornaliera è in preparazione. Considera circa 15 minuti. Disponibilità prevista: {{time}} (la tua ora locale).",
+    "bakeDelayedDescription": "Secondo l’ultimo aggiornamento, la preparazione è ancora in corso. L’orario previsto, {{time}}, è già passato.",
+    "bakeWaitingDescription": "La preparazione è terminata; la mappa è in attesa di pubblicazione.",
+    "bakePublishingDescription": "La preparazione è terminata. La mappa viene pubblicata.",
+    "bakeFailedDescription": "La preparazione della mappa giornaliera non è riuscita. Puoi comunque generare la mappa nel browser. Segnala il problema in {{channel}}.",
+    "bakeCanceledDescription": "La preparazione della mappa giornaliera è stata annullata. Puoi comunque generare la mappa nel browser.",
+    "bakeReadyDescription": "La preparazione è terminata, ma non è stato possibile caricare la mappa. Prova a ricaricare la pagina.",
+    "bakeLastUpdate": "Ultimo aggiornamento dello stato: {{time}}."
   },
   "alive_wand": "(bacchetta vivente)",
   "konami": {

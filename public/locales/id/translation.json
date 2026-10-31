@@ -4842,8 +4842,21 @@
     "previousDaily": "Seed harian sebelumnya",
     "previousDailyDescription": "Muat seed harian permainan kemarin",
     "seedTooltipPreviousDaily": "Ini adalah seed lari harian kemarin",
-    "bakeUnavailableTitle": "Peta harian yang diproses sebelumnya tidak tersedia",
-    "bakeUnavailableDescription": "Peta untuk permainan harian ini yang diproses di server tidak tersedia. Prosesnya mungkin masih berjalan atau telah gagal. Jika masalah ini berlanjut, beri tahu WUOTE di {{channel}}."
+    "bakeUnavailableTitle": "Peta harian yang sudah disiapkan tidak tersedia",
+    "bakeUnavailableDescription": "Status persiapan tidak tersedia. Target biasanya adalah {{time}} (waktu lokal Anda), sekitar 15 menit setelah pembaruan harian.",
+    "bakeRunningTitle": "Menyiapkan peta harian",
+    "bakeWaitingTitle": "Peta harian menunggu publikasi",
+    "bakePublishingTitle": "Mempublikasikan peta harian",
+    "bakeFailedTitle": "Persiapan peta harian gagal",
+    "bakeCanceledTitle": "Persiapan peta harian dibatalkan",
+    "bakeRunningDescription": "Peta harian sedang disiapkan. Proses ini memerlukan sekitar 15 menit. Perkiraan siap: {{time}} (waktu lokal Anda).",
+    "bakeDelayedDescription": "Menurut pembaruan terakhir, persiapan masih berlangsung. Perkiraan waktu {{time}} telah terlewati.",
+    "bakeWaitingDescription": "Persiapan selesai; peta menunggu untuk dipublikasikan.",
+    "bakePublishingDescription": "Persiapan selesai. Peta sedang dipublikasikan.",
+    "bakeFailedDescription": "Persiapan peta harian gagal. Anda tetap dapat membuat peta di browser. Laporkan masalah ini di {{channel}}.",
+    "bakeCanceledDescription": "Persiapan peta harian dibatalkan. Anda tetap dapat membuat peta di browser.",
+    "bakeReadyDescription": "Persiapan selesai, tetapi peta tidak dapat dimuat. Coba muat ulang halaman.",
+    "bakeLastUpdate": "Pembaruan status terakhir: {{time}}."
   },
   "alive_wand": "(tongkat hidup)",
   "konami": {

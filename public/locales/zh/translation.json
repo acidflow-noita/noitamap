@@ -4842,8 +4842,21 @@
     "previousDaily": "上一个每日种子",
     "previousDailyDescription": "加载昨天的每日种子",
     "seedTooltipPreviousDaily": "这是昨天每日跑的种子",
-    "bakeUnavailableTitle": "预生成的每日地图暂不可用",
-    "bakeUnavailableDescription": "服务器为本次每日挑战预生成的地图暂不可用。生成任务可能仍在运行，也可能已失败。如果问题持续存在，请在 {{channel}} 中告知 WUOTE。"
+    "bakeUnavailableTitle": "已准备好的每日地图暂不可用",
+    "bakeUnavailableDescription": "无法获取准备状态。通常预计在{{time}}（你的当地时间）完成，即每日更新后约15分钟。",
+    "bakeRunningTitle": "正在准备每日地图",
+    "bakeWaitingTitle": "每日地图等待发布",
+    "bakePublishingTitle": "正在发布每日地图",
+    "bakeFailedTitle": "每日地图准备失败",
+    "bakeCanceledTitle": "每日地图准备已取消",
+    "bakeRunningDescription": "正在准备每日地图，通常需要约15分钟。预计完成时间：{{time}}（你的当地时间）。",
+    "bakeDelayedDescription": "最后报告的状态仍为准备中。预计完成时间{{time}}已过。",
+    "bakeWaitingDescription": "准备已完成，地图正在等待发布。",
+    "bakePublishingDescription": "准备已完成，正在发布地图。",
+    "bakeFailedDescription": "每日地图准备失败。你仍可在浏览器中生成地图。请在{{channel}}反馈此问题。",
+    "bakeCanceledDescription": "每日地图准备已取消。你仍可在浏览器中生成地图。",
+    "bakeReadyDescription": "准备已完成，但无法加载地图。请尝试刷新页面。",
+    "bakeLastUpdate": "上次状态更新：{{time}}。"
   },
   "alive_wand": "(活体魔杖)",
   "konami": {

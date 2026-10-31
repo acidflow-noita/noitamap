@@ -4842,8 +4842,21 @@
     "previousDaily": "Vorige dagelijkse seed",
     "previousDailyDescription": "Laad de dagelijkse game-seed van gisteren",
     "seedTooltipPreviousDaily": "Dit is de dagelijkse run-seed van gisteren",
-    "bakeUnavailableTitle": "Vooraf berekende dagelijkse kaart niet beschikbaar",
-    "bakeUnavailableDescription": "De op de server vooraf berekende kaart voor deze dagelijkse run is niet beschikbaar. De berekening is mogelijk nog bezig of mislukt. Laat het WUOTE weten in {{channel}} als het probleem aanhoudt."
+    "bakeUnavailableTitle": "Voorbereide dagelijkse kaart niet beschikbaar",
+    "bakeUnavailableDescription": "De voorbereidingsstatus is niet beschikbaar. Het gebruikelijke streeftijdstip is {{time}} (jouw lokale tijd), ongeveer 15 minuten na de dagelijkse wissel.",
+    "bakeRunningTitle": "Dagelijkse kaart wordt voorbereid",
+    "bakeWaitingTitle": "Dagelijkse kaart wacht op publicatie",
+    "bakePublishingTitle": "Dagelijkse kaart wordt gepubliceerd",
+    "bakeFailedTitle": "Voorbereiding van de dagelijkse kaart mislukt",
+    "bakeCanceledTitle": "Voorbereiding van de dagelijkse kaart geannuleerd",
+    "bakeRunningDescription": "De dagelijkse kaart wordt voorbereid. Reken op ongeveer 15 minuten. Naar verwachting klaar om {{time}} (jouw lokale tijd).",
+    "bakeDelayedDescription": "Volgens de laatste melding loopt de voorbereiding nog. Het geschatte tijdstip {{time}} is verstreken.",
+    "bakeWaitingDescription": "De voorbereiding is voltooid; de kaart wacht op publicatie.",
+    "bakePublishingDescription": "De voorbereiding is voltooid. De kaart wordt gepubliceerd.",
+    "bakeFailedDescription": "De voorbereiding van de dagelijkse kaart is mislukt. Je kunt de kaart nog steeds in je browser genereren. Meld dit in {{channel}}.",
+    "bakeCanceledDescription": "De voorbereiding van de dagelijkse kaart is geannuleerd. Je kunt de kaart nog steeds in je browser genereren.",
+    "bakeReadyDescription": "De voorbereiding is voltooid, maar de kaart kon niet worden geladen. Probeer de pagina te vernieuwen.",
+    "bakeLastUpdate": "Laatste statusupdate: {{time}}."
   },
   "alive_wand": "(levende toverstaf)",
   "konami": {

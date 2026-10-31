@@ -4842,8 +4842,21 @@
     "previousDaily": "Seed quotidienne precedente",
     "previousDailyDescription": "Charger la seed quotidienne d'hier",
     "seedTooltipPreviousDaily": "C'est la seed de la course quotidienne d'hier",
-    "bakeUnavailableTitle": "Carte quotidienne précalculée indisponible",
-    "bakeUnavailableDescription": "La carte précalculée sur le serveur pour cette partie quotidienne est indisponible. Le calcul est peut-être encore en cours ou a échoué. Si le problème persiste, merci de prévenir WUOTE dans {{channel}}."
+    "bakeUnavailableTitle": "Carte du jour préparée indisponible",
+    "bakeUnavailableDescription": "L’état de la préparation est indisponible. L’heure habituelle prévue est {{time}} (votre heure locale), environ 15 minutes après le changement quotidien.",
+    "bakeRunningTitle": "Préparation de la carte du jour",
+    "bakeWaitingTitle": "Carte du jour en attente de publication",
+    "bakePublishingTitle": "Publication de la carte du jour",
+    "bakeFailedTitle": "Échec de la préparation de la carte du jour",
+    "bakeCanceledTitle": "Préparation de la carte du jour annulée",
+    "bakeRunningDescription": "La carte du jour est en préparation. Comptez environ 15 minutes. Disponibilité estimée : {{time}} (votre heure locale).",
+    "bakeDelayedDescription": "Selon la dernière mise à jour, la préparation est toujours en cours. L’heure estimée, {{time}}, est dépassée.",
+    "bakeWaitingDescription": "La préparation est terminée ; la carte attend d’être publiée.",
+    "bakePublishingDescription": "La préparation est terminée. La carte est en cours de publication.",
+    "bakeFailedDescription": "La préparation de la carte du jour a échoué. Vous pouvez toujours générer la carte dans votre navigateur. Signalez le problème dans {{channel}}.",
+    "bakeCanceledDescription": "La préparation de la carte du jour a été annulée. Vous pouvez toujours générer la carte dans votre navigateur.",
+    "bakeReadyDescription": "La préparation est terminée, mais la carte n’a pas pu être chargée. Essayez de recharger la page.",
+    "bakeLastUpdate": "Dernière mise à jour du statut : {{time}}."
   },
   "alive_wand": "(baguette vivante)",
   "konami": {

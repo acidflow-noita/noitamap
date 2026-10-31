@@ -4842,8 +4842,21 @@
     "previousDaily": "Vorheriger taeglicher Seed",
     "previousDailyDescription": "Den taeglichen Spiel-Seed von gestern laden",
     "seedTooltipPreviousDaily": "Dies ist der taegliche Lauf-Seed von gestern",
-    "bakeUnavailableTitle": "Vorberechnete Tageskarte nicht verfügbar",
-    "bakeUnavailableDescription": "Die auf dem Server vorberechnete Karte für diesen täglichen Lauf ist nicht verfügbar. Die Berechnung läuft möglicherweise noch oder ist fehlgeschlagen. Falls das Problem bestehen bleibt, informiere bitte WUOTE in {{channel}}."
+    "bakeUnavailableTitle": "Vorbereitete tägliche Karte nicht verfügbar",
+    "bakeUnavailableDescription": "Der Vorbereitungsstatus ist nicht verfügbar. Die Karte ist normalerweise gegen {{time}} (deine Ortszeit) bereit, etwa 15 Minuten nach dem täglichen Wechsel.",
+    "bakeRunningTitle": "Tägliche Karte wird vorbereitet",
+    "bakeWaitingTitle": "Tägliche Karte wartet auf Veröffentlichung",
+    "bakePublishingTitle": "Tägliche Karte wird veröffentlicht",
+    "bakeFailedTitle": "Vorbereitung der täglichen Karte fehlgeschlagen",
+    "bakeCanceledTitle": "Vorbereitung der täglichen Karte abgebrochen",
+    "bakeRunningDescription": "Die tägliche Karte wird vorbereitet. Rechne mit etwa 15 Minuten. Voraussichtlich bereit: {{time}} (deine Ortszeit).",
+    "bakeDelayedDescription": "Laut letzter Meldung läuft die Vorbereitung noch. Der geschätzte Zeitpunkt {{time}} ist bereits verstrichen.",
+    "bakeWaitingDescription": "Die Vorbereitung ist abgeschlossen; die Karte wartet auf Veröffentlichung.",
+    "bakePublishingDescription": "Die Vorbereitung ist abgeschlossen. Die Karte wird veröffentlicht.",
+    "bakeFailedDescription": "Die Vorbereitung der täglichen Karte ist fehlgeschlagen. Du kannst die Karte weiterhin im Browser erzeugen. Bitte melde dies in {{channel}}.",
+    "bakeCanceledDescription": "Die Vorbereitung der täglichen Karte wurde abgebrochen. Du kannst die Karte weiterhin im Browser erzeugen.",
+    "bakeReadyDescription": "Die Vorbereitung ist abgeschlossen, aber die Karte konnte nicht geladen werden. Versuche, die Seite neu zu laden.",
+    "bakeLastUpdate": "Letzte Statusmeldung: {{time}}."
   },
   "alive_wand": "(lebender Zauberstab)",
   "konami": {
