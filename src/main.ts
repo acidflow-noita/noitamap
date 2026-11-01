@@ -13,7 +13,7 @@ import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 import { getCachedGeneration } from "./telescope/tile-cache";
 import { telescopeSearchUrl } from './search/telescope-link';
 import i18next, { initializeTranslations, STARTUP_MESSAGES, SUPPORTED_LANGUAGES } from "./i18n";
-import { showStartupFailure, startWhenReady } from './startup';
+import { finishNavbarStartup, showStartupFailure, startWhenReady } from './startup';
 import { setupDropOverlay } from "./drop-overlay";
 import { createProLoader } from "./pro-loader";
 import { negotiateTabHandoff, registerTabHandoff } from "./tab-coordinator";
@@ -195,9 +195,11 @@ import { updateTranslations } from "./i18n-dom";
 import { initKonamiCode } from "./konami";
 import { AuthUI } from "./auth/auth-ui";
 import { authService } from "./auth/auth-service";
+import { createProGiftControls } from "./auth/pro-gifting";
 import { DrawingUI } from "./drawing/drawing-ui";
 import { setDrawingMapOwnership } from './drawing/poi-interaction';
 import { createSeedReportButton } from "./seed-report-button";
+import { createGuessrButton } from "./guessr-button";
 import { installProNavbarDismissal } from './pro-sidebar-navbar';
 import { placeBiomeBoundariesButton, placeMoreMenuLast } from "./overflow-menu";
 import { initChunkGrid, showChunkGrid, isChunkGridVisible } from "./drawing/chunk-grid";
@@ -737,6 +739,7 @@ startWhenReady(async () => {
     setDrawingMapOwnership,
     i18next,
     authService,
+    createProGiftControls,
     osd: app.osd as unknown as OpenSeadragon.Viewer,
     osdElement: osdRootElement,
     getMap: () => app.getMap(),
@@ -1001,11 +1004,12 @@ startWhenReady(async () => {
     const drawingWrap = document.getElementById("drawing-ui-wrapper");
     if (drawingWrap) {
       createSeedReportButton(drawingWrap, { loadProBundle: () => loadProBundle("report") });
+      createGuessrButton(drawingWrap);
     }
   }
 
   // Now that all runtime-injected navbar buttons exist (auth/Get Pro, drawing,
-  // seed report), park the "..." overflow button at the very end of the row.
+  // seed report, Guessr), park the "..." overflow button at the very end of the row.
   placeBiomeBoundariesButton();
   placeMoreMenuLast();
 
@@ -1660,6 +1664,7 @@ startWhenReady(async () => {
   }
 
   initKonamiCode();
+  finishNavbarStartup();
 
 }, error => showStartupFailure(error,
   i18next.t('startup.failed', { defaultValue: STARTUP_MESSAGES.failed }) || STARTUP_MESSAGES.failed,

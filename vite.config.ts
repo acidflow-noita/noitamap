@@ -1,10 +1,11 @@
 import { deliveryPlugin } from "./build_scripts/vite-delivery.ts";
+import { guessrAssetsPlugin } from "./build_scripts/vite-guessr-assets.ts";
 import { localeAssetsPlugin } from "./build_scripts/vite-locales.ts";
 import { terrainShaderBitsPlugin } from "./build_scripts/vite-terrain-shaders.ts";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, withFilter, type Plugin } from "vite";
 import { telescopeBrowserPlugin } from "./build_scripts/vite-telescope-browser.ts";
-import { telescopeScenesPlugin } from "./build_scripts/vite-telescope-scenes.ts";
-import { dataArchivesPlugin } from "./build_scripts/vite-data-archives.ts";
+import { createSceneInputs, telescopeScenesPlugin } from "./build_scripts/vite-telescope-scenes.ts";
+import { createRuntimeAssetInputs, dataArchivesPlugin } from "./build_scripts/vite-data-archives.ts";
 import { atlasChunksPlugin } from "./build_scripts/vite-atlas-chunks.ts";
 import { resolveLocalPro } from "./build_scripts/local-pro.ts";
 import { ignoreTaskScratch } from "./build_scripts/vite-watch.ts";
@@ -40,6 +41,19 @@ if (!fs.existsSync(resolve(import.meta.dirname, TELESCOPE_DIR, "js"))) {
 }
 const TELESCOPE_JS = resolve(import.meta.dirname, TELESCOPE_DIR, "js");
 console.log(`[vite] telescope fork: ${TELESCOPE_DIR}`);
+
+// The page and nested worker builds consume the same immutable inputs. Share
+// preparation within one build; each root/watch build invalidates these caches.
+const sceneInputs = createSceneInputs(import.meta.dirname);
+const runtimeAssetInputs = createRuntimeAssetInputs(import.meta.dirname);
+const browserTelescopePlugin = () => withFilter(
+  telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]),
+  { transform: { id: /\/(?:image_processing|translations|png_sanitizer|utils|pixel_scene_generation|icon_sheets|tile_generator|poi_scanner|terrain_renderer|lattice_builder)\.js$/ } },
+);
+const terrainBitsPlugin = () => withFilter(
+  terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")),
+  { transform: { id: /\/gl\/shaders\.js$/ } },
+);
 
 const shimTelescopePlugin = {
   name: "shim-telescope-app",
@@ -89,7 +103,7 @@ function workerOutputNames(): Plugin {
 export default defineConfig({
   worker: {
     format: "es",
-    plugins: () => [workerOutputNames(), shimTelescopePlugin, dataArchivesPlugin(import.meta.dirname), telescopeScenesPlugin(import.meta.dirname), telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")), atlasChunksPlugin(import.meta.dirname)],
+    plugins: () => [workerOutputNames(), shimTelescopePlugin, dataArchivesPlugin(import.meta.dirname, runtimeAssetInputs), telescopeScenesPlugin(import.meta.dirname, sceneInputs), browserTelescopePlugin(), terrainBitsPlugin(), atlasChunksPlugin(import.meta.dirname)],
   },
   server: {
     watch: {
@@ -100,10 +114,11 @@ export default defineConfig({
     },
   },
   plugins: [
+    guessrAssetsPlugin(import.meta.dirname),
     deliveryPlugin(),
     localeAssetsPlugin(import.meta.dirname),
-    dataArchivesPlugin(import.meta.dirname),
-    telescopeScenesPlugin(import.meta.dirname),
+    dataArchivesPlugin(import.meta.dirname, runtimeAssetInputs),
+    telescopeScenesPlugin(import.meta.dirname, sceneInputs),
     {
       // Native bakers/test harnesses supply their own manualChunks policy.
       // Do not let the client's new grouping override that explicit choice.
@@ -117,7 +132,7 @@ export default defineConfig({
         }
       },
     },
-    telescopeBrowserPlugin([TELESCOPE_JS, resolve(import.meta.dirname, "lib/noita-telescope-vm/js")]), terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")),
+    browserTelescopePlugin(), terrainBitsPlugin(),
     atlasChunksPlugin(import.meta.dirname),
     {
       name: "og-meta-rewrite",
@@ -211,7 +226,7 @@ export default defineConfig({
     assetsDir: "build",
     emptyOutDir: true, // Always start clean — no stale hashed files
     sourcemap: true,
-    minify: "esbuild",
+    minify: "oxc",
     // IMPORTANT: Disable modulepreload injection. Vite injects <link rel="modulepreload">
     // for dynamically-imported chunks, which causes the browser to eagerly evaluate them.
     // The telescope-lib chunk has top-level await (image_processing.js) that MUST only run
@@ -221,6 +236,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(import.meta.dirname, "index.html"),
+        guessr: resolve(import.meta.dirname, "guess/index.html"),
       },
       output: {
         // Explicit priorities prevent a recursive "main" or telescope group
@@ -238,6 +254,8 @@ export default defineConfig({
             { name: "vendor-png", test: /\/node_modules\/(?:fast-png|fflate|iobuffer|pngjs|upng-js|pako)\//, priority: 190 },
             { name: "vendor-osd", test: /\/node_modules\/openseadragon\//, priority: 190 },
             { name: "vendor-pixi", test: /\/node_modules\/pixi\.js\//, priority: 190 },
+            // Guessr's Bootstrap 6 must not be pulled into the main map's v5 vendor bundle.
+            { name: "bootstrap-ui", test: /\/node_modules\/(?:bootstrap|@floating-ui|vanilla-calendar-pro)\//, priority: 195 },
             { name: "vendor", test: /\/node_modules\//, priority: 160 },
             // Viewer scheduling/continuity is shared with lazy terrain layers.
             // Keep it separate without making controller installation async.

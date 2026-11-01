@@ -16,6 +16,7 @@ import { getMimicSpriteKey } from './poi-mimics';
 import { canonicalEntityId } from './entity-canonical';
 import spritesheetRevision from '../data/spritesheet-revision.json';
 import { immutableTelescopeAssets } from './immutable-assets';
+import { createPortalCardMarkers } from '../portals/card-data';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -633,6 +634,8 @@ export async function buildMarkerData(result: GenerationResult): Promise<MarkerD
       }
     }
   }
+
+  items.push(...createPortalCardMarkers(result, items));
 
   // Fixed pillar places (Mountain Altar, The Tower, Moon, ...) have no
   // generated POI and no sprite — the structure is painted into the baked

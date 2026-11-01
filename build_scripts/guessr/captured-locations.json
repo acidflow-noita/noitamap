@@ -1,0 +1,252 @@
+{
+  "seed": 78633191,
+  "demo": ["p-01", "p-02", "p-13"],
+  "locations": [
+    {
+      "id": "p-01",
+      "name": "Entrance statue",
+      "biome": "Forest",
+      "theme": "surface",
+      "x": 172,
+      "y": -168
+    },
+    {
+      "id": "p-02",
+      "name": "Inside the tree",
+      "biome": "Forest",
+      "theme": "surface",
+      "x": -1634,
+      "y": -788
+    },
+    {
+      "id": "p-03",
+      "name": "Water cave",
+      "biome": "Water Cave",
+      "theme": "secrets",
+      "x": -1792,
+      "y": 768
+    },
+    {
+      "id": "p-04",
+      "name": "Pyramid",
+      "biome": "Desert",
+      "theme": "surface",
+      "x": 10050,
+      "y": -900
+    },
+    {
+      "id": "p-05",
+      "name": "Inside the pyramid",
+      "biome": "Pyramid",
+      "theme": "surface",
+      "x": 10240,
+      "y": 100
+    },
+    {
+      "id": "p-06",
+      "name": "By the lake",
+      "biome": "Lake",
+      "theme": "surface",
+      "x": -13200,
+      "y": 200
+    },
+    {
+      "id": "p-07",
+      "name": "Desert watchtower",
+      "biome": "Desert",
+      "theme": "surface",
+      "x": 14200,
+      "y": -550
+    },
+    {
+      "id": "p-08",
+      "name": "The Mines",
+      "biome": "Mines",
+      "theme": "caverns",
+      "x": 700,
+      "y": 700
+    },
+    {
+      "id": "p-09",
+      "name": "Collapsed passages",
+      "biome": "Collapsed Mines",
+      "theme": "caverns",
+      "x": -1500,
+      "y": 600
+    },
+    {
+      "id": "p-10",
+      "name": "Western passages",
+      "biome": "Western caves",
+      "theme": "secrets",
+      "x": -3400,
+      "y": 650
+    },
+    {
+      "id": "p-11",
+      "name": "Coal Pits",
+      "biome": "Coal Pits",
+      "theme": "caverns",
+      "x": -600,
+      "y": 2200
+    },
+    {
+      "id": "p-12",
+      "name": "Fungal Caverns",
+      "biome": "Fungal Caverns",
+      "theme": "caverns",
+      "x": -2800,
+      "y": 2300
+    },
+    {
+      "id": "p-13",
+      "name": "First Holy Mountain",
+      "biome": "Holy Mountain",
+      "theme": "secrets",
+      "x": -497,
+      "y": 1348
+    },
+    {
+      "id": "p-14",
+      "name": "Lava lake",
+      "biome": "Lava Lake",
+      "theme": "secrets",
+      "x": 2600,
+      "y": 1100
+    },
+    {
+      "id": "p-15",
+      "name": "Across the chasm",
+      "biome": "Chasm",
+      "theme": "secrets",
+      "x": 3600,
+      "y": 1300
+    },
+    {
+      "id": "p-16",
+      "name": "Snowy Depths",
+      "biome": "Snowy Depths",
+      "theme": "caverns",
+      "x": -1700,
+      "y": 4000
+    },
+    {
+      "id": "p-17",
+      "name": "Buried temple",
+      "biome": "Magical Temple",
+      "theme": "secrets",
+      "x": -4400,
+      "y": 3600
+    },
+    {
+      "id": "p-18",
+      "name": "Hiisi Base",
+      "biome": "Hiisi Base",
+      "theme": "caverns",
+      "x": -500,
+      "y": 5700
+    },
+    {
+      "id": "p-19",
+      "name": "Jungle canopy",
+      "biome": "Underground Jungle",
+      "theme": "caverns",
+      "x": -500,
+      "y": 7500
+    },
+    {
+      "id": "p-20",
+      "name": "Lukki territory",
+      "biome": "Lukki Lair",
+      "theme": "caverns",
+      "x": -3700,
+      "y": 7700
+    },
+    {
+      "id": "p-21",
+      "name": "Overgrown caverns",
+      "biome": "Overgrown Cavern",
+      "theme": "caverns",
+      "x": 14000,
+      "y": 3400
+    },
+    {
+      "id": "p-22",
+      "name": "The Vault",
+      "biome": "The Vault",
+      "theme": "caverns",
+      "x": 100,
+      "y": 9500
+    },
+    {
+      "id": "p-23",
+      "name": "Frozen machinery",
+      "biome": "Frozen Vault",
+      "theme": "caverns",
+      "x": -10240,
+      "y": 1792
+    },
+    {
+      "id": "p-24",
+      "name": "Temple of the Art",
+      "biome": "Temple of the Art",
+      "theme": "caverns",
+      "x": 400,
+      "y": 11700
+    },
+    {
+      "id": "p-25",
+      "name": "Dense rock",
+      "biome": "Extremely Dense Rock",
+      "theme": "hardcore",
+      "x": -16500,
+      "y": 9000,
+      "hard": true
+    },
+    {
+      "id": "p-26",
+      "name": "Dense rock",
+      "biome": "Extremely Dense Rock",
+      "theme": "hardcore",
+      "x": 17000,
+      "y": 15000,
+      "hard": true
+    },
+    {
+      "id": "p-27",
+      "name": "Hell background",
+      "biome": "Hell",
+      "theme": "hardcore",
+      "x": -3000,
+      "y": 30000,
+      "hard": true
+    },
+    {
+      "id": "p-28",
+      "name": "Hell passages",
+      "biome": "Hell",
+      "theme": "caverns",
+      "x": -3000,
+      "y": 36000,
+      "hard": false
+    },
+    {
+      "id": "p-29",
+      "name": "Heaven caverns",
+      "biome": "Heaven",
+      "theme": "caverns",
+      "x": -1200,
+      "y": -22700,
+      "hard": false
+    },
+    {
+      "id": "p-30",
+      "name": "Heaven chamber",
+      "biome": "Heaven",
+      "theme": "secrets",
+      "x": 2688,
+      "y": -29184,
+      "hard": false
+    }
+  ]
+}

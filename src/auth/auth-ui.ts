@@ -5,29 +5,7 @@
 import { authService, AuthState } from "./auth-service";
 import i18next from "../i18n";
 import * as bootstrap from "../bootstrap";
-
-// Twitch login is fully wired (worker + service) but HIDDEN in the UI until
-// Twitch platform approval lands. Flip to true to reveal the dialog button; no
-// other change needed. While false, no Twitch markup renders and no Twitch
-// translation keys are referenced, so nothing leaks to users.
-const TWITCH_ENABLED = true;
-
-// Official Twitch glitch mark (white, for the purple button). Geometry from
-// task/TwitchGlitchPurple.svg. Only injected when TWITCH_ENABLED.
-const TWITCH_SYMBOL_WHITE = `
-<svg viewBox="0 0 2400 2800" xmlns="http://www.w3.org/2000/svg" width="20" height="20" aria-hidden="true">
-  <path fill="#ffffff" d="M500,0L0,500v1800h600v500l500-500h400l900-900V0H500z M2200,1300l-400,400h-400l-350,350v-350H600V200h1600V1300z"/>
-  <rect x="1700" y="550" fill="#ffffff" width="200" height="600"/>
-  <rect x="1150" y="550" fill="#ffffff" width="200" height="600"/>
-</svg>`;
-
-// Official Patreon Symbol (White)
-const PATREON_SYMBOL_WHITE = `
-<svg viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
-  <path fill="#ffffff" d="M1033.05,324.45c-0.19-137.9-107.59-250.92-233.6-291.7c-156.48-50.64-362.86-43.3-512.28,27.2
-        C106.07,145.41,49.18,332.61,47.06,519.31c-1.74,153.5,13.58,557.79,241.62,560.67c169.44,2.15,194.67-216.18,273.07-321.33
-        c55.78-74.81,127.6-95.94,216.01-117.82C929.71,603.22,1033.27,483.3,1033.05,324.45z"/>
-</svg>`;
+import { createProControls } from "./pro-controls";
 
 /**
  * Create and manage the auth button in the navbar
@@ -67,12 +45,16 @@ export class AuthUI {
     wrapper.id = "auth-button-wrapper";
     // Initial state placeholder
     wrapper.innerHTML = `
+      <span class="btn btn-sm auth-button-sizer" aria-hidden="true">
+        <span class="auth-button-labels"><span data-auth-size="pro"></span><span data-auth-size="account"></span></span>
+      </span>
       <button id="authButton" class="btn btn-sm btn-outline theme-inverse" type="button">
         <img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon">
         <span class="auth-text">${i18next.t("auth.getPro", "Get Pro")}</span>
       </button>
     `;
 
+    this.sizeButton(wrapper);
     const button = wrapper.querySelector("#authButton") as HTMLElement;
     button.addEventListener("click", () => this.handleClick());
     button.addEventListener("hide.bs.menu", (event) => {
@@ -95,11 +77,19 @@ export class AuthUI {
     return wrapper;
   }
 
+  private sizeButton(wrapper: HTMLElement): void {
+    wrapper.querySelector('[data-auth-size="pro"]')!.textContent = i18next.t('auth.getPro', 'Get Pro');
+    wrapper.querySelector('[data-auth-size="account"]')!.textContent = i18next.t('auth.yourAccount', 'Your account');
+  }
+
   private async updateButton(state: AuthState): Promise<void> {
     if (!this.button) return;
 
     const update = ++this.buttonUpdate;
     const btn = this.button.querySelector("#authButton") as HTMLElement;
+    // Both account states share one intrinsic width; a late auth reply only
+    // changes the visible label, without moving the rest of the navbar.
+    this.sizeButton(this.button);
 
     // Keep the old menu attached until its exit transition finishes. Auth and
     // language changes can arrive together, so only render the latest update.
@@ -123,7 +113,8 @@ export class AuthUI {
 
       const menu = document.createElement("div");
       menu.className = "menu";
-      const providerLabel = state.provider === "twitch" ? "Twitch" : "Patreon";
+      const providerLabel = state.linkedAccounts?.map(account => account.provider === 'twitch' ? 'Twitch' : 'Patreon').join(' + ')
+        || (state.provider === "twitch" ? "Twitch" : "Patreon");
       menu.innerHTML = `
           <span class="menu-header fg-secondary small"><i class="bi bi-box-arrow-in-right me-1"></i>${i18next.t("auth.yourAccount", "Your account")}: ${providerLabel}</span>
           ${
@@ -131,6 +122,7 @@ export class AuthUI {
               ? `<span class="menu-header fg-success small"><img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon">${i18next.t("auth.proActive", "Pro active")}</span>`
               : `<button class="menu-item small" id="upgradeProBtn" type="button"><i class="bi bi-star me-1"></i>${i18next.t("auth.subscribeCta", "Upgrade to Pro")}</button>`
           }
+          <button class="menu-item small" id="manageAccountsBtn" type="button">${i18next.t("auth.manageAccounts", "Connected accounts")}</button>
           <hr class="menu-divider">
           <button class="menu-item" id="logoutBtn" type="button"><i class="bi bi-box-arrow-right me-1"></i>${i18next.t("auth.signOut", "Sign out")}</button>
         `;
@@ -145,12 +137,18 @@ export class AuthUI {
         this.handleLogout();
       });
       menu.querySelector("#upgradeProBtn")?.addEventListener("click", () => AuthUI.showGetProModal());
+      menu.querySelector("#manageAccountsBtn")?.addEventListener("click", () => AuthUI.showGetProModal());
     } else {
-      btn.className = "btn btn-sm btn-outline theme-inverse pro-accent";
+      btn.className = "btn btn-sm btn-outline theme-inverse pro-accent animation-pop";
       btn.removeAttribute("data-bs-toggle");
       btn.removeAttribute("aria-expanded");
       btn.innerHTML = `<img src="assets/icons/website-icons/noitamap-pro-icon.svg" alt="" class="pro-icon"> <span class="auth-text">${i18next.t("auth.getPro", "Get Pro")}</span>`;
     }
+  }
+
+  /** Provider controls shared by the map dialog and inline Pro gates. */
+  public static createProControls(options: Parameters<typeof createProControls>[0] = {}): HTMLElement {
+    return createProControls(options);
   }
 
   public static showGetProModal(): void {
@@ -164,48 +162,13 @@ export class AuthUI {
     dialog.setAttribute("data-bs-theme", "dark");
     dialog.setAttribute("aria-labelledby", "getProModalLabel");
 
-    // Two provider columns: Twitch (left) and Patreon (right), each with a
-    // "sign in" and a "subscribe" button, separated by a faint "or". When
-    // TWITCH_ENABLED is off, only the Patreon column shows (centered, no "or").
-    const state = authService.getState();
-    const twitchLoginHtml = state.provider === "twitch"
-      ? ""
-      : `<button id="twitchLoginBtn" class="btn btn-solid theme-primary btn-twitch justify-content-center" type="button">
-          ${TWITCH_SYMBOL_WHITE}
-          <span class="pro-provider-label">${i18next.t("auth.loginWithTwitch", "Sign in with Twitch")}</span>
-        </button>`;
-    const patreonLoginHtml = state.provider === "patreon"
-      ? ""
-      : `<button id="patreonLoginBtn" class="btn btn-solid theme-primary btn-patreon justify-content-center" type="button">
-          ${PATREON_SYMBOL_WHITE}
-          <span class="pro-provider-label">${i18next.t("auth.loginWithPatreon", "Sign in with Patreon")}</span>
-        </button>`;
-    const twitchColumnHtml = TWITCH_ENABLED
-      ? `<div class="pro-col">
-              ${twitchLoginHtml}
-              <a href="https://www.twitch.tv/products/wuote" target="_blank" rel="noopener noreferrer" class="btn btn-outline theme-secondary btn-patron justify-content-center">
-                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span class="pro-provider-label">${i18next.t("auth.subscribeTwitch", "Subscribe on Twitch")}</span>
-              </a>
-            </div>
-            <div class="pro-or">${i18next.t("auth.or", "or")}</div>`
-      : "";
-
     dialog.innerHTML = `
       <div class="dialog-header border-0 pb-0">
         <h2 id="getProModalLabel" class="dialog-title visually-hidden">${i18next.t("auth.getPro", "Get Pro")}</h2>
-        <button type="button" class="btn-close ms-auto" data-bs-dismiss="dialog" aria-label="Close"></button>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="dialog" aria-label="${i18next.t("seedReport.close", "Close")}"></button>
       </div>
       <div class="dialog-body pt-0">
         <p class="text-center mb-5">${i18next.t("auth.proDescription", "Drawing tools and other Pro features are available to supporters.")}</p>
-        <div class="pro-columns">
-          ${twitchColumnHtml}
-          <div class="pro-col">
-            ${patreonLoginHtml}
-            <a href="https://www.patreon.com/wuote/membership" target="_blank" rel="noopener noreferrer" class="btn btn-outline theme-secondary btn-patron justify-content-center">
-              <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span class="pro-provider-label">${i18next.t("auth.becomePatron", "Become a Patron")}</span>
-            </a>
-          </div>
-        </div>
       </div>
     `;
 
@@ -226,8 +189,6 @@ export class AuthUI {
     dialog.addEventListener("hidden.bs.dialog", () => {
       if (!loginPending) dispose();
     }, { once: true });
-    const shown = bsDialog.show();
-
     const login = async (startLogin: () => void) => {
       if (loginPending || disposed) return;
       loginPending = true;
@@ -242,16 +203,10 @@ export class AuthUI {
       startLogin();
     };
 
-    dialog.querySelector("#patreonLoginBtn")?.addEventListener("click", () => {
-      void login(() => authService.login());
-    });
-
-    // Bind Twitch login handler (only present when TWITCH_ENABLED)
-    if (TWITCH_ENABLED) {
-      dialog.querySelector("#twitchLoginBtn")?.addEventListener("click", () => {
-        void login(() => authService.loginTwitch());
-      });
-    }
+    dialog.querySelector(".dialog-body")!.append(AuthUI.createProControls({
+      onLogin: startLogin => { void login(startLogin); },
+    }));
+    const shown = bsDialog.show();
   }
 
   private handleClick(): void {

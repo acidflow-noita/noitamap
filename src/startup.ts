@@ -1,6 +1,17 @@
 // Optional startup metadata must not leave the application waiting forever.
 export const STARTUP_REQUEST_TIMEOUT_MS = 5000;
 
+/** Reveal only after the resolved map, translated controls and event handlers
+ * are installed. Terrain generation and the auth request remain independent. */
+export function finishNavbarStartup(): void {
+  const navbar = document.querySelector<HTMLElement>('.mapNavbar');
+  if (!navbar) return;
+  navbar.querySelector('.navbar-startup')?.remove();
+  navbar.querySelector('#map-menu-controls')?.removeAttribute('inert');
+  navbar.removeAttribute('data-navbar-loading');
+  navbar.setAttribute('aria-busy', 'false');
+}
+
 export function startWhenReady(start: () => Promise<void>, onError: (error: unknown) => void): void {
   let started = false;
   const launch = () => {
@@ -17,6 +28,8 @@ export function startWhenReady(start: () => Promise<void>, onError: (error: unkn
 
 export function showStartupFailure(error: unknown, message: string, retryLabel: string): void {
   console.error('[Noitamap] Startup failed:', error);
+  document.querySelector('.navbar-startup')?.remove();
+  document.querySelector('.mapNavbar')?.setAttribute('aria-busy', 'false');
   document.getElementById('loadingIndicator')?.style.setProperty('display', 'none');
   document.getElementById('map-loading-strip')?.classList.remove('visible', 'fade-out');
   if (document.getElementById('startup-error')) return;

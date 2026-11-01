@@ -128,7 +128,7 @@
     "content": "Den Quellcode auf GitHub ansehen"
   },
   "runfast": {
-    "title": "Runfast.Stream",
+    "title": "Hauptseite",
     "content": "Zur Haupt-Website runfast.stream gehen"
   },
   "gameContent": {
@@ -4613,9 +4613,15 @@
     "switchProviderConfirm": "Wenn Sie sich mit {{next}} anmelden, werden Sie von {{current}} abgemeldet.\n\nDer Pro-Zugriff richtet sich dann nach Ihrem {{next}}-Abonnement.\n\nMöchten Sie zu {{next}} wechseln?",
     "loginWithTwitch": "Mit Twitch anmelden",
     "subscribeTwitch": "Auf Twitch abonnieren",
+    "giftProTwitch": "Pro für einen Streamer verschenken",
+    "giftProTwitchHint": "Verschenke ein Abo für wuote und wähle den Twitch-Namen des Streamers als Empfänger. Mit dem verknüpften Konto kann er Pro nutzen, solange das Geschenkabo aktiv ist.",
     "or": "oder",
     "workspaceSaveFailed": "Der aktuelle Arbeitsstand konnte nicht gespeichert werden. Die Anmeldung wurde abgebrochen. Bitte versuche es erneut.",
-    "workspaceRestoreFailed": "Der Zeichnungsbereich konnte nicht wiederhergestellt werden. Lade die Seite neu und versuche es erneut."
+    "workspaceRestoreFailed": "Der Zeichnungsbereich konnte nicht wiederhergestellt werden. Lade die Seite neu und versuche es erneut.",
+    "giftProOnTwitch": "Gift Pro on Twitch",
+    "giftProOnPatreon": "Gift Pro on Patreon",
+    "giftTwitchAutomatic": "Twitch gifts apply directly to the recipient’s account.",
+    "giftPatreonClaim": "Patreon gifts must be claimed through the gift link the buyer receives after purchase."
   },
   "loading": {
     "maps": "Karten werden geladen...",
@@ -4819,7 +4825,7 @@
       "alreadyGeneratedTitle": "Seed aktiv",
       "alreadyGeneratedContent": "Die Karte wurde bereits fuer diesen Seed generiert. Eine Aenderung der Seed-Nummer regeneriert die Karte"
     },
-    "daily": "Taeglich",
+    "daily": "Täglich",
     "placeholder": "Spiel-Seed",
     "nerdMode": {
       "0": "N",
@@ -4856,7 +4862,10 @@
     "bakeFailedDescription": "Die Vorbereitung der täglichen Karte ist fehlgeschlagen. Du kannst die Karte weiterhin im Browser erzeugen. Bitte melde dies in {{channel}}.",
     "bakeCanceledDescription": "Die Vorbereitung der täglichen Karte wurde abgebrochen. Du kannst die Karte weiterhin im Browser erzeugen.",
     "bakeReadyDescription": "Die Vorbereitung ist abgeschlossen, aber die Karte konnte nicht geladen werden. Versuche, die Seite neu zu laden.",
-    "bakeLastUpdate": "Letzte Statusmeldung: {{time}}."
+    "bakeLastUpdate": "Letzte Statusmeldung: {{time}}.",
+    "bakeReadyTitle": "Tägliche Karte bereit",
+    "bakeAvailableDescription": "Diese tägliche Karte ist vollständig vorbereitet und bereit.",
+    "bakeScheduleDescription": "Tägliche Karten sind normalerweise gegen {{time}} (deine Ortszeit) bereit, etwa 15 Minuten nach dem täglichen Wechsel."
   },
   "alive_wand": "(lebender Zauberstab)",
   "konami": {
@@ -5821,5 +5830,12 @@
   "startup": {
     "failed": "Noitamap konnte nicht gestartet werden. Lade die Seite neu, um es erneut zu versuchen.",
     "retry": "Seite neu laden"
+  },
+  "guessr": {
+    "title": "NoitaGuessr",
+    "content": "Spielmodi: Täglich, Demo, Chat gegen Streamer"
+  },
+  "attribution": {
+    "poweredBy": "Unterstützt von"
   }
 }

@@ -28,6 +28,7 @@ const JSZip = require("jszip");
 const { PNG } = require("pngjs");
 const { createHash } = require("node:crypto");
 const { buildSpellCards } = require("./spell-card-sprites.cjs");
+const { spritesheetInputFingerprint, hasCurrentSpritesheet, saveSpritesheetCache } = require("./spritesheet-cache.cjs");
 
 const DATA_ZIP = path.resolve(__dirname, "..", "public", "data.zip");
 const OUT_DIR = path.resolve(__dirname, "..", "public", "assets");
@@ -401,6 +402,12 @@ function isFullyTransparent(data) {
 }
 
 async function main() {
+  const root = path.resolve(__dirname, "..");
+  const fingerprint = spritesheetInputFingerprint(root);
+  if (hasCurrentSpritesheet(root, fingerprint)) {
+    console.log("[build-spritesheet] Inputs unchanged; reusing verified spritesheet and atlas outputs.");
+    return;
+  }
   console.log("[build-spritesheet] Loading data.zip...");
   const zipBuf = fs.readFileSync(DATA_ZIP);
   const zip = await JSZip.loadAsync(zipBuf);
@@ -926,6 +933,12 @@ async function main() {
   // The atlas is bundled, but the PNG is served separately. Version its URL
   // by bytes so a cached older sheet can never be paired with the new atlas.
   writeFileSyncRetry(REVISION_JSON, JSON.stringify(createHash('sha256').update(pngBuf).digest('hex')) + '\n');
+
+  try {
+    saveSpritesheetCache(root, fingerprint);
+  } catch (err) {
+    console.warn(`[build-spritesheet] Could not save build cache: ${err.message}`);
+  }
 
   console.log("[build-spritesheet] Done.");
 }

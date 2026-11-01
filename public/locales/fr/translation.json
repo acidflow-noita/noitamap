@@ -128,7 +128,7 @@
     "content": "Voir le code source sur GitHub"
   },
   "runfast": {
-    "title": "Runfast.Stream",
+    "title": "Site principal",
     "content": "Aller au site principal runfast.stream"
   },
   "gameContent": {
@@ -4613,9 +4613,15 @@
     "switchProviderConfirm": "En vous connectant avec {{next}}, vous serez déconnecté de {{current}}.\n\nL'accès Pro dépendra alors de votre abonnement {{next}}.\n\nSouhaitez-vous passer à {{next}} ?",
     "loginWithTwitch": "Se connecter avec Twitch",
     "subscribeTwitch": "S’abonner sur Twitch",
+    "giftProTwitch": "Offrir Pro à un streamer",
+    "giftProTwitchHint": "Offrez un abonnement à la chaîne de wuote en choisissant le pseudo Twitch du streamer comme destinataire. Il pourra lier ce compte pour utiliser Pro pendant la durée de l’abonnement offert.",
     "or": "ou",
     "workspaceSaveFailed": "Impossible d’enregistrer votre espace de travail. La connexion a été annulée. Veuillez réessayer.",
-    "workspaceRestoreFailed": "Impossible de restaurer votre espace de dessin. Rechargez la page pour réessayer."
+    "workspaceRestoreFailed": "Impossible de restaurer votre espace de dessin. Rechargez la page pour réessayer.",
+    "giftProOnTwitch": "Gift Pro on Twitch",
+    "giftProOnPatreon": "Gift Pro on Patreon",
+    "giftTwitchAutomatic": "Twitch gifts apply directly to the recipient’s account.",
+    "giftPatreonClaim": "Patreon gifts must be claimed through the gift link the buyer receives after purchase."
   },
   "loading": {
     "maps": "Chargement des cartes...",
@@ -4856,7 +4862,10 @@
     "bakeFailedDescription": "La préparation de la carte du jour a échoué. Vous pouvez toujours générer la carte dans votre navigateur. Signalez le problème dans {{channel}}.",
     "bakeCanceledDescription": "La préparation de la carte du jour a été annulée. Vous pouvez toujours générer la carte dans votre navigateur.",
     "bakeReadyDescription": "La préparation est terminée, mais la carte n’a pas pu être chargée. Essayez de recharger la page.",
-    "bakeLastUpdate": "Dernière mise à jour du statut : {{time}}."
+    "bakeLastUpdate": "Dernière mise à jour du statut : {{time}}.",
+    "bakeReadyTitle": "Carte du jour prête",
+    "bakeAvailableDescription": "Cette carte du jour est entièrement préparée et prête.",
+    "bakeScheduleDescription": "Les cartes du jour sont généralement prêtes vers {{time}} (votre heure locale), environ 15 minutes après le changement quotidien."
   },
   "alive_wand": "(baguette vivante)",
   "konami": {
@@ -5821,5 +5830,12 @@
   "startup": {
     "failed": "Impossible de démarrer Noitamap. Rechargez la page pour réessayer.",
     "retry": "Recharger la page"
+  },
+  "guessr": {
+    "title": "NoitaGuessr",
+    "content": "Modes de jeu : Quotidien, Démo, Chat contre streamer"
+  },
+  "attribution": {
+    "poweredBy": "Propulsé par"
   }
 }

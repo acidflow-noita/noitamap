@@ -1,0 +1,238 @@
+/* Shared Patreon/Twitch provider controls for Noitamap and Guessr. */
+:root {
+  --patreon: oklch(0.628 0.224 21.1); /* #FF424D brand */
+  --twitch: oklch(0.512 0.226 296.5); /* #9146FF brand */
+}
+
+/* Shared sizing so every Patreon button (modal, drawing sidebar, seed report)
+   is identical regardless of its container — one consistent pill width,
+   centered, with a sane max so it never stretches full-width in a wide modal. */
+.btn-patreon,
+.btn-patron,
+.btn-twitch {
+  width: 100%;
+  max-width: 15rem;
+  margin-inline: auto;
+  justify-content: center;
+}
+
+/* Twitch sign-in button. Mirrors .btn-patreon in brand purple. */
+.btn-twitch {
+  background-color: var(--twitch);
+  color: oklch(1 0 0);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.has-alpha-badge { position: relative; overflow: visible; }
+
+.btn-twitch::after,
+.has-alpha-badge::after {
+  content: "Beta";
+  position: absolute;
+  top: -0.45rem;
+  right: -0.35rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-pill);
+  background: oklch(0.9 0.14 95);
+  color: oklch(0.25 0.04 296.5);
+  box-shadow: 0 1px 4px oklch(0 0 0 / 0.35);
+  font-size: 0.625rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.has-alpha-badge::after { content: "α"; text-transform: none; font-size: .75rem; }
+
+.btn-twitch:hover {
+  background-color: oklch(0.46 0.226 296.5); /* darker brand */
+  color: oklch(1 0 0);
+}
+
+.btn-twitch svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Get Pro modal: two provider columns (Twitch | Patreon) with a faint "or"
+   divider between them. Each column stacks its sign-in + subscribe buttons.
+   Collapses to a single stacked column on narrow screens. Also reused by the
+   seed-report locked view. */
+.pro-columns {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 1rem;
+}
+.pro-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 15rem;
+}
+/* Translated labels must fit the button even at increased text sizes. */
+.pro-col > .btn-twitch,
+.pro-col > .btn-patreon,
+.pro-col > .btn-patron {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+  line-height: 1.35;
+}
+.pro-col > a > i,
+.pro-col > button > svg {
+  flex-shrink: 0;
+}
+.pro-provider-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pro-provider-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.pro-provider-status strong { font-size: 0.9rem; }
+.pro-membership-active { color: oklch(0.82 0.15 155); }
+.pro-membership-inactive { opacity: 0.75; }
+.pro-unlink {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.pro-col > button:disabled { opacity: 0.55; cursor: default; }
+.pro-gift {
+  display: grid;
+  gap: 0.375rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+.pro-gift-link {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.375rem;
+  font-weight: 600;
+  text-underline-offset: 0.15em;
+}
+.pro-gift-link > i { flex-shrink: 0; }
+.pro-gift-hint {
+  margin: 0;
+  opacity: 0.8;
+}
+.pro-gift-disclosure > summary { cursor: pointer; }
+.pro-gift-recipient { display: grid; gap: .5rem; padding-block-start: .5rem; }
+.pro-gift-recipient label { text-align: start; }
+.pro-gift-recipient input { width: 100%; min-width: 0; }
+.pro-gift-checkout:disabled { opacity: .5; cursor: not-allowed; }
+.btn-twitch[data-pro-gift]::after { content: none; }
+.pro-gift-featured { text-decoration: none; }
+.pro-gift-offer { display: flex; flex-direction: column; align-items: center; gap: 1rem; text-align: center; }
+.pro-gift-offer > .pro-gift-hint { max-width: 44ch; }
+.pro-or {
+  display: flex;
+  align-items: center;
+  color: oklch(1 0 0 / 0.35);
+  font-size: 0.8rem;
+  text-transform: lowercase;
+  user-select: none;
+}
+@media (max-width: 560px) {
+  .pro-columns {
+    flex-direction: column;
+    align-items: center;
+  }
+  .pro-or {
+    justify-content: center;
+  }
+}
+
+
+.btn-patreon {
+  background-color: var(--patreon);
+  color: oklch(1 0 0);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.btn-patreon:hover {
+  background-color: oklch(0.58 0.224 21.1); /* darker brand */
+  color: oklch(1 0 0);
+}
+
+.btn-patreon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-patreon-outline {
+  background-color: transparent;
+  color: var(--patreon);
+  border: 1px solid var(--patreon);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-patreon-outline:hover {
+  background-color: oklch(0.628 0.224 21.1 / 0.1);
+  color: var(--patreon);
+}
+
+/* "Become a Patron" — Pro identity: animated rainbow gradient border over a
+   raised-slate surface (matches the other Pro CTAs). */
+.btn-patron {
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-pill);
+  background:
+    linear-gradient(var(--pro-surface-hi), var(--pro-surface-hi)) padding-box,
+    var(--pro-gradient) border-box;
+  background-size: 200% 100%;
+  animation: pro-border-pan 6s linear infinite;
+  color: var(--pro-fg);
+  padding: 8px 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: box-shadow 0.15s;
+  text-decoration: none;
+}
+
+.btn-patron:hover {
+  box-shadow: 0 0 0.6rem var(--pro-glow);
+  color: var(--pro-fg);
+}

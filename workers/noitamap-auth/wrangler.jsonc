@@ -1,5 +1,6 @@
 {
   "name": "noitamap-auth",
+  "account_id": "666c045f38dd332e459bfe2a18c4e9a9",
   "main": "src/index.ts",
   "compatibility_date": "2026-01-20",
   "observability": {
@@ -12,6 +13,12 @@
     "ALLOWED_ORIGINS": "https://noitamap.com,https://dev.noitamap.com,https://dynamic-map.noitamap.com,https://dynamic-map.noitamap.pages.dev,https://instant-map.noitamap.com,https://instant-map.noitamap.pages.dev",
   },
   // Production bindings. Wrangler does not inherit bindings into environments.
+  "d1_databases": [{
+    "binding": "ACCOUNT_DB",
+    "database_name": "noitamap-auth-accounts",
+    "database_id": "843b3e88-230d-4912-8b7d-d1bcdb5b5d2d",
+    "migrations_dir": "migrations"
+  }],
   "kv_namespaces": [{ "binding": "TWITCH_TOKEN_STORE", "id": "7be2bbc4b8bd4b7b9d4ede511756ff92" }],
   "secrets_store_secrets": [
     {
@@ -62,6 +69,12 @@
     // Development environment
     "dev": {
       "name": "noitamap-auth-dev",
+      "d1_databases": [{
+        "binding": "ACCOUNT_DB",
+        "database_name": "noitamap-auth-accounts-dev",
+        "database_id": "458cdca7-305e-468b-8072-18bb3d05d142",
+        "migrations_dir": "migrations"
+      }],
       "vars": {
         "WORKER_URL": "https://noitamap-auth-dev.wuote.workers.dev",
         "ALLOWED_ORIGINS": "https://dev.noitamap.com,http://localhost:5173,http://localhost:4173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:4173,http://127.0.0.1:3000,https://dynamic-map.noitamap.com,https://dynamic-map.noitamap.pages.dev",

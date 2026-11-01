@@ -1,0 +1,13 @@
+# Guessr routes are static page rewrites; APIs and OAuth callback files stay separate.
+/guess/demo /guess/index.html 200
+/guess/demo/ /guess/index.html 200
+/guess/daily /guess/index.html 200
+/guess/daily/ /guess/index.html 200
+/guess/history /guess/index.html 200
+/guess/history/ /guess/index.html 200
+/guess/join /guess/index.html 200
+/guess/join/ /guess/index.html 200
+/guess/stream /guess/index.html 200
+/guess/stream/* /guess/index.html 200
+/guess/results /guess/index.html 200
+/guess/results/* /guess/index.html 200

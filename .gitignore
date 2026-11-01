@@ -1,5 +1,20 @@
 /node_modules
 /dist
+
+# Local credentials and Cloudflare runtime state, at any project depth.
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+!.env.*.example
+!*.env.example
+*-secrets.json
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+!.dev.vars.*.example
+.wrangler/
 /public/flags
 /public/locales
 /public/js

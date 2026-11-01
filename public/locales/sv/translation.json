@@ -128,7 +128,7 @@
     "content": "Visa källkoden på GitHub"
   },
   "runfast": {
-    "title": "Runfast.Stream",
+    "title": "Huvudwebbplats",
     "content": "Gå till huvudwebbplatsen runfast.stream"
   },
   "gameContent": {
@@ -4613,9 +4613,15 @@
     "switchProviderConfirm": "Om du loggar in med {{next}} loggas du ut från {{current}}.\n\nPro-åtkomsten baseras därefter på din {{next}}-prenumeration.\n\nVill du byta till {{next}}?",
     "loginWithTwitch": "Logga in med Twitch",
     "subscribeTwitch": "Prenumerera på Twitch",
+    "giftProTwitch": "Ge Pro till en streamer",
+    "giftProTwitchHint": "Ge bort en prenumeration på wuote och välj streamerns Twitch-användarnamn som mottagare. Genom att länka det kontot kan streamern använda Pro så länge gåvoprenumerationen är aktiv.",
     "or": "eller",
     "workspaceSaveFailed": "Arbetsläget kunde inte sparas. Inloggningen avbröts. Försök igen.",
-    "workspaceRestoreFailed": "Ritningsarbetsytan kunde inte återställas. Ladda om sidan och försök igen."
+    "workspaceRestoreFailed": "Ritningsarbetsytan kunde inte återställas. Ladda om sidan och försök igen.",
+    "giftProOnTwitch": "Gift Pro on Twitch",
+    "giftProOnPatreon": "Gift Pro on Patreon",
+    "giftTwitchAutomatic": "Twitch gifts apply directly to the recipient’s account.",
+    "giftPatreonClaim": "Patreon gifts must be claimed through the gift link the buyer receives after purchase."
   },
   "loading": {
     "maps": "Laddar kartor...",
@@ -4856,7 +4862,10 @@
     "bakeFailedDescription": "Förberedelsen av dagens karta misslyckades. Du kan fortfarande generera kartan i webbläsaren. Rapportera problemet i {{channel}}.",
     "bakeCanceledDescription": "Förberedelsen av dagens karta avbröts. Du kan fortfarande generera kartan i webbläsaren.",
     "bakeReadyDescription": "Förberedelsen är klar, men kartan kunde inte laddas. Prova att ladda om sidan.",
-    "bakeLastUpdate": "Senaste statusuppdatering: {{time}}."
+    "bakeLastUpdate": "Senaste statusuppdatering: {{time}}.",
+    "bakeReadyTitle": "Dagens karta är klar",
+    "bakeAvailableDescription": "Dagens karta är helt förberedd och klar.",
+    "bakeScheduleDescription": "Dagens karta är normalt klar omkring {{time}} (din lokala tid), cirka 15 minuter efter det dagliga bytet."
   },
   "alive_wand": "(levande trollstav)",
   "konami": {
@@ -5821,5 +5830,12 @@
   "startup": {
     "failed": "Noitamap kunde inte startas. Ladda om sidan och försök igen.",
     "retry": "Ladda om sidan"
+  },
+  "guessr": {
+    "title": "NoitaGuessr",
+    "content": "Spellägen: Daglig, Demo, Chatten mot streamaren"
+  },
+  "attribution": {
+    "poweredBy": "Drivs av"
   }
 }

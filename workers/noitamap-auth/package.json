@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "db:migrate:local": "wrangler d1 migrations apply ACCOUNT_DB --local --config wrangler.accounts-local.jsonc",
+    "types:accounts": "wrangler types src/account-bindings.d.ts --env-interface AccountRegistryBindings --include-runtime=false",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "deploy:dev": "wrangler deploy --env dev"

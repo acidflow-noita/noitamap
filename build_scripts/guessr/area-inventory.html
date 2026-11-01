@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NoitaGuessr area inventory</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101927;color:#e5ebf4;font:14px system-ui}header{padding:16px 20px;border-bottom:1px solid #34435a}h1{font-size:22px;margin:0 0 8px}p{margin:6px 0;color:#b6c5d8}a{color:#8bcdff}input,select{font:inherit;padding:8px;background:#1b2a40;color:inherit;border:1px solid #51617a;border-radius:5px}main{display:grid;grid-template-columns:minmax(330px,38%) 1fr;height:calc(100vh - 160px)}aside{overflow:auto;border-right:1px solid #34435a;padding:12px}article{padding:14px;overflow:auto}button{display:block;width:100%;text-align:left;font:inherit;color:inherit;background:#1b2a40;border:1px solid #34435a;border-radius:5px;padding:10px;margin:5px 0;cursor:pointer}button[aria-current=true]{border-color:#8bcdff;background:#29415f}.tag{display:inline-block;font-size:11px;color:#b6c5d8;margin-left:8px}.excluded{opacity:.65}small{display:block;color:#aabbd0;margin-top:3px}svg{background:#05070c;width:100%;height:60vh;min-height:280px;border:1px solid #51617a;image-rendering:pixelated}.notes{white-space:pre-wrap;line-height:1.5}#details{margin:10px 0}#count{margin-left:8px}@media(max-width:760px){main{display:block;height:auto}aside{max-height:35vh}svg{height:50vh}}
+</style>
+<header><h1>NoitaGuessr area review</h1><p id="summary"></p><p>Puzzle areas group recognizable places. Outlines retain source-mask holes; valid starting positions still need tracing.</p><p id="tiers"></p><select id="view" aria-label="Choose review view"><option value="puzzles">Puzzle areas</option><option value="unassigned">Sources awaiting grouping</option><option value="sources">All source records</option></select> <input id="search" placeholder="Find a biome, landmark or ID" aria-label="Search areas"> <select id="status" aria-label="Filter status"></select><span id="count"></span><p><a href="puzzle-areas.csv">Puzzle-area CSV</a> · <a href="areas.csv">Source audit CSV</a> · <a href="inventory.json">Geometry and decisions</a> · <a href="scene-audit.txt">Scene audit</a></p></header>
+<main><aside id="list"></aside><article><h2 id="name"></h2><p id="details"></p><svg id="map" xmlns="http://www.w3.org/2000/svg" aria-label="Captured map and selected source area"></svg><p class="notes" id="notes"></p></article></main>
+<script>
+const data=__INVENTORY_JSON__;
+const $=id=>document.getElementById(id),ns='http://www.w3.org/2000/svg',c=data.capture;
+function svg(tag,attrs){const e=document.createElementNS(ns,tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,String(v));return e}
+$('summary').textContent=`${data.counts.curatedAreas} curated groups from ${data.counts.assignedSourceComponents} source components. ${data.counts.unassignedSourceRecords} other source records await grouping or footprint review; they are not automatically separate puzzles.`;
+const title=s=>s[0].toUpperCase()+s.slice(1),budget=s=>`${s.area.toLocaleString()} area + ${s.position.toLocaleString()} proximity`;
+$('tiers').textContent=Object.entries(data.scoringProfiles).map(([tier,s])=>`${title(tier)}: ${budget(s)}`).join(' · ');
+const tierLabel=a=>a.difficultyRule?'Normal / Hard (starting view)':a.difficultyTier?title(a.difficultyTier):'';
+let selected='landmark/pyramid';
+function records(){return $('view').value==='puzzles'?data.puzzleAreas:$('view').value==='unassigned'?data.areas.filter(a=>!a.puzzleAreaId&&a.status!=='excluded'):data.areas}
+function show(a){selected=a.id;for(const b of $('list').children)b.setAttribute('aria-current',b.dataset.id===selected?'true':'false');$('name').textContent=a.label;$('details').textContent=`${a.id} · ${a.sourceIds?`${a.sourceIds.length} source pieces grouped`:a.status} · ${a.geometry}`;
+ const notes=[a.reason];
+ if(a.difficultyRule){const r=a.difficultyRule;notes.push(`Starting view contains snow pixels: ${title(r.withSnow)} — ${budget(a.scoringVariants[r.withSnow])}.\nStarting view contains no snow pixels: ${title(r.withoutSnow)} — ${budget(a.scoringVariants[r.withoutSnow])}.\nClassify the original clue before sampling; unknown is pending review. Travel and zoom do not change the tier. This does not change the running prototype yet.`)}
+ else if(a.scoring)notes.push(`Difficulty: ${title(a.difficultyTier)}${a.scoreOverride?' (area-specific score split)':''}. Up to ${budget(a.scoring)} points. This does not change the running prototype yet.`);
+ if(a.puzzleAreaId)notes.push(`Grouped into: ${data.puzzleAreas.find(p=>p.id===a.puzzleAreaId)?.label??a.puzzleAreaId}. This source piece is not an independent puzzle.`);
+ notes.push(`Source: ${a.source}`,a.translationKey?`In-game name: ${a.translationKey}. Parenthetical qualifiers describe location or room role.`:'Label is an editorial/source identifier.',`Final valid-start mask: pending. Sampling: disabled.`);
+ if(a.sourceIds)notes.push('Source pieces:\n'+a.sourceIds.join('\n'));
+ if(a.evidence?.length)notes.push('Grouping evidence:\n'+a.evidence.join('\n'));
+ if(a.containingComponents?.length)notes.push('Containing source component: '+a.containingComponents.join(', '));
+ $('notes').textContent=notes.join('\n\n');
+ if(a.overviewStatistics){const s=a.overviewStatistics;$('notes').textContent+=`\nOverview sample: ${s.distinctColors} colors; ${(100*s.dominantFraction).toFixed(2)}% dominant ${s.dominantColor}. This is a review aid, not an eligibility rule.`}
+ if(a.nativeContentAudit){const s=a.nativeContentAudit;$('notes').textContent+=`\nNative mask checked: ${s.pixels.toLocaleString()} pixels; ${(100*s.dominantFraction).toFixed(2)}% ${s.dominantColor}.`}
+ const b=a.bounds??(a.point?{x:a.point.x-1024,y:a.point.y-1024,width:2048,height:2048}:null);$('map').replaceChildren();if(!b)return;
+ const pad=Math.max(128,Math.min(1024,Math.max(b.width,b.height)*.12)),v={x:Math.max(c.originX,b.x-pad),y:Math.max(c.originY,b.y-pad),right:Math.min(c.originX+c.width,b.x+b.width+pad),bottom:Math.min(c.originY+c.height,b.y+b.height+pad)};v.width=Math.max(1,v.right-v.x);v.height=Math.max(1,v.bottom-v.y);$('map').setAttribute('viewBox',`${v.x} ${v.y} ${v.width} ${v.height}`);
+ const level=Math.max(10,Math.min(c.maxLevel,c.maxLevel-Math.max(0,Math.floor(Math.log2(Math.max(v.width/900,v.height/600)))))),scale=2**(c.maxLevel-level),w=Math.ceil(c.width/scale),h=Math.ceil(c.height/scale),size=c.tileSize,o=c.overlap;
+ const tx0=Math.max(0,Math.floor((v.x-c.originX)/(size*scale))),ty0=Math.max(0,Math.floor((v.y-c.originY)/(size*scale))),tx1=Math.min(Math.ceil(w/size)-1,Math.floor((v.right-c.originX)/(size*scale))),ty1=Math.min(Math.ceil(h/size)-1,Math.floor((v.bottom-c.originY)/(size*scale)));
+ for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){const left=tx*size-(tx?o:0),top=ty*size-(ty?o:0),right=Math.min(w,(tx+1)*size+o),bottom=Math.min(h,(ty+1)*size+o);$('map').append(svg('image',{x:c.originX+left*scale,y:c.originY+top*scale,width:(right-left)*scale,height:(bottom-top)*scale,href:`../site/captured/map_files/${level}/${tx}_${ty}.webp`}))}
+ const outline=svg('g',{fill:'#50d5ff22',stroke:'#50d5ff','stroke-width':1.3,'vector-effect':'non-scaling-stroke'});
+ if(a.runs){
+  // Fill the exact union, then stroke only exposed cell edges. Internal rows
+  // and engine partitions must not look like separate proposed puzzle areas.
+  const cells=new Set(),fill=[],edges=[];
+  for(const[y,x0,x1]of a.runs){const wx=-17920+x0*512,wy=a.originY+y*512;fill.push(`M${wx} ${wy}h${(x1-x0)*512}v512h${-(x1-x0)*512}Z`);for(let x=x0;x<x1;x++)cells.add(`${x},${y}`)}
+  for(const[y,x0,x1]of a.runs)for(let x=x0;x<x1;x++){
+   const wx=-17920+x*512,wy=a.originY+y*512;
+   if(!cells.has(`${x},${y-1}`))edges.push(`M${wx} ${wy}h512`);
+   if(!cells.has(`${x},${y+1}`))edges.push(`M${wx} ${wy+512}h512`);
+   if(!cells.has(`${x-1},${y}`))edges.push(`M${wx} ${wy}v512`);
+   if(!cells.has(`${x+1},${y}`))edges.push(`M${wx+512} ${wy}v512`);
+  }
+  outline.append(svg('path',{d:fill.join(''),stroke:'none'}),svg('path',{d:edges.join(''),fill:'none','vector-effect':'non-scaling-stroke'}));
+ }
+ else if(a.bounds)outline.append(svg('rect',{...a.bounds,'fill':'none','stroke-dasharray':a.geometry==='source-scene-rectangle'?'7 5':'none','vector-effect':'non-scaling-stroke'}));
+ else if(a.point){const r=Math.max(v.width,v.height)*.02;outline.append(svg('path',{d:`M ${a.point.x-r} ${a.point.y} L ${a.point.x+r} ${a.point.y} M ${a.point.x} ${a.point.y-r} L ${a.point.x} ${a.point.y+r}`,'vector-effect':'non-scaling-stroke'}))}
+ $('map').append(outline);
+}
+function filter(){const q=$('search').value.toLowerCase(),status=$('status').value,rows=records().filter(a=>(!status||a.status===status)&&JSON.stringify([a.id,a.label,a.engine,a.reason,a.sourceIds,a.difficultyTier,a.difficultyRule]).toLowerCase().includes(q));$('list').replaceChildren();$('count').textContent=`${rows.length} ${$('view').value==='puzzles'?'areas':'source records'}`;for(const a of rows){const b=document.createElement('button');b.dataset.id=a.id;b.className=a.status==='excluded'?'excluded':'';b.textContent=a.label;const t=document.createElement('span');t.className='tag';t.textContent=$('view').value==='puzzles'?`${a.sourceIds?`${a.sourceIds.length} pieces`:'footprint pending'} · ${tierLabel(a)}`:a.puzzleAreaId?'grouped':a.status;b.append(t);const small=document.createElement('small');small.textContent=a.id;b.append(small);b.onclick=()=>show(a);$('list').append(b)}const a=rows.find(a=>a.id===selected)??rows[0];if(a)show(a);else{$('name').textContent='No matching records';$('details').textContent='';$('notes').textContent='';$('map').replaceChildren()}}
+function changeView(){const all=document.createElement('option');all.value='';all.textContent='All statuses';$('status').replaceChildren(all);for(const key of [...new Set(records().map(a=>a.status))].sort()){const o=document.createElement('option');o.value=key;o.textContent=key;$('status').append(o)}filter()}
+$('search').oninput=filter;$('status').onchange=filter;$('view').onchange=changeView;changeView();
+</script></html>

@@ -8,6 +8,7 @@ import sharp from "sharp";
 import { decodePngToRgba } from "../src/telescope/png-decode";
 import { compositeTerrain } from "../src/telescope/terrain-backgrounds";
 import { createSceneTileCompositor } from "../src/telescope/terrain-scenes";
+import { telescopeAssetCandidates } from "../src/telescope/telescope-asset-paths";
 
 function trns(png: Uint8Array, values: number[]): ArrayBuffer {
   // Truecolor/grayscale tRNS is a source-depth sample key, always stored as
@@ -123,10 +124,10 @@ describe("PNG authored color-key transparency", () => {
 
 describe("actual scene-background assets (independent native PNG reference)", () => {
   let zip: JSZip;
+  let sceneZip: JSZip;
   beforeAll(async () => {
-    zip = await JSZip.loadAsync(
-      await readFile(new URL("../public/data.zip", import.meta.url)),
-    );
+    [zip, sceneZip] = await Promise.all(['data.zip', 'pixel_scenes.zip'].map(async name =>
+      JSZip.loadAsync(await readFile(new URL(`../public/${name}`, import.meta.url)))));
   });
   for (const path of [
     "rainforest/plantlife",
@@ -162,13 +163,15 @@ describe("actual scene-background assets (independent native PNG reference)", ()
   }
   it("preserves native RGBA for every engine-listed scene background, not just the reported colors", async () => {
     const paths = new Set<string>(
-      Object.values(SCENE_BACKGROUNDS).map((path) =>
-        String(path).replace(/^data\/backgrounds\//, "data/"),
-      ),
+      Object.values(SCENE_BACKGROUNDS).map(String),
     );
     for (const path of paths) {
-      const file = zip.file(path);
-      expect(file, `missing original scene background ${path}`).not.toBeNull();
+      // Use the same archive priority as the engine, including prepared splices.
+      const file = telescopeAssetCandidates(path).map(candidate =>
+        candidate.archive === 'main' ? zip.file(candidate.path)
+          : candidate.archive === 'pixel_scenes' ? sceneZip.file(candidate.path) : null,
+      ).find(Boolean);
+      expect(file, `missing scene background ${path}`).toBeTruthy();
       const bytes = await file!.async("uint8array");
       const decoded = decodePngToRgba(arrayBuffer(bytes));
       // Compare authored samples, not Photoshop ICC-adjusted display colors.

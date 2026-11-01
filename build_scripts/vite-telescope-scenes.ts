@@ -3,19 +3,32 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { sceneInputFingerprint } from "./telescope-scene-provenance.mjs";
+import { createBuildCache } from "./vite-build-cache.ts";
+
+export function createSceneInputs(root: string) {
+  return createBuildCache(async () => {
+    const files: string[] = [];
+    const fingerprint = await sceneInputFingerprint(root, (file: string) => files.push(file));
+    return { fingerprint, files };
+  });
+}
 
 /** The runtime asset URL and source provenance are compiled together. A changed
  * fork/archive cannot accidentally consume an older seed-independent cache. */
-export function telescopeScenesPlugin(root: string): Plugin {
+export function telescopeScenesPlugin(root: string, inputs = createSceneInputs(root)): Plugin {
   const name = "virtual:noitamap-scene-assets",
     internal = "\0" + name,
     identity = "virtual:noitamap-telescope-asset-identity";
   let command = "build";
+  let worker = false;
   return {
     name: "noitamap-prepared-scenes",
     configResolved(config) {
       command = config.command;
+      worker = config.isWorker;
     },
+    buildStart() { if (!worker) inputs.invalidate(); },
+    watchChange() { inputs.invalidate(); },
     resolveId(id) {
       if (id === name) return internal;
       if (id === identity) return "\0" + identity;
@@ -23,9 +36,11 @@ export function telescopeScenesPlugin(root: string): Plugin {
     async load(id) {
       // Scene preparation itself imports the data bridge. This identity must
       // be available before the prepared pack/manifest exists.
+      if (id !== internal && id !== "\0" + identity) return;
+      const { fingerprint, files } = await inputs.read();
+      for (const file of files) this.addWatchFile(file);
       if (id === "\0" + identity)
-        return `export const provenance = ${JSON.stringify(await sceneInputFingerprint(root, (file: string) => this.addWatchFile(file)))};`;
-      if (id !== internal) return;
+        return `export const provenance = ${JSON.stringify(fingerprint)};`;
       const dir = resolve(root, "build_data/telescope-scenes");
       let manifest: any;
       try {
@@ -39,7 +54,7 @@ export function telescopeScenesPlugin(root: string): Plugin {
       }
       if (
         manifest.version !== 1 ||
-        manifest.provenance !== (await sceneInputFingerprint(root))
+        manifest.provenance !== fingerprint
       )
         throw new Error(
           "Prepared Telescope scene assets are stale. Run npm run prepare-telescope-scenes.",

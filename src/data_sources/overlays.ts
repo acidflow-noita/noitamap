@@ -18,6 +18,7 @@ import { buildExtendedCreatureSectionByName } from '../extended-info';
 import { describeBiome } from './biome-names';
 import { clearCreatureSpawnBiomeFocus } from './creature-spawn-biomes';
 import { attachWikiLinkPopover, hidePopovers } from '../popover-util';
+import { createDustAttribution, usesDustAnimation } from '../portals/attribution';
 
 // Preload the POI atlas, but DEFER it to browser idle. Loading it eagerly at
 // module init pulls a ~1.25 MB spritesheet + atlas decode onto the main thread
@@ -569,6 +570,7 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: Point
     popup.appendChild(wikiLink);
   }
 
+  if (usesDustAnimation({ name })) popup.appendChild(createDustAttribution());
   return popup;
 }
 

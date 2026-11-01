@@ -45,6 +45,16 @@ async function compile(root: string, input = "index.html") {
 }
 
 describe("production delivery output", () => {
+  it('retains delivery policy when the independent game page is added', async () => {
+    const root = await fixture();
+    await mkdir(join(root, 'guess'));
+    await writeFile(join(root, 'guess/index.html'), '<title>Game</title><script type="module" src="/main.js"></script>');
+    await build({ root, configFile: false, logLevel: 'silent', plugins: [deliveryPlugin()],
+      build: { assetsDir: 'build', rollupOptions: { input: { main: join(root, 'index.html'), game: join(root, 'guess/index.html') } } } });
+    expect(await readFile(join(root, 'dist/guess/index.html'), 'utf8')).toContain('<title>Game</title>');
+    expect(await readFile(join(root, 'dist/_headers'), 'utf8')).toContain('max-age=31536000, immutable');
+    await expect(readFile(join(root, 'dist/game-translations/common.csv'))).rejects.toMatchObject({ code: 'ENOENT' });
+  });
   it("omits only build-only copies and caches the fingerprinted bucket", async () => {
     const existingHeaders = "/*\n  X-Content-Type-Options: nosniff\n";
     const root = await fixture(existingHeaders);

@@ -128,7 +128,7 @@
     "content": "GitHub でソースコードを表示"
   },
   "runfast": {
-    "title": "Runfast.Stream",
+    "title": "メインサイト",
     "content": "メインウェブサイト runfast.stream へ移動"
   },
   "gameContent": {
@@ -4613,9 +4613,15 @@
     "switchProviderConfirm": "{{next}}でログインすると、{{current}}からログアウトされます。\n\nその後、Pro へのアクセスは {{next}} のサブスクリプションによって決まります。\n\n{{next}}に切り替えますか?",
     "loginWithTwitch": "Twitchでログイン",
     "subscribeTwitch": "Twitchでサブスク登録",
+    "giftProTwitch": "配信者にProを贈る",
+    "giftProTwitchHint": "wuoteチャンネルのサブスクをギフトとして贈り、受取人に配信者のTwitchユーザー名を指定してください。配信者がそのアカウントを連携すると、ギフト期間中はProを利用できます。",
     "or": "または",
     "workspaceSaveFailed": "作業状態を保存できませんでした。ログインを中止しました。もう一度お試しください。",
-    "workspaceRestoreFailed": "描画の作業状態を復元できませんでした。ページを再読み込みしてお試しください。"
+    "workspaceRestoreFailed": "描画の作業状態を復元できませんでした。ページを再読み込みしてお試しください。",
+    "giftProOnTwitch": "Gift Pro on Twitch",
+    "giftProOnPatreon": "Gift Pro on Patreon",
+    "giftTwitchAutomatic": "Twitch gifts apply directly to the recipient’s account.",
+    "giftPatreonClaim": "Patreon gifts must be claimed through the gift link the buyer receives after purchase."
   },
   "loading": {
     "maps": "マップを読み込み中...",
@@ -4856,7 +4862,10 @@
     "bakeFailedDescription": "デイリーマップの準備に失敗しました。ブラウザーでのマップ生成は引き続き利用できます。{{channel}}で問題を報告してください。",
     "bakeCanceledDescription": "デイリーマップの準備がキャンセルされました。ブラウザーでのマップ生成は引き続き利用できます。",
     "bakeReadyDescription": "準備は完了しましたが、マップを読み込めませんでした。ページを再読み込みしてください。",
-    "bakeLastUpdate": "最終ステータス更新：{{time}}。"
+    "bakeLastUpdate": "最終ステータス更新：{{time}}。",
+    "bakeReadyTitle": "デイリーマップの準備完了",
+    "bakeAvailableDescription": "このデイリーマップは準備がすべて完了しています。",
+    "bakeScheduleDescription": "デイリーマップは通常、更新から約15分後の{{time}}（お住まいの地域の時刻）ごろに準備が完了します。"
   },
   "alive_wand": "(生きている杖)",
   "konami": {
@@ -5821,5 +5830,12 @@
   "startup": {
     "failed": "Noitamapを起動できませんでした。ページを再読み込みして、もう一度お試しください。",
     "retry": "ページを再読み込み"
+  },
+  "guessr": {
+    "title": "NoitaGuessr",
+    "content": "ゲームモード：デイリー、デモ、チャット対配信者"
+  },
+  "attribution": {
+    "poweredBy": "技術提供："
   }
 }

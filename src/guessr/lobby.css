@@ -1,0 +1,243 @@
+@import "../../public/css/bootstrap-layers.css";
+
+/* Retune Bootstrap 6 cards with the shared map tokens. */
+@layer custom {
+  .guessr-lobby {
+    --lobby-gap: var(--game-gutter);
+    --lobby-image-height: clamp(12rem, 32svh, 30rem);
+
+    display: grid;
+    gap: var(--lobby-gap);
+    min-inline-size: 0;
+  }
+
+  .guessr-lobby .card {
+    --bs-card-bg: var(--surface-1);
+    --bs-card-color: var(--text);
+    --bs-card-border-color: var(--border);
+    --bs-card-border-radius: var(--radius-panel);
+    --bs-card-spacer-x: var(--lobby-gap);
+    --bs-card-spacer-y: var(--lobby-gap);
+    --bs-card-body-gap: var(--game-gutter);
+  }
+
+  .guessr-lobby .lobby-mode {
+    --bs-card-border-radius: var(--bs-rounded-size);
+    overflow: hidden;
+  }
+
+  .lobby-modes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--lobby-gap);
+    align-items: stretch;
+  }
+
+  .lobby-mode-image {
+    display: block;
+    inline-size: 100%;
+    block-size: var(--lobby-image-height);
+    object-fit: cover;
+    image-rendering: pixelated;
+  }
+
+  .lobby-mode-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--game-gutter);
+  }
+
+  .lobby-mode-heading .badge {
+    flex: 0 0 auto;
+  }
+
+  .lobby-mode-description {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .lobby-mode-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--game-gutter);
+    margin-block-start: auto;
+    padding-block-start: var(--game-gutter);
+  }
+
+  .lobby-resume {
+    justify-self: start;
+    inline-size: fit-content;
+    max-inline-size: 100%;
+  }
+
+  .lobby-resume-body,
+  .lobby-history-body {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--lobby-gap);
+  }
+
+  .lobby-resume-details {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--game-gutter);
+  }
+
+  .lobby-resume-round {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+  }
+
+  .lobby-rounds {
+    display: flex;
+    flex: 0 1 4rem;
+    gap: var(--game-progress-gap);
+    min-inline-size: 3rem;
+  }
+
+  .lobby-rounds span {
+    flex: 1;
+    block-size: 0.25rem;
+    background: var(--border-strong);
+    border-radius: var(--radius-pill);
+  }
+
+  .lobby-rounds .complete {
+    background: var(--accent-strong);
+  }
+
+  .lobby-rounds .current {
+    background: var(--accent-fg);
+  }
+
+  .lobby-resume-body > button,
+  .lobby-history-body > button {
+    align-self: center;
+    flex: 0 0 auto;
+  }
+
+  .lobby-history-body > button {
+    margin-inline-start: auto;
+  }
+
+  .lobby-scores {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--lobby-gap);
+    margin: 0;
+  }
+
+  .lobby-score {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--game-gutter);
+  }
+
+  .lobby-score dt {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    font-weight: 400;
+  }
+
+  .lobby-score dd {
+    margin: 0;
+    font-size: 0.875rem;
+  }
+
+  .lobby-score dd span {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 55rem) {
+    .lobby-modes {
+      grid-template-columns: 1fr;
+    }
+
+    .lobby-mode {
+      display: grid;
+      grid-template-columns: minmax(8rem, 28%) minmax(0, 1fr);
+    }
+
+    .lobby-mode-image {
+      block-size: 100%;
+      min-block-size: 9.5rem;
+      border-radius: 0;
+      border-start-start-radius: var(--bs-card-inner-border-radius);
+      border-end-start-radius: var(--bs-card-inner-border-radius);
+    }
+
+    .lobby-mode > .lobby-mode-body {
+      border-block-start: 0;
+      border-inline-start: var(--bs-card-border-width) solid
+        var(--bs-card-border-color);
+    }
+  }
+
+  @media (max-width: 34rem) {
+    .lobby-mode {
+      display: flex;
+    }
+
+    .lobby-mode-image {
+      block-size: 6.5rem;
+      min-block-size: 0;
+      border-radius: 0;
+      border-start-start-radius: var(--bs-card-inner-border-radius);
+      border-start-end-radius: var(--bs-card-inner-border-radius);
+    }
+
+    .lobby-mode > .lobby-mode-body {
+      border-inline-start: 0;
+      border-block-start: var(--bs-card-border-width) solid
+        var(--bs-card-border-color);
+    }
+
+    .lobby-resume-details {
+      flex: 1 1 100%;
+    }
+
+    .lobby-rounds {
+      flex: 1 1 4rem;
+    }
+  }
+}
+
+/* The app's base headings and navigation are unlayered. */
+.lobby-mode-actions > .btn-solid.secondary {
+  background: var(--surface-2);
+  border-color: var(--text-faint);
+}
+
+.lobby-mode-actions > .btn-solid.secondary:hover:not(:disabled) {
+  background: var(--control-active-bg);
+  border-color: var(--text-muted);
+}
+
+.lobby-mode-heading h2,
+.lobby-resume-details h2 {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.lobby-mode-heading h2 {
+  font-size: 1.125rem;
+  font-weight: 650;
+}
+
+.lobby-resume-details h2 {
+  font-size: 0.9375rem;
+}
+
+.tabs:has(+ .guessr-lobby) {
+  margin-block-end: var(--game-gutter);
+}

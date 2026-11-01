@@ -1,6 +1,5 @@
 /**
- * Auth Service - Manages authentication state (currently via Patreon OAuth)
- * Stateless JWT-only auth — tokens expire after 24 hours.
+ * Shared Patreon/Twitch sign-in, durable account connections and Pro access.
  */
 
 import i18next from "../i18n";
@@ -13,6 +12,29 @@ export interface AuthState {
   isFollower: boolean;
   isSubscriber: boolean;
   provider: "patreon" | "twitch" | null;
+  accountId?: string;
+  linkingAvailable?: boolean;
+  linkedAccounts?: LinkedAccount[];
+}
+
+export interface LinkedAccount {
+  provider: 'patreon' | 'twitch';
+  userId: string;
+  username: string;
+  login: string | null;
+  isFollower: boolean;
+  isSubscriber: boolean;
+  membershipStatus: 'active' | 'inactive' | 'reconnect' | 'stale';
+  checkedAt: number;
+}
+
+export interface TwitchChatSession {
+  accessToken: string;
+  clientId: string;
+  userId: string;
+  login: string;
+  /** Unix timestamp in milliseconds. Keep the access token in memory only. */
+  expiresAt: number;
 }
 
 // Auth worker URL (configure based on environment).
@@ -40,6 +62,7 @@ const JWT_KEY = "noitamap_jwt";
 // worker). Used to silently re-mint the access JWT so sessions survive past the
 // 24h access-token expiry without a re-login.
 const REFRESH_KEY = "noitamap_refresh_jwt";
+const PENDING_LINK_KEY = 'noitamap_pending_account_link';
 
 class AuthService {
   private state: AuthState = {
@@ -70,7 +93,9 @@ class AuthService {
 
   constructor() {
     this.ready = new Promise<AuthState>((resolve) => { this.resolveReady = resolve; });
-    window.addEventListener('pageshow', event => { if (event.persisted) this.loginReturn.discardUnreturned(); });
+    window.addEventListener('pageshow', event => {
+      if (event.persisted) { this.loginReturn.discardUnreturned(); sessionStorage.removeItem(PENDING_LINK_KEY); }
+    });
   }
 
   /**
@@ -86,16 +111,18 @@ class AuthService {
 
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const urlParams = new URLSearchParams(window.location.search);
-    const fromHash = hashParams.get("auth") === "success" && hashParams.get("token");
-    const authResult = fromHash ? "success" : urlParams.get("auth");
+    const fromHash = hashParams.get('auth') === 'linked' || hashParams.get('auth') === 'success';
+    const authResult = fromHash ? hashParams.get('auth') : urlParams.get('auth');
     const tokenFromUrl = fromHash ? hashParams.get("token") : urlParams.get("token");
     const refreshFromUrl = fromHash ? hashParams.get("refresh_token") : urlParams.get("refresh_token");
     const errorFromUrl = urlParams.get("auth_error");
+    const linkToken = hashParams.get('auth') === 'linked' ? hashParams.get('link_token') : null;
 
     if (errorFromUrl) {
       console.error("Auth Error:", errorFromUrl);
       cleanUrl.searchParams.delete("auth_error");
       shouldUpdateUrl = true;
+      sessionStorage.removeItem(PENDING_LINK_KEY);
     }
 
     if (authResult === "success" && tokenFromUrl) {
@@ -111,11 +138,31 @@ class AuthService {
       }
       shouldUpdateUrl = true;
     }
+    if (linkToken) {
+      cleanUrl.hash = '';
+      for (const name of ['auth', 'token', 'refresh_token', 'link_token']) cleanUrl.searchParams.delete(name);
+      shouldUpdateUrl = true;
+    }
 
     if (this.loginReturn.arrive(cleanUrl)) shouldUpdateUrl = true;
 
     if (shouldUpdateUrl) {
       window.history.replaceState({}, "", cleanUrl.toString());
+    }
+
+    if (linkToken) {
+      try {
+        const expectedAccount = sessionStorage.getItem(PENDING_LINK_KEY);
+        sessionStorage.removeItem(PENDING_LINK_KEY);
+        await this.checkAuth();
+        if (!expectedAccount || this.state.accountId !== expectedAccount) throw new Error('Start this account connection from your signed-in account.');
+        const response = await this.accountRequest('/auth/link/complete', { linkToken });
+        const data = await response.json();
+        if (!response.ok || !data.token) throw new Error(data.error || 'Could not connect this account.');
+        this.storeSession(data);
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : 'Could not connect this account.');
+      }
     }
 
     await this.checkAuth();
@@ -145,7 +192,8 @@ class AuthService {
       if (response.ok) {
         const data = await response.json();
         if (data.authenticated) {
-          this.applyAuthData(data);
+          if (data.token) this.storeSession(data);
+          else this.applyAuthData(data);
           return this.state;
         }
         // Access token rejected (expired) — attempt silent renewal.
@@ -200,6 +248,9 @@ class AuthService {
     isFollower?: boolean;
     isSubscriber?: boolean;
     provider?: "patreon" | "twitch";
+    accountId?: string;
+    linkingAvailable?: boolean;
+    linkedAccounts?: LinkedAccount[];
   }): void {
     this.state = {
       authenticated: true,
@@ -208,6 +259,9 @@ class AuthService {
       isFollower: data.isFollower || false,
       isSubscriber: data.isSubscriber || false,
       provider: data.provider || null,
+      accountId: data.accountId,
+      linkingAvailable: data.linkingAvailable ?? !!data.accountId,
+      linkedAccounts: data.linkedAccounts,
     };
     this.notifyListeners();
   }
@@ -226,28 +280,9 @@ class AuthService {
   }
 
   /**
-   * Sessions are single-provider: signing in with the other provider replaces
-   * the current session, and Pro follows the new provider's sub. Warn first.
-   */
-  private confirmProviderSwitch(next: "patreon" | "twitch"): boolean {
-    const current = this.state.provider;
-    if (!this.state.authenticated || !current || current === next) return true;
-    const labels = { patreon: "Patreon", twitch: "Twitch" };
-    return window.confirm(
-      i18next.t("auth.switchProviderConfirm", {
-        defaultValue:
-          "Signing in with {{next}} will sign you out of {{current}}.\n\nPro access will then be based on your {{next}} subscription.\n\nSwitch to {{next}}?",
-        current: labels[current],
-        next: labels[next],
-      }),
-    );
-  }
-
-  /**
    * Start login flow - redirects to OAuth provider
    */
   login(): void {
-    if (!this.confirmProviderSwitch("patreon")) return;
     void this.redirectToLogin('patreon');
   }
 
@@ -255,21 +290,70 @@ class AuthService {
    * Start Twitch login flow (UI entry points are gated by TWITCH_ENABLED).
    */
   loginTwitch(): void {
-    if (!this.confirmProviderSwitch("twitch")) return;
     void this.redirectToLogin('twitch');
   }
 
-  private async redirectToLogin(provider: 'patreon' | 'twitch'): Promise<void> {
+  /** Requests only user:read:chat and binds consent to this account. */
+  async connectTwitchChat(): Promise<void> {
+    await this.redirectToLogin('twitch', true);
+  }
+
+  async getTwitchChatSession(): Promise<TwitchChatSession | null> {
+    const response = await this.accountRequest('/auth/twitch/chat-session');
+    if (response.status === 401 || response.status === 409) return null;
+    if (!response.ok) throw new Error('Twitch chat connection is temporarily unavailable.');
+    return response.json();
+  }
+
+  async unlink(provider: 'patreon' | 'twitch'): Promise<void> {
+    const response = await this.accountRequest('/auth/unlink', { provider });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not disconnect this account.');
+    this.storeSession(data);
+  }
+
+  private storeSession(data: { token: string; refresh_token?: string } & Parameters<AuthService['applyAuthData']>[0]): void {
+    localStorage.setItem(JWT_KEY, data.token);
+    if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token);
+    this.applyAuthData(data);
+  }
+
+  private async accountRequest(path: string, body?: Record<string, unknown>): Promise<Response> {
+    const send = () => fetch(`${AUTH_WORKER_URL}${path}`, {
+      method: body ? 'POST' : 'GET',
+      headers: { Authorization: `Bearer ${this.getToken() || ''}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    let response = await send();
+    if (response.status === 401 && await this.tryRefresh()) response = await send();
+    return response;
+  }
+
+  private async redirectToLogin(provider: 'patreon' | 'twitch', chat = false): Promise<void> {
     if (this.loginPending) return;
     this.loginPending = true;
     try {
       if (this.loginReturn.get('drawing')) throw new Error('The previous drawing workspace is still being restored');
       const returnUrl = await this.loginReturn.prepare();
+      if (this.state.authenticated) {
+        // Older signed provider sessions are upgraded through their existing
+        // encrypted refresh token, proving ownership before a durable link.
+        if (!this.state.accountId && !await this.tryRefresh()) throw new Error('Sign in again before connecting another account.');
+        const response = await this.accountRequest('/auth/link/start', { provider, redirect: returnUrl, chat });
+        const data = await response.json();
+        if (!response.ok || !data.url) throw new Error(data.error || 'Could not start this account connection.');
+        if (!this.state.accountId) throw new Error('Account connections are not available yet.');
+        sessionStorage.setItem(PENDING_LINK_KEY, this.state.accountId);
+        window.location.href = data.url;
+        return;
+      }
       const path = provider === 'twitch' ? '/auth/twitch/login' : '/auth/login';
-      window.location.href = `${AUTH_WORKER_URL}${path}?redirect=${encodeURIComponent(returnUrl)}`;
+      window.location.href = `${AUTH_WORKER_URL}${path}?redirect=${encodeURIComponent(returnUrl)}${chat ? '&chat=1' : ''}`;
     } catch (error) {
-      console.error('[Auth] Could not preserve workspace before sign-in:', error);
-      window.alert(i18next.t('auth.workspaceSaveFailed', 'Could not save your workspace. Sign-in was cancelled. Please try again.'));
+      console.error('[Auth] Could not start sign-in:', error);
+      this.loginReturn.discardUnreturned();
+      sessionStorage.removeItem(PENDING_LINK_KEY);
+      window.alert(error instanceof Error ? error.message : i18next.t('auth.workspaceSaveFailed', 'Could not save your workspace. Sign-in was cancelled. Please try again.'));
     } finally {
       this.loginPending = false;
     }
@@ -281,6 +365,7 @@ class AuthService {
   async logout(): Promise<void> {
     localStorage.removeItem(JWT_KEY);
     localStorage.removeItem(REFRESH_KEY);
+    sessionStorage.removeItem(PENDING_LINK_KEY);
     this.setUnauthenticated();
   }
 

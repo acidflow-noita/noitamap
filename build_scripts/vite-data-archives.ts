@@ -3,10 +3,14 @@ import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { archiveFiles, buildRuntimeAssets } from './runtime-assets.ts';
+import { createBuildCache } from './vite-build-cache.ts';
+
+export const createRuntimeAssetInputs = (root: string) =>
+  createBuildCache(() => buildRuntimeAssets(root));
 
 /** The exact shipped ZIP bytes define freshness; a cached archive needs no
  * network validation. Keep one stable CacheStorage entry per physical URL. */
-export function dataArchivesPlugin(root: string): Plugin {
+export function dataArchivesPlugin(root: string, inputs = createRuntimeAssetInputs(root)): Plugin {
   let config: ResolvedConfig;
   let devAssets: Map<string, Buffer> | undefined;
   const name = "virtual:noitamap-data-archives",
@@ -21,6 +25,7 @@ export function dataArchivesPlugin(root: string): Plugin {
     name: "noitamap-data-archives",
     configResolved(value) { config = value; },
     buildStart() {
+      if (!config?.isWorker) inputs.invalidate();
       // In dev, Vite treats load()'s watched paths as module dependencies.
       // A directory is not importable. Register it outside the module load
       // to retain new/deleted-image watching without creating a bogus import.
@@ -33,7 +38,7 @@ export function dataArchivesPlugin(root: string): Plugin {
     async load(source) {
       if (source === pagesId) {
         for (const [, path] of paths) this.addWatchFile(path);
-        const prepared = await buildRuntimeAssets(root);
+        const prepared = await inputs.read();
         if (config?.command === 'serve') devAssets = prepared.assets;
         return `export const assetManifests = ${JSON.stringify(prepared.manifests)};`;
       }
@@ -66,9 +71,12 @@ export function dataArchivesPlugin(root: string): Plugin {
       return `export const archiveRevisions = ${JSON.stringify(Object.fromEntries(entries))};\nexport const biomeBackgroundRevisions = ${JSON.stringify(Object.fromEntries(backgroundEntries))};`;
     },
     async generateBundle() {
+      // The outer build publishes these shared URLs once. Emitting every page
+      // again from each nested worker needlessly duplicates large buffers.
+      if (config?.isWorker) return;
       // Deploy pages before migrating the runtime loader in a separate change.
       // Today's dev manifest does not trigger extraction or change startup.
-      const { assets } = await buildRuntimeAssets(root);
+      const { assets } = await inputs.read();
       for (const [fileName, source] of assets) this.emitFile({ type: 'asset', fileName, source });
     },
     configureServer(server) {
@@ -78,7 +86,7 @@ export function dataArchivesPlugin(root: string): Plugin {
         if (!pathname.startsWith(prefix)) return next();
         try {
           // Hash/extract during manifest preparation, not on every page GET.
-          const assets = devAssets ??= (await buildRuntimeAssets(root)).assets;
+          const assets = devAssets ??= (await inputs.read()).assets;
           const file = `game-assets/${pathname.slice(prefix.length)}`;
           const bytes = assets.get(file);
           if (!bytes) { res.statusCode = 404; res.end(); return; }
@@ -97,7 +105,10 @@ export function dataArchivesPlugin(root: string): Plugin {
         !(dirname(file) === backgrounds && /\.png$/i.test(file))
       )
         return;
-      if (archiveChanged) devAssets = undefined;
+      if (archiveChanged) {
+        devAssets = undefined;
+        inputs.invalidate();
+      }
       const { moduleGraph, hot } = this.environment;
       const module = moduleGraph.getModuleById(id);
       if (module) moduleGraph.invalidateModule(module);

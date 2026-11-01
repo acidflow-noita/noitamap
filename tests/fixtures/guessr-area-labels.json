@@ -1,0 +1,178 @@
+[
+  {
+    "label": "extremely dense rock",
+    "translationKey": "mat_rock_hard_border"
+  },
+  {
+    "label": "Pyramid",
+    "translationKey": "biome_pyramid"
+  },
+  {
+    "label": "snowy wasteland",
+    "translationKey": "biome_winter"
+  },
+  {
+    "label": "Snowy Chasm",
+    "translationKey": "biome_winter_caves"
+  },
+  {
+    "label": "Frozen vault",
+    "translationKey": "biome_vault_frozen"
+  },
+  {
+    "label": "Ancient laboratory",
+    "translationKey": "biome_liquidcave"
+  },
+  {
+    "label": "Ylialkemisti (boss room)",
+    "translationKey": "animal_boss_alchemist"
+  },
+  {
+    "label": "Underground Jungle",
+    "translationKey": "biome_rainforest"
+  },
+  {
+    "label": "Lukki lair",
+    "translationKey": "biome_rainforest_dark"
+  },
+  {
+    "label": "Fungal Caverns (main)",
+    "translationKey": "biome_fungicave"
+  },
+  {
+    "label": "Fungal Caverns (western jungle enclave)",
+    "translationKey": "biome_fungicave"
+  },
+  {
+    "label": "Fungal Caverns (eastern jungle enclave)",
+    "translationKey": "biome_fungicave"
+  },
+  {
+    "label": "Meat realm (main, including meat room)",
+    "translationKey": "biome_meat"
+  },
+  {
+    "label": "Meat realm (secondary)",
+    "translationKey": "biome_meat"
+  },
+  {
+    "label": "Power plant",
+    "translationKey": "biome_robobase"
+  },
+  {
+    "label": "Infinite Hiidet elevator",
+    "translationKey": null
+  },
+  {
+    "label": "The Tower",
+    "translationKey": "biome_tower"
+  },
+  {
+    "label": "Lake",
+    "translationKey": "biome_lake"
+  },
+  {
+    "label": "Volcanic Lake",
+    "translationKey": "biome_lava"
+  },
+  {
+    "label": "The Work (Heaven)",
+    "translationKey": "biome_boss_victoryroom"
+  },
+  {
+    "label": "The Work (Hell)",
+    "translationKey": "biome_boss_victoryroom"
+  },
+  {
+    "label": "Hiisi Base",
+    "translationKey": "biome_snowcastle"
+  },
+  {
+    "label": "The Laboratory",
+    "translationKey": "biome_boss_arena"
+  },
+  {
+    "label": "mines",
+    "translationKey": "biome_coalmine"
+  },
+  {
+    "label": "collapsed mines",
+    "translationKey": "biome_coalmine_alt"
+  },
+  {
+    "label": "Coal Pits",
+    "translationKey": "biome_excavationsite"
+  },
+  {
+    "label": "Snowy Depths",
+    "translationKey": "biome_snowcave"
+  },
+  {
+    "label": "The Vault",
+    "translationKey": "biome_vault"
+  },
+  {
+    "label": "Temple of the Art",
+    "translationKey": "biome_crypt"
+  },
+  {
+    "label": "mountain_tree",
+    "translationKey": null
+  },
+  {
+    "label": "gourd_room",
+    "translationKey": null
+  },
+  {
+    "label": "Barren Temple",
+    "translationKey": "biome_barren"
+  },
+  {
+    "label": "Henkevä Temple",
+    "translationKey": "biome_potion_mimics"
+  },
+  {
+    "label": "Ominous Temple",
+    "translationKey": "biome_darkness"
+  },
+  {
+    "label": "Kivi Temple",
+    "translationKey": "biome_boss_sky"
+  },
+  {
+    "label": "Watchtower",
+    "translationKey": "biome_watchtower"
+  },
+  {
+    "label": "watercave",
+    "translationKey": null
+  },
+  {
+    "label": "Holy Mountain (depth 1)",
+    "translationKey": "biome_holymountain"
+  },
+  {
+    "label": "Holy Mountain (depth 2)",
+    "translationKey": "biome_holymountain"
+  },
+  {
+    "label": "Holy Mountain (depth 3)",
+    "translationKey": "biome_holymountain"
+  },
+  {
+    "label": "Holy Mountain (depth 4)",
+    "translationKey": "biome_holymountain"
+  },
+  {
+    "label": "Holy Mountain (depth 5)",
+    "translationKey": "biome_holymountain"
+  },
+  {
+    "label": "Holy Mountain (depth 6)",
+    "translationKey": "biome_holymountain"
+  },
+  {
+    "label": "Holy Mountain (lowest, beside Kolmi)",
+    "translationKey": "biome_holymountain"
+  }
+]

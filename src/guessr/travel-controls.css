@@ -1,0 +1,69 @@
+.camera-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--game-gutter);
+  --camera-key: 2.5rem;
+  --camera-button-gap: 0.25rem;
+}
+
+.camera-zoom {
+  display: flex;
+  gap: var(--camera-button-gap, 0.25rem);
+}
+
+.control-help { display: inline-flex; }
+.control-help > button:disabled { pointer-events: none; }
+
+.icon-button,
+.camera-controls .icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--camera-key, 2.75rem);
+  min-height: var(--camera-key, 2.75rem);
+  padding: 0.25rem;
+}
+.icon-button svg {
+  display: block;
+  width: 1.125rem;
+  height: 1.125rem;
+  fill: currentColor;
+}
+
+.travel-pad {
+  display: grid;
+  grid-template-columns: repeat(3, var(--camera-key, 2.75rem));
+  grid-template-areas:
+    ". north ."
+    "west south east";
+  gap: var(--camera-button-gap, 0.25rem);
+  width: max-content;
+}
+
+.travel-pad button {
+  min-width: var(--camera-key, 2.75rem);
+  min-height: var(--camera-key, 2.75rem);
+  padding: 0.25rem;
+  white-space: nowrap;
+}
+
+.travel-pad [data-direction="north"] {
+  grid-area: north;
+}
+.travel-pad [data-direction="west"] {
+  grid-area: west;
+}
+.travel-pad [data-direction="south"] {
+  grid-area: south;
+}
+.travel-pad [data-direction="east"] {
+  grid-area: east;
+}
+
+@media (max-width: 380px) {
+  .camera-controls {
+    --camera-key: 2.375rem;
+    gap: var(--game-gutter);
+  }
+}

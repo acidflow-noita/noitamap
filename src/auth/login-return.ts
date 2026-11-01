@@ -1,6 +1,6 @@
 export const LOGIN_RETURN_KEY = 'noitamap-login-return-v1';
 export const LOGIN_RETURN_PARAM = 'auth_resume';
-type Feature = 'map' | 'drawing';
+type Feature = 'map' | 'drawing' | 'guessr';
 type Capture = (id: string) => unknown | Promise<unknown>;
 interface Checkpoint { version: 1; id: string; url: string; returned: boolean; data: Partial<Record<Feature, unknown>> }
 

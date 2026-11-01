@@ -1,0 +1,2 @@
+/* Register the framework order before independently bundled component CSS. */
+@layer colors, config, root, reboot, layout, content, forms, components, custom, helpers, utilities;

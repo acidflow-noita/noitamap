@@ -1,0 +1,6 @@
+node_modules/
+.wrangler/
+.dev.vars
+private-assets/*
+!private-assets/.gitkeep
+private-packs/

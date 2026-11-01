@@ -123,6 +123,20 @@ describe('Bartender links in POI cards', () => {
       .toBe('View reactions that produce this material in Bartender.');
   });
 
+  it('omits burnable from the signed-out material preview without loading extended values', async () => {
+    state.pro = false;
+    const { buildExtendedSection } = await import('../src/extended-info');
+    const section = buildExtendedSection('material', 'blood');
+    document.body.append(section);
+    const preview = section.querySelector('.extended-info-placeholder')!;
+    expect(preview).not.toBeNull();
+    const labels = [...preview.querySelectorAll('.extended-info-label')].map(label => label.textContent);
+    expect(labels).toEqual(expect.arrayContaining(['Type:', 'Density:', 'Viscosity:', 'Dangers:']));
+    expect(labels).not.toContain('Burnable:');
+    expect(preview.querySelector('.extended-info-cta')).not.toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('uses baked inherited material IDs when the creature JSON omits blood and corpse IDs', async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [{
       id: 'fly', blood: '[[Blood]]', corpse: '[[Meat]]', blood_material_id: null, corpse_material_id: null,

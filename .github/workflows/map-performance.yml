@@ -48,6 +48,12 @@ jobs:
           npm test -- tests/scene-prefetch.test.ts tests/terrain-startup-overlap.test.ts tests/telescope-osd-lifetime.test.ts tests/instant-terrain-viewport.test.ts
           npm test -- tests/cache-storage.test.ts tests/generation-cache-records.test.ts
           npm test -- tests/telescope-search-link.test.ts tests/search-inventory.test.ts tests/search-index-scheduling.test.ts
+      - name: Check game rules, private access, and static delivery
+        if: matrix.browser == 'chromium' && matrix.trial == 1
+        working-directory: ${{ runner.temp }}/noitamap-performance/candidate
+        run: |
+          npm test -- tests/guessr-rules.test.ts tests/guessr-camera.test.ts tests/guessr-command.test.ts tests/guessr-worker.test.ts tests/guessr-auth-ticket.test.ts tests/guessr-pack.test.ts tests/guessr-captured-map.test.ts tests/vite-delivery.test.ts
+          npx tsc --project workers/noitamap-guessr/tsconfig.json
       - name: Install browser and display dependencies
         run: |
           npx playwright install --with-deps ${{ matrix.browser }}

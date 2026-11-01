@@ -627,7 +627,10 @@
     "bakeFailedDescription": "Daily map preparation failed. You can still generate the map in your browser. Please report this in {{channel}}.",
     "bakeCanceledDescription": "Daily map preparation was canceled. You can still generate the map in your browser.",
     "bakeReadyDescription": "Preparation finished, but the map could not be loaded. Try reloading the page.",
-    "bakeLastUpdate": "Last status update: {{time}}."
+    "bakeLastUpdate": "Last status update: {{time}}.",
+    "bakeReadyTitle": "Daily map ready",
+    "bakeAvailableDescription": "This daily map is fully prepared and ready.",
+    "bakeScheduleDescription": "Daily maps are normally ready around {{time}} (your local time), about 15 minutes after the daily update."
   },
   "badges": {
     "latest": "Latest",
@@ -707,7 +710,7 @@
     "content": "View the source code on GitHub"
   },
   "runfast": {
-    "title": "Runfast.Stream",
+    "title": "Main site",
     "content": "Go to the main runfast.stream website"
   },
   "gameContent": {
@@ -5181,6 +5184,12 @@
     "switchProviderConfirm": "Signing in with {{next}} will sign you out of {{current}}.\n\nPro access will then be based on your {{next}} subscription.\n\nSwitch to {{next}}?",
     "loginWithTwitch": "Sign in with Twitch",
     "subscribeTwitch": "Subscribe on Twitch",
+    "giftProTwitch": "Buy Pro for a streamer",
+    "giftProTwitchHint": "Gift a sub to wuote, choosing the streamer’s Twitch username. They link that account to use Pro while the gift is active.",
+    "giftProOnTwitch": "Gift Pro on Twitch",
+    "giftProOnPatreon": "Gift Pro on Patreon",
+    "giftTwitchAutomatic": "Twitch gifts apply directly to the recipient’s account.",
+    "giftPatreonClaim": "Patreon gifts must be claimed through the gift link the buyer receives after purchase.",
     "or": "or",
     "workspaceSaveFailed": "Could not save your workspace. Sign-in was cancelled. Please try again.",
     "workspaceRestoreFailed": "Could not restore your drawing workspace. Reload to try again."
@@ -5766,5 +5775,12 @@
   "startup": {
     "failed": "Noitamap could not start. Reload the page to try again.",
     "retry": "Reload page"
+  },
+  "guessr": {
+    "title": "NoitaGuessr",
+    "content": "Game modes: Daily, Demo, Chat vs Streamer"
+  },
+  "attribution": {
+    "poweredBy": "Powered by"
   }
 }
