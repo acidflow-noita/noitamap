@@ -1,13 +1,24 @@
 @layer custom {
 .dust-credit {
-  display: inline-flex;
+  display: flex;
   align-items: flex-end;
-  gap: .25rem;
+  justify-content: flex-end;
+  gap: var(--control-gap, .25rem);
   margin-block-start: .5rem;
-  vertical-align: middle;
+  margin-inline-start: auto;
 }
+.dust-credit a { display: inline-flex; flex-shrink: 0; line-height: 0; }
 .dust-credit-label { line-height: 1; }
 .dust-credit img { display: block; inline-size: 3.9375rem; block-size: auto; object-fit: contain; }
+.dust-credit-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .5rem var(--control-gap, .5rem);
+}
+.dust-credit-footer > .dust-credit {
+  margin-block-start: 0;
+}
 
 .osOverlayHighlight {
   background-color: rgba(56, 162, 204, 0.401);

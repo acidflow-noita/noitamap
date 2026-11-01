@@ -9,6 +9,12 @@ const seed = (extra: Partial<PortalSeed> = {}): PortalSeed => ({
   seed: 548901523, worldSize: 70, worldCenter: 35, parallelWorlds: [-1, 0, 1], ...extra,
 });
 describe('portal cards from rendered placements', () => {
+  it('credits the existing Sun quest landmarks while leaving Sun spells unrelated', () => {
+    for (const name of ['Moon', 'Dark Moon', 'Sun/Moon', 'Dark Sun/Dark Moon'])
+      expect(usesDustAnimation({ type: 'pillar_place', name })).toBe(true);
+    expect(usesDustAnimation({ type: 'spell', name: 'Sun/Moon', effect: 'sun' })).toBe(false);
+    expect(usesDustAnimation({ type: 'item', entity: 'data/entities/items/pickup/sun/newsun_dark.xml' })).toBe(true);
+  });
   it('adds invisible Holy Mountain targets in each world without adding loot to the generation', () => {
     const input = seed({ poisByPW: { '-1,0': [], '0,0': [], '1,0': [] },
       pixelScenesByPW: Object.fromEntries([-1, 0, 1].map(pw => [`${pw},0`, [

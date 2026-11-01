@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../src/spoiler-free',()=>({isSpoilerFree:()=>false,onSpoilerFreeChange:vi.fn()}));
+vi.mock('../src/portals/suns/overlay',()=>({SunOverlay:class{setEnabled(){}destroy(){}stats(){return {};}}}));
 const runtime=vi.hoisted(()=>({load:vi.fn(),create:vi.fn(),construct:vi.fn(),destroy:vi.fn(),enabled:vi.fn()}));
 vi.mock('../src/portals/overlay',()=>({
   loadPortalResources:runtime.load,createGPURuntime:runtime.create,

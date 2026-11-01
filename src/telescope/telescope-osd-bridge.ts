@@ -3304,13 +3304,15 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     title.textContent = label;
     tooltipEl.appendChild(title);
 
-    if (usesDustAnimation(item.poi)) tooltipEl.appendChild(createDustAttribution());
-
-    // Footer with position only
+    // Footer with position and optional particle attribution
     const footer = document.createElement('div');
     footer.style.cssText =
       'margin-top:0.5em;color:var(--text-faint);font-size:var(--control-font-size);border-top:0.065em solid var(--border-strong);padding-top:0.3em';
     footer.textContent = `${i18next.t('poi.pw', 'PW')} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
+    if (usesDustAnimation(item.poi)) {
+      footer.classList.add('dust-credit-footer');
+      footer.appendChild(createDustAttribution());
+    }
     tooltipEl.appendChild(footer);
 
     mountMarkerCard(tooltipEl, viewer, anchor, request);
@@ -4574,12 +4576,14 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     tooltipEl.appendChild(unlockDiv);
   }
 
-  if (usesDustAnimation(poi)) tooltipEl.appendChild(createDustAttribution());
-
   // Footer: position info
   const footer = document.createElement('div');
   footer.style.cssText = 'margin-top:0.5em;color:var(--text-faint);font-size:var(--control-font-size);border-top:0.065em solid var(--border-strong);padding-top:0.3em';
   footer.textContent = `${i18next.t('poi.pw', 'PW')} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
+  if (usesDustAnimation(poi)) {
+    footer.classList.add('dust-credit-footer');
+    footer.appendChild(createDustAttribution());
+  }
   tooltipEl.appendChild(footer);
 
   mountMarkerCard(tooltipEl, viewer, anchor, request);

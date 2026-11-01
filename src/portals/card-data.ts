@@ -9,6 +9,8 @@ const portalPlaces = new Set([
   'Meditation Cube Room', 'Meditation Chamber', 'Eye Spell Room', 'Hourglass Chamber',
   'Buried Eye', 'Buried Eye Room', 'Buried Eye Chamber',
   'Tower Portal Diamond', 'Hourglass', 'Desert Skull, Eye',
+  'Sun/Moon', 'Dark Sun/Dark Moon',
+  'Moon', 'Dark Moon',
 ]);
 
 /** Use the actual scene/POI identifiers as well as the renderer's effect names. */
@@ -17,10 +19,10 @@ export function usesDustAnimation(poi: {
 }): boolean {
   if (poi.type === 'spell' || poi.item === 'spell') return false;
   if (poi.type === 'eye_room' || portalItems.has(poi.item ?? '') || portalPlaces.has(poi.name ?? '')) return true;
-  if (['holy_mountain', 'meditation', 'eye_room'].includes(poi.effect ?? '')) return true;
+  if (['holy_mountain', 'meditation', 'eye_room', 'sun', 'dark_sun'].includes(poi.effect ?? '')) return true;
   return [poi.item, poi.entity, poi.effect].some(value => {
     const id = value?.split('/').at(-1)?.replace(/\.xml$/, '') ?? '';
-    return /^(?:teleport|mystery_teleport)(?:_|$)/.test(id);
+    return /^(?:teleport|mystery_teleport)(?:_|$)/.test(id) || id === 'newsun' || id === 'newsun_dark';
   });
 }
 

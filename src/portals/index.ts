@@ -3,12 +3,14 @@ import { isPortalAnimations, onPortalAnimationsChange } from '../portal-animatio
 import type { PortalSeed } from './placements';
 import type { PortalGPUOverlay, PortalGPUStats } from './overlay';
 import type { PortalBackgroundPatches } from './background-patches';
+import { SunOverlay } from './suns/overlay';
 export interface PortalGPUState {
   enabled:boolean; status:'off'|'waiting'|'loading'|'running'|'error'; error:string|null; stats:PortalGPUStats|null;
 }
 let state:PortalGPUState={enabled:isPortalAnimations(),status:isPortalAnimations()?'waiting':'off',error:null,stats:null};
 const listeners=new Set<(state:PortalGPUState)=>void>();
 let backgrounds:PortalBackgroundPatches|null=null;
+let suns:SunOverlay|null=null;
 let overlay:PortalGPUOverlay|null=null,revision=0,owner:any=null,seed:PortalSeed|null=null,request:AbortController|null=null;
 function publish(next:Partial<PortalGPUState>){state={...state,...next};for(const listener of listeners)listener(state);}
 export function getPortalGPUState():PortalGPUState{return state;}
@@ -47,18 +49,26 @@ async function start(){
 export function setPortalGPUEnabled(enabled:boolean):void {
   if(state.enabled===enabled)return;
   publish({enabled,error:null,stats:null,status:enabled?'waiting':'off'});
-  if(enabled)void start();else stop();
+  if(enabled){startSuns();void start();}else{stop();suns?.destroy();suns=null;}
+}
+function startSuns(){
+  suns?.destroy();suns=null;
+  if(owner&&seed&&new URLSearchParams(location.search).get('sunEffects')!=='0')
+    suns=new SunOverlay(owner,seed.seed,undefined,!isSpoilerFree());
 }
 export function clearPortalAnimations():void {
+  suns?.destroy();suns=null;
   stop();owner?.removeHandler('destroy',clearPortalAnimations);owner=null;seed=null;
   publish({status:state.enabled?'waiting':'off',stats:null,error:null});
 }
 /** Register metadata only while off: no GPU modules, resources, context or RAF. */
 export function installPortalAnimations(viewer:any,current:PortalSeed):void {
   clearPortalAnimations();owner=viewer;seed=current;owner.addHandler('destroy',clearPortalAnimations);
-  if(state.enabled)void start();
+  if(state.enabled){startSuns();void start();}
 }
 onPortalAnimationsChange(setPortalGPUEnabled);
-onSpoilerFreeChange(()=>{overlay?.setEnabled(!isSpoilerFree());if(overlay)publish({stats:overlay.stats()});});
+onSpoilerFreeChange(()=>{overlay?.setEnabled(!isSpoilerFree());suns?.setEnabled(!isSpoilerFree());if(overlay)publish({stats:overlay.stats()});});
 export function getPortalAnimationStats(){return overlay?.stats()??state;}
 if(typeof window!=='undefined')(window as any).__portalOverlayStats=getPortalAnimationStats;
+export function getSunAnimationStats(){return suns?.stats()??{status:'disabled'};}
+if(typeof window!=='undefined')(window as any).__sunOverlayStats=getSunAnimationStats;
