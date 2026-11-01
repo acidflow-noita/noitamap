@@ -1,0 +1,43 @@
+{
+  "version": 2,
+  "note": "Inventory dispositions, not enabled gameplay areas. Geometry/capture review precedes sampling. Never infer eligibility from hasStuff, an engine name, or image entropy alone.",
+  "excluded": {
+    "hills2": "Empty elevated engine region identified by the owner; no independent puzzle area. Also referred to as hills_2. Keep the captured pixels as context.",
+    "sky_light_injector": "Lighting helper strips, not independent puzzle areas. Do not remove their rendered context."
+  },
+  "terrainSources": {
+    "solid_wall": "Extremely dense rock is easy to identify. Combine its source fragments into one recognition area with Normal scoring (1000 area + 4000 proximity).",
+    "solid_wall_tower": "Cursed-rock source allocation; no difficulty inferred from its engine name. Review context, including Tower walls versus world borders.",
+    "lava": "Lava source allocation; neither a separate puzzle nor a difficulty rating follows from this ID.",
+    "lava_90percent": "Volcanic Lake construction variant; reconcile with adjacent lava as one recognizable place."
+  },
+  "reviewSources": {
+    "empty": "Inspect the captured content: this ID includes the populated cavern below the bridge. It is not a blanket exclusion."
+  },
+  "structureParts": {
+    "pyramid_top": "Pyramid construction segment; reconcile with the complete landmark footprint, not a separate question solely because of its ID.",
+    "pyramid_left": "Pyramid construction segments; retain all pieces for the landmark mask.",
+    "pyramid_right": "Pyramid construction segments; retain all pieces for the landmark mask.",
+    "pyramid_entrance": "Part of the single Pyramid puzzle area.",
+    "pyramid_hallway": "Part of the single Pyramid puzzle area.",
+    "mountain_top": "Mountain construction segment; separate named altar/entrance footprints need review.",
+    "mountain_left_entrance": "Mountain construction segment; reconcile with the visible entrance.",
+    "mountain_hall": "Mountain construction segment; reconcile with the visible entrance.",
+    "mountain_right": "Mountain construction segment; do not create a question solely from the engine partition.",
+    "mountain_left_stub": "Mountain edge segment; do not create a question solely from the engine partition.",
+    "mountain_right_stub": "Mountain edge segment; do not create a question solely from the engine partition.",
+    "temple_altar_left": "Part of a Holy Mountain instance; group only with the matching physical mountain, never all depths.",
+    "temple_altar_right": "Part of a Holy Mountain instance; group only with the matching physical mountain, never all depths.",
+    "temple_altar_right_snowcastle": "Holy Mountain exit segment; preserve the individual depth/instance.",
+    "temple_wall": "Holy Mountain basin/wall segments; do not independently sample technical pieces.",
+    "temple_wall_ending": "Ending basin segment; reconcile with its visible landmark.",
+    "solid_wall_temple": "Temple support/fill allocation; inspect the visible structure before admitting it as an area.",
+    "boss_arena_top": "Laboratory construction segment; reconcile with the actual arena footprint."
+  },
+  "colorOverrides": {
+    "#3d3e40": {
+      "status": "structure-part",
+      "reason": "hills.xml alias beside the Tower reward room, not another surface Hills puzzle."
+    }
+  }
+}

@@ -126,3 +126,15 @@
   box-shadow: 0 0 0.75rem var(--pro-glow) !important;
 }
 }
+
+/* Compose Bootstrap's entrance with the existing Pro gradient. Backwards fill
+   lets hover transforms and locked-button opacity take over after the pop. */
+@layer utilities {
+  @media (prefers-reduced-motion: no-preference) {
+    .pro-accent.animation-pop,
+    .extended-info-cta.animation-pop {
+      animation: animation-pop .3s cubic-bezier(.34, 1.56, .64, 1) backwards,
+        pro-border-pan 6s linear infinite;
+    }
+  }
+}

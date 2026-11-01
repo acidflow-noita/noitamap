@@ -1,4 +1,14 @@
 @layer custom {
+.dust-credit {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: .25rem;
+  margin-block-start: .5rem;
+  vertical-align: middle;
+}
+.dust-credit-label { line-height: 1; }
+.dust-credit img { display: block; inline-size: 3.9375rem; block-size: auto; object-fit: contain; }
+
 .osOverlayHighlight {
   background-color: rgba(56, 162, 204, 0.401);
   border: rgba(255, 0, 0, 0.1) dashed 1px;
@@ -115,7 +125,7 @@ div:has(> div > .osOverlayPOI) {
   font-size: 14px;
   padding: 0.85em 1.1em;
   border: 0.125em solid var(--border-color);
-  border-radius: 0.4em;
+  border-radius: var(--radius-panel);
   background-color: var(--surface-1);
   left: 50%;
   bottom: 100%;
@@ -386,13 +396,9 @@ div:has(> .osOverlayPOI):hover .osOverlayPopup,
   color: var(--text-faint);
 }
 
-/* Skeleton bar — static, no animation */
-.extended-info-skeleton {
-  display: block;
-  width: 4em;
-  height: 0.7em;
-  border-radius: 0.15em;
-  background: var(--surface-1);
+/* Locked values use Bootstrap's static placeholder, not a loading indicator. */
+.extended-info-placeholder-fields .placeholder {
+  cursor: inherit;
 }
 
 .extended-info-cta {

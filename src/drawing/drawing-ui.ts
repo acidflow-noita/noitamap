@@ -40,7 +40,7 @@ export class DrawingUI {
     wrapper.id = "drawing-ui-wrapper";
 
     wrapper.innerHTML = `
-            <label class="btn-check icon-button btn btn-sm btn-outline theme-secondary text-nowrap pro-accent" for="drawToggleBtn"
+            <label class="btn-check icon-button btn btn-sm btn-outline theme-secondary text-nowrap pro-accent animation-pop" for="drawToggleBtn"
         data-noitamap-popover data-bs-placement="bottom" data-bs-trigger="hover focus"
         data-i18n-title="drawing.toggle.title" 
         data-bs-title="${i18next.t("drawing.toggle.title", "Drawing Tools")}"

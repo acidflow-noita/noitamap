@@ -1,0 +1,197 @@
+// @vitest-environment jsdom
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { StreamUI, type StreamUIHooks } from '../src/guessr/stream-ui';
+import { STREAM_SESSION_KEY } from '../src/guessr/stream-types';
+import { StreamService } from '../src/guessr/stream-server';
+import { newStreamGame, closeStreamRound, revealStreamRound, advanceStreamRound } from '../src/guessr/stream-state';
+import { streamSource, streamHost, streamSecret, streamNow, streamAnswer } from './helpers/guessr-stream';
+import { formatGuessCommand } from '../src/guessr/guess-command';
+import type { TwitchViewer } from '../src/guessr/twitch-viewer';
+
+const mocks = vi.hoisted(() => ({ pause: vi.fn(async () => ({})), quit: vi.fn(async () => ({ phase: 'waiting' })), picker: vi.fn(), notice: vi.fn(), channel: vi.fn(), watchChat: vi.fn((_channel: string, _handlers: Parameters<TwitchViewer['watchChat']>[1]) => vi.fn()), start: vi.fn(), reveal: vi.fn() }));
+vi.mock('../src/guessr/stream-api', () => ({ StreamApi: class {
+  local = true; available = true; pause = mocks.pause; quit = mocks.quit; setLocalChannel = mocks.channel; start = mocks.start; reveal = mocks.reveal;
+  clock = async () => ({ now: Date.now() });
+} }));
+vi.mock('../src/guessr/stream-picker', () => ({ mountStreamPicker: () => { mocks.picker(); return () => {}; } }));
+vi.mock('../src/guessr/twitch-viewer', () => ({ TwitchViewer: class {
+  ready = Promise.resolve(); getState() { return { connected: true, userId: '123', login: 'streamer' }; }
+  watchChat = mocks.watchChat;
+} }));
+vi.mock('../src/guessr/clue-view', () => ({ attachClueControls: () => () => {} }));
+vi.mock('../src/guessr/clue-viewport', () => ({ ClueViewport: class { show = async () => true; destroy() {} } }));
+vi.mock('../src/guessr/button-notice', () => ({ buttonNotice: () => ({ show: mocks.notice, dispose: vi.fn() }) }));
+let ui: StreamUI | undefined;
+beforeEach(() => {
+  vi.clearAllMocks(); document.body.replaceChildren();
+  mocks.quit.mockReset().mockResolvedValue({ phase: 'waiting' });
+  const values = new Map<string, string>();
+  vi.stubGlobal('localStorage', { getItem: vi.fn((key: string) => values.get(key) ?? null),
+    setItem: vi.fn((key: string, value: string) => { values.set(key, value); }),
+    removeItem: vi.fn((key: string) => { values.delete(key); }) });
+});
+afterEach(() => { ui?.suspend(); ui = undefined; vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+async function fixture() {
+  const source = streamSource(), service = new StreamService(source, streamSecret);
+  const session = await service.start(streamHost, streamNow); session.live = true;
+  const game = newStreamGame(session, streamNow);
+  const hooks: StreamUIHooks = {
+    config: await source.config(),
+    shell() { const main = document.createElement('main'); document.body.replaceChildren(main); return main; },
+    panels: vi.fn(main => { const clue = document.createElement('div'), bar = document.createElement('div'); main.append(clue, bar); return { clue, bar }; }), cleanupClue: vi.fn(), markers: vi.fn(), hud: vi.fn(() => document.createElement('div')), result: vi.fn(), home: vi.fn(), toast: vi.fn(),
+  };
+  return { game, hooks, service };
+}
+async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
+
+it('keeps recovery data when quitting fails and clears only the active save after a successful retry', async () => {
+  const { game, hooks } = await fixture();
+  const saved = JSON.stringify(game);
+  localStorage.setItem(STREAM_SESSION_KEY, saved);
+  localStorage.setItem('completed-result', 'retain');
+  history.replaceState(null, '', '/guess/');
+  ui = new StreamUI(hooks);
+  mocks.quit.mockRejectedValueOnce(new Error('Connection lost'));
+  await expect(ui.quit()).rejects.toThrow('Connection lost');
+  expect(ui.game?.session.id).toBe(game.session.id);
+  expect(ui.game?.paused).toBe(true);
+  expect(localStorage.getItem(STREAM_SESSION_KEY)).toBe(saved);
+  await ui.quit();
+  expect(mocks.quit).toHaveBeenNthCalledWith(2, game.session.id);
+  expect(ui.game).toBeNull();
+  expect(localStorage.getItem(STREAM_SESSION_KEY)).toBeNull();
+  expect(localStorage.getItem('completed-result')).toBe('retain');
+  expect(mocks.reveal).not.toHaveBeenCalled();
+});
+
+it('does not clear another tab’s newer saved game or a completed game', async () => {
+  const { game, hooks } = await fixture();
+  localStorage.setItem(STREAM_SESSION_KEY, JSON.stringify(game));
+  history.replaceState(null, '', '/guess/');
+  ui = new StreamUI(hooks);
+  let acknowledge!: (value: { phase: string }) => void;
+  mocks.quit.mockReturnValueOnce(new Promise(resolve => { acknowledge = resolve; }));
+  const quitting = ui.quit();
+  const newer = JSON.stringify({ ...game, session: { ...game.session, id: crypto.randomUUID() } });
+  localStorage.setItem(STREAM_SESSION_KEY, newer);
+  ui.save();
+  expect(localStorage.getItem(STREAM_SESSION_KEY)).toBe(newer);
+  acknowledge({ phase: 'waiting' }); await quitting;
+  expect(localStorage.getItem(STREAM_SESSION_KEY)).toBe(newer);
+  game.stage = 'complete'; ui.game = game;
+  await ui.quit();
+  expect(ui.game).toBe(game);
+  expect(mocks.quit).toHaveBeenCalledOnce();
+});
+
+it('stops the live Twitch reader when quitting and ignores a late chat delivery', async () => {
+  const { game, hooks } = await fixture();
+  game.session.host = { id: '900000000', login: 'streamer', name: 'Local host' };
+  game.session.localChat = true;
+  mocks.start.mockResolvedValue(game.session);
+  history.replaceState(null, '', '/guess/stream/');
+  ui = new StreamUI(hooks); await ui.open();
+  [...document.querySelectorAll('button')].find(button => button.textContent === 'Start new game')!.click();
+  await flush();
+  const receiver = mocks.watchChat.mock.calls[0][1];
+  const stop = mocks.watchChat.mock.results[0].value;
+  await ui.quit();
+  expect(stop).toHaveBeenCalledOnce();
+  receiver.message({ id: 'late-message', player: { id: '123', login: 'chatter', name: 'Chatter' }, sentAt: streamNow + 50,
+    text: formatGuessCommand(1, streamAnswer, 5000, game.session.rounds[0].id) });
+  expect(ui.game).toBeNull();
+  expect(localStorage.getItem(STREAM_SESSION_KEY)).toBeNull();
+});
+
+it('receives real-channel chat in localhost mode and submits both host and chatter for the reveal', async () => {
+  const { game, hooks, service } = await fixture();
+  game.session.host = { id: '900000000', login: 'streamer', name: 'Local host' };
+  game.session.localChat = true;
+  mocks.start.mockResolvedValue(game.session);
+  mocks.reveal.mockResolvedValue(await service.reveal(game.session.rounds[0].token, streamHost, streamNow + 20));
+  history.replaceState(null, '', '/guess/stream/');
+  ui = new StreamUI(hooks); await ui.open();
+  const button = (label: string) => [...document.querySelectorAll('button')].find(b => b.textContent === label)!;
+  button('Start new game').click(); await flush();
+  expect(mocks.channel).toHaveBeenCalledWith('streamer');
+  expect(mocks.watchChat).toHaveBeenCalledExactlyOnceWith('streamer', expect.any(Object));
+  const receiver = mocks.watchChat.mock.calls[0][1];
+  receiver.message({ id: 'message-1', player: { id: '123', login: 'streamer', name: 'WUOTE' }, sentAt: streamNow + 50,
+    text: formatGuessCommand(1, streamAnswer, 4900, game.session.rounds[0].id) });
+  expect(document.querySelector('#stream-guess-count')!.textContent).toBe('1 chat guess this round');
+  expect(ui.game!.participants).toHaveLength(2);
+  ui.game!.guess = streamAnswer; ui.render();
+  button('Submit guess').click(); await flush();
+  expect(mocks.reveal.mock.calls[0][1]).toEqual(expect.arrayContaining([
+    { player: { id: '123', login: 'streamer', name: 'WUOTE' }, guess: streamAnswer, maximum: 4900 },
+    { player: game.session.host, guess: streamAnswer, maximum: 5000 },
+  ]));
+  expect(ui.game!.stage).toBe('reveal');
+});
+
+it.each(['/guess/?channel=streamer', '/guess/stream/streamer/'])('opening chatter URL %s never restores, writes or pauses the host game', async url => {
+  const { game, hooks } = await fixture();
+  const saved = JSON.stringify(game); localStorage.setItem(STREAM_SESSION_KEY, saved);
+  history.replaceState(null, '', url);
+  const read = vi.mocked(localStorage.getItem), write = vi.mocked(localStorage.setItem);
+  read.mockClear(); write.mockClear();
+  ui = new StreamUI(hooks); ui.save(); ui.picker();
+  expect(ui.game).toBeNull();
+  expect(read).not.toHaveBeenCalled(); expect(write).not.toHaveBeenCalled();
+  expect(mocks.pause).not.toHaveBeenCalled(); expect(mocks.picker).toHaveBeenCalledOnce();
+  expect(localStorage.getItem(STREAM_SESSION_KEY)).toBe(saved);
+});
+
+it('pauses the game when the active host actually leaves its setup', async () => {
+  const { game, hooks } = await fixture();
+  localStorage.setItem(STREAM_SESSION_KEY, JSON.stringify(game)); history.replaceState(null, '', '/guess/stream/');
+  ui = new StreamUI(hooks); await ui.open(); ui.suspend();
+  expect(mocks.pause).toHaveBeenCalledExactlyOnceWith(game.session.id, true);
+});
+
+it('opens host setup for a completed save and keeps saved results behind an explicit action', async () => {
+  const { game, hooks, service } = await fixture();
+  for (const round of game.session.rounds) {
+    closeStreamRound(game, streamAnswer, streamNow + 1);
+    revealStreamRound(game, await service.reveal(round.token, streamHost, streamNow + 2));
+    advanceStreamRound(game, streamNow + 3);
+  }
+  game.published = true;
+  localStorage.setItem(STREAM_SESSION_KEY, JSON.stringify(game));
+  history.replaceState(null, '', '/guess/stream/');
+  ui = new StreamUI(hooks); await ui.open();
+  const button = (label: string) => [...document.querySelectorAll('button')].find(element => element.textContent === label)!;
+  expect(button('Start new game')).toBeDefined();
+  expect(document.querySelector('.finish-hero')).toBeNull();
+  expect(mocks.watchChat).not.toHaveBeenCalled();
+  button('View saved results').click(); await flush();
+  expect(document.querySelector('.finish-hero')).not.toBeNull();
+  expect(hooks.toast).not.toHaveBeenCalled();
+  expect(button('Save results as a web page')).toBeDefined();
+  expect(button('Export scores (JSON)').closest('details')!.open).toBe(false);
+  expect(document.body.textContent).toContain('search and sort every player’s scores offline');
+  expect(mocks.pause).not.toHaveBeenCalled();
+  expect(mocks.watchChat).not.toHaveBeenCalled();
+});
+
+it('groups result navigation and shows green punctuation-free copy feedback beside its button', async () => {
+  const { game, hooks, service } = await fixture();
+  for (const round of game.session.rounds) {
+    closeStreamRound(game, streamAnswer, streamNow + 1);
+    revealStreamRound(game, await service.reveal(round.token, streamHost, streamNow + 2));
+    advanceStreamRound(game, streamNow + 3);
+  }
+  game.published = true;
+  localStorage.setItem(STREAM_SESSION_KEY, JSON.stringify(game)); history.replaceState(null, '', '/guess/stream/');
+  const writeText = vi.fn(async () => {});
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+  ui = new StreamUI(hooks); ui.render();
+  const button = (label: string) => [...document.querySelectorAll('button')].find(b => b.textContent === label)!;
+  expect(button('Back').closest('.page-heading')).not.toBeNull();
+  expect(button('Back').parentElement!.firstElementChild).toBe(button('Back'));
+  expect(button('Start another game').parentElement!.classList.contains('action-row')).toBe(true);
+  button('Copy result link').click(); for (let i = 0; i < 5; i++) await Promise.resolve();
+  expect(writeText).toHaveBeenCalledWith(location.origin + '/guess/results/' + game.session.id + '/');
+  expect(mocks.notice).toHaveBeenCalledWith('Copied', 'success');
+  expect(hooks.toast).not.toHaveBeenCalled();
+});

@@ -128,7 +128,7 @@
     "content": "Katso lähdekoodi GitHubissa"
   },
   "runfast": {
-    "title": "Runfast.Stream",
+    "title": "Pääsivusto",
     "content": "Siirry pääsivustolle runfast.stream"
   },
   "gameContent": {
@@ -4613,9 +4613,15 @@
     "switchProviderConfirm": "Kirjautuminen {{next}}-tilillä kirjaa sinut ulos {{current}}-tililtä.\n\nPro-käyttöoikeus määräytyy sen jälkeen {{next}}-tilauksesi mukaan.\n\nHaluatko vaihtaa {{next}}-tiliin?",
     "loginWithTwitch": "Kirjaudu Twitchilla",
     "subscribeTwitch": "Tilaa Twitchissä",
+    "giftProTwitch": "Lahjoita Pro striimaajalle",
+    "giftProTwitchHint": "Lahjoita wuoten kanavatilaus ja valitse vastaanottajaksi striimaajan Twitch-käyttäjänimi. Hän voi yhdistää tilinsä ja käyttää Prota lahjatilauksen ajan.",
     "or": "tai",
     "workspaceSaveFailed": "Työtilan tallentaminen epäonnistui. Kirjautuminen peruttiin. Yritä uudelleen.",
-    "workspaceRestoreFailed": "Piirustustilan palauttaminen epäonnistui. Lataa sivu uudelleen ja yritä uudestaan."
+    "workspaceRestoreFailed": "Piirustustilan palauttaminen epäonnistui. Lataa sivu uudelleen ja yritä uudestaan.",
+    "giftProOnTwitch": "Gift Pro on Twitch",
+    "giftProOnPatreon": "Gift Pro on Patreon",
+    "giftTwitchAutomatic": "Twitch gifts apply directly to the recipient’s account.",
+    "giftPatreonClaim": "Patreon gifts must be claimed through the gift link the buyer receives after purchase."
   },
   "loading": {
     "maps": "Ladataan karttoja...",
@@ -4819,7 +4825,7 @@
       "alreadyGeneratedTitle": "Seed aktiivinen",
       "alreadyGeneratedContent": "Kartta on jo luotu talle seedille, seedin numeron vaihtaminen luo kartan uudelleen"
     },
-    "daily": "Paivittainen",
+    "daily": "Päivittäinen",
     "placeholder": "Pelisiemen",
     "nerdMode": {
       "0": "N",
@@ -4842,8 +4848,24 @@
     "previousDaily": "Edellinen paivittainen siemen",
     "previousDailyDescription": "Lataa eilisen paivan pelisiemen",
     "seedTooltipPreviousDaily": "Tama on eilisen paivittaisen kierroksen siemen",
-    "bakeUnavailableTitle": "Päivittäisen pelin esilaskettu kartta ei ole saatavilla",
-    "bakeUnavailableDescription": "Tämän päivittäisen pelin palvelimella esilaskettu kartta ei ole saatavilla. Laskenta voi olla vielä kesken tai epäonnistunut. Jos ongelma jatkuu, ilmoita siitä WUOTElle kanavalla {{channel}}."
+    "bakeUnavailableTitle": "Valmisteltu päivittäinen kartta ei ole saatavilla",
+    "bakeUnavailableDescription": "Valmistelun tilaa ei ole saatavilla. Tavallinen tavoiteaika on {{time}} (paikallista aikaasi), noin 15 minuuttia päivittäisen vaihdon jälkeen.",
+    "bakeRunningTitle": "Päivittäistä karttaa valmistellaan",
+    "bakeWaitingTitle": "Päivittäinen kartta odottaa julkaisua",
+    "bakePublishingTitle": "Päivittäistä karttaa julkaistaan",
+    "bakeFailedTitle": "Päivittäisen kartan valmistelu epäonnistui",
+    "bakeCanceledTitle": "Päivittäisen kartan valmistelu peruttiin",
+    "bakeRunningDescription": "Päivittäistä karttaa valmistellaan. Varaa tähän noin 15 minuuttia. Arvioitu valmistumisaika: {{time}} (paikallista aikaasi).",
+    "bakeDelayedDescription": "Viimeisimmän tiedon mukaan valmistelu jatkuu. Arvioitu valmistumisaika {{time}} on jo mennyt.",
+    "bakeWaitingDescription": "Valmistelu on valmis; kartta odottaa julkaisua.",
+    "bakePublishingDescription": "Valmistelu on valmis. Karttaa julkaistaan.",
+    "bakeFailedDescription": "Päivittäisen kartan valmistelu epäonnistui. Voit silti luoda kartan selaimessasi. Ilmoita ongelmasta kanavalla {{channel}}.",
+    "bakeCanceledDescription": "Päivittäisen kartan valmistelu peruttiin. Voit silti luoda kartan selaimessasi.",
+    "bakeReadyDescription": "Valmistelu on valmis, mutta karttaa ei voitu ladata. Kokeile ladata sivu uudelleen.",
+    "bakeLastUpdate": "Viimeisin tilapäivitys: {{time}}.",
+    "bakeReadyTitle": "Päivittäinen kartta on valmis",
+    "bakeAvailableDescription": "Tämä päivittäinen kartta on kokonaan valmisteltu ja valmis.",
+    "bakeScheduleDescription": "Päivittäiset kartat ovat yleensä valmiita noin {{time}} (paikallista aikaasi), noin 15 minuuttia päivittäisen vaihdon jälkeen."
   },
   "alive_wand": "(elava sauva)",
   "konami": {
@@ -5808,5 +5830,12 @@
   "startup": {
     "failed": "Noitamap ei käynnistynyt. Lataa sivu uudelleen ja yritä uudestaan.",
     "retry": "Lataa sivu uudelleen"
+  },
+  "guessr": {
+    "title": "NoitaGuessr",
+    "content": "Pelimuodot: Päivittäinen, Demo, Chat vastaan striimaaja"
+  },
+  "attribution": {
+    "poweredBy": "Toteutettu käyttäen"
   }
 }

@@ -1,0 +1,14 @@
+// Offline D1 migration/testing configuration. Never deploy this config.
+// The zero ID is a local SQLite namespace, not a remote database.
+{
+  "name": "noitamap-auth-accounts-local",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-01-20",
+  "d1_databases": [{
+    "binding": "ACCOUNT_DB",
+    "database_name": "noitamap-auth-accounts-local",
+    "database_id": "00000000-0000-0000-0000-000000000000",
+    "migrations_dir": "migrations",
+    "remote": false
+  }]
+}

@@ -66,6 +66,24 @@ describe('translation refresh preserves programmatically owned popovers', () => 
     return document.getElementById('dynamicSeedInput')!;
   }
 
+  it('translates the Guessr description while keeping its logo header', async () => {
+    const anchor = document.createElement('div'); document.body.append(anchor);
+    const { createGuessrButton } = await import('../src/guessr-button');
+    createGuessrButton(anchor, { hostname: 'localhost' }, true);
+    const link = document.getElementById('noitaGuessrButton')!;
+    const logo = link.getAttribute('data-bs-title');
+    const { updateTranslations } = await import('../src/i18n-dom');
+    translations.language = 'ru'; updateTranslations();
+    expect(link.getAttribute('data-bs-title')).toBe(logo);
+    expect(logo).toContain('/assets/noitaguessr-logo.svg');
+    expect(link.getAttribute('data-bs-html')).toBe('true');
+    expect(Popover.getInstance(link)!._config.content).toBe('ru:guessr.content');
+    expect(link.hasAttribute('title')).toBe(false);
+    translations.language = 'de'; updateTranslations();
+    expect(Popover.getInstance(link)!._config.content).toBe('de:guessr.content');
+    expect(link.getAttribute('data-bs-title')).toBe(logo);
+  });
+
   it.each([
     { identity: null, dailyMode: true, className: null },
     { identity: null, dailyMode: false, className: null },
@@ -114,7 +132,8 @@ describe('translation refresh preserves programmatically owned popovers', () => 
     const translated = Popover.getInstance(input)!;
     expect(translated).not.toBe(original);
     expect(translated._config).toMatchObject({ html: true, sanitize: false });
-    expect(translated._config.content).toContain('ru daily');
+    expect(typeof translated._config.content).toBe('function');
+    expect((translated._config.content as () => string)()).toContain('ru daily');
     updateTranslations();
     expect(Popover.getInstance(input)).toBe(translated);
   });

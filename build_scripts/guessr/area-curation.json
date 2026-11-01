@@ -1,0 +1,165 @@
+{
+  "version": 2,
+  "rule": "A puzzle area is a recognizable place. Neither an engine ID nor a disconnected chunk component automatically creates one. Masks below are unions of source cells for review, not final valid-start masks.",
+  "scoringProfiles": {
+    "easy": {"area": 500, "position": 4500, "maximum": 5000},
+    "normal": {"area": 1000, "position": 4000, "maximum": 5000},
+    "hard": {"area": 3000, "position": 2000, "maximum": 5000}
+  },
+  "excludedSources": {
+    "main/lake/1133f1/4-0": "Blank sky above the Cloudscape near the Gourd room; not a separate Lake or puzzle area.",
+    "main/winter/d6d8e3/11-0": "Blank elevated strip, not a separate Snowy Wasteland or puzzle area."
+  },
+  "groups": [
+    {
+      "id": "terrain/edr", "nameKey": "mat_rock_hard_border", "difficultyTier": "normal",
+      "match": {"engines": ["solid_wall"]},
+      "reason": "One EDR recognition area across all source fragments, including the small patch above the Ancient Laboratory. Keep biome and room holes. Normal scoring: 1000 area + 4000 proximity. The material is easy to recognize; Tower context may help pinpoint the position without creating another EDR area.",
+      "evidence": ["User area review", "task/guessr/area-review-corrections/ancient-lab-dark-cave-grid.png"]
+    },
+    {
+      "id": "landmark/pyramid", "nameKey": "biome_pyramid",
+      "match": {"realms": ["main"], "engines": ["pyramid", "pyramid_top", "pyramid_left", "pyramid_right", "pyramid_entrance", "pyramid_hallway"]},
+      "reason": "One Pyramid, including all entrance, hallway, top and side construction pieces.", "evidence": ["User area review"]
+    },
+    {
+      "id": "biome/snowy-wasteland", "nameKey": "biome_winter",
+      "difficultyRule": {"kind": "initial-view-snow", "withSnow": "normal", "withoutSnow": "hard", "unknown": "requires-review", "frozenForRound": true},
+      "sourceIds": ["main/winter/d6d8e3/16-0", "main/winter/d6d8e3/11-7"],
+      "reason": "One surface Snowy Wasteland. The original starting view determines the tier: any snow pixels means Normal (1000/4000); no snow pixels means Hard (3000/2000). Zooming or moving later does not reclassify the round. Source biome labels or general color variation cannot substitute for checking snow in that view. Unclassified starts require review.",
+      "evidence": ["task/guessr/area-review-corrections/winter-context-grid.png"]
+    },
+    {
+      "id": "biome/snowy-chasm", "nameKey": "biome_winter_caves",
+      "sourceIds": ["main/winter_caves/77a5bd/20-15", "main/winter/d6d8e3/16-22", "main/winter/d6d8e3/22-23", "main/winter/d6d8e3/15-29", "main/winter/d6d8e3/19-29", "main/winter/d6d8e3/15-35", "main/winter/d6d8e3/22-35"],
+      "reason": "One Snowy Chasm. The six embedded winter-texture patches belong to this place; they are not six extra Snowy Wasteland puzzles.",
+      "evidence": ["task/guessr/area-review-corrections/winter-context-grid.png"]
+    },
+    {
+      "id": "biome/frozen-vault", "nameKey": "biome_vault_frozen",
+      "sourceIds": ["main/vault_frozen/0080a8/12-15", "main/empty/48e311/15-14", "main/bridge/ad8111/15-13"],
+      "reason": "Frozen Vault includes the bridge and the populated cavern entrance directly below it. Neither the bridge nor the empty-labelled entrance is a separate puzzle area.",
+      "evidence": ["task/guessr/area-review-corrections/bridge-frozen-vault-grid.png"]
+    },
+    {
+      "id": "biome/ancient-laboratory", "nameKey": "biome_liquidcave",
+      "sourceIds": ["main/liquidcave/89a04b/26-14"],
+      "reason": "Procedural laboratory rooms, separate from the Alchemist boss room.",
+      "evidence": ["task/guessr/area-review-corrections/ancient-lab-dark-cave-grid.png"]
+    },
+    {
+      "id": "landmark/alchemist-boss-room", "nameKey": "animal_boss_alchemist", "qualifier": "boss room",
+      "sourceIds": ["main/secret_lab/baa345/25-15"],
+      "reason": "Separate ornate Alchemist boss room. The Ylialkemisti marker at (-4840,851) lies here, outside the procedural laboratory mask.",
+      "evidence": ["task/guessr/area-review-corrections/ancient-lab-dark-cave-grid.png"]
+    },
+    {
+      "id": "biome/underground-jungle", "nameKey": "biome_rainforest",
+      "match": {"realms": ["main"], "engines": ["rainforest", "rainforest_open"]},
+      "reason": "The two terrain variants form one Underground Jungle. Separate Fungal Caverns enclaves and named room masks remain holes."
+    },
+    {
+      "id": "biome/lukki-lair", "nameKey": "biome_rainforest_dark",
+      "match": {"realms": ["main"], "engines": ["rainforest_dark"]},
+      "reason": "One Lukki Lair; its small adjacent source fragment is part of the same geographic complex."
+    },
+    {
+      "id": "biome/fungal-caverns-main", "nameKey": "biome_fungicave", "qualifier": "main",
+      "sourceIds": ["main/fungicave/e861f0/28-17"],
+      "reason": "Main Fungal Caverns beside Coal Pits; distinct from the two distant jungle enclaves."
+    },
+    {
+      "id": "biome/fungal-caverns-jungle-west", "nameKey": "biome_fungicave", "qualifier": "western jungle enclave",
+      "sourceIds": ["main/fungicave/e861f0/34-28"],
+      "reason": "Separate Fungal Caverns enclave inside the jungle, not part of the main caverns."
+    },
+    {
+      "id": "biome/fungal-caverns-jungle-east", "nameKey": "biome_fungicave", "qualifier": "eastern jungle enclave",
+      "sourceIds": ["main/fungicave/e861f0/39-31"],
+      "reason": "A second separate Fungal Caverns enclave at the jungle/Vault edge."
+    },
+    {
+      "id": "biome/meat-realm-main", "nameKey": "biome_meat", "qualifier": "main, including meat room",
+      "sourceIds": ["main/meat/572828/48-25", "main/meatroom/796620/48-30"],
+      "reason": "The main Meat Realm includes its differently labelled meat room. This is the user's boss-room reference. Named room puzzles can later declare a more specific footprint; do not merge the distant secondary realm."
+    },
+    {
+      "id": "biome/meat-realm-secondary", "nameKey": "biome_meat", "qualifier": "secondary",
+      "sourceIds": ["main/meat/572828/65-38"],
+      "reason": "The distant secondary Meat Realm is a separate physical place."
+    },
+    {
+      "id": "biome/power-plant", "nameKey": "biome_robobase",
+      "sourceIds": ["main/robobase/4e5267/63-29", "main/roboroom/9d893d/62-35"],
+      "reason": "The main Power Plant complex. Its own room is included in the parent mask; the remote elevator sharing robobase is a different area."
+    },
+    {
+      "id": "landmark/hiidet-elevator", "label": "Infinite Hiidet elevator",
+      "sourceIds": ["main/robobase/4e5267/2-47", "hell/robobase/4e5267/2"],
+      "reason": "One continuous 512-pixel-wide elevator strip, including the Hell continuation; separate from Power Plant."
+    },
+    {
+      "id": "landmark/tower", "nameKey": "biome_tower", "label": "The Tower", "labelOverrideReason": "User-requested English display name; common.csv supplies Tower.",
+      "sourceIds": ["main/solid_wall_tower/3f3d3e/52-21", "main/hills/3d3e40/53-22", "main/hills/3d3e40/55-22"],
+      "match": {"realms": ["main"], "engines": ["solid_wall_tower_1", "solid_wall_tower_2", "solid_wall_tower_3", "solid_wall_tower_4", "solid_wall_tower_5", "solid_wall_tower_6", "solid_wall_tower_7", "solid_wall_tower_8", "solid_wall_tower_9", "solid_wall_tower_10"]},
+      "reason": "One Tower structure across its floor variants, reward pieces and enclosure. No automatic hard recognition rating. Generic EDR remains in the EDR recognition area."
+    },
+    {
+      "id": "biome/lake", "nameKey": "biome_lake",
+      "sourceIds": ["main/lake/1133f1/4-6", "main/lake_deep/1158f1/4-16"],
+      "reason": "The actual Lake and its deep continuation form one place. Elevated blank sky carrying the lake ID is excluded."
+    },
+    {
+      "id": "biome/volcanic-lake", "nameKey": "biome_lava",
+      "match": {"realms": ["main", "hell"], "engines": ["lava", "lava_90percent"]},
+      "reason": "Lava and its construction variants form one Volcanic Lake area. Vertical projections still need capture validation, not independent questions."
+    },
+    {
+      "id": "biome/the-work-sky", "nameKey": "biome_boss_victoryroom", "qualifier": "Heaven",
+      "match": {"engines": ["the_sky"]},
+      "reason": "One captured Heaven region across the main/vertical allocation boundary. Named landmarks still need their explicit footprints."
+    },
+    {
+      "id": "biome/the-work-hell", "nameKey": "biome_boss_victoryroom", "qualifier": "Hell",
+      "match": {"engines": ["the_end"]},
+      "reason": "One captured Hell region across the main/vertical allocation boundary. Named landmarks still need their explicit footprints."
+    },
+    {
+      "id": "biome/hiisi-base", "nameKey": "biome_snowcastle",
+      "match": {"realms": ["main"], "engines": ["snowcastle", "snowcastle_cavern"]},
+      "reason": "One Hiisi Base, including its side cavern allocations; a named shop or scene may later have its own footprint."
+    },
+    {
+      "id": "biome/laboratory", "nameKey": "biome_boss_arena",
+      "match": {"realms": ["main"], "engines": ["boss_arena", "boss_arena_top"]},
+      "reason": "The Laboratory and its top construction segment form one area."
+    }
+  ],
+  "singleAreas": {
+    "coalmine": "Mines, with separately defined Collapsed Mines and room allocations kept distinct.",
+    "coalmine_alt": "Collapsed Mines is a distinct area beside the Mines.",
+    "excavationsite": "Coal Pits; the main Fungal Caverns remain a separate area.",
+    "snowcave": "Snowy Depths, separate from the western Snowy Chasm.",
+    "vault": "The main Vault; the Frozen Vault is a different physical place.",
+    "crypt": "Temple of the Art; nearby Magical Temple instances remain separate.",
+    "mountain_tree": "The tree is one area. A future puzzle samples a valid position within it, not the old fixed test coordinate.",
+    "gourd_room": "The Gourd room is a real landmark; the blank sky near it is not another area.",
+    "biome_barren": "One Barren Temple instance; helper lighting strips do not create more questions.",
+    "biome_potion_mimics": "One Henkevä Temple instance; its final occupied footprint needs capture review.",
+    "biome_darkness": "One Ominous Temple instance; its final occupied footprint needs capture review.",
+    "biome_boss_sky": "One Kivi Temple instance; its final occupied footprint needs capture review.",
+    "biome_watchtower": "One Watchtower instance; do not promote each construction cell separately.",
+    "watercave": "One Dark Cave location; source-art variants do not create extra places."
+  },
+  "easyTempleEngines": ["crypt", "wandcave", "biome_barren", "biome_potion_mimics", "biome_darkness", "biome_boss_sky"],
+  "holyMountainRows": [16, 19, 23, 26, 30, 34],
+  "holyMountainScoreOverride": {"area": 1500, "position": 3500, "maximum": 5000},
+  "pendingLandmarks": [
+    {
+      "id": "landmark/holy-mountain-final", "nameKey": "biome_holymountain", "qualifier": "lowest, beside Kolmi", "difficultyTier": "easy",
+      "point": {"x": 2590, "y": 13144}, "sourceLabel": "Holy Mountain (The Laboratory)",
+      "reason": "The seventh and lowest Holy Mountain, immediately beside Kolmi, uses Easy scoring (500 area + 4500 proximity). Its room lies within the larger Laboratory source scene. Trace this room separately before sampling; do not mislabel the sixth ordinary Holy Mountain or the entire boss arena as this exception.",
+      "evidence": ["src/data/spatial_awareness.json#/18", "task/guessr/area-review-corrections/final-holy-mountain.png", "lib/noita-telescope-vm/js/static_spawns.js"]
+    }
+  ]
+}

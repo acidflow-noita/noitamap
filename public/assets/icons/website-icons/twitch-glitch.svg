@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Official Twitch Glitch (Purple) brand mark. Source of truth for the
-     inline white variant used on the purple "Sign in with Twitch" button
-     (see TWITCH_SYMBOL_WHITE in src/auth/auth-ui.ts). -->
+<!-- Generator: Adobe Illustrator 23.0.6, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 2400 2800" style="enable-background:new 0 0 2400 2800;" xml:space="preserve">
 <style type="text/css">
 	.st0{fill:#FFFFFF;}
 	.st1{fill:#9146FF;}
 </style>
-<title>Twitch</title>
+<title>Asset 2</title>
 <g>
 	<polygon class="st0" points="2200,1300 1800,1700 1400,1700 1050,2050 1050,1700 600,1700 600,200 2200,200 	"/>
 	<g>

@@ -14,7 +14,7 @@ vi.mock('../src/telescope/poi-spatial-index', () => ({ loadSpritesheetAndAtlas: 
 vi.mock('../src/extended-info', () => ({ buildExtendedCreatureSectionByName: () => document.createElement('div') }));
 vi.mock('../src/data_sources/url', () => ({ clearTargetPoiId: vi.fn() }));
 vi.mock('../src/game-translations/translator', () => ({ gameTranslator: { translateBoss: (name: string) => name } }));
-vi.mock('../src/i18n', () => ({ default: { t: (_key: string, options: any) => options?.defaultValue ?? '' } }));
+vi.mock('../src/i18n', () => ({ default: { t: (_key: string, options: any) => options?.defaultValue ?? '', on: vi.fn() } }));
 vi.mock('i18next', () => ({ default: { t: (_key: string, options: any) => options?.defaultValue ?? '' } }));
 vi.mock('../src/data_sources/tile_data', () => ({ fetchMapVersions: vi.fn(), getTileData: vi.fn() }));
 vi.mock('../src/light-mode', () => ({ isLightMode: () => false }));

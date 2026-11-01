@@ -128,7 +128,7 @@
     "content": "Zobacz kod źródłowy na GitHub"
   },
   "runfast": {
-    "title": "Runfast.Stream",
+    "title": "Strona główna",
     "content": "Przejdź do strony głównej runfast.stream"
   },
   "gameContent": {
@@ -4613,9 +4613,15 @@
     "switchProviderConfirm": "Logując się przez {{next}}, wylogujesz się z {{current}}.\n\nDostęp do Pro będzie wtedy zależał od Twojej subskrypcji {{next}}.\n\nCzy chcesz się przełączyć na {{next}}?",
     "loginWithTwitch": "Zaloguj sie przez Twitch",
     "subscribeTwitch": "Subskrybuj na Twitchu",
+    "giftProTwitch": "Podaruj Pro streamerowi",
+    "giftProTwitchHint": "Podaruj subskrypcję kanału wuote, wybierając nazwę streamera na Twitchu jako odbiorcę. Po połączeniu tego konta będzie mógł korzystać z Pro przez okres podarowanej subskrypcji.",
     "or": "lub",
     "workspaceSaveFailed": "Nie udało się zapisać obszaru roboczego. Logowanie zostało anulowane. Spróbuj ponownie.",
-    "workspaceRestoreFailed": "Nie udało się przywrócić obszaru rysowania. Odśwież stronę, aby spróbować ponownie."
+    "workspaceRestoreFailed": "Nie udało się przywrócić obszaru rysowania. Odśwież stronę, aby spróbować ponownie.",
+    "giftProOnTwitch": "Gift Pro on Twitch",
+    "giftProOnPatreon": "Gift Pro on Patreon",
+    "giftTwitchAutomatic": "Twitch gifts apply directly to the recipient’s account.",
+    "giftPatreonClaim": "Patreon gifts must be claimed through the gift link the buyer receives after purchase."
   },
   "loading": {
     "maps": "Ładowanie map...",
@@ -4842,8 +4848,24 @@
     "previousDaily": "Poprzedni dzienny seed",
     "previousDailyDescription": "Zaladuj wczorajszy dzienny seed gry",
     "seedTooltipPreviousDaily": "To jest seed wczorajszego dziennego biegu",
-    "bakeUnavailableTitle": "Gotowa mapa dziennej rozgrywki jest niedostępna",
-    "bakeUnavailableDescription": "Mapa przygotowywana na serwerze dla tej dziennej rozgrywki jest niedostępna. Generowanie może nadal trwać lub zakończyło się błędem. Jeśli problem nie ustąpi, powiadom WUOTE na kanale {{channel}}."
+    "bakeUnavailableTitle": "Przygotowana mapa dnia jest niedostępna",
+    "bakeUnavailableDescription": "Status przygotowania jest niedostępny. Zwykle mapa powinna być gotowa około {{time}} (Twój czas lokalny), mniej więcej 15 minut po codziennej zmianie.",
+    "bakeRunningTitle": "Przygotowywanie mapy dnia",
+    "bakeWaitingTitle": "Mapa dnia czeka na publikację",
+    "bakePublishingTitle": "Publikowanie mapy dnia",
+    "bakeFailedTitle": "Nie udało się przygotować mapy dnia",
+    "bakeCanceledTitle": "Anulowano przygotowanie mapy dnia",
+    "bakeRunningDescription": "Mapa dnia jest przygotowywana. Zajmuje to około 15 minut. Przewidywana gotowość: {{time}} (Twój czas lokalny).",
+    "bakeDelayedDescription": "Według ostatniej aktualizacji przygotowanie nadal trwa. Przewidywany termin {{time}} już minął.",
+    "bakeWaitingDescription": "Przygotowanie zakończone; mapa czeka na publikację.",
+    "bakePublishingDescription": "Przygotowanie zakończone. Mapa jest publikowana.",
+    "bakeFailedDescription": "Nie udało się przygotować mapy dnia. Nadal możesz wygenerować mapę w przeglądarce. Zgłoś problem na {{channel}}.",
+    "bakeCanceledDescription": "Anulowano przygotowanie mapy dnia. Nadal możesz wygenerować mapę w przeglądarce.",
+    "bakeReadyDescription": "Przygotowanie zakończone, ale nie udało się wczytać mapy. Spróbuj odświeżyć stronę.",
+    "bakeLastUpdate": "Ostatnia aktualizacja statusu: {{time}}.",
+    "bakeReadyTitle": "Mapa dnia jest gotowa",
+    "bakeAvailableDescription": "Ta mapa dnia jest w pełni przygotowana i gotowa.",
+    "bakeScheduleDescription": "Mapy dnia są zwykle gotowe około {{time}} (Twój czas lokalny), mniej więcej 15 minut po codziennej zmianie."
   },
   "alive_wand": "(zywa rozdzka)",
   "konami": {
@@ -5808,5 +5830,12 @@
   "startup": {
     "failed": "Nie udało się uruchomić Noitamap. Odśwież stronę i spróbuj ponownie.",
     "retry": "Odśwież stronę"
+  },
+  "guessr": {
+    "title": "NoitaGuessr",
+    "content": "Tryby gry: Dzienny, Demo, Czat kontra streamer"
+  },
+  "attribution": {
+    "poweredBy": "Działa dzięki"
   }
 }

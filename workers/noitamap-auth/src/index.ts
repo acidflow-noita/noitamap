@@ -1,6 +1,10 @@
+import { signGameTicket } from '../../noitamap-guessr/src/tickets';
+import { readAccount, saveIdentity, unlinkIdentity, createLinkIntent, startLinkIntent, finishLinkOAuth, consumeLinkIntent,
+  type Account, type Identity, type VerifiedIdentity, type Provider } from './accounts';
+
 /**
- * Noitamap Auth Worker (Stateless)
- * Handles Patreon OAuth and issues short-lived JWTs. No database required.
+ * Patreon/Twitch OAuth with optional durable account links. Legacy provider
+ * sessions continue to work while the account registry is being configured.
  *
  * Environment Variables:
  * - PATREON_CLIENT_ID: OAuth Client ID
@@ -16,13 +20,16 @@ interface SecretStoreSecret {
   get(): Promise<string>;
 }
 
-interface Env {
+interface Env extends Partial<Pick<AccountRegistryBindings, 'ACCOUNT_DB'>> {
   // Secrets Store bindings
   PATREON_CLIENT_ID: SecretStoreSecret;
   PATREON_CLIENT_SECRET: SecretStoreSecret;
   PATREON_CAMPAIGN_ID: SecretStoreSecret;
   JWT_SECRET: SecretStoreSecret;
   CREATOR_USER_ID: SecretStoreSecret;
+  // Optional, separate game-only key, also configured on the Sage account's
+  // game Worker. Never share JWT_SECRET with that account.
+  GAME_SIGNING_SECRET?: SecretStoreSecret | string;
 
   // Plain environment variables (from wrangler.jsonc vars)
   WORKER_URL: string;
@@ -67,6 +74,8 @@ interface JWTPayload {
   is_follower: boolean;
   is_subscriber: boolean;
   provider?: "patreon" | "twitch";
+  account_id?: string;
+  account_version?: number;
   iat: number;
   exp: number;
 }
@@ -96,14 +105,19 @@ interface PatreonIdentityResponse {
   included?: Array<{
     type: string;
     id: string;
-    attributes: {
-      patron_status: string | null;
-      currently_entitled_amount_cents: number;
-      campaign_lifetime_support_cents: number;
+    attributes?: {
+      patron_status?: string | null;
+      currently_entitled_amount_cents?: number | null;
+      campaign_lifetime_support_cents?: number | null;
+      is_gifted?: boolean;
+      amount_cents?: number;
     };
     relationships?: {
       campaign?: {
         data: { type: "campaign"; id: string };
+      };
+      currently_entitled_tiers?: {
+        data: Array<{ type: "tier"; id: string }>;
       };
     };
   }>;
@@ -167,7 +181,9 @@ interface RefreshPayload {
   typ: "refresh";
   sub: string;
   provider: "patreon" | "twitch";
-  enc: string; // encryptSecret(providerRefreshToken)
+  enc?: string; // legacy encrypted provider refresh credential
+  account_id?: string;
+  account_version?: number;
   iat: number;
   exp: number;
 }
@@ -177,6 +193,8 @@ interface OAuthState {
   redirectUrl: string;
   nonce: string;
   expiresAt: number;
+  linkIntent?: string;
+  chat?: boolean;
 }
 
 // -- Main Worker --
@@ -209,34 +227,48 @@ export default {
       switch (url.pathname) {
         case "/auth/login":
           if (request.method !== "GET") return methodNotAllowed("GET");
-          return handlePatreonLogin(request, env, await resolveSecrets(env));
+          return await handlePatreonLogin(request, env, await resolveSecrets(env));
         case "/auth/callback":
           if (request.method !== "GET") return methodNotAllowed("GET");
-          return handlePatreonCallback(request, env, await resolveSecrets(env));
+          return await handlePatreonCallback(request, env, await resolveSecrets(env));
         case "/auth/check":
           if (request.method !== "GET") return methodNotAllowed("GET", allowedOrigin);
-          return handleAuthCheck(request, (await resolveSessionSecrets(env)).jwtSecret, allowedOrigin);
+          return await handleAuthCheck(request, (await resolveSessionSecrets(env)).jwtSecret, allowedOrigin, env);
+        case "/auth/link/start":
+        case "/auth/link/complete":
+        case "/auth/unlink":
+          if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
+          return await handleAccountAction(request, env, await resolveSessionSecrets(env), allowedOrigin);
+        case "/auth/link/continue":
+          if (request.method !== "GET") return methodNotAllowed("GET");
+          return await handleLinkContinue(request, env, await resolveSessionSecrets(env));
+        case "/auth/twitch/chat-session":
+          if (request.method !== "GET") return methodNotAllowed("GET", allowedOrigin);
+          return await handleTwitchChatSession(request, env, await resolveSessionSecrets(env), allowedOrigin);
+        case "/auth/game-ticket":
+          if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
+          return await handleGameTicket(request, env, (await resolveSessionSecrets(env)).jwtSecret, allowedOrigin);
         case "/auth/refresh":
           if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
-          return handleRefresh(request, env, await resolveSessionSecrets(env), allowedOrigin);
+          return await handleRefresh(request, env, await resolveSessionSecrets(env), allowedOrigin);
         case "/auth/twitch/login":
           if (request.method !== "GET") return methodNotAllowed("GET");
-          return handleTwitchLogin(request, env, await resolveSessionSecrets(env));
+          return await handleTwitchLogin(request, env, await resolveSessionSecrets(env));
         case "/auth/twitch/callback":
           if (request.method !== "GET") return methodNotAllowed("GET");
-          return handleTwitchCallback(request, env, await resolveSessionSecrets(env));
+          return await handleTwitchCallback(request, env, await resolveSessionSecrets(env));
         case "/auth/twitch/broadcaster-setup":
           if (request.method !== "GET") return methodNotAllowed("GET");
-          return handleBroadcasterSetup(request, env, await resolveSessionSecrets(env));
+          return await handleBroadcasterSetup(request, env, await resolveSessionSecrets(env));
         case "/auth/twitch/broadcaster-callback":
           if (request.method !== "GET") return methodNotAllowed("GET");
-          return handleBroadcasterCallback(request, env, await resolveSessionSecrets(env));
+          return await handleBroadcasterCallback(request, env, await resolveSessionSecrets(env));
         default:
           return textResponse("Not Found", 404);
       }
     } catch (error) {
       console.error("Worker Error:", error);
-      return textResponse("Internal Server Error", 500);
+      return textResponse("Internal Server Error", 500, allowedOrigin);
     }
   },
 };
@@ -311,6 +343,18 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
       return redirectWithError(finalRedirectUrl, "identity_fetch_failed", request);
     }
 
+    if (env.ACCOUNT_DB) {
+      return completeProviderOAuth(request, env, secrets, oauthState, {
+        provider: 'patreon', provider_user_id: membership.userId,
+        username: membership.username, nickname: membership.nickname, login: null,
+        is_follower: Number(membership.isFollower), is_subscriber: Number(membership.isSubscriber),
+        checked_at: Date.now(), status: 'active', credentials: await encryptSecret(JSON.stringify({
+          accessToken: tokenData.access_token, refreshToken: tokenData.refresh_token,
+          expiresAt: Date.now() + tokenData.expires_in * 1000, scopes: tokenData.scope?.split(' ') || [],
+        }), secrets.jwtSecret),
+      });
+    }
+
     // 4. Issue a short access JWT + a long refresh JWT. The refresh JWT carries
     //    the Patreon refresh_token AES-encrypted, so the client re-mints access
     //    tokens silently for 90 days (no re-login) while the worker stays
@@ -374,12 +418,13 @@ interface PatreonMembership {
  */
 async function fetchPatreonMembership(accessToken: string, secrets: Secrets): Promise<PatreonMembership | null> {
   const identityUrl = new URL("https://www.patreon.com/api/oauth2/v2/identity");
-  identityUrl.searchParams.set("include", "memberships,memberships.campaign");
+  identityUrl.searchParams.set("include", "memberships,memberships.campaign,memberships.currently_entitled_tiers");
   identityUrl.searchParams.set("fields[user]", "vanity,image_url");
   identityUrl.searchParams.set(
     "fields[member]",
-    "patron_status,currently_entitled_amount_cents,campaign_lifetime_support_cents",
+    "patron_status,currently_entitled_amount_cents,is_gifted",
   );
+  identityUrl.searchParams.set("fields[tier]", "amount_cents");
 
   const identityResponse = await fetch(identityUrl.toString(), {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -400,12 +445,29 @@ async function fetchPatreonMembership(accessToken: string, secrets: Secrets): Pr
     isFollower = true;
     isSubscriber = true;
   } else if (identityData.included) {
+    const paidTierIds = new Set(identityData.included
+      .filter(item => item.type === "tier" && typeof item.attributes?.amount_cents === "number"
+        && Number.isFinite(item.attributes.amount_cents) && item.attributes.amount_cents > 0)
+      .map(item => item.id));
     for (const item of identityData.included) {
       if (item.type !== "member") continue;
       const campaignId = item.relationships?.campaign?.data?.id;
-      if (secrets.patreonCampaignId && campaignId !== secrets.patreonCampaignId) continue;
+      if (!secrets.patreonCampaignId || campaignId !== secrets.patreonCampaignId) continue;
       isFollower = true;
-      if (item.attributes.patron_status === "active_patron" && item.attributes.currently_entitled_amount_cents > 0) {
+      const attributes = item.attributes;
+      const hasPaidMembership = attributes?.patron_status === "active_patron"
+        && typeof attributes.currently_entitled_amount_cents === "number"
+        && Number.isFinite(attributes.currently_entitled_amount_cents)
+        && attributes.currently_entitled_amount_cents > 0;
+      // A claimed gift may have no payment amount/history for its recipient.
+      // Require a current paid-tier entitlement: a historical gift flag, an
+      // unrelated included tier, or a free tier cannot unlock Pro. Patreon
+      // permits a null patron_status; explicit former/declined states fail closed.
+      // Verify this contract with a real claimed-gift payload before production rollout.
+      const hasCurrentGift = attributes?.is_gifted === true
+        && (attributes.patron_status === "active_patron" || attributes.patron_status === null)
+        && item.relationships?.currently_entitled_tiers?.data?.some(tier => tier.type === "tier" && paidTierIds.has(tier.id));
+      if (hasPaidMembership || hasCurrentGift) {
         isSubscriber = true;
       }
     }
@@ -421,12 +483,20 @@ async function fetchPatreonMembership(accessToken: string, secrets: Secrets): Pr
   };
 }
 
-async function handleAuthCheck(request: Request, jwtSecret: string, allowedOrigin: string | null): Promise<Response> {
+async function handleAuthCheck(request: Request, jwtSecret: string, allowedOrigin: string | null, env: Env): Promise<Response> {
   const token = getBearerToken(request);
   if (!token) return jsonResponse({ authenticated: false }, allowedOrigin);
   const payload = await verifyJWT(token, jwtSecret);
   if (!payload) {
     return jsonResponse({ authenticated: false }, allowedOrigin);
+  }
+
+  if (payload.account_id) {
+    const account = await sessionAccount(env, payload);
+    if (!account) return jsonResponse({ authenticated: false }, allowedOrigin);
+    const data = accountData(account, payload.provider);
+    return jsonResponse(data.isSubscriber !== payload.is_subscriber || data.isFollower !== payload.is_follower
+      ? await issueAccountSession(account, { jwtSecret }, payload.provider) : data, allowedOrigin);
   }
 
   return jsonResponse(
@@ -436,9 +506,25 @@ async function handleAuthCheck(request: Request, jwtSecret: string, allowedOrigi
       isFollower: payload.is_follower,
       isSubscriber: payload.is_subscriber,
       provider: payload.provider || "patreon",
+      linkingAvailable: !!env.ACCOUNT_DB,
     },
     allowedOrigin,
   );
+}
+
+async function handleGameTicket(request: Request, env: Env, jwtSecret: string, allowedOrigin: string | null): Promise<Response> {
+  const token = getBearerToken(request);
+  const user = token ? await verifyJWT(token, jwtSecret) : null;
+  if (!user) return jsonResponse({ error: 'Sign in to play ranked games.' }, allowedOrigin, 401);
+  const account = user.account_id ? await sessionAccount(env, user) : null;
+  if (user.account_id && !account) return jsonResponse({ error: 'Sign in again.' }, allowedOrigin, 401);
+  if (!(account ? accountData(account).isSubscriber : user.is_subscriber)) return jsonResponse({ error: 'Ranked games require Pro.' }, allowedOrigin, 403);
+  const binding = env.GAME_SIGNING_SECRET;
+  const key = typeof binding === 'string' ? binding : await binding?.get();
+  if (!key || key.length < 32) return jsonResponse({ error: 'Ranked games are not available yet.' }, allowedOrigin, 503);
+  const twitch = account?.identities.find(row => row.provider === 'twitch' && row.status === 'active');
+  return jsonResponse(await signGameTicket(account ? `account:${account.id}` : `${user.provider || 'patreon'}:${user.sub}`,
+    user.nickname || user.username, key, twitch?.login ? { twitchUserId: twitch.provider_user_id, twitchLogin: twitch.login } : undefined), allowedOrigin);
 }
 
 /**
@@ -455,13 +541,22 @@ async function handleRefresh(request: Request, env: Env, secrets: SessionSecrets
   const refresh = await verifyRefreshJWT(token, secrets.jwtSecret);
   if (!refresh) return jsonResponse({ authenticated: false }, allowedOrigin);
 
-  const providerRefreshToken = await decryptSecret(refresh.enc, secrets.jwtSecret);
+  if (refresh.account_id) {
+    const account = await sessionAccount(env, refresh);
+    if (!account) return jsonResponse({ authenticated: false }, allowedOrigin);
+    await refreshAccountMemberships(env, account, secrets);
+    const current = await sessionAccount(env, refresh);
+    return current ? jsonResponse(await issueAccountSession(current, secrets, refresh.provider), allowedOrigin)
+      : jsonResponse({ authenticated: false }, allowedOrigin);
+  }
+
+  const providerRefreshToken = await decryptSecret(refresh.enc!, secrets.jwtSecret);
   if (!providerRefreshToken) return jsonResponse({ authenticated: false }, allowedOrigin);
 
   try {
     if (refresh.provider === "patreon") {
       const patreonSecrets = await resolveSecrets(env, secrets.jwtSecret);
-      return await refreshPatreon(providerRefreshToken, refresh.sub, patreonSecrets, allowedOrigin);
+      return await refreshPatreon(providerRefreshToken, refresh.sub, patreonSecrets, allowedOrigin, env);
     }
     if (refresh.provider === "twitch") {
       return await refreshTwitch(env, providerRefreshToken, refresh.sub, secrets, allowedOrigin);
@@ -502,6 +597,7 @@ async function issueSessionJson(
       isFollower: payload.is_follower,
       isSubscriber: payload.is_subscriber,
       provider: payload.provider,
+      linkingAvailable: false,
     },
     allowedOrigin,
   );
@@ -512,6 +608,7 @@ async function refreshPatreon(
   expectedUserId: string,
   secrets: Secrets,
   allowedOrigin: string | null,
+  env: Env,
 ): Promise<Response> {
   const tokenRes = await fetch("https://www.patreon.com/api/oauth2/token", {
     method: "POST",
@@ -531,6 +628,19 @@ async function refreshPatreon(
   const membership = await fetchPatreonMembership(tokenData.access_token, secrets);
   if (!membership || membership.userId !== expectedUserId) {
     return jsonResponse({ authenticated: false }, allowedOrigin);
+  }
+
+  if (env.ACCOUNT_DB) {
+    const account = await saveIdentity(env.ACCOUNT_DB, {
+      provider: 'patreon', provider_user_id: membership.userId,
+      username: membership.username, nickname: membership.nickname, login: null,
+      is_follower: Number(membership.isFollower), is_subscriber: Number(membership.isSubscriber),
+      checked_at: Date.now(), status: 'active', credentials: await encryptSecret(JSON.stringify({
+        accessToken: tokenData.access_token, refreshToken: tokenData.refresh_token || providerRefreshToken,
+        expiresAt: Date.now() + tokenData.expires_in * 1000, scopes: tokenData.scope?.split(' ') || [],
+      }), secrets.jwtSecret),
+    });
+    return jsonResponse(await issueAccountSession(account, secrets, 'patreon'), allowedOrigin);
   }
 
   // Patreon rotates the refresh_token (single-use); store the new one, or fall
@@ -574,13 +684,17 @@ async function refreshTwitch(
     console.error("Twitch viewer refresh failed:", tokenRes.status);
     return jsonResponse({ authenticated: false }, allowedOrigin);
   }
-  const tokenData = (await tokenRes.json()) as { access_token: string; refresh_token?: string };
+  const tokenData = (await tokenRes.json()) as ProviderTokens;
   const viewer = await fetchTwitchUser(tokenData.access_token, twitch.clientId);
   if (!viewer || viewer.id !== expectedUserId) {
     return jsonResponse({ authenticated: false }, allowedOrigin);
   }
 
-  const isSubscriber = await checkTwitchSubscription(env, twitch, viewer.id);
+  const isSubscriber = await checkTwitchProAccess(env, twitch, viewer);
+  if (env.ACCOUNT_DB) {
+    const account = await saveIdentity(env.ACCOUNT_DB, await twitchIdentity(viewer, tokenData, isSubscriber, secrets, viewerRefreshToken));
+    return jsonResponse(await issueAccountSession(account, secrets, 'twitch'), allowedOrigin);
+  }
   return issueSessionJson(
     {
       sub: viewer.id,
@@ -597,6 +711,271 @@ async function refreshTwitch(
 }
 
 // -- Helpers --
+
+// Linked accounts keep refresh credentials server-side. Access JWTs retain
+// is_subscriber so the existing Pro asset Worker and old clients still work.
+const MEMBERSHIP_MAX_AGE = 24 * 60 * 60 * 1000;
+const MEMBERSHIP_REFRESH_AFTER = 60 * 60 * 1000;
+interface ProviderTokens { access_token: string; refresh_token?: string; expires_in?: number; scope?: string[] }
+interface ProviderCredentials { accessToken: string; refreshToken: string; expiresAt: number; scopes: string[] }
+
+async function twitchIdentity(viewer: TwitchUser, tokens: ProviderTokens, pro: boolean, secrets: SessionSecrets, oldRefresh = ''): Promise<VerifiedIdentity> {
+  return {
+    provider: 'twitch', provider_user_id: viewer.id, username: viewer.display_name || viewer.login,
+    nickname: viewer.display_name || null, login: viewer.login,
+    is_follower: 0, is_subscriber: Number(pro), checked_at: Date.now(), status: 'active',
+    credentials: await encryptSecret(JSON.stringify({ accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token || oldRefresh, expiresAt: Date.now() + (tokens.expires_in || 3600) * 1000,
+      scopes: tokens.scope || [] }), secrets.jwtSecret),
+  };
+}
+
+async function sessionAccount(env: Env, session: Pick<JWTPayload, 'account_id' | 'account_version'>): Promise<Account | null> {
+  if (!env.ACCOUNT_DB || !session.account_id) return null;
+  const account = await readAccount(env.ACCOUNT_DB, session.account_id);
+  return account?.version === session.account_version ? account : null;
+}
+
+function accountData(account: Account, preferred?: Provider) {
+  const primary = account.identities.find(row => row.provider === preferred) || account.identities[0];
+  const linkedAccounts = account.identities.map(row => ({
+    provider: row.provider, userId: row.provider_user_id, username: row.username, login: row.login,
+    isFollower: row.is_follower === 1,
+    isSubscriber: row.status === 'active' && Date.now() - row.checked_at < MEMBERSHIP_MAX_AGE && row.is_subscriber === 1,
+    membershipStatus: row.status === 'reconnect' ? 'reconnect'
+      : Date.now() - row.checked_at >= MEMBERSHIP_MAX_AGE ? 'stale' : row.is_subscriber ? 'active' : 'inactive',
+    checkedAt: row.checked_at,
+  }));
+  return { authenticated: true, accountId: account.id, linkingAvailable: true, username: primary.username,
+    nickname: primary.nickname, provider: primary.provider, linkedAccounts,
+    isSubscriber: linkedAccounts.some(row => row.isSubscriber), isFollower: linkedAccounts.some(row => row.isFollower) };
+}
+
+async function issueAccountSession(account: Account, secrets: SessionSecrets, preferred?: Provider) {
+  const data = accountData(account, preferred);
+  const primary = account.identities.find(row => row.provider === data.provider)!;
+  const now = Math.floor(Date.now() / 1000);
+  const newestGrant = Math.max(...account.identities.filter(row => row.status === 'active' && row.is_subscriber).map(row => row.checked_at));
+  // Never extend a membership beyond its last successful verification merely
+  // because a user signs in with the other provider or renews a session.
+  const expires = data.isSubscriber ? Math.min(now + JWT_EXPIRY_SECONDS, Math.floor((newestGrant + MEMBERSHIP_MAX_AGE) / 1000)) : now + JWT_EXPIRY_SECONDS;
+  const session = { sub: primary.provider_user_id, provider: primary.provider,
+    account_id: account.id, account_version: account.version, iat: now };
+  const token = await signJWT({ ...session, typ: 'access', exp: expires,
+    username: data.username, nickname: data.nickname, is_follower: data.isFollower, is_subscriber: data.isSubscriber }, secrets.jwtSecret);
+  const refresh_token = await signRefreshJWT({ ...session, typ: 'refresh', exp: now + REFRESH_JWT_EXPIRY_SECONDS }, secrets.jwtSecret);
+  return { ...data, token, refresh_token };
+}
+
+async function completeProviderOAuth(request: Request, env: Env, secrets: SessionSecrets, state: OAuthState, identity: VerifiedIdentity): Promise<Response> {
+  const target = new URL(allowedRedirect(state.redirectUrl, env));
+  if (identity.provider === 'twitch' && !state.chat) {
+    const previous = await env.ACCOUNT_DB!.prepare("SELECT * FROM auth_identities WHERE provider = 'twitch' AND provider_user_id = ?")
+      .bind(identity.provider_user_id).first<Identity>();
+    if (previous?.status === 'active' && (await readCredentials(previous, secrets))?.scopes.includes('user:read:chat')) {
+      // A later ordinary sign-in must not discard earlier explicit chat
+      // consent. The endpoint still validates/refreshes this token before use.
+      identity.credentials = previous.credentials;
+    }
+  }
+  if (state.linkIntent) {
+    const completion = base64url(crypto.getRandomValues(new Uint8Array(32)));
+    const saved = await finishLinkOAuth(env.ACCOUNT_DB!, state.linkIntent,
+      await encryptSecret(JSON.stringify(identity), secrets.jwtSecret), completion);
+    if (!saved) return redirectWithError(target.href, 'invalid_link', request);
+    // Do not attach or issue a session yet. Completion requires the ORIGINAL
+    // browser's bearer session, defeating attacker-supplied OAuth link URLs.
+    target.hash = new URLSearchParams({ auth: 'linked', link_token: completion }).toString();
+  } else {
+    const account = await saveIdentity(env.ACCOUNT_DB!, identity);
+    await refreshAccountMemberships(env, account, secrets);
+    const current = (await readAccount(env.ACCOUNT_DB!, account.id))!;
+    const session = await issueAccountSession(current, secrets, identity.provider);
+    target.hash = new URLSearchParams({ auth: 'success', token: session.token, refresh_token: session.refresh_token }).toString();
+  }
+  return redirectResponse(target.href, clearOAuthStateCookie(request));
+}
+
+async function readAccountBody(request: Request): Promise<Record<string, unknown> | null> {
+  if (!request.headers.get('Content-Type')?.startsWith('application/json')) return null;
+  // These endpoint bodies contain only a provider/redirect or a short nonce.
+  const reader = request.body?.getReader();
+  if (!reader) return null;
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > 8192) { await reader.cancel(); return null; }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+  try { const value = JSON.parse(new TextDecoder().decode(bytes)); return value && typeof value === 'object' ? value : null; }
+  catch { return null; }
+}
+
+async function handleAccountAction(request: Request, env: Env, secrets: SessionSecrets, origin: string | null): Promise<Response> {
+  if (!origin) return jsonResponse({ error: 'A trusted site origin is required.' }, origin, 403);
+  if (!env.ACCOUNT_DB) return jsonResponse({ error: 'Account connections are not configured yet.' }, origin, 503);
+  const token = getBearerToken(request);
+  const session = token ? await verifyJWT(token, secrets.jwtSecret) : null;
+  const account = session ? await sessionAccount(env, session) : null;
+  if (!session || !account) return jsonResponse({ error: 'Refresh your session before connecting accounts.' }, origin, 401);
+  const body = await readAccountBody(request);
+  if (!body) return jsonResponse({ error: 'Invalid request.' }, origin, 400);
+  const path = new URL(request.url).pathname;
+  if (path === '/auth/link/complete') {
+    if (typeof body.linkToken !== 'string') return jsonResponse({ error: 'Invalid connection.' }, origin, 400);
+    const intent = await consumeLinkIntent(env.ACCOUNT_DB, body.linkToken, account);
+    const candidate = intent?.candidate ? await decryptSecret(intent.candidate, secrets.jwtSecret) : null;
+    if (!candidate) return jsonResponse({ error: 'This connection expired or belongs to a different session.' }, origin, 409);
+    try {
+      const identity = JSON.parse(candidate) as VerifiedIdentity;
+      if (identity.provider !== intent!.provider) throw new Error('invalid_provider');
+      const linked = await saveIdentity(env.ACCOUNT_DB, identity, { id: account.id, version: account.version });
+      return jsonResponse(await issueAccountSession(linked, secrets, session.provider), origin);
+    } catch {
+      return jsonResponse({ error: 'That account already has a different connection. Unlink it there before connecting here.' }, origin, 409);
+    }
+  }
+  const provider = body.provider;
+  if (provider !== 'patreon' && provider !== 'twitch') return jsonResponse({ error: 'Invalid provider.' }, origin, 400);
+  if (path === '/auth/unlink') {
+    const remaining = await unlinkIdentity(env.ACCOUNT_DB, account, provider);
+    if (!remaining) return jsonResponse({ error: 'Keep at least one connected sign-in method.' }, origin, 409);
+    return jsonResponse(await issueAccountSession(remaining, secrets), origin);
+  }
+  const redirect = typeof body.redirect === 'string' ? allowedRedirect(body.redirect, env) : origin;
+  if (new URL(redirect).origin !== origin) return jsonResponse({ error: 'Return to the site that started this connection.' }, origin, 400);
+  const id = base64url(crypto.getRandomValues(new Uint8Array(32)));
+  await createLinkIntent(env.ACCOUNT_DB, { id, account_id: account.id, account_version: account.version,
+    provider, chat: Number(provider === 'twitch' && body.chat === true), redirect_url: redirect, expires_at: Date.now() + STATE_EXPIRY_MS });
+  return jsonResponse({ url: `${env.WORKER_URL}/auth/link/continue?id=${encodeURIComponent(id)}` }, origin);
+}
+
+async function handleLinkContinue(request: Request, env: Env, secrets: SessionSecrets): Promise<Response> {
+  if (!env.ACCOUNT_DB) return textResponse('Account connections are not configured', 503);
+  const id = new URL(request.url).searchParams.get('id') || '';
+  const intent = id.length <= 128 ? await startLinkIntent(env.ACCOUNT_DB, id) : null;
+  if (!intent) return redirectToError(env, 'invalid_link', request);
+  const account = await readAccount(env.ACCOUNT_DB, intent.account_id);
+  if (!account || account.version !== intent.account_version) return redirectWithError(intent.redirect_url, 'link_session_changed', request);
+  const nonce = base64url(crypto.getRandomValues(new Uint8Array(32)));
+  const state = await signState(JSON.stringify({ kind: intent.provider, redirectUrl: intent.redirect_url,
+    nonce, expiresAt: intent.expires_at, linkIntent: intent.id, chat: intent.chat === 1 }), secrets.jwtSecret);
+  const twitch = intent.provider === 'twitch' ? await resolveTwitchSecrets(env) : null;
+  const clientId = intent.provider === 'twitch' ? twitch?.clientId : (await resolveSecrets(env, secrets.jwtSecret)).patreonClientId;
+  if (!clientId) return redirectWithError(intent.redirect_url, 'provider_not_configured', request);
+  const authorize = new URL(intent.provider === 'twitch' ? TWITCH_AUTHORIZE_URL : 'https://www.patreon.com/oauth2/authorize');
+  authorize.search = new URLSearchParams({ client_id: clientId, response_type: 'code', state,
+    redirect_uri: env.WORKER_URL + (intent.provider === 'twitch' ? '/auth/twitch/callback' : '/auth/callback'),
+    scope: intent.provider === 'patreon' ? 'identity identity.memberships' : intent.chat ? 'user:read:chat' : '',
+  }).toString();
+  if (intent.provider === 'twitch') authorize.searchParams.set('force_verify', 'true');
+  return redirectResponse(authorize.href, oauthStateCookie(nonce, request));
+}
+
+async function readCredentials(identity: Identity, secrets: SessionSecrets): Promise<ProviderCredentials | null> {
+  const value = await decryptSecret(identity.credentials, secrets.jwtSecret);
+  if (!value) return null;
+  try { return JSON.parse(value) as ProviderCredentials; } catch { return null; }
+}
+
+async function refreshLinkedIdentity(env: Env, identity: Identity, secrets: SessionSecrets, forceToken = false): Promise<void> {
+  if (identity.status !== 'active' || !env.ACCOUNT_DB) return;
+  const lease = crypto.randomUUID();
+  const acquired = await env.ACCOUNT_DB.prepare(`UPDATE auth_identities SET refresh_lock = ?, refresh_lock_until = ?
+    WHERE account_id = ? AND provider = ? AND refresh_lock_until < ? RETURNING *`)
+    .bind(lease, Date.now() + 30000, identity.account_id, identity.provider, Date.now()).first<Identity>();
+  if (!acquired) return; // Another request is rotating this provider's token.
+  identity = acquired; // The previous lock holder may have rotated credentials.
+  const update = async (sql: string, values: (string | number | null)[]) => {
+    await env.ACCOUNT_DB!.prepare(sql + ' WHERE account_id = ? AND provider = ? AND refresh_lock = ?')
+      .bind(...values, identity.account_id, identity.provider, lease).run();
+  };
+  try {
+    let credentials = await readCredentials(identity, secrets);
+    if (!credentials) return;
+    const twitch = identity.provider === 'twitch' ? await resolveTwitchSecrets(env) : null;
+    const patreon = identity.provider === 'patreon' ? await resolveSecrets(env, secrets.jwtSecret) : null;
+    if (!twitch && !patreon) return;
+    if (credentials.expiresAt <= Date.now() + 60000 || forceToken) {
+      if (!credentials.refreshToken) return;
+      const tokenRes = await fetch(twitch ? TWITCH_TOKEN_URL : 'https://www.patreon.com/api/oauth2/token', {
+        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: credentials.refreshToken,
+          client_id: twitch?.clientId || patreon!.patreonClientId, client_secret: twitch?.clientSecret || patreon!.patreonClientSecret }),
+      });
+      if (!tokenRes.ok) {
+        if (tokenRes.status === 400 || tokenRes.status === 401) await update("UPDATE auth_identities SET status = 'reconnect', is_subscriber = 0, credentials = ''", []);
+        return;
+      }
+      const tokens = await tokenRes.json() as { access_token: string; refresh_token?: string; expires_in?: number; scope?: string | string[] };
+      credentials = { accessToken: tokens.access_token, refreshToken: tokens.refresh_token || credentials.refreshToken,
+        expiresAt: Date.now() + (tokens.expires_in || 3600) * 1000,
+        scopes: Array.isArray(tokens.scope) ? tokens.scope : tokens.scope?.split(' ') || credentials.scopes };
+      // Persist rotation BEFORE identity/membership I/O, so a temporary outage
+      // cannot strand a single-use Patreon refresh credential.
+      await update('UPDATE auth_identities SET credentials = ?', [await encryptSecret(JSON.stringify(credentials), secrets.jwtSecret)]);
+    }
+    const viewer = twitch ? await fetchTwitchUser(credentials.accessToken, twitch.clientId) : null;
+    const patron = patreon ? await fetchPatreonMembership(credentials.accessToken, patreon) : null;
+    const userId = viewer?.id || patron?.userId;
+    if (!userId) return; // Keep cached entitlement only up to its original TTL.
+    if (userId !== identity.provider_user_id) {
+      await update("UPDATE auth_identities SET status = 'reconnect', is_subscriber = 0, credentials = ''", []);
+      return;
+    }
+    const pro = viewer ? await checkTwitchProAccess(env, twitch!, viewer) : patron!.isSubscriber;
+    await update(`UPDATE auth_identities SET username = ?, nickname = ?, login = ?, is_follower = ?, is_subscriber = ?, checked_at = ?`,
+      [viewer?.display_name || viewer?.login || patron!.username, viewer?.display_name || patron?.nickname || null,
+        viewer?.login || null, Number(patron?.isFollower || false), Number(pro), Date.now()]);
+  } catch {
+    console.error('Linked provider refresh unavailable', identity.provider);
+  } finally {
+    await update('UPDATE auth_identities SET refresh_lock = NULL, refresh_lock_until = 0', []);
+  }
+}
+
+async function refreshAccountMemberships(env: Env, account: Account, secrets: SessionSecrets): Promise<void> {
+  for (const identity of account.identities) {
+    if (Date.now() - identity.checked_at >= MEMBERSHIP_REFRESH_AFTER) await refreshLinkedIdentity(env, identity, secrets);
+  }
+}
+
+async function handleTwitchChatSession(request: Request, env: Env, secrets: SessionSecrets, origin: string | null): Promise<Response> {
+  const token = getBearerToken(request);
+  const session = token ? await verifyJWT(token, secrets.jwtSecret) : null;
+  const account = session ? await sessionAccount(env, session) : null;
+  if (!account) return jsonResponse({ error: 'Connect Twitch to this account first.' }, origin, 401);
+  let identity = account.identities.find(row => row.provider === 'twitch' && row.status === 'active');
+  if (!identity) return jsonResponse({ error: 'Connect Twitch to read your chat.' }, origin, 409);
+  let credentials = await readCredentials(identity, secrets);
+  if (!credentials?.scopes.includes('user:read:chat')) return jsonResponse({ error: 'Authorize Twitch chat access.' }, origin, 409);
+  if (credentials.expiresAt <= Date.now() + 60000) {
+    await refreshLinkedIdentity(env, identity, secrets, true);
+    identity = (await sessionAccount(env, session!))?.identities.find(row => row.provider === 'twitch' && row.status === 'active');
+    credentials = identity ? await readCredentials(identity, secrets) : null;
+  }
+  const twitch = await resolveTwitchSecrets(env);
+  if (!identity || !credentials || !twitch) return jsonResponse({ error: 'Reconnect Twitch chat.' }, origin, 409);
+  // Validate at connection time; long-running chat clients repeat this at
+  // least hourly per Twitch's token validation requirement. Never send a
+  // refresh token or a token carrying unrelated privileges to the browser.
+  const validation = await fetch('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: `OAuth ${credentials.accessToken}` } });
+  if (!validation.ok) return jsonResponse({ error: 'Reconnect Twitch chat.' }, origin, 409);
+  const verified = await validation.json() as { client_id: string; user_id: string; login: string; scopes: string[]; expires_in: number };
+  if (verified.client_id !== twitch.clientId || verified.user_id !== identity.provider_user_id
+    || !Array.isArray(verified.scopes) || verified.scopes.length !== 1 || verified.scopes[0] !== 'user:read:chat'
+    || !verified.login || !Number.isFinite(verified.expires_in) || verified.expires_in <= 60) {
+    return jsonResponse({ error: 'Reconnect Twitch with chat read permission.' }, origin, 409);
+  }
+  return jsonResponse({ accessToken: credentials.accessToken, clientId: twitch.clientId,
+    userId: verified.user_id, login: verified.login, expiresAt: Date.now() + verified.expires_in * 1000 }, origin);
+}
 
 function allowedOrigins(env: Env): string[] {
   return env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean);
@@ -618,7 +997,11 @@ function allowedRedirect(redirectUrl: string, env: Env): string {
   if (!redirectUrl) return fallback;
   try {
     const u = new URL(redirectUrl);
-    return allowed.includes(u.origin) ? redirectUrl : fallback;
+    if (!allowed.includes(u.origin)) return fallback;
+    // A link return must never import an attacker-supplied legacy session from
+    // its query string before completing the authenticated connection.
+    for (const name of ['auth', 'token', 'refresh_token', 'link_token', 'auth_error']) u.searchParams.delete(name);
+    return u.href;
   } catch {
     return fallback;
   }
@@ -828,8 +1211,8 @@ async function verifyRefreshJWT(token: string, secret: string): Promise<RefreshP
       typeof payload.sub !== "string" ||
       !payload.sub ||
       (payload.provider !== "patreon" && payload.provider !== "twitch") ||
-      typeof payload.enc !== "string" ||
-      !payload.enc ||
+      !(typeof payload.account_id === 'string' && payload.account_id && Number.isInteger(payload.account_version)
+        || typeof payload.enc === 'string' && payload.enc) ||
       !Number.isFinite(payload.iat) ||
       !Number.isFinite(payload.exp) ||
       payload.iat > now + 60 ||
@@ -919,6 +1302,9 @@ const TWITCH_AUTHORIZE_URL = "https://id.twitch.tv/oauth2/authorize";
 const TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token";
 const TWITCH_USERS_URL = "https://api.twitch.tv/helix/users";
 const TWITCH_SUBS_URL = "https://api.twitch.tv/helix/subscriptions";
+// Explicit owner-approved grants. Match only the canonical login returned by
+// Twitch for the authenticated token owner, never a display name or client input.
+const TWITCH_PRO_EXCEPTIONS = new Set(["wuote", "dunkorslam"]);
 
 interface TwitchSecrets {
   clientId: string;
@@ -961,10 +1347,12 @@ async function handleTwitchLogin(request: Request, env: Env, secrets: SessionSec
 
   const url = new URL(request.url);
   const redirectUrl = allowedRedirect(url.searchParams.get("redirect") || "", env);
+  const chat = url.searchParams.get('chat') === '1';
+  if (chat && !env.ACCOUNT_DB) return textResponse('Account connections are not configured', 503);
 
   const nonce = base64url(crypto.getRandomValues(new Uint8Array(32)));
   const state = await signState(
-    JSON.stringify({ kind: "twitch", redirectUrl, nonce, expiresAt: Date.now() + STATE_EXPIRY_MS }),
+    JSON.stringify({ kind: "twitch", redirectUrl, nonce, chat, expiresAt: Date.now() + STATE_EXPIRY_MS }),
     secrets.jwtSecret,
   );
 
@@ -974,7 +1362,8 @@ async function handleTwitchLogin(request: Request, env: Env, secrets: SessionSec
   authUrl.searchParams.set("response_type", "code");
   // Empty scope: we only need to identify the viewer via helix/users. The
   // subscription lookup is done with the broadcaster's token, not theirs.
-  authUrl.searchParams.set("scope", "");
+  authUrl.searchParams.set("scope", chat ? 'user:read:chat' : '');
+  if (chat) authUrl.searchParams.set('force_verify', 'true');
   authUrl.searchParams.set("state", state);
 
   return redirectResponse(authUrl.toString(), oauthStateCookie(nonce, request));
@@ -1014,14 +1403,19 @@ async function handleTwitchCallback(request: Request, env: Env, secrets: Session
       console.error("Twitch token exchange failed:", tokenRes.status);
       return redirectWithError(finalRedirectUrl, "token_exchange_failed", request);
     }
-    const viewerTokens = (await tokenRes.json()) as { access_token: string; refresh_token?: string };
+    const viewerTokens = (await tokenRes.json()) as ProviderTokens;
 
     // 2. Identify the viewer (helix/users returns the token owner).
     const viewer = await fetchTwitchUser(viewerTokens.access_token, twitch.clientId);
     if (!viewer) return redirectWithError(finalRedirectUrl, "identity_fetch_failed", request);
 
-    // 3. Subscription check via the broadcaster token (may be dormant).
-    const isSubscriber = await checkTwitchSubscription(env, twitch, viewer.id);
+    // 3. Explicit Pro grants, then subscription check via the broadcaster token.
+    const isSubscriber = await checkTwitchProAccess(env, twitch, viewer);
+
+    if (env.ACCOUNT_DB) {
+      if (oauthState.chat && !viewerTokens.scope?.includes('user:read:chat')) return redirectWithError(finalRedirectUrl, 'chat_permission_required', request);
+      return completeProviderOAuth(request, env, secrets, oauthState, await twitchIdentity(viewer, viewerTokens, isSubscriber, secrets));
+    }
 
     // 4. Issue the same JWT shape as Patreon; is_subscriber is the unified gate.
     //    Also a refresh JWT (encrypted viewer refresh_token) so the session
@@ -1087,12 +1481,15 @@ async function fetchTwitchUser(accessToken: string, clientId: string): Promise<T
 }
 
 /**
- * Is `viewerId` subscribed to the broadcaster's channel? Uses the broadcaster's
- * channel:read:subscriptions token (refreshed on demand). Returns false — never
- * throws — when the broadcaster creds aren't set up yet, so login still works
- * with the Twitch UI dormant. The creator (broadcaster themself) is auto-Pro.
+ * Pro access for a verified Twitch identity: explicit grants, the creator, or a
+ * subscription to the broadcaster's channel. Uses the broadcaster's
+ * channel:read:subscriptions token (refreshed on demand). Explicit grants work
+ * without broadcaster setup; other viewers need the subscription check or the
+ * existing broadcaster-ID grant.
  */
-async function checkTwitchSubscription(env: Env, twitch: TwitchSecrets, viewerId: string): Promise<boolean> {
+async function checkTwitchProAccess(env: Env, twitch: TwitchSecrets, viewer: TwitchUser): Promise<boolean> {
+  if (TWITCH_PRO_EXCEPTIONS.has(viewer.login.toLowerCase())) return true;
+  const viewerId = viewer.id;
   const broadcasterId = await getSecret(env.TWITCH_BROADCASTER_ID);
   if (!broadcasterId) return false; // dormant until the broadcaster id is set
   // Creator bypass first: a broadcaster is never "subscribed" to their own

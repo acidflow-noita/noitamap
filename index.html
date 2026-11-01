@@ -15,6 +15,15 @@
     <meta charset="utf-8" />
     <title>Noita Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <style>
+      /* Keep the unfinished toolbar hidden even before Vite loads its CSS. */
+      .mapNavbar { position: relative; min-block-size: 65px; }
+      .mapNavbar[data-navbar-loading] .navbar-controls,
+      .mapNavbar[data-navbar-loading] .navbar-toggler { visibility: hidden; }
+      .navbar-startup { display: none; position: absolute; inset-block: 0; inset-inline: 4.5rem 1rem; align-items: center; gap: .5rem; pointer-events: none; }
+      .mapNavbar[data-navbar-loading] .navbar-startup { display: flex; }
+      .navbar-startup > .placeholder { max-inline-size: 12rem; }
+    </style>
     <meta name="gitlab-dast-validation" content="26d164aa-5aa7-4b60-bb61-e10a81376df5" />
     <meta name="description" content="Ultrafast superzoom map for Noita. Map for the video game Noita." />
     <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png" />
@@ -296,7 +305,7 @@
       <!-- osContainer comes first so that it's "beneath" menu drop-downs -->
       <div id="osContainer"></div>
       <div id="map-view-controls"></div>
-      <nav class="navbar mapNavbar nav nav-wrapper bg-1 lg:navbar-expand">
+      <nav class="navbar mapNavbar nav nav-wrapper bg-1 lg:navbar-expand" data-navbar-loading aria-busy="true">
         <div class="container-fluid">
           <a id="navbar-brand" class="navbar-brand" href="#">
             <img
@@ -306,6 +315,11 @@
               style="width: 41px; height: 49px"
             />
           </a>
+          <div class="navbar-startup placeholder-wave" aria-hidden="true">
+            <span class="placeholder col-3"></span>
+            <span class="placeholder col-5"></span>
+            <span class="placeholder col-2"></span>
+          </div>
           <button
             class="btn-icon navbar-toggler"
             type="button"
@@ -332,6 +346,7 @@
               <!-- Map menus and controls -->
               <div
                 id="map-menu-controls"
+                inert
                 class="navbar-controls d-flex flex-wrap align-items-center justify-content-start me-auto"
               >
                 <!-- <a id="donateButton" href="https://runfast.stream/donate" target="_blank" class="icon-button btn btn-sm btn-outline theme-info btn-custom text-nowrap m-3" target="_blank" role="button">
@@ -354,15 +369,15 @@
                   </div>
                 </div>
 
-                <div id="language-selector" class="position-relative">
+                <div id="language-selector" class="position-relative language-selector">
                   <button
                     id="languageSelectorButton"
-                    class="btn btn-sm btn-outline theme-secondary"
+                    class="btn btn-sm btn-outline theme-secondary combobox-toggle"
                     type="button"
-                    data-bs-toggle="menu"
+                    data-bs-toggle="combobox"
                     aria-expanded="false"
                   >
-                    <span class="flag-icon flag-icon-us"></span>
+                    <span class="combobox-value"><span class="flag-icon flag-icon-us"></span></span>
                   </button>
                   <div class="menu" id="languageLinksList" aria-labelledby="languageSelectorButton">
                     <span class="menu-text fg-secondary">Loading languages...</span>
@@ -835,7 +850,7 @@
                       target="_blank"
                       rel="noopener"
                     >
-                      <i class="icon-runfast"></i><span data-i18n="runfast.title">Runfast.Stream</span>
+                      <i class="icon-runfast"></i><span data-i18n="runfast.title">Main site</span>
                     </a>
                   </div>
                 </div>

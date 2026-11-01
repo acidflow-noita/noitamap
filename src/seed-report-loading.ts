@@ -15,17 +15,14 @@ export function createSeedReportLoading(
       #${ID}{position:fixed;top:4.5rem;right:1.25rem;width:48vw;max-width:calc(100vw - 2rem);max-height:calc(100dvh - 6rem);display:flex;flex-direction:column;overflow:hidden;z-index:991;background:var(--surface-1);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-panel);box-shadow:var(--shadow-panel);font:inherit;font-size:var(--control-font-size);line-height:1.5}
       #${ID},#${ID} *{box-sizing:border-box}
       #${ID} [hidden]{display:none!important}
-      #${ID} header{display:flex;align-items:center;justify-content:space-between;gap:var(--control-gap);padding:var(--panel-padding);border-bottom:1px solid var(--border-strong)}
+      #${ID} header{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:1rem;border-bottom:1px solid var(--border-strong)}
       #${ID} h2{font-size:var(--panel-heading-size);font-weight:500;margin:0}
       #${ID} .sr-loading-close{flex-shrink:0}
-      #${ID} .sr-loading-content{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:var(--panel-padding)}
+      #${ID} .sr-loading-content{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:1rem}
       #${ID} .sr-loading-hint{color:var(--text-muted);font-size:var(--control-font-size)}
-      #${ID} .sr-loading-placeholders{display:grid;grid-template-columns:1fr 1fr;gap:var(--control-gap);margin-top:var(--section-gap)}
-      #${ID} .sr-loading-placeholder{height:4rem;border-radius:var(--radius-control);background:var(--surface-2);border:1px solid var(--border-strong);animation:sr-loading-pulse 1.3s ease-in-out infinite alternate}
-      #${ID} .sr-loading-actions{display:flex;gap:var(--control-gap);margin-top:var(--section-gap)}
+      #${ID} .sr-loading-placeholders{margin-top:1rem}
+      #${ID} .sr-loading-actions{display:flex;gap:.5rem;margin-top:1rem}
       #${ID} .sr-loading-sheet-handle{display:none}
-      @keyframes sr-loading-pulse{to{opacity:.45}}
-      @media(prefers-reduced-motion:reduce){#${ID} .sr-loading-placeholder{animation:none}}
       @media(max-width:900px){#${ID}{top:auto;right:0;bottom:0;width:100vw;max-width:none;height:45dvh;max-height:45dvh;border-radius:var(--radius-panel) var(--radius-panel) 0 0}#${ID} header{padding-top:0}#${ID} .sr-loading-content{flex:1}#${ID} .sr-loading-sheet-handle{display:flex;align-items:center;justify-content:center;height:24px;flex-shrink:0}#${ID} .sr-loading-sheet-handle span{width:36px;height:4px;border-radius:4px;background:var(--text-muted)}}
     `;
     document.head.appendChild(style);
@@ -58,11 +55,12 @@ export function createSeedReportLoading(
     "You can navigate the map while data is loading",
   );
   const placeholders = document.createElement("div");
-  placeholders.className = "sr-loading-placeholders";
+  placeholders.className = "sr-loading-placeholders placeholder-wave d-grid gap-3";
   placeholders.setAttribute("aria-hidden", "true");
-  for (let i = 0; i < 4; i++) {
-    const block = document.createElement("div");
-    block.className = "sr-loading-placeholder";
+  for (const width of [8, 10, 7]) {
+    const block = document.createElement("p");
+    block.className = "mb-0";
+    block.innerHTML = `<span class="placeholder col-${width}"></span> <span class="placeholder col-6"></span>`;
     placeholders.appendChild(block);
   }
   const actions = document.createElement("div");

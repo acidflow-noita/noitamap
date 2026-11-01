@@ -24,6 +24,27 @@ export interface UnifiedSearchResults {
   on(event: "blur", listener: () => void): this;
 }
 
+function createSearchWandSprite(sprite: string, minSize = 0): HTMLSpanElement {
+  const slot = document.createElement("span");
+  slot.style.cssText = "position:relative;flex:none;width:32px;height:32px";
+  const img = document.createElement("img");
+  img.className = "pixelated-image";
+  img.style.cssText = "position:absolute;left:50%;top:50%;object-fit:contain;transform:translate(-50%, -50%) rotate(90deg)";
+  img.onload = () => {
+    // Match the native 2x scale used by loadouts and spell cards.
+    img.style.width = `${img.naturalWidth * 2}px`;
+    img.style.height = `${img.naturalHeight * 2}px`;
+    // Transforms do not affect flex layout; reserve the rotated footprint.
+    slot.style.width = `${Math.max(minSize, img.naturalHeight * 2)}px`;
+    slot.style.height = `${Math.max(minSize, img.naturalWidth * 2)}px`;
+  };
+  getPOISpriteFirstFrame({ type: "wand", sprite }).then((url) => {
+    if (url) img.src = url;
+  });
+  slot.appendChild(img);
+  return slot;
+}
+
 export class UnifiedSearchResults extends EventEmitter2 {
   private targetByElement = new WeakMap<Element, UnifiedSearchResult>();
   private elementByTarget = new Map<UnifiedSearchResult, HTMLElement>();
@@ -97,7 +118,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
   }
 
   private bindEvents() {
-    this.wrapper.addEventListener("keyup", (ev) => {
+    this.wrapper.addEventListener("keydown", (ev) => {
       if (ev.altKey || ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.isComposing) return;
 
       let handled = true;
@@ -106,7 +127,8 @@ export class UnifiedSearchResults extends EventEmitter2 {
           this.blur();
           break;
         case "Enter":
-          this.onSelected(ev);
+          if (!this.currentElement) return;
+          this.selectElement(this.currentElement, ev);
           break;
         case "ArrowDown":
           this.focusNext();
@@ -119,10 +141,27 @@ export class UnifiedSearchResults extends EventEmitter2 {
           break;
       }
 
-      if (handled) ev.stopPropagation();
+      if (handled) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
     });
 
     this.wrapper.addEventListener("click", (ev) => this.onSelected(ev));
+    this.wrapper.addEventListener("pointermove", (ev) => {
+      const row = ev.target instanceof Element ? ev.target.closest('li') : null;
+      if (row && this.targetByElement.has(row)) this.setActive(row);
+    });
+    this.wrapper.addEventListener("focusin", (ev) => {
+      const row = ev.target instanceof Element ? ev.target.closest('li') : null;
+      if (row && this.targetByElement.has(row)) this.setActive(row);
+    });
+    this.wrapper.addEventListener("focusout", (ev) => {
+      if (!(ev.relatedTarget instanceof Node) || !this.wrapper.contains(ev.relatedTarget)) this.setActive(null);
+    });
+    this.wrapper.addEventListener("pointerleave", () => {
+      if (!this.wrapper.contains(document.activeElement)) this.setActive(null);
+    });
   }
 
   private onSelected(ev: MouseEvent | KeyboardEvent) {
@@ -131,7 +170,10 @@ export class UnifiedSearchResults extends EventEmitter2 {
     const listItem = ev.target instanceof HTMLLIElement ? ev.target : (ev.target as Element).closest("li");
 
     if (!(listItem instanceof HTMLLIElement)) return;
+    this.selectElement(listItem, ev);
+  }
 
+  private selectElement(listItem: Element, ev: MouseEvent | KeyboardEvent) {
     // when we've selected an element, find the data
     // we stored for that element, and emit it
     const target = this.targetByElement.get(listItem);
@@ -149,28 +191,48 @@ export class UnifiedSearchResults extends EventEmitter2 {
   }
 
   private blur() {
-    this.currentElement = null;
+    this.setActive(null);
     this.emit("blur");
+  }
+
+  private setActive(target: Element | null) {
+    if (this.currentElement === target) return;
+    this.currentElement?.classList.remove('search-result-active');
+    this.currentElement = target;
+    target?.classList.add('search-result-active');
   }
 
   private focus(target: Element | null) {
     if (!(target instanceof HTMLElement)) return;
-    this.currentElement = target;
-    target.focus();
+    this.setActive(target);
+    target.focus({ preventScroll: true });
+    // Scroll only the result list, never the map or page behind it.
+    const row = target.getBoundingClientRect();
+    const viewport = this.wrapper.getBoundingClientRect();
+    if (row.top < viewport.top) this.wrapper.scrollTop += row.top - viewport.top;
+    else if (row.bottom > viewport.bottom) this.wrapper.scrollTop += row.bottom - viewport.bottom;
+  }
+
+  private resultElements(): Element[] {
+    return Array.from(this.wrapper.children).filter(el => this.targetByElement.has(el));
   }
 
   focusPrevious() {
     // when we select the previous and we're already at the top, allow
     // the search input to retrieve the focus
-    if (this.currentElement === this.wrapper.firstElementChild) {
+    const rows = this.resultElements();
+    const index = this.currentElement ? rows.indexOf(this.currentElement) : -1;
+    if (index === 0) {
       this.blur();
     } else {
-      this.focus(this.currentElement?.previousElementSibling ?? null);
+      this.focus(rows[index - 1] ?? null);
     }
   }
 
   focusNext() {
-    this.focus(this.currentElement ? this.currentElement.nextElementSibling : this.wrapper.firstElementChild);
+    const rows = this.resultElements();
+    const index = this.currentElement ? rows.indexOf(this.currentElement) : -1;
+    this.focus(rows[index + 1] ?? null);
   }
 
   private clearResults(hide: boolean = true) {
@@ -204,34 +266,24 @@ export class UnifiedSearchResults extends EventEmitter2 {
     // Render 6 skeleton rows mimicking real search result items
     for (let i = 0; i < 6; i++) {
       const li = document.createElement("li");
-      li.className = "list-group-item search-result d-flex align-items-center";
-      li.style.pointerEvents = "none";
+      li.className = "list-group-item search-result d-flex align-items-center placeholder-wave pe-none";
+      li.setAttribute('aria-hidden', 'true');
 
       // Skeleton icon
-      const iconSkel = document.createElement("div");
-      iconSkel.className = "skeleton-pulse me-2 flex-shrink-0";
-      iconSkel.style.width = "32px";
-      iconSkel.style.height = "32px";
-      iconSkel.style.borderRadius = "4px";
+      const iconSkel = document.createElement("span");
+      iconSkel.className = "btn btn-sm disabled placeholder col-1 me-2 flex-shrink-0";
       li.appendChild(iconSkel);
 
       // Skeleton text lines
       const textCol = document.createElement("div");
-      textCol.style.flex = "1";
-      textCol.style.minWidth = "0";
+      textCol.className = "d-grid gap-2 flex-fill";
 
-      const line1 = document.createElement("div");
-      line1.className = "skeleton-pulse";
-      line1.style.height = "12px";
-      // Vary widths so it looks natural
-      line1.style.width = [70, 55, 80, 60, 45, 65][i] + "%";
-      line1.style.marginBottom = "6px";
+      const line1 = document.createElement("span");
+      line1.className = `placeholder placeholder-sm col-${[8, 7, 10, 7, 6, 8][i]}`;
       textCol.appendChild(line1);
 
-      const line2 = document.createElement("div");
-      line2.className = "skeleton-pulse";
-      line2.style.height = "10px";
-      line2.style.width = [40, 30, 50, 35, 25, 45][i] + "%";
+      const line2 = document.createElement("span");
+      line2.className = `placeholder placeholder-xs col-${[5, 4, 6, 4, 3, 5][i]}`;
       textCol.appendChild(line2);
 
       li.appendChild(textCol);
@@ -293,10 +345,10 @@ export class UnifiedSearchResults extends EventEmitter2 {
       this.wrapper.appendChild(noteLi);
     }
 
-    for (const [idx, result] of results.entries()) {
+    for (const result of results) {
       const listItem = document.createElement("li");
       listItem.classList.add("list-group-item", "search-result");
-      listItem.tabIndex = idx;
+      listItem.tabIndex = 0;
       this.targetByElement.set(listItem, result);
       this.elementByTarget.set(result, listItem);
 
@@ -377,32 +429,17 @@ export class UnifiedSearchResults extends EventEmitter2 {
             const displayName = ("displayName" in result ? (result as any).displayName : result.name) as string;
             const currentLang = i18next.language;
 
-            // Handle Wands specifically with sprites (UNROTATED)
+            // Show horizontal wand sprites at the same native scale as loadouts.
             if ((result as any).type === "wand" && (result as any).sprite) {
               listItem.classList.add("d-flex", "align-items-center");
-              const img = document.createElement("img");
-              img.classList.add("pixelated-image", "me-2", "flex-shrink-0");
-              img.style.width = "32px";
-              img.style.height = "32px";
-              img.style.objectFit = "contain";
+              const wandWrap = createSearchWandSprite((result as any).sprite, 32);
+              wandWrap.className = "me-2";
               const isTaikasauvaResult = (result as any).isTaikasauva === true;
-              img.style.transform = "rotate(90deg)";
-              getPOISpriteFirstFrame({ type: "wand", sprite: (result as any).sprite }).then((url) => {
-                if (url) img.src = url;
-              });
               if (isTaikasauvaResult) {
                 // "Alive" wand: keep the real wand sprite (its silhouette is
                 // identifying info) and add a Taikasauva ghost badge in the
                 // corner to flag it as alive — like the AC badge, but bigger so
-                // the ghost stays recognizable. search.css forces `flex:1` on
-                // every `> div` of a d-flex row, so the wrapper MUST override
-                // flex (else it stretches full-width and the badge flies off).
-                img.classList.remove("me-2");
-                img.style.display = "block";
-                const wandWrap = document.createElement("div");
-                wandWrap.className = "me-2";
-                wandWrap.style.cssText = "position:relative;flex:0 0 32px;width:32px;height:32px;overflow:visible";
-                wandWrap.appendChild(img);
+                // the ghost stays recognizable.
                 const ghost = document.createElement("img");
                 ghost.className = "pixelated-image";
                 ghost.title = "Alive wand";
@@ -412,10 +449,8 @@ export class UnifiedSearchResults extends EventEmitter2 {
                   if (url) ghost.src = url;
                 });
                 wandWrap.appendChild(ghost);
-                listItem.appendChild(wandWrap);
-              } else {
-                listItem.appendChild(img);
               }
+              listItem.appendChild(wandWrap);
             } else if ((result as any).isDynamic && (result as any).type) {
               // Non-wand POIs: use atlas for fast image loading
               listItem.classList.add("d-flex", "align-items-center");
@@ -759,6 +794,8 @@ export class UnifiedSearchResults extends EventEmitter2 {
                   // Show wand sprite + its spells
                   const wandContainer = document.createElement("div");
                   wandContainer.style.display = "flex";
+                  wandContainer.style.flexWrap = "wrap";
+                  wandContainer.style.maxWidth = "100%";
                   wandContainer.style.alignItems = "center";
                   wandContainer.style.gap = "2px";
                   wandContainer.style.backgroundColor = "#1a1a1a";
@@ -767,19 +804,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
                   wandContainer.style.border = "1px solid #333";
 
                   if (item.sprite) {
-                    const wandImg = document.createElement("img");
-                    wandImg.classList.add("pixelated-image");
-                    wandImg.style.objectFit = "contain";
-                    wandImg.style.transform = "rotate(90deg)";
-                    // 2x native for crisp integer scaling (matches the POI card).
-                    wandImg.onload = () => {
-                      wandImg.style.width = `${wandImg.naturalWidth * 2}px`;
-                      wandImg.style.height = `${wandImg.naturalHeight * 2}px`;
-                    };
-                    getPOISpriteFirstFrame({ type: "wand", sprite: item.sprite }).then((url) => {
-                      if (url) wandImg.src = url;
-                    });
-                    wandContainer.appendChild(wandImg);
+                    wandContainer.appendChild(createSearchWandSprite(item.sprite));
                   }
 
                   // Show spells in the wand
@@ -789,6 +814,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
                     if (spell) {
                       const spellImg = document.createElement("img");
                       spellImg.className = "pixelated-image";
+                      spellImg.style.flexShrink = "0";
                       spellImg.onload = () => {
                         spellImg.style.width = `${spellImg.naturalWidth * 2}px`;
                         spellImg.style.height = `${spellImg.naturalHeight * 2}px`;

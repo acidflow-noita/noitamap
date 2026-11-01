@@ -128,7 +128,7 @@
     "content": "Ver o código fonte no GitHub"
   },
   "runfast": {
-    "title": "Runfast.Stream",
+    "title": "Site principal",
     "content": "Ir para o site principal runfast.stream"
   },
   "gameContent": {
@@ -4613,9 +4613,15 @@
     "switchProviderConfirm": "Ao entrar com {{next}}, você será desconectado de {{current}}.\n\nO acesso Pro passará a depender da sua assinatura do {{next}}.\n\nDeseja entrar com {{next}}?",
     "loginWithTwitch": "Entrar com Twitch",
     "subscribeTwitch": "Assinar no Twitch",
+    "giftProTwitch": "Presenteie um streamer com Pro",
+    "giftProTwitchHint": "Dê uma inscrição no canal wuote de presente e selecione o nome do streamer na Twitch. Ele poderá vincular essa conta para usar o Pro enquanto o presente estiver ativo.",
     "or": "ou",
     "workspaceSaveFailed": "Não foi possível salvar seu espaço de trabalho. O login foi cancelado. Tente novamente.",
-    "workspaceRestoreFailed": "Não foi possível restaurar seu espaço de desenho. Recarregue a página para tentar novamente."
+    "workspaceRestoreFailed": "Não foi possível restaurar seu espaço de desenho. Recarregue a página para tentar novamente.",
+    "giftProOnTwitch": "Gift Pro on Twitch",
+    "giftProOnPatreon": "Gift Pro on Patreon",
+    "giftTwitchAutomatic": "Twitch gifts apply directly to the recipient’s account.",
+    "giftPatreonClaim": "Patreon gifts must be claimed through the gift link the buyer receives after purchase."
   },
   "loading": {
     "maps": "Carregando mapas...",
@@ -4819,7 +4825,7 @@
       "alreadyGeneratedTitle": "Seed ativa",
       "alreadyGeneratedContent": "O mapa ja foi gerado para esta seed, alterar o numero da seed ira regenerar o mapa"
     },
-    "daily": "Diario",
+    "daily": "Diário",
     "placeholder": "Seed do jogo",
     "nerdMode": {
       "0": "N",
@@ -4842,8 +4848,24 @@
     "previousDaily": "Seed diaria anterior",
     "previousDailyDescription": "Carregar a seed diaria de ontem",
     "seedTooltipPreviousDaily": "Esta e a seed da corrida diaria de ontem",
-    "bakeUnavailableTitle": "Mapa diário pré-calculado indisponível",
-    "bakeUnavailableDescription": "O mapa pré-calculado no servidor para esta partida diária está indisponível. O cálculo pode ainda estar em andamento ou ter falhado. Se o problema persistir, avise WUOTE em {{channel}}."
+    "bakeUnavailableTitle": "Mapa diário preparado indisponível",
+    "bakeUnavailableDescription": "O status da preparação está indisponível. A previsão habitual é {{time}} (seu horário local), cerca de 15 minutos após a atualização diária.",
+    "bakeRunningTitle": "Preparando o mapa diário",
+    "bakeWaitingTitle": "Mapa diário aguardando publicação",
+    "bakePublishingTitle": "Publicando o mapa diário",
+    "bakeFailedTitle": "Falha na preparação do mapa diário",
+    "bakeCanceledTitle": "Preparação do mapa diário cancelada",
+    "bakeRunningDescription": "Preparando o mapa diário. Aguarde cerca de 15 minutos. Previsão de conclusão: {{time}} (seu horário local).",
+    "bakeDelayedDescription": "Segundo a última atualização, a preparação continua. A previsão de {{time}} já passou.",
+    "bakeWaitingDescription": "A preparação terminou; o mapa aguarda publicação.",
+    "bakePublishingDescription": "A preparação terminou. O mapa está sendo publicado.",
+    "bakeFailedDescription": "Falha na preparação do mapa diário. Você ainda pode gerar o mapa no navegador. Informe o problema em {{channel}}.",
+    "bakeCanceledDescription": "A preparação do mapa diário foi cancelada. Você ainda pode gerar o mapa no navegador.",
+    "bakeReadyDescription": "A preparação terminou, mas não foi possível carregar o mapa. Tente recarregar a página.",
+    "bakeLastUpdate": "Última atualização do status: {{time}}.",
+    "bakeReadyTitle": "Mapa diário pronto",
+    "bakeAvailableDescription": "Este mapa diário está totalmente preparado e pronto.",
+    "bakeScheduleDescription": "Os mapas diários costumam ficar prontos por volta de {{time}} (seu horário local), cerca de 15 minutos após a atualização diária."
   },
   "alive_wand": "(varinha viva)",
   "konami": {
@@ -5808,5 +5830,12 @@
   "startup": {
     "failed": "Não foi possível iniciar o Noitamap. Recarregue a página para tentar novamente.",
     "retry": "Recarregar página"
+  },
+  "guessr": {
+    "title": "NoitaGuessr",
+    "content": "Modos de jogo: Diário, Demonstração, Chat contra streamer"
+  },
+  "attribution": {
+    "poweredBy": "Com tecnologia de"
   }
 }

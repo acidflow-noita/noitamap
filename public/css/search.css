@@ -115,7 +115,7 @@
 }
 
 #unifiedSearchFilterBox .filter-wand {
-  transform: rotate(90deg);
+  rotate: 90deg;
 }
 
 #unifiedSearchResults {
@@ -151,11 +151,12 @@
   text-overflow: ellipsis;
 }
 
-#unifiedSearchResults .list-group-item:hover,
-#unifiedSearchResults .list-group-item:focus {
+#unifiedSearchResults .list-group-item.search-result-active {
   background-color: oklch(1 0 0 / 0.06);
   outline: none;
 }
+
+#unifiedSearchResults .list-group-item:focus { outline: none; }
 
 #unifiedSearchResults .list-group-item:last-child {
   border-bottom: none;

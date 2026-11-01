@@ -1,0 +1,313 @@
+{
+  "version": "capture-78633191-v1",
+  "seed": 78633191,
+  "bounds": {
+    "x": -17920,
+    "y": -6144,
+    "width": 36352,
+    "height": 26112
+  },
+  "overview": "/guessr/practice/overview.webp",
+  "places": [
+    {
+      "id": "p-01",
+      "name": "At the mountain",
+      "x": 0,
+      "y": -180,
+      "biome": "Forest",
+      "theme": "surface",
+      "fact": "The entrance to the Mines sits underneath the mountain.",
+      "image": "/guessr/practice/p-01-9fb8f0bac1.webp"
+    },
+    {
+      "id": "p-02",
+      "name": "The great tree",
+      "x": -1664,
+      "y": -700,
+      "biome": "Forest",
+      "theme": "surface",
+      "fact": "The tree towers above the western edge of the forest.",
+      "image": "/guessr/practice/p-02-d48c2eacee.webp"
+    },
+    {
+      "id": "p-03",
+      "name": "Water cave",
+      "x": -1792,
+      "y": 768,
+      "biome": "Water Cave",
+      "theme": "secrets",
+      "fact": "The water cave is west of the Mines, below the tree.",
+      "image": "/guessr/practice/p-03-d1ee7fb99d.webp"
+    },
+    {
+      "id": "p-04",
+      "name": "Pyramid summit",
+      "x": 10050,
+      "y": -900,
+      "biome": "Desert",
+      "theme": "surface",
+      "fact": "The pyramid is one of the landmarks east of the mountain.",
+      "image": "/guessr/practice/p-04-4c76021c26.webp"
+    },
+    {
+      "id": "p-05",
+      "name": "Inside the pyramid",
+      "x": 10240,
+      "y": 100,
+      "biome": "Pyramid",
+      "theme": "surface",
+      "fact": "The pyramid has more to discover than its surface suggests.",
+      "image": "/guessr/practice/p-05-cac814380a.webp"
+    },
+    {
+      "id": "p-06",
+      "name": "By the lake",
+      "x": -13200,
+      "y": 200,
+      "biome": "Lake",
+      "theme": "surface",
+      "fact": "The lake lies beyond the snowy surface to the west.",
+      "image": "/guessr/practice/p-06-0d81116ad4.webp"
+    },
+    {
+      "id": "p-07",
+      "name": "Desert watchtower",
+      "x": 13900,
+      "y": -700,
+      "biome": "Desert",
+      "theme": "surface",
+      "fact": "Look up as well as down when exploring the desert.",
+      "image": "/guessr/practice/p-07-97fa42c77c.webp"
+    },
+    {
+      "id": "p-08",
+      "name": "The Mines",
+      "x": 700,
+      "y": 700,
+      "biome": "Mines",
+      "theme": "caverns",
+      "fact": "The first level has many routes, but the mountain gives you a starting point.",
+      "image": "/guessr/practice/p-08-563d84d9e2.webp"
+    },
+    {
+      "id": "p-09",
+      "name": "Collapsed passages",
+      "x": -1500,
+      "y": 600,
+      "biome": "Collapsed Mines",
+      "theme": "caverns",
+      "fact": "The collapsed mines extend west of the main Mines.",
+      "image": "/guessr/practice/p-09-02f2f3a25b.webp"
+    },
+    {
+      "id": "p-10",
+      "name": "Western passages",
+      "x": -3400,
+      "y": 650,
+      "biome": "Western caves",
+      "theme": "secrets",
+      "fact": "Side passages reward exploring beyond the main descent.",
+      "image": "/guessr/practice/p-10-3557e27b96.webp"
+    },
+    {
+      "id": "p-11",
+      "name": "Coal Pits",
+      "x": -600,
+      "y": 2200,
+      "biome": "Coal Pits",
+      "theme": "caverns",
+      "fact": "The Coal Pits sit below the first Holy Mountain.",
+      "image": "/guessr/practice/p-11-e773b790dd.webp"
+    },
+    {
+      "id": "p-12",
+      "name": "Fungal Caverns",
+      "x": -2800,
+      "y": 2300,
+      "biome": "Fungal Caverns",
+      "theme": "caverns",
+      "fact": "Fungal terrain is found west of the Coal Pits.",
+      "image": "/guessr/practice/p-12-d00448113d.webp"
+    },
+    {
+      "id": "p-13",
+      "name": "First Holy Mountain",
+      "x": -300,
+      "y": 1590,
+      "biome": "Holy Mountain",
+      "theme": "secrets",
+      "fact": "Holy Mountains divide the main descent into levels.",
+      "image": "/guessr/practice/p-13-42c3717021.webp"
+    },
+    {
+      "id": "p-14",
+      "name": "Lava lake",
+      "x": 2600,
+      "y": 1100,
+      "biome": "Lava Lake",
+      "theme": "secrets",
+      "fact": "The lava lake is east of the Mines.",
+      "image": "/guessr/practice/p-14-76a56fb354.webp"
+    },
+    {
+      "id": "p-15",
+      "name": "Across the chasm",
+      "x": 3600,
+      "y": 1300,
+      "biome": "Chasm",
+      "theme": "secrets",
+      "fact": "The eastern chasm separates the Mines from another route.",
+      "image": "/guessr/practice/p-15-8bc267a8fb.webp"
+    },
+    {
+      "id": "p-16",
+      "name": "Snowy Depths",
+      "x": -1700,
+      "y": 4000,
+      "biome": "Snowy Depths",
+      "theme": "caverns",
+      "fact": "Open snowy caverns follow the Coal Pits.",
+      "image": "/guessr/practice/p-16-4792028ea5.webp"
+    },
+    {
+      "id": "p-17",
+      "name": "Buried temple",
+      "x": -4400,
+      "y": 3600,
+      "biome": "Magical Temple",
+      "theme": "secrets",
+      "fact": "A temple is hidden west of the Snowy Depths.",
+      "image": "/guessr/practice/p-17-4d73cf4162.webp"
+    },
+    {
+      "id": "p-18",
+      "name": "Hiisi Base",
+      "x": -500,
+      "y": 5700,
+      "biome": "Hiisi Base",
+      "theme": "caverns",
+      "fact": "Metal corridors distinguish Hiisi Base from the caverns above it.",
+      "image": "/guessr/practice/p-18-359fd5f271.webp"
+    },
+    {
+      "id": "p-19",
+      "name": "Jungle canopy",
+      "x": -500,
+      "y": 7500,
+      "biome": "Underground Jungle",
+      "theme": "caverns",
+      "fact": "Dense jungle lies beneath Hiisi Base.",
+      "image": "/guessr/practice/p-19-bb5a9407f0.webp"
+    },
+    {
+      "id": "p-20",
+      "name": "Lukki territory",
+      "x": -3700,
+      "y": 7700,
+      "biome": "Lukki Lair",
+      "theme": "caverns",
+      "fact": "Lukki territory stretches west of the jungle.",
+      "image": "/guessr/practice/p-20-e56eb0ca5f.webp"
+    },
+    {
+      "id": "p-21",
+      "name": "Overgrown caverns",
+      "x": 14000,
+      "y": 3400,
+      "biome": "Overgrown Cavern",
+      "theme": "caverns",
+      "fact": "The overgrown caverns occupy a large area to the east.",
+      "image": "/guessr/practice/p-21-9d8edb64c7.webp"
+    },
+    {
+      "id": "p-22",
+      "name": "The Vault",
+      "x": 100,
+      "y": 9500,
+      "biome": "The Vault",
+      "theme": "caverns",
+      "fact": "The Vault follows the jungle on the main route down.",
+      "image": "/guessr/practice/p-22-1c247ba7b4.webp"
+    },
+    {
+      "id": "p-23",
+      "name": "Frozen machinery",
+      "x": -10240,
+      "y": 1792,
+      "biome": "Frozen Vault",
+      "theme": "caverns",
+      "fact": "Frozen machinery can be found far to the west.",
+      "image": "/guessr/practice/p-23-56425935a0.webp"
+    },
+    {
+      "id": "p-24",
+      "name": "Temple of the Art",
+      "x": 400,
+      "y": 11700,
+      "biome": "Temple of the Art",
+      "theme": "caverns",
+      "fact": "The Temple of the Art is near the bottom of the main descent.",
+      "image": "/guessr/practice/p-24-3afbdacf72.webp"
+    },
+    {
+      "id": "p-25",
+      "name": "Wizard territory",
+      "x": 10000,
+      "y": 13500,
+      "biome": "Wizards’ Den",
+      "theme": "caverns",
+      "fact": "The Wizards’ Den lies east of the Temple of the Art.",
+      "image": "/guessr/practice/p-25-96b2c1bc30.webp"
+    },
+    {
+      "id": "p-26",
+      "name": "Deep laboratory",
+      "x": 3556,
+      "y": 13026,
+      "biome": "Laboratory",
+      "theme": "secrets",
+      "fact": "The laboratory is below the Temple of the Art.",
+      "image": "/guessr/practice/p-26-b75d984ec7.webp"
+    },
+    {
+      "id": "p-27",
+      "name": "The Tower",
+      "x": 9900,
+      "y": 7400,
+      "biome": "The Tower",
+      "theme": "secrets",
+      "fact": "The Tower is a separate ascent reached through a portal.",
+      "image": "/guessr/practice/p-27-044511ce25.webp"
+    },
+    {
+      "id": "p-28",
+      "name": "Golden secret",
+      "x": 15000,
+      "y": -3300,
+      "biome": "Gold",
+      "theme": "secrets",
+      "fact": "Some of the richest places lie far from the main path.",
+      "image": "/guessr/practice/p-28-4036e55e79.webp"
+    },
+    {
+      "id": "p-29",
+      "name": "Cloud ruins",
+      "x": 7350,
+      "y": -4600,
+      "biome": "Sky temples",
+      "theme": "surface",
+      "fact": "The surface is not the highest place worth exploring.",
+      "image": "/guessr/practice/p-29-34aa8ac448.webp"
+    },
+    {
+      "id": "p-30",
+      "name": "Deep below",
+      "x": 0,
+      "y": 16000,
+      "biome": "Deep caverns",
+      "theme": "caverns",
+      "fact": "The world continues beneath the usual end of a run.",
+      "image": "/guessr/practice/p-30-f4d1b9dc83.webp"
+    }
+  ]
+}

@@ -137,7 +137,7 @@ function appendAlchemyStubs(filterBox: HTMLElement): void {
   };
   for (const kind of ["ap", "lc"] as const) {
     const label = document.createElement("label");
-    label.className = "alchemy-filter-btn pro-accent";
+    label.className = "alchemy-filter-btn pro-accent animation-pop";
     label.tabIndex = 0;
     label.dataset.alchemy = kind;
 
@@ -308,7 +308,7 @@ let _activeSearch: UnifiedSearch | null = null;
  */
 function appendHighValueStub(filterBox: HTMLElement, search?: UnifiedSearch): void {
   const label = document.createElement("label");
-  label.className = "high-value-filter-btn pro-accent";
+  label.className = "high-value-filter-btn pro-accent animation-pop";
   label.tabIndex = 0;
   label.id = "highValueFilterBtn";
 
@@ -743,8 +743,7 @@ export class UnifiedSearch extends EventEmitter2 {
     // an <input type="search">
     this.searchInput.addEventListener("search", debounced);
 
-    // "live" search - show list of results as the user types
-    this.searchInput.addEventListener("keyup", (ev) => {
+    this.searchInput.addEventListener("keydown", (ev) => {
       if (!(ev.altKey || ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.isComposing)) {
         switch (ev.key) {
           case "Escape":
@@ -753,14 +752,22 @@ export class UnifiedSearch extends EventEmitter2 {
             this.updateSearchResults();
             break;
           case "ArrowDown":
+            ev.preventDefault();
+            ev.stopPropagation();
             this.searchResults.focusNext();
             return;
           case "ArrowUp":
+            ev.preventDefault();
+            ev.stopPropagation();
             this.searchResults.focusPrevious();
             return;
         }
       }
-      // Any typed character should exit alchemy mode so the user can search.
+    });
+
+    // Input covers typing, paste and clearing without rebuilding on navigation.
+    this.searchInput.addEventListener("input", (ev) => {
+      if (ev instanceof InputEvent && ev.isComposing) return;
       this.clearAlchemyIfActive();
       // Manual typing invalidates the pillar-search re-translation binding.
       this.activeQueryRebuild = null;

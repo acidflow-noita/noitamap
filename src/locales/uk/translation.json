@@ -128,7 +128,7 @@
     "content": "Переглянути вихідний код на GitHub"
   },
   "runfast": {
-    "title": "Runfast.Stream",
+    "title": "Основний сайт",
     "content": "Перейти на основний сайт runfast.stream"
   },
   "gameContent": {
@@ -4613,9 +4613,15 @@
     "switchProviderConfirm": "Після входу через {{next}} ви вийдете з акаунта {{current}}.\n\nДоступ до Pro залежатиме від вашої підписки {{next}}.\n\nУвійти через {{next}}?",
     "loginWithTwitch": "Увійти через Twitch",
     "subscribeTwitch": "Підписатися на Twitch",
+    "giftProTwitch": "Подарувати Pro стримеру",
+    "giftProTwitchHint": "Подаруйте підписку на wuote, вказавши Twitch-нік стримера. Він зможе користуватися Pro, прив’язавши цей обліковий запис, поки діє подарунок.",
     "or": "або",
     "workspaceSaveFailed": "Не вдалося зберегти поточний стан. Вхід скасовано. Спробуйте ще раз.",
-    "workspaceRestoreFailed": "Не вдалося відновити малюнок і стан мапи. Перезавантажте сторінку й спробуйте знову."
+    "workspaceRestoreFailed": "Не вдалося відновити малюнок і стан мапи. Перезавантажте сторінку й спробуйте знову.",
+    "giftProOnTwitch": "Gift Pro on Twitch",
+    "giftProOnPatreon": "Gift Pro on Patreon",
+    "giftTwitchAutomatic": "Twitch gifts apply directly to the recipient’s account.",
+    "giftPatreonClaim": "Patreon gifts must be claimed through the gift link the buyer receives after purchase."
   },
   "loading": {
     "maps": "Завантаження карт...",
@@ -4842,8 +4848,24 @@
     "previousDaily": "Попередній щоденний сід",
     "previousDailyDescription": "Завантажити вчорашній щоденний сід гри",
     "seedTooltipPreviousDaily": "Це сід вчорашнього щоденного забігу",
-    "bakeUnavailableTitle": "Готова мапа щоденного забігу недоступна",
-    "bakeUnavailableDescription": "Мапа цього щоденного забігу, що створюється на сервері, недоступна. Можливо, обробка ще триває або завершилася з помилкою. Якщо проблема не зникає, повідомте WUOTE у каналі {{channel}}."
+    "bakeUnavailableTitle": "Готова карта дейлі недоступна",
+    "bakeUnavailableDescription": "Статус підготовки недоступний. Звичайний час готовності — {{time}} (ваш місцевий час), приблизно через 15 хвилин після зміни дейлі.",
+    "bakeRunningTitle": "Готується карта дейлі",
+    "bakeWaitingTitle": "Карта дейлі очікує на публікацію",
+    "bakePublishingTitle": "Публікується карта дейлі",
+    "bakeFailedTitle": "Не вдалося підготувати карту дейлі",
+    "bakeCanceledTitle": "Підготовку карти дейлі скасовано",
+    "bakeRunningDescription": "Готується карта дейлі. Зазвичай це займає близько 15 хвилин. Очікуваний час готовності: {{time}} (ваш місцевий час).",
+    "bakeDelayedDescription": "За останніми даними, підготовка ще триває. Розрахунковий час готовності {{time}} вже минув.",
+    "bakeWaitingDescription": "Підготовку завершено; карта очікує на публікацію.",
+    "bakePublishingDescription": "Підготовку завершено. Карта публікується.",
+    "bakeFailedDescription": "Не вдалося підготувати карту дейлі. Карту й далі можна згенерувати в браузері. Повідомте про це в {{channel}}.",
+    "bakeCanceledDescription": "Підготовку карти дейлі скасовано. Карту й далі можна згенерувати в браузері.",
+    "bakeReadyDescription": "Підготовку завершено, але завантажити карту не вдалося. Спробуйте оновити сторінку.",
+    "bakeLastUpdate": "Останнє оновлення статусу: {{time}}.",
+    "bakeReadyTitle": "Карта дейлі готова",
+    "bakeAvailableDescription": "Ця карта дейлі повністю підготовлена й готова.",
+    "bakeScheduleDescription": "Карти дейлі зазвичай готові близько {{time}} (ваш місцевий час), приблизно через 15 хвилин після зміни дейлі."
   },
   "alive_wand": "(жива паличка)",
   "konami": {
@@ -5808,5 +5830,12 @@
   "startup": {
     "failed": "Не вдалося запустити Noitamap. Перезавантажте сторінку та спробуйте знову.",
     "retry": "Перезавантажити сторінку"
+  },
+  "guessr": {
+    "title": "NoitaGuessr",
+    "content": "Режими гри: Щоденний, Демо, Чат проти стримера"
+  },
+  "attribution": {
+    "poweredBy": "Працює на"
   }
 }

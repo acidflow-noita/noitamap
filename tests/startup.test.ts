@@ -1,10 +1,47 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
-import { showStartupFailure, startWhenReady, STARTUP_REQUEST_TIMEOUT_MS } from '../src/startup';
+import { finishNavbarStartup, showStartupFailure, startWhenReady, STARTUP_REQUEST_TIMEOUT_MS } from '../src/startup';
 
 beforeEach(() => { vi.resetModules(); document.body.innerHTML = ''; });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); history.replaceState(null, '', '/'); });
+
+describe('navbar startup', () => {
+  function mount() {
+    const page = new DOMParser().parseFromString(readFileSync('index.html', 'utf8'), 'text/html');
+    const navbar = page.querySelector('.mapNavbar')!;
+    document.body.append(navbar);
+    return navbar;
+  }
+
+  it('keeps parser-time controls inert until the complete toolbar is ready', () => {
+    const navbar = mount();
+    const controls = navbar.querySelector('#map-menu-controls')!;
+    expect(navbar.hasAttribute('data-navbar-loading')).toBe(true);
+    expect(controls.hasAttribute('inert')).toBe(true);
+    const button = document.createElement('button');
+    button.id = 'dynamicGenerateButton';
+    controls.append(button);
+    const click = vi.fn(); button.addEventListener('click', click);
+    finishNavbarStartup();
+    expect(navbar.hasAttribute('data-navbar-loading')).toBe(false);
+    expect(controls.hasAttribute('inert')).toBe(false);
+    expect(navbar.getAttribute('aria-busy')).toBe('false');
+    expect(navbar.querySelector('.navbar-startup')).toBeNull();
+    button.click(); expect(click).toHaveBeenCalledOnce();
+  });
+
+  it('stops the placeholder on failure without revealing the unfinished static controls', () => {
+    const navbar = mount();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    showStartupFailure(new Error('Map setup failed'), 'Noitamap could not start.', 'Reload page');
+    expect(navbar.hasAttribute('data-navbar-loading')).toBe(true);
+    expect(navbar.querySelector('#map-menu-controls')!.hasAttribute('inert')).toBe(true);
+    expect(navbar.querySelector('.navbar-startup')).toBeNull();
+    expect(navbar.getAttribute('aria-busy')).toBe('false');
+    expect(document.querySelector('#startup-error button')!.textContent).toBe('Reload page');
+  });
+});
 
 describe('document readiness', () => {
   it('starts once after DOM readiness, even if readiness is dispatched again while setup is pending', async () => {

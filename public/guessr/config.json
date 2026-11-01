@@ -1,0 +1,18 @@
+{
+  "version": "guessr-images-4c856fd7c7556ffa44eea9c455c33130",
+  "bounds": {
+    "x": -17920,
+    "y": -31744,
+    "width": 36352,
+    "height": 73728
+  },
+  "overview": "",
+  "map": {
+    "width": 36352,
+    "height": 73728,
+    "tileSize": 512,
+    "overlap": 2,
+    "maxLevel": 17,
+    "tiles": "https://guessr-map.sage-data.xyz/map_files/"
+  }
+}

@@ -31,6 +31,7 @@
     "test-telescope": "vitest run tests/telescope-integration.test.ts tests/telescope-wang-tiles.test.ts",
     "update-and-build": "node scripts/update-telescope.cjs",
     "prepare-telescope-scenes": "node build_scripts/build-telescope-scenes.mjs",
+    "prepare-guessr-hosting": "node --import tsx build_scripts/guessr/prepare-hosting.mts",
     "predev": "npm run prepare-telescope-scenes"
   },
   "repository": {
@@ -72,8 +73,6 @@
   },
   "homepage": "https://github.com/acidflow-noita/noitamap#readme",
   "dependencies": {
-    "@floating-ui/dom": "1.8.0",
-    "bootstrap": "6.0.0-alpha.1",
     "fast-png": "^8.0.0",
     "flatbush": "^4.5.0",
     "i18next": "^25.8.13",
@@ -81,7 +80,9 @@
     "i18next-http-backend": "^3.0.2",
     "jszip": "^3.10.1",
     "pngjs": "^7.0.0",
-    "upng-js": "^2.1.0"
+    "upng-js": "^2.1.0",
+    "@floating-ui/dom": "1.8.0",
+    "bootstrap": "6.0.0-alpha.1"
   },
   "devDependencies": {
     "@designsystemsinternational/flags": "^0.2.0",
@@ -108,7 +109,9 @@
     "tsx": "^4.22.4",
     "typescript": "^5.9.3",
     "vite": "^8.0.16",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "@types/ws": "^8.18.2",
+    "ws": "^8.22.0"
   },
   "allowScripts": {
     "koffi@3.2.1": true,

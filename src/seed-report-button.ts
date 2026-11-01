@@ -32,7 +32,7 @@ export function createSeedReportButton(
   wrap.className = "btn-group me-3";
   wrap.id = "seed-report-ui-wrapper";
   wrap.innerHTML = `
-        <label class="btn-check icon-button btn btn-sm btn-outline theme-secondary text-nowrap pro-accent" for="${BTN_ID}"
+        <label class="btn-check icon-button btn btn-sm btn-outline theme-secondary text-nowrap pro-accent animation-pop" for="${BTN_ID}"
       data-noitamap-popover data-bs-placement="bottom" data-bs-trigger="hover focus"
       data-i18n-title="seedReport.toggle.title"
       data-bs-title="${i18next.t("seedReport.toggle.title", "Seed report")}"

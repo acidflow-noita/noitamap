@@ -56,6 +56,8 @@ declare global {
     i18next: typeof import('i18next').default;
     /** Live auth service instance from the main app */
     authService: typeof import('./src/auth/auth-service').authService;
+    /** Shared gift links/copy; optional for independently deployed Pro bundles. */
+    createProGiftControls?: (provider: 'twitch' | 'patreon') => HTMLElement;
     /** OpenSeadragon viewer instance */
     osd: OpenSeadragon.Viewer;
     /** The DOM element that contains the OSD viewer */

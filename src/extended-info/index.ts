@@ -693,9 +693,7 @@ export function buildExtendedCreatureSectionByName(name: string, aliases?: strin
   return wrap;
 }
 
-// Each preview field is [i18n key, English fallback]. The fallback also doubles
-// as the lookup into SKELETON_WIDTHS so the skeleton width stays stable
-// regardless of locale.
+// Each preview field is [i18n key, English fallback].
 const PREVIEW_FIELDS: Record<ExtendedKind, Array<[string, string]>> = {
   spawner: [
     ['extended.row.spawn', 'Spawn'],
@@ -724,39 +722,10 @@ const PREVIEW_FIELDS: Record<ExtendedKind, Array<[string, string]>> = {
     ["extended.row.density", "Density"],
     ["extended.row.hardness", "Hardness"],
     ["extended.row.viscosity", "Viscosity"],
-    ["extended.row.burnable", "Burnable"],
     ["extended.row.dangers", "Dangers"],
     ["extended.row.tags", "Tags"],
     ["extended.row.reactions", "Reactions"],
   ],
-};
-
-/** Realistic skeleton widths per field label so the placeholder looks plausible. */
-const SKELETON_WIDTHS: Record<string, string> = {
-  // creature
-  Faction: "5em",
-  HP: "2.5em",
-  Attacks: "7em",
-  Immunities: "6em",
-  Spawn: "4em",
-  Blood: "4.5em",
-  "Damage multipliers": "8em",
-  // spell
-  Type: "4em",
-  Mana: "2em",
-  "Cast delay": "3em",
-  "Recharge time": "3em",
-  Speed: "2.5em",
-  Damage: "3em",
-  Spread: "2em",
-  // material
-  Density: "3em",
-  Hardness: "2.5em",
-  Viscosity: "3em",
-  Burnable: "2em",
-  Dangers: "5em",
-  Tags: "6em",
-  Reactions: "5em",
 };
 
 function renderProPlaceholder(kind: ExtendedKind): HTMLElement {
@@ -770,8 +739,8 @@ function renderProPlaceholder(kind: ExtendedKind): HTMLElement {
     l.className = "extended-info-label";
     l.textContent = `${i18next.t(i18nKey, fallback)}:`;
     const skel = document.createElement("span");
-    skel.className = "extended-info-skeleton";
-    if (SKELETON_WIDTHS[fallback]) skel.style.width = SKELETON_WIDTHS[fallback];
+    skel.className = "placeholder placeholder-xs col-8";
+    skel.setAttribute("aria-hidden", "true");
     fields.appendChild(l);
     fields.appendChild(skel);
   }
@@ -779,7 +748,7 @@ function renderProPlaceholder(kind: ExtendedKind): HTMLElement {
 
   const cta = document.createElement("button");
   cta.type = "button";
-  cta.className = "btn btn-sm extended-info-cta";
+  cta.className = "btn btn-sm extended-info-cta animation-pop";
   cta.textContent = i18next.t("extended.cta", "Unlock with Pro");
   cta.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -801,7 +770,19 @@ function renderProBody(
 ): void {
   const loading = document.createElement("div");
   loading.className = "extended-info-loading";
-  loading.textContent = i18next.t("extended.loading", "Loading...");
+  loading.setAttribute("role", "status");
+  const label = document.createElement("span");
+  label.className = "visually-hidden";
+  label.textContent = i18next.t("extended.loading", "Loading...");
+  const bars = document.createElement("div");
+  bars.className = "placeholder-wave d-grid gap-2";
+  bars.setAttribute("aria-hidden", "true");
+  for (const width of [8, 10, 6]) {
+    const bar = document.createElement("span");
+    bar.className = `placeholder col-${width}`;
+    bars.append(bar);
+  }
+  loading.append(label, bars);
   body.appendChild(loading);
 
   const fill = (cb: () => HTMLElement | null) => {

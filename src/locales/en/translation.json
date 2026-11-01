@@ -613,8 +613,24 @@
       "title": "Advanced Mode",
       "content": "Open the full Telescope application in a new tab for advanced map generation and debugging tools."
     },
-    "bakeUnavailableTitle": "Daily map bake unavailable",
-    "bakeUnavailableDescription": "The server-side bake for this daily map is unavailable. It may still be running or may have failed. If this persists, please let WUOTE know in {{channel}}."
+    "bakeUnavailableTitle": "Prepared daily map unavailable",
+    "bakeUnavailableDescription": "Preparation status is unavailable. The usual target is {{time}} (your local time), about 15 minutes after the daily update.",
+    "bakeRunningTitle": "Preparing the daily map",
+    "bakeWaitingTitle": "Daily map awaiting publication",
+    "bakePublishingTitle": "Publishing the daily map",
+    "bakeFailedTitle": "Daily map preparation failed",
+    "bakeCanceledTitle": "Daily map preparation canceled",
+    "bakeRunningDescription": "Preparing the daily map. Allow about 15 minutes. Estimated ready time: {{time}} (your local time).",
+    "bakeDelayedDescription": "Last reported as still preparing. The estimate of {{time}} has passed.",
+    "bakeWaitingDescription": "Preparation is complete; the map is waiting to be published.",
+    "bakePublishingDescription": "Preparation is complete. The map is being published.",
+    "bakeFailedDescription": "Daily map preparation failed. You can still generate the map in your browser. Please report this in {{channel}}.",
+    "bakeCanceledDescription": "Daily map preparation was canceled. You can still generate the map in your browser.",
+    "bakeReadyDescription": "Preparation finished, but the map could not be loaded. Try reloading the page.",
+    "bakeLastUpdate": "Last status update: {{time}}.",
+    "bakeReadyTitle": "Daily map ready",
+    "bakeAvailableDescription": "This daily map is fully prepared and ready.",
+    "bakeScheduleDescription": "Daily maps are normally ready around {{time}} (your local time), about 15 minutes after the daily update."
   },
   "badges": {
     "latest": "Latest",
@@ -694,7 +710,7 @@
     "content": "View the source code on GitHub"
   },
   "runfast": {
-    "title": "Runfast.Stream",
+    "title": "Main site",
     "content": "Go to the main runfast.stream website"
   },
   "gameContent": {
@@ -5168,6 +5184,12 @@
     "switchProviderConfirm": "Signing in with {{next}} will sign you out of {{current}}.\n\nPro access will then be based on your {{next}} subscription.\n\nSwitch to {{next}}?",
     "loginWithTwitch": "Sign in with Twitch",
     "subscribeTwitch": "Subscribe on Twitch",
+    "giftProTwitch": "Buy Pro for a streamer",
+    "giftProTwitchHint": "Gift a sub to wuote, choosing the streamer’s Twitch username. They link that account to use Pro while the gift is active.",
+    "giftProOnTwitch": "Gift Pro on Twitch",
+    "giftProOnPatreon": "Gift Pro on Patreon",
+    "giftTwitchAutomatic": "Twitch gifts apply directly to the recipient’s account.",
+    "giftPatreonClaim": "Patreon gifts must be claimed through the gift link the buyer receives after purchase.",
     "or": "or",
     "workspaceSaveFailed": "Could not save your workspace. Sign-in was cancelled. Please try again.",
     "workspaceRestoreFailed": "Could not restore your drawing workspace. Reload to try again."
@@ -5753,5 +5775,12 @@
   "startup": {
     "failed": "Noitamap could not start. Reload the page to try again.",
     "retry": "Reload page"
+  },
+  "guessr": {
+    "title": "NoitaGuessr",
+    "content": "Game modes: Daily, Demo, Chat vs Streamer"
+  },
+  "attribution": {
+    "poweredBy": "Powered by"
   }
 }

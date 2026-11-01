@@ -26,7 +26,8 @@ export function deliveryPlugin(): Plugin {
       // Native bakers/tests provide TS entries and keep their existing output.
       enabled = !config.isWorker && !config.build.ssr && !config.build.lib &&
         config.build.assetsDir === "build" &&
-        inputs.length === 1 && resolve(config.root, inputs[0]) === resolve(config.root, "index.html");
+        inputs.every(input => input.endsWith('.html')) &&
+        inputs.some(input => resolve(config.root, input) === resolve(config.root, "index.html"));
     },
     async writeBundle(options, bundle) {
       if (!enabled || !bundle["index.html"]) return;

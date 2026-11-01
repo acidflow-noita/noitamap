@@ -1,0 +1,21 @@
+@import "./bootstrap-layers.css";
+
+@layer custom {
+  .language-selector { position: relative; }
+  .language-selector .combobox-toggle { width: auto; }
+  .language-selector .combobox-value { flex: none; justify-content: center; }
+  .language-selector .flag-icon { display: block; flex: none; }
+  .language-selector .menu {
+    --bs-menu-bg: var(--surface-1);
+    --bs-menu-color: var(--text);
+    --bs-menu-item-hover-bg: var(--surface-2);
+    --bs-menu-item-hover-color: var(--text);
+    --bs-menu-max-height: calc(100dvh - 5rem);
+    --bs-menu-overflow-y: auto;
+    min-inline-size: 11rem;
+  }
+  .language-selector .menu-item { color: var(--text); font-size: var(--bs-menu-font-size); }
+  .language-selector .menu-item.selected { background: var(--accent-bg); color: var(--accent-fg); }
+  .language-selector .menu-item.selected::after { content: '✓'; margin-inline-start: auto; }
+  .language-selector .menu-item:focus-visible { outline: 2px solid var(--accent-fg); outline-offset: -2px; }
+}

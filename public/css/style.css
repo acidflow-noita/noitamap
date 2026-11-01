@@ -20,6 +20,8 @@ html {
   --bs-popover-box-shadow: var(--shadow-pop);
 }
 
+.guessr-popover-logo { display: block; inline-size: 10rem; max-inline-size: 100%; block-size: auto; }
+
 .dialog {
   --bs-dialog-bg: var(--surface-1);
   --bs-dialog-color: var(--text);
@@ -615,6 +617,14 @@ body.toggle-hidden div.osOverlayHighlight {
   max-inline-size: 10rem;
 }
 
+#auth-button-wrapper { display: grid; max-inline-size: 10rem; }
+#authButton,
+.auth-button-sizer { grid-area: 1 / 1; min-inline-size: 0; }
+.auth-button-sizer { visibility: hidden; pointer-events: none; }
+.auth-button-sizer::before { content: ''; flex: 0 0 1.25rem; }
+.auth-button-labels { display: grid; min-inline-size: 0; }
+.auth-button-labels > span { grid-area: 1 / 1; white-space: nowrap; }
+
 /* Search takes spare room, but must give it back before the toolbar overflows. */
 #map-menu-controls > #search-form {
   flex: 1 1 17.5rem;
@@ -629,6 +639,11 @@ body.toggle-hidden div.osOverlayHighlight {
 }
 
 @media (max-width: 1023.98px) {
+  /* The drawer body fills the screen; the controls only need their own height. */
+  #map-menu-controls {
+    flex: 0 0 auto;
+    align-content: flex-start;
+  }
   #map-menu-controls > #search-form {
     flex-basis: 100%;
     max-inline-size: 100%;
@@ -866,6 +881,11 @@ body.toggle-hidden div.osOverlayHighlight {
   border-color: var(--danger-fg);
 }
 
+#dynamicSeedInput.seed-bake-pending {
+  color: var(--warning-fg);
+  border-color: var(--warning-fg);
+}
+
 /* Generate button: match sidebar disabled styling */
 #dynamicGenerateButton:disabled {
   --bs-btn-disabled-border-color: var(--border);
@@ -1021,22 +1041,6 @@ body.toggle-hidden div.osOverlayHighlight {
   height: 14px;
   border-width: 2px;
   flex-shrink: 0;
-}
-
-@keyframes skeleton-shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.skeleton-pulse {
-  background: linear-gradient(90deg, var(--surface-1) 25%, var(--surface-2) 50%, var(--surface-1) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.6s ease infinite;
-  border-radius: 3px;
 }
 
 /* Prevent auth/drawing buttons from covering navbar dropdown menus */

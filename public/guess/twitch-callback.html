@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Sign in with Twitch · NoitaGuessr</title>
+<p id="status">Completing Twitch sign-in…</p>
+<script>
+(() => {
+  const fragment = new URLSearchParams(location.hash.slice(1));
+  const query = new URLSearchParams(location.search);
+  const state = fragment.get('state') || query.get('state');
+  const accessToken = fragment.get('access_token');
+  const error = fragment.get('error') || query.get('error');
+  history.replaceState(null, '', location.pathname);
+  const status = document.getElementById('status');
+  if (!window.opener || !state || state.length > 128 || (!accessToken && !error)) {
+    status.textContent = 'Return to the guess picker and click Connect Twitch again.';
+    return;
+  }
+  window.opener.postMessage({ type: 'noitamap-twitch-viewer-oauth', state, accessToken, error }, location.origin);
+  status.textContent = 'Return to the guess picker. Connecting does not send a guess.';
+  // The matching opener closes this popup after checking source, origin and
+  // one-time state, then validates the token before remembering the connection.
+  // The callback never puts tokens in a query string.
+})();
+</script>
+</html>

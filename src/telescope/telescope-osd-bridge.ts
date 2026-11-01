@@ -1,5 +1,6 @@
 import * as bootstrap from "../bootstrap";
 import { clearPortalAnimations, installPortalAnimations } from "../portals";
+import { createDustAttribution, usesDustAnimation } from "../portals/attribution";
 import { canOpenPOIFromCanvas, drawingOwnsMapPointer, onDrawingMapOwnershipChange } from "../drawing/poi-interaction";
 import { onProSidebarIntent } from "../pro-sidebar-intent";
 import { isDropOverlayActive } from '../drop-overlay';
@@ -2872,6 +2873,7 @@ function getWikiUrl(poi: any): string | null {
     const item = poi.item || '';
     const mimic = getMimicEntityId(poi);
     if (mimic) wikiName = CREATURE_DATA[mimic]?.wikipage || CREATURE_DATA[mimic]?.name || mimic;
+    else if (item === 'portal' || item === 'buried_eye_teleporter') wikiName = 'Portal';
     else if (item === 'orb') wikiName = 'Orb_of_True_Knowledge';
     else if (item === 'heart' || item === 'heart_bigger' || item === 'full_heal') wikiName = 'Health';
     else if (item === 'gold' || item === 'goldnugget') wikiName = 'Gold';
@@ -3301,6 +3303,8 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     title.style.cssText = `font-weight:bold;color:${colorMap[category]};font-size:var(--panel-heading-size);margin-bottom:0.3em`;
     title.textContent = label;
     tooltipEl.appendChild(title);
+
+    if (usesDustAnimation(item.poi)) tooltipEl.appendChild(createDustAttribution());
 
     // Footer with position only
     const footer = document.createElement('div');
@@ -4569,6 +4573,8 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     unlockDiv.appendChild(nm);
     tooltipEl.appendChild(unlockDiv);
   }
+
+  if (usesDustAnimation(poi)) tooltipEl.appendChild(createDustAttribution());
 
   // Footer: position info
   const footer = document.createElement('div');

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuthState } from "../src/auth/auth-service";
+import type { AuthState, LinkedAccount } from "../src/auth/auth-service";
 
 const mocks = vi.hoisted(() => ({
   state: {
@@ -48,6 +48,7 @@ vi.mock("../src/bootstrap", () => {
     });
 
     hide = vi.fn(async () => {
+      if (!this.element.dispatchEvent(new Event("hide.bs.dialog", { cancelable: true }))) return;
       await mocks.dialogHide;
       this.element.open = false;
       // Bootstrap fires hidden before the lifecycle promise resolves.
@@ -95,6 +96,9 @@ vi.mock("../src/auth/auth-service", () => ({
     }),
     login: vi.fn(),
     loginTwitch: vi.fn(),
+    unlink: vi.fn(async (provider: LinkedAccount['provider']) => {
+      mocks.state = { ...mocks.state, linkedAccounts: mocks.state.linkedAccounts?.filter(account => account.provider !== provider) };
+    }),
     logout: vi.fn(async () => {
       mocks.state = { ...mocks.state, authenticated: false, provider: null };
       mocks.authListeners.forEach((listener) => listener(mocks.state));
@@ -123,6 +127,14 @@ function setAuthState(state: Partial<AuthState>) {
   mocks.authListeners.forEach((listener) => listener(mocks.state));
 }
 
+function linkedAccount(provider: LinkedAccount['provider'], values: Partial<LinkedAccount> = {}): LinkedAccount {
+  return {
+    provider, userId: `${provider}-user`, username: provider, login: null,
+    isFollower: false, isSubscriber: false, membershipStatus: 'inactive', checkedAt: 0,
+    ...values,
+  };
+}
+
 async function createAuthUI() {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -130,6 +142,21 @@ async function createAuthUI() {
   await Promise.resolve();
   return container;
 }
+
+it('reserves both account labels before a delayed sign-in check completes', async () => {
+  let resolve!: (state: AuthState) => void;
+  vi.mocked(authService.init).mockImplementationOnce(() => new Promise<AuthState>(done => { resolve = done; }));
+  const container = document.createElement('div'); document.body.append(container);
+  new AuthUI(container);
+  const sizer = container.querySelector('.auth-button-sizer')!;
+  expect(sizer.getAttribute('aria-hidden')).toBe('true');
+  expect(sizer.textContent).toContain('Get Pro');
+  expect(sizer.textContent).toContain('Your account');
+  resolve({ ...mocks.state, authenticated: true, provider: 'twitch' });
+  await vi.waitFor(() => expect(container.querySelector('#authButton')?.textContent).toContain('Your account'));
+  expect(container.querySelector('.auth-button-sizer')).toBe(sizer);
+  expect(container.querySelector('#authButton')!.nextElementSibling?.classList.contains('menu')).toBe(true);
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -175,8 +202,15 @@ describe("Get Pro dialog", () => {
     expect(document.getElementById(dialog.getAttribute("aria-labelledby")!)?.textContent).toBe("Get Pro");
     expect(!!dialog.querySelector("#patreonLoginBtn")).toBe(showPatreon);
     expect(!!dialog.querySelector("#twitchLoginBtn")).toBe(showTwitch);
-    expect(dialog.querySelectorAll('.pro-col a[target="_blank"]')).toHaveLength(2);
+    expect(dialog.querySelectorAll('.pro-col > .btn-patron[target="_blank"]')).toHaveLength(2);
+    expect(dialog.querySelectorAll('.pro-gift')).toHaveLength(2);
     expect(mocks.dialogs[0].show).toHaveBeenCalledOnce();
+  });
+
+  it("localizes its close action using the shared map label", () => {
+    mocks.translationPrefix = "Translated ";
+    AuthUI.showGetProModal();
+    expect(document.querySelector('[data-bs-dismiss="dialog"]')?.getAttribute('aria-label')).toBe('Translated Close');
   });
 
   it("shares a dialog across repeated requests until it is dismissed", async () => {
@@ -214,6 +248,8 @@ describe("Get Pro dialog", () => {
 
     button.click();
     button.click();
+    const otherLogin = loginMethod === 'login' ? 'loginTwitch' : 'login';
+    instance.element.querySelector<HTMLButtonElement>(loginMethod === 'login' ? '#twitchLoginBtn' : '#patreonLoginBtn')!.click();
     expect(instance.hide).not.toHaveBeenCalled();
     expect(authService[loginMethod]).not.toHaveBeenCalled();
 
@@ -231,10 +267,105 @@ describe("Get Pro dialog", () => {
     expect(instance.dispose.mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(authService[loginMethod]).mock.invocationCallOrder[0],
     );
+    expect(authService[otherLogin]).not.toHaveBeenCalled();
+  });
+
+  it("cancels sign-in when dialog hiding is prevented and permits a later provider request", async () => {
+    AuthUI.showGetProModal();
+    const instance = mocks.dialogs[0];
+    instance.element.addEventListener('hide.bs.dialog', event => event.preventDefault(), { once: true });
+
+    instance.element.querySelector<HTMLButtonElement>('#patreonLoginBtn')!.click();
+    await vi.waitFor(() => expect(instance.hide).toHaveBeenCalledOnce());
+    expect(instance.element.open).toBe(true);
+    expect(instance.dispose).not.toHaveBeenCalled();
+    expect(authService.login).not.toHaveBeenCalled();
+
+    instance.element.querySelector<HTMLButtonElement>('#twitchLoginBtn')!.click();
+    await vi.waitFor(() => expect(authService.loginTwitch).toHaveBeenCalledOnce());
+    expect(authService.login).not.toHaveBeenCalled();
+    expect(instance.dispose).toHaveBeenCalledOnce();
+  });
+});
+
+describe("Shared provider controls", () => {
+  it("keeps inline IDs unique and saves before starting the selected provider login", () => {
+    const calls: string[] = [];
+    vi.mocked(authService.login).mockImplementationOnce(() => { calls.push('patreon'); });
+    vi.mocked(authService.loginTwitch).mockImplementationOnce(() => { calls.push('twitch'); });
+    const inline = AuthUI.createProControls({
+      beforeLogin: () => { calls.push('save'); },
+      idPrefix: 'guessr-daily-',
+    });
+    document.body.append(inline);
+    AuthUI.showGetProModal();
+    expect(document.querySelectorAll('#patreonLoginBtn')).toHaveLength(1);
+    expect(document.querySelectorAll('#guessr-daily-patreonLoginBtn')).toHaveLength(1);
+
+    inline.querySelector<HTMLButtonElement>('.btn-patreon')!.click();
+    inline.querySelector<HTMLButtonElement>('.btn-twitch')!.click();
+    expect(calls).toEqual(['save', 'patreon', 'save', 'twitch']);
+    expect(authService.login).toHaveBeenCalledOnce();
+    expect(authService.loginTwitch).toHaveBeenCalledOnce();
+  });
+
+  it("shows both linked memberships and gifts without interpreting account names as markup", () => {
+    setAuthState({
+      authenticated: true, provider: 'patreon', accountId: 'linked-account', isSubscriber: true,
+      linkedAccounts: [
+        linkedAccount('patreon', { username: 'Supporter', isSubscriber: true, membershipStatus: 'active' }),
+        linkedAccount('twitch', { username: '<img src=x onerror=alert(1)>' }),
+      ],
+    });
+    const controls = AuthUI.createProControls();
+    expect(controls.querySelectorAll('.pro-provider-status')).toHaveLength(2);
+    expect(controls.querySelectorAll('.pro-membership-active')).toHaveLength(1);
+    expect(controls.querySelectorAll('.pro-membership-inactive')).toHaveLength(1);
+    expect(controls.querySelectorAll('.pro-unlink')).toHaveLength(2);
+    expect(controls.querySelectorAll('.btn-twitch, .btn-patreon')).toHaveLength(0);
+    expect(controls.querySelectorAll('.pro-gift')).toHaveLength(2);
+    expect(controls.querySelector('img')).toBeNull();
+    expect(controls.textContent).toContain('<img src=x onerror=alert(1)>');
+  });
+
+  it("retains the host login guard after disconnecting a linked account", async () => {
+    setAuthState({
+      authenticated: true, provider: 'patreon', accountId: 'linked-account',
+      linkedAccounts: [linkedAccount('patreon'), linkedAccount('twitch')],
+    });
+    const onLogin = vi.fn<(startLogin: () => void) => void>();
+    const beforeLogin = vi.fn();
+    const container = document.createElement('div');
+    container.append(AuthUI.createProControls({ onLogin, beforeLogin }));
+    document.body.append(container);
+    container.querySelector<HTMLButtonElement>('.pro-unlink')!.click();
+    await vi.waitFor(() => expect(container.querySelector('#twitchLoginBtn')).not.toBeNull());
+
+    container.querySelector<HTMLButtonElement>('#twitchLoginBtn')!.click();
+    expect(onLogin).toHaveBeenCalledOnce();
+    expect(beforeLogin).not.toHaveBeenCalled();
+    expect(authService.loginTwitch).not.toHaveBeenCalled();
+    onLogin.mock.calls[0][0]();
+    expect(beforeLogin).toHaveBeenCalledOnce();
+    expect(authService.loginTwitch).toHaveBeenCalledOnce();
   });
 });
 
 describe("Auth account menu", () => {
+  it("shows every connected provider and opens account management for subscribers", async () => {
+    setAuthState({
+      authenticated: true, provider: 'patreon', accountId: 'linked-account', isSubscriber: true,
+      linkedAccounts: [linkedAccount('patreon'), linkedAccount('twitch')],
+    });
+    const container = await createAuthUI();
+    expect(container.querySelector('.menu-header')?.textContent).toContain('Patreon + Twitch');
+    const manage = container.querySelector<HTMLButtonElement>('#manageAccountsBtn')!;
+    expect(manage.classList.contains('menu-item')).toBe(true);
+    expect(manage.textContent).toBe('Connected accounts');
+    manage.click();
+    expect(document.querySelectorAll('#getProModal .pro-provider-status')).toHaveLength(2);
+  });
+
   it.each([false, true])("renders a flat account menu with subscriber=%s", async (isSubscriber) => {
     setAuthState({ authenticated: true, provider: "twitch", isSubscriber });
     const container = await createAuthUI();

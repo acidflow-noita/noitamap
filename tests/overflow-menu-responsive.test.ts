@@ -53,10 +53,11 @@ describe('responsive overflow controls', () => {
     media.matches = true;
 
     updateOverflowMenu('regular-main-branch');
-    expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 992px) and (max-width: 1199.98px)');
-    for (const id of ['overlay-selector', 'shareButton', 'spoilerFreeToggle']) {
+    expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 1024px) and (max-width: 1279.98px)');
+    for (const id of ['overlay-selector', 'shareButton']) {
       expect(document.getElementById(id)!.parentElement?.id).toBe('more-menu-controls');
     }
+    expect(document.getElementById('spoilerFreeToggle')!.closest('label')!.parentElement?.id).toBe('more-menu-controls');
     for (const id of ['dynamicGenerateWrapper', 'biome-boundaries-ui-wrapper', 'seed-report-ui-wrapper', 'drawing-ui-wrapper']) {
       expect(document.getElementById(id)!.parentElement).toBe(row);
     }

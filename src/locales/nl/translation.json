@@ -128,7 +128,7 @@
     "content": "Bekijk de broncode op GitHub"
   },
   "runfast": {
-    "title": "Runfast.Stream",
+    "title": "Hoofdwebsite",
     "content": "Ga naar de hoofdwebsite runfast.stream"
   },
   "gameContent": {
@@ -4613,9 +4613,15 @@
     "switchProviderConfirm": "Als u inlogt met {{next}}, wordt u uitgelogd bij {{current}}.\n\nPro-toegang is daarna afhankelijk van uw {{next}}-abonnement.\n\nWilt u overschakelen naar {{next}}?",
     "loginWithTwitch": "Inloggen met Twitch",
     "subscribeTwitch": "Abonneren op Twitch",
+    "giftProTwitch": "Geef Pro cadeau aan een streamer",
+    "giftProTwitchHint": "Geef een abonnement op wuote cadeau en kies de Twitch-gebruikersnaam van de streamer als ontvanger. Door dat account te koppelen kan de streamer Pro gebruiken zolang het cadeau-abonnement actief is.",
     "or": "of",
     "workspaceSaveFailed": "De huidige werkstatus kon niet worden opgeslagen. Het aanmelden is geannuleerd. Probeer het opnieuw.",
-    "workspaceRestoreFailed": "De tekenwerkruimte kon niet worden hersteld. Herlaad de pagina om het opnieuw te proberen."
+    "workspaceRestoreFailed": "De tekenwerkruimte kon niet worden hersteld. Herlaad de pagina om het opnieuw te proberen.",
+    "giftProOnTwitch": "Gift Pro on Twitch",
+    "giftProOnPatreon": "Gift Pro on Patreon",
+    "giftTwitchAutomatic": "Twitch gifts apply directly to the recipient’s account.",
+    "giftPatreonClaim": "Patreon gifts must be claimed through the gift link the buyer receives after purchase."
   },
   "loading": {
     "maps": "Kaarten laden...",
@@ -4842,8 +4848,24 @@
     "previousDaily": "Vorige dagelijkse seed",
     "previousDailyDescription": "Laad de dagelijkse game-seed van gisteren",
     "seedTooltipPreviousDaily": "Dit is de dagelijkse run-seed van gisteren",
-    "bakeUnavailableTitle": "Vooraf berekende dagelijkse kaart niet beschikbaar",
-    "bakeUnavailableDescription": "De op de server vooraf berekende kaart voor deze dagelijkse run is niet beschikbaar. De berekening is mogelijk nog bezig of mislukt. Laat het WUOTE weten in {{channel}} als het probleem aanhoudt."
+    "bakeUnavailableTitle": "Voorbereide dagelijkse kaart niet beschikbaar",
+    "bakeUnavailableDescription": "De voorbereidingsstatus is niet beschikbaar. Het gebruikelijke streeftijdstip is {{time}} (jouw lokale tijd), ongeveer 15 minuten na de dagelijkse wissel.",
+    "bakeRunningTitle": "Dagelijkse kaart wordt voorbereid",
+    "bakeWaitingTitle": "Dagelijkse kaart wacht op publicatie",
+    "bakePublishingTitle": "Dagelijkse kaart wordt gepubliceerd",
+    "bakeFailedTitle": "Voorbereiding van de dagelijkse kaart mislukt",
+    "bakeCanceledTitle": "Voorbereiding van de dagelijkse kaart geannuleerd",
+    "bakeRunningDescription": "De dagelijkse kaart wordt voorbereid. Reken op ongeveer 15 minuten. Naar verwachting klaar om {{time}} (jouw lokale tijd).",
+    "bakeDelayedDescription": "Volgens de laatste melding loopt de voorbereiding nog. Het geschatte tijdstip {{time}} is verstreken.",
+    "bakeWaitingDescription": "De voorbereiding is voltooid; de kaart wacht op publicatie.",
+    "bakePublishingDescription": "De voorbereiding is voltooid. De kaart wordt gepubliceerd.",
+    "bakeFailedDescription": "De voorbereiding van de dagelijkse kaart is mislukt. Je kunt de kaart nog steeds in je browser genereren. Meld dit in {{channel}}.",
+    "bakeCanceledDescription": "De voorbereiding van de dagelijkse kaart is geannuleerd. Je kunt de kaart nog steeds in je browser genereren.",
+    "bakeReadyDescription": "De voorbereiding is voltooid, maar de kaart kon niet worden geladen. Probeer de pagina te vernieuwen.",
+    "bakeLastUpdate": "Laatste statusupdate: {{time}}.",
+    "bakeReadyTitle": "Dagelijkse kaart klaar",
+    "bakeAvailableDescription": "Deze dagelijkse kaart is volledig voorbereid en klaar.",
+    "bakeScheduleDescription": "Dagelijkse kaarten zijn meestal rond {{time}} (jouw lokale tijd) klaar, ongeveer 15 minuten na de dagelijkse wissel."
   },
   "alive_wand": "(levende toverstaf)",
   "konami": {
@@ -5808,5 +5830,12 @@
   "startup": {
     "failed": "Noitamap kon niet worden gestart. Vernieuw de pagina om het opnieuw te proberen.",
     "retry": "Pagina vernieuwen"
+  },
+  "guessr": {
+    "title": "NoitaGuessr",
+    "content": "Spelmodi: Dagelijks, Demo, Chat tegen streamer"
+  },
+  "attribution": {
+    "poweredBy": "Mogelijk gemaakt door"
   }
 }

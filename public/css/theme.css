@@ -58,7 +58,7 @@
 
   /* Radius scale */
   --radius-control: 0.5rem;
-  --radius-panel:   0.75rem;
+  --radius-panel:   var(--bs-radius-9);
   --radius-pill:    999px;
 
   /* One compact control scale for the menu, drawing tools and report. */
@@ -180,6 +180,7 @@
   --bs-btn-input-sm-padding-x: var(--control-padding-x);
   --bs-btn-input-sm-padding-y: var(--control-padding-y);
   --bs-btn-input-sm-border-radius: var(--control-radius);
+  --bs-btn-input-lg-border-radius: var(--control-radius);
   --bs-body-font-family: Inter, sans-serif;
 }
 
