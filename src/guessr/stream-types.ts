@@ -86,6 +86,8 @@ export interface StreamGame {
   clue: ClueProgress;
   guess: Point | null;
   paused: boolean;
+  /** Browser preference for the current game's explicit share action. */
+  shareAnnouncements?: boolean;
   participants: StreamParticipant[];
   /** Bounded deduplication for retries in the active round, retained across F5. */
   recentNonces?: Record<string, string[]>;

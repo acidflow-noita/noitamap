@@ -1,5 +1,5 @@
 import type { StreamChatMessage } from "./stream-state";
-import { postTwitchAnnouncement } from './twitch-announcement';
+import { canShareGameLink, postTwitchGameLink } from './twitch-announcement';
 
 export interface TwitchChatCredentials {
   accessToken: string;
@@ -54,8 +54,9 @@ export class TwitchChatConnection {
     this.stopped = false;
     void this.fresh(false);
   }
-  postAnnouncement(hostId: string, message: string): Promise<void> {
-    return postTwitchAnnouncement(this.credentials, hostId, message, this.options.fetch ?? fetch);
+  canShare(announcements: boolean): boolean { return canShareGameLink(this.credentials, announcements); }
+  postGameLink(hostId: string, message: string, announcements: boolean): Promise<void> {
+    return postTwitchGameLink(this.credentials, hostId, message, announcements, this.options.fetch ?? fetch);
   }
   stop(): void {
     this.stopped = true;

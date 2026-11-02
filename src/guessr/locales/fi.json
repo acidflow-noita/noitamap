@@ -457,5 +457,10 @@
   "The game announcement is too long.": "Pelin ilmoitus on liian pitkä.",
   "Could not confirm the post. Check your Twitch chat before trying again.": "Lähetystä ei voitu vahvistaa. Tarkista Twitch-chattisi ennen kuin yrität uudelleen.",
   "Twitch is limiting announcements. Wait before trying again.": "Twitch rajoittaa ilmoitusten lähettämistä. Odota ennen kuin yrität uudelleen.",
-  "Twitch could not post the game link.": "Twitch ei voinut julkaista pelilinkkiä."
+  "Twitch could not post the game link.": "Twitch ei voinut julkaista pelilinkkiä.",
+  "Share game links as announcements": "Jaa pelilinkit ilmoituksina",
+  "When off, Share posts a normal message in your Twitch channel.": "Kun asetus on pois päältä, linkki julkaistaan tavallisena viestinä Twitch-chatissasi.",
+  "Sharing permission is optional. Without it, you can copy the link.": "Jakamislupa on valinnainen. Ilman sitä voit kopioida linkin.",
+  "Enable sharing in chat": "Salli jakaminen chattiin",
+  "Sharing permission is unavailable. You can copy the game link.": "Jakamislupa puuttuu. Voit kopioida pelilinkin."
 }

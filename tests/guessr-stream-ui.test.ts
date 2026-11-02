@@ -7,8 +7,10 @@ import { newStreamGame, closeStreamRound, revealStreamRound, advanceStreamRound 
 import { streamSource, streamHost, streamSecret, streamNow, streamAnswer } from './helpers/guessr-stream';
 import { formatGuessCommand } from '../src/guessr/guess-command';
 import type { TwitchViewer } from '../src/guessr/twitch-viewer';
+import { TwitchAnnouncementError } from '../src/guessr/twitch-announcement';
 
-const mocks = vi.hoisted(() => ({ pause: vi.fn(async () => ({})), quit: vi.fn(async () => ({ phase: 'waiting' })), picker: vi.fn(), notice: vi.fn(), channel: vi.fn(), watchChat: vi.fn((_channel: string, _handlers: Parameters<TwitchViewer['watchChat']>[1]) => vi.fn()), start: vi.fn(), reveal: vi.fn(), post: vi.fn(async (_channel: string, _message: string) => {}) }));
+const mocks = vi.hoisted(() => ({ pause: vi.fn(async () => ({})), quit: vi.fn(async () => ({ phase: 'waiting' })), picker: vi.fn(), notice: vi.fn(), channel: vi.fn(), watchChat: vi.fn((_channel: string, _handlers: Parameters<TwitchViewer['watchChat']>[1]) => vi.fn()), start: vi.fn(), reveal: vi.fn(), post: vi.fn(async (_channel: string, _message: string, _announcements: boolean) => {}),
+  shareAccess: true, announcementAccess: true, connect: vi.fn(async (_options: { announcements?: boolean }) => {}) }));
 vi.mock('../src/guessr/stream-api', () => ({ StreamApi: class {
   local = true; available = true; pause = mocks.pause; quit = mocks.quit; setLocalChannel = mocks.channel; start = mocks.start; reveal = mocks.reveal;
   clock = async () => ({ now: Date.now() });
@@ -17,7 +19,9 @@ vi.mock('../src/guessr/stream-picker', () => ({ mountStreamPicker: () => { mocks
 vi.mock('../src/guessr/twitch-viewer', () => ({ TwitchViewer: class {
   ready = Promise.resolve(); getState() { return { connected: true, userId: '123', login: 'streamer' }; }
   watchChat = mocks.watchChat;
-  postAnnouncement = mocks.post;
+  postGameLink = mocks.post;
+  connect = mocks.connect;
+  canShare(announcements: boolean) { return mocks.shareAccess && (!announcements || mocks.announcementAccess); }
 } }));
 vi.mock('../src/guessr/clue-view', () => ({ attachClueControls: () => () => {} }));
 vi.mock('../src/guessr/clue-viewport', () => ({ ClueViewport: class { show = async () => true; destroy() {} } }));
@@ -27,6 +31,11 @@ beforeEach(() => {
   vi.clearAllMocks(); document.body.replaceChildren();
   mocks.quit.mockReset().mockResolvedValue({ phase: 'waiting' });
   mocks.post.mockReset().mockResolvedValue(undefined);
+  mocks.shareAccess = true; mocks.announcementAccess = true;
+  mocks.connect.mockReset().mockImplementation(async options => {
+    mocks.shareAccess = true;
+    if (options.announcements) mocks.announcementAccess = true;
+  });
   const values = new Map<string, string>();
   vi.stubGlobal('localStorage', { getItem: vi.fn((key: string) => values.get(key) ?? null),
     setItem: vi.fn((key: string, value: string) => { values.set(key, value); }),
@@ -49,13 +58,15 @@ async function fixture() {
 }
 async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
 
-async function liveFixture() {
+async function liveFixture(announcements = false) {
   const f = await fixture();
   f.game.session.host = { id: '900000000', login: 'streamer', name: 'Local host' };
   f.game.session.localChat = true;
   mocks.start.mockResolvedValue(f.game.session);
   history.replaceState(null, '', '/guess/stream/');
   ui = new StreamUI(f.hooks); await ui.open();
+  const toggle = document.getElementById('stream-share-announcements') as HTMLInputElement;
+  toggle.checked = announcements; toggle.dispatchEvent(new Event('change'));
   [...document.querySelectorAll('button')].find(button => button.textContent === 'Start new game')!.click();
   await flush();
   const receiver = mocks.watchChat.mock.calls[0][1];
@@ -81,14 +92,14 @@ it('keeps submission in the guess panel and shows recovery controls only when ne
 
 it('announces only on click, prevents duplicate posts during sending and the two-second confirmation, even across renders', async () => {
   vi.useFakeTimers();
-  await liveFixture();
+  await liveFixture(true);
   expect(mocks.post).not.toHaveBeenCalled();
   const share = () => document.getElementById('stream-share') as HTMLButtonElement;
   let sent!: () => void;
   mocks.post.mockImplementationOnce(() => new Promise<void>(resolve => { sent = resolve; }));
   share().click(); share().click();
   expect(mocks.post).toHaveBeenCalledOnce();
-  expect(mocks.post).toHaveBeenCalledWith('streamer', expect.stringMatching(/^Join NoitaGuessr: https?:\/\/.*\/guess\/stream\/streamer\/$/));
+  expect(mocks.post).toHaveBeenCalledWith('streamer', expect.stringMatching(/^Join NoitaGuessr: https?:\/\/.*\/guess\/stream\/streamer\/$/), true);
   expect(share().textContent).toBe('Posting…');
   ui!.render(); expect(share().disabled).toBe(true);
   sent(); await flush();
@@ -101,6 +112,82 @@ it('announces only on click, prevents duplicate posts during sending and the two
   expect(share().disabled).toBe(false);
   expect(share().textContent).toBe('Share game link in chat');
   share().click(); await flush(); expect(mocks.post).toHaveBeenCalledTimes(2);
+});
+
+it('defaults to normal messages and retains announcement selection across setup reloads', async () => {
+  const f = await fixture();
+  history.replaceState(null, '', '/guess/stream/');
+  ui = new StreamUI(f.hooks); await ui.open();
+  let toggle = document.getElementById('stream-share-announcements') as HTMLInputElement;
+  expect(toggle.checked).toBe(false);
+  toggle.checked = true; toggle.dispatchEvent(new Event('change'));
+  ui.suspend(); ui = new StreamUI(f.hooks); await ui.open();
+  toggle = document.getElementById('stream-share-announcements') as HTMLInputElement;
+  expect(toggle.checked).toBe(true);
+  expect(mocks.connect).not.toHaveBeenCalled();
+  expect(mocks.post).not.toHaveBeenCalled();
+});
+
+it('offers consent during setup before starting, only for the selected sharing mode', async () => {
+  const f = await fixture(); mocks.announcementAccess = false;
+  history.replaceState(null, '', '/guess/stream/');
+  ui = new StreamUI(f.hooks); await ui.open();
+  const consent = document.getElementById('stream-enable-sharing') as HTMLButtonElement;
+  expect(consent.hidden).toBe(true);
+  const toggle = document.getElementById('stream-share-announcements') as HTMLInputElement;
+  toggle.checked = true; toggle.dispatchEvent(new Event('change'));
+  expect(consent.hidden).toBe(false);
+  expect(mocks.connect).not.toHaveBeenCalled();
+  consent.click(); await flush();
+  expect(mocks.connect).toHaveBeenCalledExactlyOnceWith({ announcements: true });
+  expect(consent.hidden).toBe(true);
+  expect(mocks.start).not.toHaveBeenCalled();
+  expect(mocks.post).not.toHaveBeenCalled();
+});
+
+it('keeps hosting available with copy fallback and never redirects for sharing permission mid-game', async () => {
+  mocks.shareAccess = false;
+  const writeText = vi.fn(async (_text: string) => {});
+  vi.stubGlobal('navigator', { clipboard: { writeText } });
+  await liveFixture();
+  const share = document.getElementById('stream-share') as HTMLButtonElement;
+  expect(share.textContent).toBe('Copy game link');
+  share.click(); await flush();
+  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/guess/stream/streamer/'));
+  expect(mocks.connect).not.toHaveBeenCalled();
+  expect(mocks.post).not.toHaveBeenCalled();
+  expect(document.getElementById('confirm-guess')).not.toBeNull();
+});
+
+it('posts a normal message when the setup switch is off', async () => {
+  await liveFixture();
+  (document.getElementById('stream-share') as HTMLButtonElement).click(); await flush();
+  expect(mocks.post).toHaveBeenCalledWith('streamer', expect.any(String), false);
+  expect(JSON.parse(localStorage.getItem(STREAM_SESSION_KEY)!).shareAnnouncements).toBe(false);
+});
+
+it('retains the chosen mode in a recovered game and copies after revoked posting access without reauthorizing', async () => {
+  const { hooks } = await liveFixture(true);
+  expect(JSON.parse(localStorage.getItem(STREAM_SESSION_KEY)!).shareAnnouncements).toBe(true);
+  mocks.post.mockRejectedValueOnce(new TwitchAnnouncementError(true, 'Sharing permission is unavailable. You can copy the game link.'));
+  (document.getElementById('stream-share') as HTMLButtonElement).click(); await flush();
+  expect(document.getElementById('stream-share')!.textContent).toBe('Copy game link');
+  expect(mocks.connect).not.toHaveBeenCalled();
+  ui!.suspend(); ui = new StreamUI(hooks); await ui.open();
+  expect((document.getElementById('stream-share-announcements') as HTMLInputElement).checked).toBe(true);
+});
+
+it('requests normal posting access in setup without requesting announcements', async () => {
+  const { hooks } = await fixture(); mocks.shareAccess = false;
+  history.replaceState(null, '', '/guess/stream/');
+  ui = new StreamUI(hooks); await ui.open();
+  const consent = document.getElementById('stream-enable-sharing') as HTMLButtonElement;
+  expect(consent.hidden).toBe(false);
+  consent.click(); await flush();
+  expect(mocks.connect).toHaveBeenCalledExactlyOnceWith({ announcements: false });
+  expect(consent.hidden).toBe(true);
+  expect(mocks.start).not.toHaveBeenCalled();
+  expect(mocks.post).not.toHaveBeenCalled();
 });
 
 it('does not claim an unconfirmed announcement was posted or retry it automatically', async () => {

@@ -475,5 +475,10 @@
   "The game announcement is too long.": "Ogłoszenie o grze jest za długie.",
   "Could not confirm the post. Check your Twitch chat before trying again.": "Nie udało się potwierdzić wysłania. Sprawdź swój czat Twitch, zanim spróbujesz ponownie.",
   "Twitch is limiting announcements. Wait before trying again.": "Twitch ogranicza wysyłanie ogłoszeń. Poczekaj, zanim spróbujesz ponownie.",
-  "Twitch could not post the game link.": "Nie udało się opublikować linku do gry na Twitchu."
+  "Twitch could not post the game link.": "Nie udało się opublikować linku do gry na Twitchu.",
+  "Share game links as announcements": "Udostępniaj linki do gier jako ogłoszenia",
+  "When off, Share posts a normal message in your Twitch channel.": "Gdy opcja jest wyłączona, link trafia na twój czat Twitch jako zwykła wiadomość.",
+  "Sharing permission is optional. Without it, you can copy the link.": "Zezwolenie na udostępnianie jest opcjonalne. Bez niego możesz skopiować link.",
+  "Enable sharing in chat": "Zezwól na udostępnianie na czacie",
+  "Sharing permission is unavailable. You can copy the game link.": "Brak zezwolenia na udostępnianie. Możesz skopiować link do gry."
 }

@@ -457,5 +457,10 @@
   "The game announcement is too long.": "The game announcement is too long.",
   "Could not confirm the post. Check your Twitch chat before trying again.": "Could not confirm the post. Check your Twitch chat before trying again.",
   "Twitch is limiting announcements. Wait before trying again.": "Twitch is limiting announcements. Wait before trying again.",
-  "Twitch could not post the game link.": "Twitch could not post the game link."
+  "Twitch could not post the game link.": "Twitch could not post the game link.",
+  "Share game links as announcements": "Share game links as announcements",
+  "When off, Share posts a normal message in your Twitch channel.": "When off, Share posts a normal message in your Twitch channel.",
+  "Sharing permission is optional. Without it, you can copy the link.": "Sharing permission is optional. Without it, you can copy the link.",
+  "Enable sharing in chat": "Enable sharing in chat",
+  "Sharing permission is unavailable. You can copy the game link.": "Sharing permission is unavailable. You can copy the game link."
 }

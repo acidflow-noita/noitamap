@@ -56,9 +56,9 @@ describe('viewer Twitch sending', () => {
     f.reply(); await pending;
     expect(f.sends()).toHaveLength(0);
     f.request.mockResolvedValueOnce(new Response(null, { status: 204 }));
-    await f.client.postAnnouncement('viewer', 'Join NoitaGuessr: https://noitamap.test/guess/stream/viewer/');
+    await f.client.postGameLink('viewer', 'Join NoitaGuessr: https://noitamap.test/guess/stream/viewer/', true);
     expect(f.request.mock.lastCall![0]).toContain('broadcaster_id=123&moderator_id=123');
-    await expect(f.client.postAnnouncement('someone_else', 'Join this game')).rejects.toMatchObject({ code: 'forbidden' });
+    await expect(f.client.postGameLink('someone_else', 'Join this game', true)).rejects.toMatchObject({ code: 'forbidden' });
   });
   it('binds consent to the popup, origin and random state; connecting never sends a guess', async () => {
     const f = fixture(), pending = f.client.connect();

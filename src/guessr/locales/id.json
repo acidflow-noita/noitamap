@@ -457,5 +457,10 @@
   "The game announcement is too long.": "Pengumuman permainan terlalu panjang.",
   "Could not confirm the post. Check your Twitch chat before trying again.": "Pengiriman tidak dapat dikonfirmasi. Periksa chat Twitch Anda sebelum mencoba lagi.",
   "Twitch is limiting announcements. Wait before trying again.": "Twitch sedang membatasi pengumuman. Tunggu sebelum mencoba lagi.",
-  "Twitch could not post the game link.": "Twitch tidak dapat mengirim tautan permainan."
+  "Twitch could not post the game link.": "Twitch tidak dapat mengirim tautan permainan.",
+  "Share game links as announcements": "Bagikan tautan permainan sebagai pengumuman",
+  "When off, Share posts a normal message in your Twitch channel.": "Saat nonaktif, tautan dikirim sebagai pesan biasa di chat Twitch Anda.",
+  "Sharing permission is optional. Without it, you can copy the link.": "Izin berbagi bersifat opsional. Tanpa izin, Anda tetap dapat menyalin tautan.",
+  "Enable sharing in chat": "Izinkan berbagi di chat",
+  "Sharing permission is unavailable. You can copy the game link.": "Izin berbagi tidak tersedia. Anda dapat menyalin tautan permainan."
 }

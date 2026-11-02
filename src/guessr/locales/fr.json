@@ -466,5 +466,10 @@
   "The game announcement is too long.": "L’annonce de la partie est trop longue.",
   "Could not confirm the post. Check your Twitch chat before trying again.": "L’envoi n’a pas pu être confirmé. Vérifiez votre chat Twitch avant de réessayer.",
   "Twitch is limiting announcements. Wait before trying again.": "Twitch limite l’envoi d’annonces. Patientez avant de réessayer.",
-  "Twitch could not post the game link.": "Twitch n’a pas pu publier le lien de la partie."
+  "Twitch could not post the game link.": "Twitch n’a pas pu publier le lien de la partie.",
+  "Share game links as announcements": "Partager les liens de partie en annonce",
+  "When off, Share posts a normal message in your Twitch channel.": "Si cette option est désactivée, le lien est publié comme message normal dans votre chat Twitch.",
+  "Sharing permission is optional. Without it, you can copy the link.": "L’autorisation de publier est facultative. Sans elle, vous pouvez copier le lien.",
+  "Enable sharing in chat": "Autoriser le partage dans le chat",
+  "Sharing permission is unavailable. You can copy the game link.": "L’autorisation de publier est indisponible. Vous pouvez copier le lien de la partie."
 }

@@ -457,5 +457,10 @@
   "The game announcement is too long.": "ゲームのアナウンスが長すぎます。",
   "Could not confirm the post. Check your Twitch chat before trying again.": "投稿を確認できませんでした。再試行する前に、自分のTwitchチャットを確認してください。",
   "Twitch is limiting announcements. Wait before trying again.": "Twitchがアナウンスの投稿を制限しています。しばらく待ってから再試行してください。",
-  "Twitch could not post the game link.": "Twitchにゲームのリンクを投稿できませんでした。"
+  "Twitch could not post the game link.": "Twitchにゲームのリンクを投稿できませんでした。",
+  "Share game links as announcements": "ゲームリンクをアナウンスとして共有",
+  "When off, Share posts a normal message in your Twitch channel.": "オフの場合、自分のTwitchチャットに通常のメッセージとしてリンクを投稿します。",
+  "Sharing permission is optional. Without it, you can copy the link.": "投稿の許可は任意です。許可しなくてもリンクをコピーできます。",
+  "Enable sharing in chat": "チャットでの共有を許可",
+  "Sharing permission is unavailable. You can copy the game link.": "投稿の権限がありません。ゲームのリンクをコピーできます。"
 }

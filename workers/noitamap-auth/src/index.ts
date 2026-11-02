@@ -197,6 +197,10 @@ interface OAuthState {
   chat?: boolean;
 }
 
+function twitchChatScopes(chat: boolean, announcements = false): string {
+  return chat ? 'user:read:chat user:write:chat' + (announcements ? ' moderator:manage:announcements' : '') : '';
+}
+
 // -- Main Worker --
 
 async function resolveSessionSecrets(env: Env): Promise<SessionSecrets> {
@@ -852,7 +856,8 @@ async function handleAccountAction(request: Request, env: Env, secrets: SessionS
   if (new URL(redirect).origin !== origin) return jsonResponse({ error: 'Return to the site that started this connection.' }, origin, 400);
   const id = base64url(crypto.getRandomValues(new Uint8Array(32)));
   await createLinkIntent(env.ACCOUNT_DB, { id, account_id: account.id, account_version: account.version,
-    provider, chat: Number(provider === 'twitch' && body.chat === true), redirect_url: redirect, expires_at: Date.now() + STATE_EXPIRY_MS });
+    provider, chat: provider === 'twitch' && body.chat === true ? (body.announcements === true ? 2 : 1) : 0,
+    redirect_url: redirect, expires_at: Date.now() + STATE_EXPIRY_MS });
   return jsonResponse({ url: `${env.WORKER_URL}/auth/link/continue?id=${encodeURIComponent(id)}` }, origin);
 }
 
@@ -865,14 +870,14 @@ async function handleLinkContinue(request: Request, env: Env, secrets: SessionSe
   if (!account || account.version !== intent.account_version) return redirectWithError(intent.redirect_url, 'link_session_changed', request);
   const nonce = base64url(crypto.getRandomValues(new Uint8Array(32)));
   const state = await signState(JSON.stringify({ kind: intent.provider, redirectUrl: intent.redirect_url,
-    nonce, expiresAt: intent.expires_at, linkIntent: intent.id, chat: intent.chat === 1 }), secrets.jwtSecret);
+    nonce, expiresAt: intent.expires_at, linkIntent: intent.id, chat: intent.chat > 0 }), secrets.jwtSecret);
   const twitch = intent.provider === 'twitch' ? await resolveTwitchSecrets(env) : null;
   const clientId = intent.provider === 'twitch' ? twitch?.clientId : (await resolveSecrets(env, secrets.jwtSecret)).patreonClientId;
   if (!clientId) return redirectWithError(intent.redirect_url, 'provider_not_configured', request);
   const authorize = new URL(intent.provider === 'twitch' ? TWITCH_AUTHORIZE_URL : 'https://www.patreon.com/oauth2/authorize');
   authorize.search = new URLSearchParams({ client_id: clientId, response_type: 'code', state,
     redirect_uri: env.WORKER_URL + (intent.provider === 'twitch' ? '/auth/twitch/callback' : '/auth/callback'),
-    scope: intent.provider === 'patreon' ? 'identity identity.memberships' : intent.chat ? 'user:read:chat moderator:manage:announcements' : '',
+    scope: intent.provider === 'patreon' ? 'identity identity.memberships' : twitchChatScopes(intent.chat > 0, intent.chat === 2),
   }).toString();
   if (intent.provider === 'twitch') authorize.searchParams.set('force_verify', 'true');
   return redirectResponse(authorize.href, oauthStateCookie(nonce, request));
@@ -970,7 +975,7 @@ async function handleTwitchChatSession(request: Request, env: Env, secrets: Sess
   const verified = await validation.json() as { client_id: string; user_id: string; login: string; scopes: string[]; expires_in: number };
   if (verified.client_id !== twitch.clientId || verified.user_id !== identity.provider_user_id
     || !Array.isArray(verified.scopes) || !verified.scopes.includes('user:read:chat')
-    || verified.scopes.some(scope => !['user:read:chat', 'moderator:manage:announcements'].includes(scope))
+    || verified.scopes.some(scope => !['user:read:chat', 'user:write:chat', 'moderator:manage:announcements'].includes(scope))
     || !verified.login || !Number.isFinite(verified.expires_in) || verified.expires_in <= 60) {
     return jsonResponse({ error: 'Reconnect Twitch with chat read permission.' }, origin, 409);
   }
@@ -1363,7 +1368,7 @@ async function handleTwitchLogin(request: Request, env: Env, secrets: SessionSec
   authUrl.searchParams.set("response_type", "code");
   // Empty scope: we only need to identify the viewer via helix/users. The
   // subscription lookup is done with the broadcaster's token, not theirs.
-  authUrl.searchParams.set("scope", chat ? 'user:read:chat moderator:manage:announcements' : '');
+  authUrl.searchParams.set("scope", twitchChatScopes(chat, url.searchParams.get('announcements') === '1'));
   if (chat) authUrl.searchParams.set('force_verify', 'true');
   authUrl.searchParams.set("state", state);
 

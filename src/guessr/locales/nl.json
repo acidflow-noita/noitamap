@@ -457,5 +457,10 @@
   "The game announcement is too long.": "De spelaankondiging is te lang.",
   "Could not confirm the post. Check your Twitch chat before trying again.": "Het plaatsen kon niet worden bevestigd. Controleer je Twitch-chat voordat je het opnieuw probeert.",
   "Twitch is limiting announcements. Wait before trying again.": "Twitch beperkt het aantal aankondigingen. Wacht voordat je het opnieuw probeert.",
-  "Twitch could not post the game link.": "Twitch kon de spellink niet plaatsen."
+  "Twitch could not post the game link.": "Twitch kon de spellink niet plaatsen.",
+  "Share game links as announcements": "Deel spellinks als aankondigingen",
+  "When off, Share posts a normal message in your Twitch channel.": "Als dit uitstaat, wordt de link als normaal bericht in je Twitch-chat geplaatst.",
+  "Sharing permission is optional. Without it, you can copy the link.": "Toestemming om te delen is optioneel. Zonder toestemming kun je de link kopiëren.",
+  "Enable sharing in chat": "Delen in chat toestaan",
+  "Sharing permission is unavailable. You can copy the game link.": "Toestemming om te delen ontbreekt. Je kunt de spellink kopiëren."
 }

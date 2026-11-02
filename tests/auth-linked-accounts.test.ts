@@ -82,14 +82,14 @@ async function oauth(start: Response, person: string, cookie = true) {
   const location = new URL(response.headers.get('Location')!);
   return { location, fragment: new URLSearchParams(location.hash.slice(1)) };
 }
-async function login(provider: 'patreon' | 'twitch', person = provider === 'patreon' ? 'patron' : 'twitch', chat = false) {
-  const start = await request(`/auth/${provider === 'twitch' ? 'twitch/login' : 'login'}?redirect=https://noitamap.test/guess/${chat ? '&chat=1' : ''}`);
+async function login(provider: 'patreon' | 'twitch', person = provider === 'patreon' ? 'patron' : 'twitch', chat = false, announcements = false) {
+  const start = await request(`/auth/${provider === 'twitch' ? 'twitch/login' : 'login'}?redirect=https://noitamap.test/guess/${chat ? '&chat=1' : ''}${announcements ? '&announcements=1' : ''}`);
   const result = await oauth(start, person);
   expect(result.fragment.get('auth')).toBe('success');
   return { token: result.fragment.get('token')!, refresh: result.fragment.get('refresh_token')! };
 }
-async function beginLink(token: string, provider: string, chat = false) {
-  const begin = await request('/auth/link/start', token, { provider, chat, redirect: 'https://noitamap.test/guess/' });
+async function beginLink(token: string, provider: string, chat = false, announcements = false) {
+  const begin = await request('/auth/link/start', token, { provider, chat, announcements, redirect: 'https://noitamap.test/guess/' });
   expect(begin.status).toBe(200);
   const { url } = await begin.json() as { url: string };
   return worker.fetch(new Request(url), env);
@@ -240,15 +240,16 @@ describe('durable linked Pro accounts', () => {
 });
 
 describe('explicit Twitch chat consent', () => {
-  it('requests guess reception and announcement access and preserves Patreon Pro through consent', async () => {
+  it.each([false, true])('requests announcement scope only when selected (%s), preserving Patreon Pro', async announcements => {
     const patron = await login('patreon');
     const linked = await (await link(patron.token, 'twitch', 'twitch')).json() as any;
     expect((await request('/auth/twitch/chat-session', linked.token)).status).toBe(409);
-    const start = await beginLink(linked.token, 'twitch', true);
+    const start = await beginLink(linked.token, 'twitch', true, announcements);
     const authorize = new URL(start.headers.get('Location')!);
-    expect(authorize.searchParams.get('scope')).toBe('user:read:chat moderator:manage:announcements');
+    const scopes = ['user:read:chat', 'user:write:chat', ...(announcements ? ['moderator:manage:announcements'] : [])];
+    expect(authorize.searchParams.get('scope')).toBe(scopes.join(' '));
     expect(authorize.searchParams.get('force_verify')).toBe('true');
-    people.twitch.scope = ['user:read:chat', 'moderator:manage:announcements'];
+    people.twitch.scope = scopes;
     const returned = await oauth(start, 'twitch');
     const result = await request('/auth/link/complete', linked.token, { linkToken: returned.fragment.get('link_token') });
     const connected = await result.json() as any;
@@ -257,7 +258,15 @@ describe('explicit Twitch chat consent', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toContain('no-store');
     expect(await response.json()).toMatchObject({ accessToken: 'access-twitch', clientId: 'twitch-client', userId: '12345', login: 'mychannel',
-      scopes: ['user:read:chat', 'moderator:manage:announcements'] });
+      scopes });
+  });
+
+  it.each([false, true])('keeps the same optional scope choice for a direct Twitch sign-in (%s)', async announcements => {
+    const start = await request(`/auth/twitch/login?chat=1&announcements=${announcements ? '1' : '0'}`);
+    const scope = new URL(start.headers.get('Location')!).searchParams.get('scope');
+    expect(scope).toBe('user:read:chat user:write:chat' + (announcements ? ' moderator:manage:announcements' : ''));
+    const ordinary = await request('/auth/twitch/login?announcements=1');
+    expect(new URL(ordinary.headers.get('Location')!).searchParams.get('scope')).toBe('');
   });
 
   it.each([

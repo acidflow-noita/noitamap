@@ -26,9 +26,9 @@ import {
   type StreamGame,
   type StreamResult,
 } from "./stream-types";
-import { TwitchChatConnection, type TwitchChatStatus } from "./twitch-chat";
+import { TwitchChatConnection, type TwitchChatStatus, type TwitchChatCredentials } from "./twitch-chat";
 import { TwitchViewer } from "./twitch-viewer";
-import { TwitchAnnouncementError } from './twitch-announcement';
+import { TwitchAnnouncementError, canShareGameLink } from './twitch-announcement';
 import { hoverHelp } from './hover-help';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import { mountStreamPicker } from "./stream-picker";
@@ -42,6 +42,8 @@ import { pageHeading } from './page-heading';
 import { loadingPlaceholders } from './loading-placeholders';
 import type { LiveRoomView } from './live-room-types';
 import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, tr } from './i18n';
+
+const SHARE_ANNOUNCEMENTS_KEY = 'noitamap-guessr-share-announcements';
 
 export interface StreamUIHooks {
   config: ImageGameConfig;
@@ -148,6 +150,9 @@ export class StreamUI {
   private sharePending = false;
   private sharedUntil = 0;
   private shareTimer?: ReturnType<typeof setTimeout>;
+  private shareAnnouncements = false;
+  private sharingPermissionFailed = false;
+  private setupCredentials?: TwitchChatCredentials;
   private disposeHeader(): void {
     this.proStatus?.dispose(); this.proStatus = undefined;
     this.statusHelp?.dispose(); this.statusHelp = undefined;
@@ -159,6 +164,7 @@ export class StreamUI {
     // A chatter tab may share browser storage with the host. It must never
     // restore, save or pause that private host session.
     if (pane === 'stream-picker' || pane === 'stream-result') return;
+    try { this.shareAnnouncements = localStorage.getItem(SHARE_ANNOUNCEMENTS_KEY) === 'true'; } catch { /* Optional preference. */ }
     try {
       const saved = JSON.parse(
         localStorage.getItem(STREAM_SESSION_KEY) || "null",
@@ -180,6 +186,7 @@ export class StreamUI {
         supportedCamera(saved.session.rounds[saved.round].clue, saved.clue)
       ) {
         this.game = saved;
+        if (typeof saved.shareAnnouncements === 'boolean') this.shareAnnouncements = saved.shareAnnouncements;
         if (this.api.local) this.api.setLocalChannel(saved.session.localChat ? saved.session.host.login : undefined);
         if (!Number.isFinite(saved.clockOffset)) saved.clockOffset = 0;
         // An interrupted host must explicitly resume before accepting messages.
@@ -256,6 +263,8 @@ export class StreamUI {
   };
   async open(showCompleted = false): Promise<void> {
     this.disposeHeader();
+    this.sharingPermissionFailed = false;
+    this.setupCredentials = undefined;
     this.mounted = true;
     if (showCompleted && this.game?.stage === "complete") {
       this.finish();
@@ -270,8 +279,45 @@ export class StreamUI {
     const accountStep = el('div'), playStep = el('div'), shareStep = el('div');
     accountStep.append(el('h2', 'Connect Twitch'));
     playStep.append(el('h2', 'Start new game'), el('p', 'Choose locations with your chat. Your own submission closes each round. There is no countdown.'));
-    shareStep.append(el('h2', 'Share game link in chat'), el('p', 'Post the game link as an announcement in your Twitch chat. Chatters use the same link for every round.'));
-    main.append(instructionSteps(accountStep, playStep, shareStep));
+    shareStep.append(el('h2', 'Share game link in chat'));
+    const sharingRow = el('div', '', 'd-flex align-items-center gap-2');
+    const switchBox = el('span', '', 'switch theme-primary');
+    const announcements = el('input'); announcements.type = 'checkbox'; announcements.id = 'stream-share-announcements';
+    announcements.setAttribute('role', 'switch'); announcements.checked = this.shareAnnouncements;
+    const label = el('label', 'Share game links as announcements'); label.htmlFor = announcements.id;
+    switchBox.append(announcements); sharingRow.append(switchBox, label);
+    const sharingHelp = el('p', 'When off, Share posts a normal message in your Twitch channel.', 'form-text');
+    sharingHelp.id = 'stream-sharing-help'; announcements.setAttribute('aria-describedby', sharingHelp.id);
+    const permissionNote = el('p', 'Sharing permission is optional. Without it, you can copy the link.', 'form-text');
+    let sharingReady = false;
+    const hasSharingPermission = () => this.api.local ? !!this.viewer?.canShare(this.shareAnnouncements)
+      : canShareGameLink(this.setupCredentials, this.shareAnnouncements);
+    const refreshSharing = () => {
+      const granted = hasSharingPermission();
+      enableSharing.hidden = !sharingReady || granted;
+      permissionNote.hidden = !sharingReady || granted;
+    };
+    const enableSharing = action('Enable sharing in chat', async () => {
+      if (this.busy) return;
+      this.busy = true; enableSharing.disabled = true; announcements.disabled = true;
+      try {
+        if (this.api.local) await this.viewer!.connect({ announcements: this.shareAnnouncements });
+        else await this.connectAuth();
+      } catch (error) { this.hooks.toast(tr((error as Error).message)); }
+      finally {
+        this.busy = false; enableSharing.disabled = false; announcements.disabled = false;
+        if (main.isConnected) refreshSharing();
+      }
+    }, 'btn btn-sm btn-outline theme-secondary');
+    enableSharing.id = 'stream-enable-sharing'; enableSharing.hidden = true; permissionNote.hidden = true;
+    announcements.onchange = () => {
+      this.shareAnnouncements = announcements.checked;
+      try { localStorage.setItem(SHARE_ANNOUNCEMENTS_KEY, String(this.shareAnnouncements)); } catch { /* Optional preference. */ }
+      if (this.game && this.game.stage !== 'complete') { this.game.shareAnnouncements = this.shareAnnouncements; this.save(); }
+      refreshSharing();
+    };
+    shareStep.append(sharingRow, sharingHelp, permissionNote, enableSharing);
+    main.append(instructionSteps(accountStep, shareStep, playStep));
     const setupActions = actionRow();
     playStep.append(setupActions);
     // A completed download remains available even if the host's current sign-in
@@ -298,6 +344,8 @@ export class StreamUI {
         this.viewer ??= new TwitchViewer();
         await this.viewer.ready;
         if (!main.isConnected) return;
+        sharingReady = this.viewer.getState().connected;
+        refreshSharing();
       }
       if (!this.api.local) {
         const auth = await gameAuth();
@@ -331,6 +379,8 @@ export class StreamUI {
           );
           return;
         }
+        this.setupCredentials = credentials;
+        sharingReady = true; refreshSharing();
         if (this.game && this.game.stage !== 'complete' && this.game.session.host.id !== credentials.userId) {
           bindText(loading, 'The saved game belongs to {{channel}}. Sign in to that channel to resume, or start a new game.', { channel: this.game.session.host.login });
           setupActions.append(action("Start new game", () => this.start(), "primary"));
@@ -389,14 +439,14 @@ export class StreamUI {
   private async connectAuth(): Promise<void> {
     this.save();
     try {
-      await (await gameAuth()).connectTwitchChat();
+      await (await gameAuth()).connectTwitchChat({ announcements: this.shareAnnouncements });
     } catch (error) {
       this.hooks.toast(tr((error as Error).message));
     }
   }
   private async connectLocalTwitch(): Promise<void> {
     this.viewer ??= new TwitchViewer();
-    try { await this.viewer.connect({ announcements: true }); if (this.mounted) await this.open(false); }
+    try { await this.viewer.connect({ announcements: this.shareAnnouncements }); if (this.mounted) await this.open(false); }
     catch (error) { this.hooks.toast(tr((error as Error).message)); }
   }
   private async start(useTwitch = true): Promise<void> {
@@ -413,6 +463,7 @@ export class StreamUI {
       this.chat = undefined;
       this.stopLocalChat?.(); this.stopLocalChat = undefined;
       this.game = newStreamGame(session);
+      this.game.shareAnnouncements = this.shareAnnouncements;
       this.roomHealthy = true;
       this.startPulse();
       this.save();
@@ -495,32 +546,33 @@ export class StreamUI {
     if (posted) this.shareTimer = setTimeout(() => this.updateShareButton(), this.sharedUntil - Date.now());
     button.disabled = this.sharePending || posted || this.status === 'connecting' || this.status === 'reconnecting';
     button.dataset.posted = String(posted);
-    bindText(button, this.sharePending ? 'Posting…' : posted ? 'Posted in chat' : 'Share game link in chat');
+    bindText(button, this.sharePending ? 'Posting…' : posted ? 'Posted in chat'
+      : this.canPostGameLink() ? 'Share game link in chat' : 'Copy game link');
+  }
+  private canPostGameLink(): boolean {
+    const announcements = this.game?.shareAnnouncements === true;
+    return !this.sharingPermissionFailed && (this.api.local ? !!this.viewer?.canShare(announcements)
+      : !!this.chat?.canShare(announcements));
   }
   private async shareGameLink(): Promise<void> {
     const game = this.game;
     if (!game || this.sharePending || Date.now() < this.sharedUntil) return;
+    if (!this.canPostGameLink()) {
+      if (this.shareNotice) await copy(this.pickerUrl(), this.hooks.toast, this.shareNotice);
+      return;
+    }
     this.sharePending = true; this.updateShareButton();
     try {
       const message = tr('Join NoitaGuessr: {{url}}', { url: this.pickerUrl() });
-      if (this.api.local) await this.viewer!.postAnnouncement(game.session.host.login, message);
+      if (this.api.local) await this.viewer!.postGameLink(game.session.host.login, message, game.shareAnnouncements === true);
       else {
-        if (!this.chat) throw new TwitchAnnouncementError(true, 'Allow Twitch announcements to share your game link.');
-        await this.chat.postAnnouncement(game.session.host.id, message);
+        await this.chat!.postGameLink(game.session.host.id, message, game.shareAnnouncements === true);
       }
       this.sharedUntil = Date.now() + 2000;
     } catch (error) {
       if (error instanceof TwitchAnnouncementError && error.permissionRequired) {
-        this.shareNotice?.show(tr(error.message));
-        if (this.api.local) {
-          try {
-            await this.viewer!.connect({ announcements: true });
-            if (this.mounted && this.game === game) {
-              this.stopLocalChat?.(); this.stopLocalChat = undefined; this.connectChat();
-            }
-          } catch (failure) { this.hooks.toast(tr((failure as Error).message)); }
-        }
-        else await this.connectAuth();
+        this.sharingPermissionFailed = true;
+        this.shareNotice?.show(tr('Sharing permission is unavailable. You can copy the game link.'));
       } else this.shareNotice?.show(tr((error as Error).message), 'danger');
     } finally { this.sharePending = false; this.updateShareButton(); }
   }
@@ -583,6 +635,7 @@ export class StreamUI {
           await this.api.pause(this.game.session.id, false);
       }
       if (this.game.stage === 'guess') this.game.paused = false;
+      this.game.shareAnnouncements = this.shareAnnouncements;
       this.roomHealthy = true; this.save(); this.startPulse(); this.busy = false; this.render(); this.connectChat();
     } catch (error) { this.hooks.toast(tr((error as Error).message)); }
     finally { this.busy = false; }

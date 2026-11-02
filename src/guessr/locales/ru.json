@@ -475,5 +475,10 @@
   "The game announcement is too long.": "Объявление об игре слишком длинное.",
   "Could not confirm the post. Check your Twitch chat before trying again.": "Не удалось подтвердить отправку. Проверьте свой чат Twitch перед повторной попыткой.",
   "Twitch is limiting announcements. Wait before trying again.": "Twitch ограничивает отправку объявлений. Подождите перед повторной попыткой.",
-  "Twitch could not post the game link.": "Не удалось отправить ссылку на игру в Twitch."
+  "Twitch could not post the game link.": "Не удалось отправить ссылку на игру в Twitch.",
+  "Share game links as announcements": "Отправлять ссылки на игру объявлениями",
+  "When off, Share posts a normal message in your Twitch channel.": "Если выключено, ссылка отправляется обычным сообщением в ваш чат Twitch.",
+  "Sharing permission is optional. Without it, you can copy the link.": "Разрешение на отправку необязательно. Без него можно скопировать ссылку.",
+  "Enable sharing in chat": "Разрешить отправку в чат",
+  "Sharing permission is unavailable. You can copy the game link.": "Нет разрешения на отправку. Вы можете скопировать ссылку на игру."
 }

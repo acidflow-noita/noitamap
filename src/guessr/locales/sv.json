@@ -457,5 +457,10 @@
   "The game announcement is too long.": "Spelmeddelandet är för långt.",
   "Could not confirm the post. Check your Twitch chat before trying again.": "Det gick inte att bekräfta att meddelandet skickades. Kontrollera din Twitch-chatt innan du försöker igen.",
   "Twitch is limiting announcements. Wait before trying again.": "Twitch begränsar antalet tillkännagivanden. Vänta innan du försöker igen.",
-  "Twitch could not post the game link.": "Twitch kunde inte publicera spellänken."
+  "Twitch could not post the game link.": "Twitch kunde inte publicera spellänken.",
+  "Share game links as announcements": "Dela spellänkar som tillkännagivanden",
+  "When off, Share posts a normal message in your Twitch channel.": "När inställningen är av publiceras länken som ett vanligt meddelande i din Twitch-chatt.",
+  "Sharing permission is optional. Without it, you can copy the link.": "Tillstånd att dela är valfritt. Utan det kan du kopiera länken.",
+  "Enable sharing in chat": "Tillåt delning i chatten",
+  "Sharing permission is unavailable. You can copy the game link.": "Tillstånd att dela saknas. Du kan kopiera spellänken."
 }

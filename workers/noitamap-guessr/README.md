@@ -17,8 +17,13 @@ guess board. Guesses travel through the shared `noitaguessr` Twitch channel.
 The host receives them using their own linked Twitch identity and explicit
 `user:read:chat` permission. EventSub runs directly between their browser and
 Twitch; each viewer's latest valid `!noitaguessr_guess ✦…✦` before submission wins.
-The host can explicitly share the game link as a Twitch announcement in their
-own channel using `moderator:manage:announcements`. This direct browser request
+The setup switch "Share game links as announcements" is off by default and
+remembered locally, including across OAuth returns and game refreshes. Sharing
+posts a normal message in the host's own channel when off, or an announcement
+when on. Setup offers optional Twitch posting consent before play; hosts who
+skip consent retain a copy-link button and are never redirected mid-round.
+Normal messages use `user:write:chat`; announcements additionally require
+`moderator:manage:announcements`. This direct browser request
 does not invoke the game or auth Worker. A confirmed post disables the button
 for two seconds. Failed or uncertain requests are never retried automatically.
 Game admission requires Pro; its badge describes admission for this game rather

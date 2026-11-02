@@ -105,7 +105,7 @@ describe("Twitch EventSub browser transport", () => {
     f.connection.stop(); f.connection.start(); await flush();
     f.request.mockResolvedValueOnce(new Response(null, { status: 204 }));
     const credentialCalls = f.credentials.mock.calls.length;
-    await f.connection.postAnnouncement('100', 'Join NoitaGuessr: https://noitamap.test/guess/stream/streamer/');
+    await f.connection.postGameLink('100', 'Join NoitaGuessr: https://noitamap.test/guess/stream/streamer/', true);
     expect(f.credentials).toHaveBeenCalledTimes(credentialCalls);
     expect(f.request.mock.lastCall![0]).toContain('broadcaster_id=100&moderator_id=100');
     expect(f.request.mock.lastCall![0]).not.toContain('456');

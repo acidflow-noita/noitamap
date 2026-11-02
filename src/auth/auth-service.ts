@@ -294,9 +294,9 @@ class AuthService {
     void this.redirectToLogin('twitch');
   }
 
-  /** Requests guess reception and game announcements, bound to this account. */
-  async connectTwitchChat(): Promise<void> {
-    await this.redirectToLogin('twitch', true);
+  /** Announcement permission is optional and selected during streamer setup. */
+  async connectTwitchChat(options: { announcements?: boolean } = {}): Promise<void> {
+    await this.redirectToLogin('twitch', true, options.announcements === true);
   }
 
   async getTwitchChatSession(): Promise<TwitchChatSession | null> {
@@ -330,7 +330,7 @@ class AuthService {
     return response;
   }
 
-  private async redirectToLogin(provider: 'patreon' | 'twitch', chat = false): Promise<void> {
+  private async redirectToLogin(provider: 'patreon' | 'twitch', chat = false, announcements = false): Promise<void> {
     if (this.loginPending) return;
     this.loginPending = true;
     try {
@@ -340,7 +340,7 @@ class AuthService {
         // Older signed provider sessions are upgraded through their existing
         // encrypted refresh token, proving ownership before a durable link.
         if (!this.state.accountId && !await this.tryRefresh()) throw new Error('Sign in again before connecting another account.');
-        const response = await this.accountRequest('/auth/link/start', { provider, redirect: returnUrl, chat });
+        const response = await this.accountRequest('/auth/link/start', { provider, redirect: returnUrl, chat, announcements });
         const data = await response.json();
         if (!response.ok || !data.url) throw new Error(data.error || 'Could not start this account connection.');
         if (!this.state.accountId) throw new Error('Account connections are not available yet.');
@@ -349,7 +349,7 @@ class AuthService {
         return;
       }
       const path = provider === 'twitch' ? '/auth/twitch/login' : '/auth/login';
-      window.location.href = `${AUTH_WORKER_URL}${path}?redirect=${encodeURIComponent(returnUrl)}${chat ? '&chat=1' : ''}`;
+      window.location.href = `${AUTH_WORKER_URL}${path}?redirect=${encodeURIComponent(returnUrl)}${chat ? '&chat=1' : ''}${chat && announcements ? '&announcements=1' : ''}`;
     } catch (error) {
       console.error('[Auth] Could not start sign-in:', error);
       this.loginReturn.discardUnreturned();

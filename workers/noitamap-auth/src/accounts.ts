@@ -22,6 +22,7 @@ export interface LinkIntent {
   account_id: string;
   account_version: number;
   provider: Provider;
+  /** 0: sign-in only; 1: read/write chat; 2: also announcements. */
   chat: number;
   redirect_url: string;
   expires_at: number;

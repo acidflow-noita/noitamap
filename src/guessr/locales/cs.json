@@ -475,5 +475,10 @@
   "The game announcement is too long.": "Oznámení o hře je příliš dlouhé.",
   "Could not confirm the post. Check your Twitch chat before trying again.": "Odeslání se nepodařilo potvrdit. Než to zkusíte znovu, zkontrolujte svůj chat na Twitchi.",
   "Twitch is limiting announcements. Wait before trying again.": "Twitch omezuje odesílání oznámení. Před dalším pokusem chvíli počkejte.",
-  "Twitch could not post the game link.": "Twitch nemohl zveřejnit odkaz na hru."
+  "Twitch could not post the game link.": "Twitch nemohl zveřejnit odkaz na hru.",
+  "Share game links as announcements": "Sdílet odkazy na hry jako oznámení",
+  "When off, Share posts a normal message in your Twitch channel.": "Když je přepínač vypnutý, odkaz se zveřejní jako běžná zpráva ve vašem chatu na Twitchi.",
+  "Sharing permission is optional. Without it, you can copy the link.": "Oprávnění ke sdílení je volitelné. Bez něj můžete odkaz zkopírovat.",
+  "Enable sharing in chat": "Povolit sdílení v chatu",
+  "Sharing permission is unavailable. You can copy the game link.": "Oprávnění ke sdílení není dostupné. Odkaz na hru můžete zkopírovat."
 }

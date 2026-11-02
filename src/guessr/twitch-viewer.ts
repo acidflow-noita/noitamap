@@ -4,7 +4,7 @@ import { STREAM_ROUNDS } from './stream-types';
 import { TwitchChatConnection, type TwitchChatOptions } from './twitch-chat';
 import { tr } from './i18n';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
-import { ANNOUNCEMENT_SCOPE, postTwitchAnnouncement } from './twitch-announcement';
+import { ANNOUNCEMENT_SCOPE, canShareGameLink, postTwitchGameLink } from './twitch-announcement';
 
 /** Keep transport state in source English so an open view can change language. */
 export function twitchMessageText(source: string): string {
@@ -243,11 +243,12 @@ export class TwitchViewer {
     return { token, userId: value.user_id, login: value.login, scopes: value.scopes as string[], checkedAt: Date.now(), expiresAt: Date.now() + value.expires_in * 1000 };
   }
   /** Local streamer testing uses the same direct announcement API as production. */
-  async postAnnouncement(channel: string, message: string): Promise<void> {
+  canShare(announcements: boolean): boolean { return canShareGameLink(this.#credentials ?? undefined, announcements); }
+  async postGameLink(channel: string, message: string, announcements: boolean): Promise<void> {
     const credentials = await this.currentCredentials();
     if (credentials.login !== channel) throw new TwitchViewerError('forbidden', 'Sign in as the streamer to share this game.');
-    await postTwitchAnnouncement({ ...credentials, accessToken: credentials.token, clientId: this.clientId },
-      credentials.userId, message, (url, init) => this.request(String(url), init ?? {}));
+    await postTwitchGameLink({ ...credentials, accessToken: credentials.token, clientId: this.clientId },
+      credentials.userId, message, announcements, (url, init) => this.request(String(url), init ?? {}));
   }
   private refreshValidation(): Promise<Credentials> {
     if (this.validation) return this.validation;
