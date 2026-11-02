@@ -27,6 +27,7 @@ import {
 } from "./stream-types";
 import { TwitchChatConnection, type TwitchChatStatus } from "./twitch-chat";
 import { TwitchViewer } from "./twitch-viewer";
+import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import { mountStreamPicker } from "./stream-picker";
 import { liveRoomLink } from "./live-room-game";
 import { buttonNotice } from './button-notice';
@@ -310,7 +311,7 @@ export class StreamUI {
         const credentials = await auth.getTwitchChatSession();
         if (!main.isConnected) return;
         if (!credentials) {
-          bindText(loading, "Connect your Twitch channel so this browser can receive your chat’s guesses.");
+          loading.remove();
           accountStep.append(
             action("Connect Twitch chat", () => this.connectAuth(), "primary"),
           );
@@ -422,7 +423,7 @@ export class StreamUI {
     if (this.api.local) {
       if (!this.game.session.localChat) return;
       this.viewer ??= new TwitchViewer();
-      this.stopLocalChat = this.viewer.watchChat(this.game.session.host.login, {
+      this.stopLocalChat = this.viewer.watchChat(GUESSR_TRANSPORT_CHANNEL, {
         message: this.receiveChat,
         status: (status, detail) => { this.status = status; this.statusDetail = detail; this.updateStatus(); },
       });
@@ -430,6 +431,7 @@ export class StreamUI {
     }
     this.chat = new TwitchChatConnection({
       userId: this.game.session.host.id,
+      broadcasterLogin: GUESSR_TRANSPORT_CHANNEL,
       credentials: async () => (await gameAuth()).getTwitchChatSession(),
       status: (status, detail) => {
         this.status = status;
@@ -728,7 +730,8 @@ export class StreamUI {
       const result = acceptStreamGuess(this.game!, {
         player: { id, login: "viewer_" + id, name: "Viewer " + id },
         id: crypto.randomUUID(),
-        text: parsed ? formatGuessCommand(parsed.round, parsed, parsed.maximum, parsed.roundId ?? this.game!.session.rounds[this.game!.round].id) : command.value,
+        text: parsed && /^\d{1,30}$/.test(id) ? formatGuessCommand(parsed.round, parsed, parsed.maximum,
+          parsed.roundId ?? this.game!.session.rounds[this.game!.round].id, { userId: id }) : command.value,
         sentAt: streamTime(this.game!),
       });
       bindText(output, ({ accepted: 'Guess accepted', invalid: 'Invalid guess', duplicate: 'Duplicate guess',

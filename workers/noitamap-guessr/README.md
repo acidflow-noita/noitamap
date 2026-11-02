@@ -13,17 +13,21 @@ recent/best results. The map navbar entry uses the same Bootstrap popover as
 the other Pro controls. The reviewed area inventory is unchanged.
 
 Chat vs Streamer has ten rounds using the demo's HUD, clue controls and
-guess board. The host connects their own linked Twitch channel with explicit
+guess board. Guesses travel through the shared `noitaguessr` Twitch channel.
+The host receives them using their own linked Twitch identity and explicit
 `user:read:chat` permission. EventSub runs directly between their browser and
 Twitch; each viewer's latest valid `!noitaguessr_guess ✦…✦` before submission wins.
+The receiver checks the embedded sender against Twitch's actual sender and
+rejects copied packets, recent repeated nonces, other round IDs and closed rounds.
+This prevents direct copy/paste; the encoding does not attest client point costs.
 Assistance costs are captured when the guess arrives, with no speed bonus.
 Equal totals share a rank. The free map picker sends through the viewer's Twitch
 account without a Noitamap account. All participants, including the streamer, appear in the final
 searchable/sortable table and downloadable HTML/JSON results.
 
 With ordinary `npm run dev`, the host can connect the same remembered Twitch
-identity used by the chatter page. Start a new game to listen to that real
-channel. The localhost host score uses a separate synthetic identity, so the
+identity used by the chatter page. Start a new game to listen to the shared
+transport channel. The localhost host score uses a separate synthetic identity, so the
 owner can test as a chatter in another tab too. Production still uses the
 verified Pro/Twitch host identity and excludes a second host entry. The explicit
 Offline testing option retains the simulator; it never receives real Twitch chat.
@@ -437,20 +441,21 @@ port. Viewer access tokens are remembered in the site's own browser storage,
 validated before restoring a session, and checked hourly. Sign-out removes the
 saved token; expired/revoked tokens require signing in again. Twitch delivery is
 attempted once per click; an uncertain response is never automatically retried.
-The built-in chat and Send guess share one Twitch connection with `user:read:chat`
-and `user:write:chat`. There is no Twitch iframe, separate embedded login, or
-third-party storage access request. The chat shows new messages after connecting
-and applies incoming moderation events to its local display. Send feedback uses
-a brief button popover rather than inserting a row above the panels.
+The chatter's existing `user:read:chat` and `user:write:chat` permissions cover
+the shared transport. There is no chat window, composer, iframe or Chatterino
+setup. A compact connection bar retains the streamer identity, Pro status and
+gift action. Twitch sign-in occupies the right map panel until connected.
+The indicator distinguishes connected, reconnecting, offline and sign-in states.
+Send feedback uses a brief button popover rather than inserting content above
+the panels. "Guess sent" means Twitch accepted the send; it does not claim a
+receipt from the streamer's collector. An uncertain send is not retried automatically.
 
-Host setup includes local-only guess hiding. The command is exclusively
-`!noitaguessr_guess ✦…✦`; plain `!guess` is ignored. The channel owner's
-NoitaGuessr chat has a local Hide guesses toggle. The Chatterino option copies
-`!(message.content match ri"^\s*!noitaguessr_guess(\s|$)")` for **Settings → Filters →
-Quick Add**, then the channel menu's **Set filters**. Enabling it in Chatterino
-is a one-time desktop step, not something the website silently configures.
-No messages are deleted, no moderation permissions are requested, and no bot
-settings are changed. Chatters' views and the scoring receiver are unaffected.
+`noitaguessr` is transport only. Pro eligibility is still an active subscription
+to wuote, an active Patreon membership, or an existing verified exception.
+No new Worker call or database write is made for receiving/validating a guess.
+The existing live-room state connection remains separate; this change does not
+yet replace its broadcast/reconnect path. The packet's random nonce also makes
+fresh submissions distinct without exposing coordinates or the point allowance.
 The implementation uses Twitch's [browser OAuth flow](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#implicit-grant-flow),
 [Send Chat Message API](https://dev.twitch.tv/docs/api/reference/#send-chat-message),
 and [token validation requirements](https://dev.twitch.tv/docs/authentication/validate-tokens/).
@@ -612,7 +617,7 @@ handles duplicate guesses per viewer and round, independently of the point cost.
 Do not use a one-redemption-per-stream limit: it would prevent later-round guesses.
 
 The shared command formatter/parser is prepared in `src/guessr/guess-command.ts`.
-Copy produces plain ASCII; parsing accepts typographic minus/dash variants,
+Live packets are encoded and bound to the Twitch sender; offline parsing accepts typographic minus/dash variants,
 double hyphens, and copied non-breaking spaces. It validates the round and map
 bounds and rejects ambiguous input. The live chat path uses it; future reward
 input must use it too.

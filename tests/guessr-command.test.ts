@@ -10,6 +10,25 @@ const limits = {
 };
 
 describe("shared Twitch guess commands", () => {
+  it('carries a sender-bound nonce without plaintext coordinates, cost or account ID', () => {
+    const roundId = '11111111-1111-4111-8111-111111111111';
+    const identity = { userId: '123456789', nonce: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]) };
+    const text = formatGuessCommand(3, { x: -3152, y: 874 }, 4500, roundId, identity);
+    expect(text.length).toBeLessThan(500);
+    expect(text).not.toContain(identity.userId);
+    expect(text).not.toContain('3152'); expect(text).not.toContain('4500');
+    expect(parseGuessCommand(text, limits)).toEqual({ round: 3, x: -3152, y: 874, maximum: 4500,
+      roundId, userId: identity.userId, nonce: '0102030405060708' });
+    const first = formatGuessCommand(3, { x: -3152, y: 874 }, 4500, roundId, { userId: '123' });
+    const second = formatGuessCommand(3, { x: -3152, y: 874 }, 4500, roundId, { userId: '123' });
+    expect(first).not.toBe(second);
+  });
+  it('round-trips the largest allowed sender ID and rejects malformed identities', () => {
+    const userId = '9'.repeat(30);
+    expect(parseGuessCommand(formatGuessCommand(10, { x: 1, y: 2 }, undefined, undefined, { userId }), limits)?.userId).toBe(userId);
+    expect(() => formatGuessCommand(1, { x: 0, y: 0 }, 5000, undefined, { userId: 'alice' })).toThrow();
+    expect(() => formatGuessCommand(1, { x: 0, y: 0 }, 5000, undefined, { userId, nonce: new Uint8Array(7) })).toThrow();
+  });
   it.each(["-", "--", "‐", "‑", "‒", "–", "—", "―", "−", "﹣", "－"])(
     "accepts %s as a coordinate minus sign without changing the point",
     (sign) => {

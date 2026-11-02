@@ -18,6 +18,7 @@ export interface TwitchSocket {
 export interface TwitchChatOptions {
   userId: string;
   broadcasterId?: string;
+  broadcasterLogin?: string;
   credentials: () => Promise<TwitchChatCredentials | null>;
   message: (message: StreamChatMessage) => void;
   status: (status: TwitchChatStatus, detail: string) => void;
@@ -42,7 +43,10 @@ export class TwitchChatConnection {
   private epoch = 0;
   private retries = 0;
   private seen = new Set<string>();
-  constructor(private options: TwitchChatOptions) {}
+  private broadcasterId?: string;
+  constructor(private options: TwitchChatOptions) {
+    this.broadcasterId = options.broadcasterId ?? (options.broadcasterLogin ? undefined : options.userId);
+  }
   start(): void {
     if (!this.stopped) return;
     this.stopped = false;
@@ -92,6 +96,24 @@ export class TwitchChatConnection {
         return;
       }
       this.credentials = credentials;
+      if (!this.broadcasterId) {
+        const login = this.options.broadcasterLogin;
+        if (!login || !/^[a-z0-9_]{1,25}$/.test(login)) throw Error('Invalid chat channel');
+        const response = await (this.options.fetch ?? fetch)('https://api.twitch.tv/helix/users?login=' + login, {
+          headers: { 'Client-Id': credentials.clientId, Authorization: 'Bearer ' + credentials.accessToken },
+          credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(8000),
+        });
+        if (this.stopped || epoch !== this.epoch) return;
+        if (response.status === 401 || response.status === 403) { this.authRequired(); return; }
+        if (!response.ok) throw Error('Channel lookup failed');
+        const value = await response.json() as { data?: { id?: unknown; login?: unknown }[] };
+        if (this.stopped || epoch !== this.epoch) return;
+        const channel = value.data?.length === 1 ? value.data[0] : undefined;
+        if (!channel || channel.login !== login || typeof channel.id !== 'string' || !/^\d{1,30}$/.test(channel.id)) {
+          this.stop(); this.options.status('channel-not-found', 'Could not connect to chat.'); return;
+        }
+        this.broadcasterId = channel.id;
+      }
       this.connect(ENDPOINT, false, epoch);
       this.scheduleValidation(credentials, epoch);
     } catch {
@@ -242,7 +264,7 @@ export class TwitchChatConnection {
       if (this.seen.size > 10000)
         this.seen.delete(this.seen.values().next().value!);
       const chat = value.payload.event;
-      const broadcasterId = this.options.broadcasterId ?? this.options.userId;
+      const broadcasterId = this.broadcasterId;
       if (!chat || chat.broadcaster_user_id !== broadcasterId
         || chat.source_broadcaster_user_id && chat.source_broadcaster_user_id !== broadcasterId) return;
       const subscription = value.payload.subscription.type;
@@ -311,7 +333,7 @@ export class TwitchChatConnection {
             type,
             version: "1",
             condition: {
-              broadcaster_user_id: this.options.broadcasterId ?? credentials.userId,
+              broadcaster_user_id: this.broadcasterId,
               user_id: credentials.userId,
             },
             transport: { method: "websocket", session_id: sessionId },

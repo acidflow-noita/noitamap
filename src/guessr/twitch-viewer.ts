@@ -3,6 +3,7 @@ import type { Point } from './rules';
 import { STREAM_ROUNDS } from './stream-types';
 import { TwitchChatConnection, type TwitchChatOptions } from './twitch-chat';
 import { tr } from './i18n';
+import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 
 /** Keep transport state in source English so an open view can change language. */
 export function twitchMessageText(source: string): string {
@@ -354,15 +355,16 @@ export class TwitchViewer {
   /** Exactly one send attempt, called explicitly after connect() has completed.
    * An uncertain response is never retried: Twitch may already have sent it. */
   async sendGuess(channel: string, round: number, point: Point, maximum?: number, roundId?: string): Promise<string> {
+    const credentials = await this.currentCredentials();
     let command: string;
     try {
       if (typeof channel !== 'string' || !/^[a-z0-9_]{1,25}$/i.test(channel) || round > STREAM_ROUNDS) throw Error();
-      command = formatGuessCommand(round, point, maximum, roundId);
+      command = formatGuessCommand(round, point, maximum, roundId, { userId: credentials.userId });
     } catch { throw new TwitchViewerError('invalid-guess', 'Choose a valid round, map position, and Twitch channel before sending.'); }
-    return this.sendMessage(channel, command);
+    return this.sendMessage(GUESSR_TRANSPORT_CHANNEL, command, credentials.userId);
   }
 
-  async sendMessage(channel: string, message: string): Promise<string> {
+  async sendMessage(channel: string, message: string, expectedUserId?: string): Promise<string> {
     if (this.state.sending) throw new TwitchViewerError('busy', 'Your previous message is still being sent.');
     if (!/^[a-z0-9_]{1,25}$/i.test(channel) || typeof message !== 'string' || !message.trim() || message.length > 500)
       throw new TwitchViewerError('invalid-message', 'Choose a channel and enter a message of up to 500 characters.');
@@ -372,7 +374,8 @@ export class TwitchViewer {
     try {
       const credentials = await this.currentCredentials();
       const id = await this.broadcaster(channel.toLowerCase(), credentials);
-      if (generation !== this.generation || this.#credentials?.token !== credentials.token || this.disposed)
+      if (generation !== this.generation || this.#credentials?.token !== credentials.token || this.disposed
+        || expectedUserId !== undefined && credentials.userId !== expectedUserId)
         throw new TwitchViewerError('disconnected', 'The Twitch connection changed. Click Send after connecting again.');
       attempted = true;
       const response = await this.request(SEND_URL, { method: 'POST', headers: { ...this.headers(credentials), 'Content-Type': 'application/json' },

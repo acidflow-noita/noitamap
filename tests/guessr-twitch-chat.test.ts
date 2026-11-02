@@ -48,12 +48,13 @@ afterEach(() => {
 const flush = async () => {
   for (let i = 0; i < 6; i++) await Promise.resolve();
 };
-function fixture() {
+function fixture(broadcasterLogin?: string) {
   const sockets: FakeSocket[] = [],
     message = vi.fn(),
     status = vi.fn();
   const request = vi.fn<typeof fetch>(
-    async () => new Response("{}", { status: 202 }),
+    async url => String(url).includes('/helix/users?')
+      ? Response.json({ data: [{ id: '456', login: 'noitaguessr' }] }) : new Response("{}", { status: 202 }),
   );
   const credentials = vi.fn(async () => ({
     userId: "100",
@@ -64,6 +65,7 @@ function fixture() {
   }));
   const connection = new TwitchChatConnection({
     userId: "100",
+    broadcasterLogin,
     message,
     status,
     fetch: request,
@@ -95,6 +97,21 @@ function fixture() {
   return { connection, sockets, message, status, request, chat, credentials };
 }
 describe("Twitch EventSub browser transport", () => {
+  it('resolves the shared transport once and subscribes with the streamer identity, including after reconnect', async () => {
+    const f = fixture('noitaguessr'); await flush(); await flush();
+    expect(f.request.mock.calls[0][0]).toBe('https://api.twitch.tv/helix/users?login=noitaguessr');
+    f.sockets[0].welcome('central'); await flush();
+    expect(JSON.parse(f.request.mock.calls[1][1]!.body as string).condition).toEqual({ broadcaster_user_id: '456', user_id: '100' });
+    f.chat(f.sockets[0], 'own-channel', '100');
+    expect(f.message).not.toHaveBeenCalled();
+    f.chat(f.sockets[0], 'central-message', '456');
+    expect(f.message).toHaveBeenCalledOnce();
+    f.sockets[0].drop(); await vi.advanceTimersByTimeAsync(1001); await flush();
+    f.sockets[1].welcome('reconnected'); await flush();
+    expect(f.request.mock.calls.filter(([url]) => String(url).includes('/helix/users?'))).toHaveLength(1);
+    expect(JSON.parse(f.request.mock.calls.at(-1)![1]!.body as string).condition).toEqual({ broadcaster_user_id: '456', user_id: '100' });
+    expect(f.request.mock.calls.every(([url]) => String(url).startsWith('https://api.twitch.tv/'))).toBe(true);
+  });
   it('reads a different broadcaster using the viewer identity and applies moderation only to the local display', async () => {
     const sockets: FakeSocket[] = [], message = vi.fn(), remove = vi.fn();
     const request = vi.fn<typeof fetch>(async () => new Response('{}', { status: 202 }));

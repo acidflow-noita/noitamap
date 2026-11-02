@@ -95,20 +95,20 @@ describe('shared channel guess picker', () => {
       expect(fetch).not.toHaveBeenCalled();
     } finally { online.mockRestore(); }
   });
-  it('explains a missing Twitch account and lets a chatter switch channels without signing out', async () => {
+  it('keeps transport failures separate from streamer selection and permits switching games without signing out', async () => {
     const f = mount('/guess/stream/missing_streamer/');
-    expect(f.main.querySelector('.stream-chat-state')!.textContent).toBe('Twitch sign-in required');
+    expect(f.main.querySelector('.stream-chat-state')!.getAttribute('aria-label')).toBe('Twitch sign-in required');
     f.button('Sign in with Twitch').click(); await flush();
     const oldRoom = vi.mocked(watchLiveRoom).mock.results[0].value;
     const oldRoomHandlers = vi.mocked(watchLiveRoom).mock.calls[0][1];
     const oldChatStop = f.viewer.watchChat.mock.results[0].value;
     const oldChatHandlers = f.viewer.watchChat.mock.calls[0][1];
-    oldChatHandlers.status('channel-not-found', 'No Twitch account matches that username. Check the Twitch channel name.');
+    oldChatHandlers.status('reconnecting', 'Reconnecting to chat…');
     const status = f.main.querySelector<HTMLElement>('.stream-chat-state')!;
-    expect(status.textContent).toBe('Twitch channel not found');
-    expect(status.getAttribute('aria-description')).toContain('No Twitch account was found for missing_streamer');
+    expect(status.getAttribute('aria-label')).toBe('Reconnecting…');
+    expect(status.getAttribute('aria-description')).toContain('Reconnecting to chat');
     expect(status.hasAttribute('title')).toBe(false);
-    expect(f.button('Gift Pro to missing_streamer').hidden).toBe(true);
+    expect(f.button('Gift Pro to missing_streamer').hidden).toBe(false);
     f.button('Change streamer').click();
     expect(oldRoom.dispose).toHaveBeenCalledOnce();
     expect(oldChatStop).toHaveBeenCalledOnce();
@@ -170,35 +170,33 @@ describe('shared channel guess picker', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('changes language without reconnecting chat or losing the draft, pin, clue progress, or raw messages', async () => {
+  it('changes language without reconnecting transport or losing the pin and clue progress', async () => {
     await initializeGuessrTranslations();
     i18next.addResourceBundle('de', 'translation', {}, true, true);
     i18next.addResourceBundle('de', 'guessr', { 'Send guess': 'Tipp senden', 'Twitch chat connected': 'Twitch-Chat verbunden',
-      'Playing as {{player}}': 'Du spielst als {{player}}', 'Rank': 'Rang', 'Message…': 'Nachricht…' }, true, true);
+      'Playing as {{player}}': 'Du spielst als {{player}}', 'Connected': 'Verbunden' }, true, true);
     const f = mount(roundLink('/guess/?channel=wuote', 2, true)); await flush();
     f.button('Sign in with Twitch').click(); await flush();
-    const chat = f.main.querySelector('.stream-chat')!;
+    const chat = f.main.querySelector('.stream-connection-bar')!;
     const handlers = f.viewer.watchChat.mock.calls[0][1];
     handlers.status('live', 'Chat connected. Latest valid guess received before you submit counts.');
     handlers.message({ id: 'raw-message', text: 'Send guess', sentAt: Date.now(), player: { id: '789', login: 'rank', name: 'Rank' } });
-    const draft = chat.querySelector<HTMLInputElement>('.stream-chat-composer input')!;
-    draft.value = 'My unsent draft';
+    expect(chat.querySelector('.stream-chat-composer')).toBeNull();
     ui.pick({ x: 10, y: 20 });
     f.main.querySelector<HTMLButtonElement>('[aria-label="Zoom out"]')!.click(); await flush();
     const clueLoads = ui.show.mock.calls.length;
     const connectionStatus = chat.querySelector('.stream-chat-state')!;
     expect(connectionStatus.textContent).toBe('');
-    expect(connectionStatus.getAttribute('aria-label')).toBe('Twitch chat connected');
+    expect(connectionStatus.getAttribute('aria-label')).toBe('Connected');
     expect(connectionStatus.parentElement?.classList.contains('stream-chat-identity')).toBe(true);
     expect(connectionStatus.classList.contains('stream-chat-state-online')).toBe(true);
     expect(connectionStatus.getAttribute('aria-description')).toContain('Twitch chat connected');
     await i18next.changeLanguage('de');
-    expect(f.main.querySelector('.stream-chat')).toBe(chat);
+    expect(f.main.querySelector('.stream-connection-bar')).toBe(chat);
     expect(connectionStatus.textContent).toBe('');
-    expect(connectionStatus.getAttribute('aria-label')).toBe('Twitch-Chat verbunden');
-    expect(chat.querySelector('.stream-chat-message')!.textContent).toBe('Rank: Send guess');
-    expect(draft.value).toBe('My unsent draft');
-    expect(draft.placeholder).toBe('Nachricht…');
+    expect(connectionStatus.getAttribute('aria-label')).toBe('Verbunden');
+    expect(chat.querySelector('.stream-chat-message')).toBeNull();
+    expect(chat.textContent).not.toContain('Rank: Send guess');
     expect(f.button('Tipp senden').disabled).toBe(false);
     expect(ui.show).toHaveBeenCalledTimes(clueLoads);
     expect(f.viewer.watchChat).toHaveBeenCalledTimes(1);
@@ -297,12 +295,12 @@ describe('shared channel guess picker', () => {
   it('uses one account for native chat and the guess button, with feedback outside the page flow', async () => {
     const f = mount(roundLink('/guess/?channel=Wuote'));
     expect(f.main.querySelector('iframe')).toBeNull();
-    expect(f.button('Sign in with Twitch').closest('.site-header')).not.toBeNull();
+    expect(f.button('Sign in with Twitch').closest('.stream-picker')).not.toBeNull();
     expect(f.button('Send guess').closest('.stream-picker')).not.toBeNull();
     expect(f.button('Send guess').disabled).toBe(true);
     ui.pick({ x: -3152, y: 874 });
     f.button('Sign in with Twitch').click(); await flush();
-    expect(f.viewer.watchChat).toHaveBeenCalledWith('wuote', expect.any(Object));
+    expect(f.viewer.watchChat).toHaveBeenCalledWith('noitaguessr', expect.any(Object));
     expect(f.viewer.sendGuess).not.toHaveBeenCalled();
     const layout = [...f.main.children];
     f.button('Send guess').click(); await flush();
@@ -347,7 +345,7 @@ describe('shared channel guess picker', () => {
     ui.pick({ x: 0, y: 0 }); f.button('Sign in with Twitch').click(); await flush();
     f.button('Send guess').click(); await flush();
     f.update({ connected: false, userId: null, error: 'Twitch sign-in expired. Connect again.' });
-    expect(f.main.querySelector('.stream-chat-empty')!.textContent).toContain('expired');
+    expect(f.main.querySelector('.stream-signin-error')!.textContent).toContain('expired');
     expect(f.button('Send guess').disabled).toBe(true);
     f.update({ connected: true, userId: '456', login: 'another', error: null });
     expect(f.button('Send guess').disabled).toBe(false);
@@ -363,16 +361,16 @@ describe('shared channel guess picker', () => {
     expect(f.viewer.sendGuess).not.toHaveBeenCalled();
   });
 
-  it('hides guess messages only for the channel owner locally and keeps scoring traffic untouched', () => {
+  it('has no chat window, composer or privacy controls and does not display transport messages', () => {
     const f = mount(roundLink());
     f.update({ connected: true, userId: '456', login: 'wuote' });
-    f.main.querySelector<HTMLInputElement>('.stream-privacy-option input')!.click();
+    expect(f.main.querySelector('.stream-privacy-option')).toBeNull();
+    expect(f.main.querySelector('.stream-chat-messages')).toBeNull();
+    expect(f.main.querySelector('.stream-chat-composer')).toBeNull();
     const handlers = f.viewer.watchChat.mock.calls.at(-1)![1];
     handlers.message({ id: 'message', text: '!noitaguessr_guess 1 100 200', sentAt: Date.now(), player: { id: '789', login: 'chatter', name: 'Chatter' } });
-    const row = f.main.querySelector<HTMLElement>('.stream-chat-message')!;
-    expect(row.hidden).toBe(true);
-    f.main.querySelector<HTMLInputElement>('.stream-privacy-option input')!.click();
-    expect(row.hidden).toBe(false);
+    expect(f.main.querySelector('.stream-chat-message')).toBeNull();
+    expect(f.main.textContent).not.toContain('!noitaguessr_guess');
     expect(f.viewer.sendMessage).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
   });
 

@@ -42,6 +42,7 @@ export interface StreamGuess {
   /** Twitch message IDs prevent duplicate delivery from replacing a guess. */
   messageId: string;
   sentAt: number;
+  nonce?: string;
 }
 export interface StreamReveal {
   roundId: string;
@@ -86,6 +87,8 @@ export interface StreamGame {
   guess: Point | null;
   paused: boolean;
   participants: StreamParticipant[];
+  /** Bounded deduplication for retries in the active round, retained across F5. */
+  recentNonces?: Record<string, string[]>;
   reveals: StreamReveal[];
   published?: boolean;
 }

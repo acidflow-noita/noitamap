@@ -98,7 +98,7 @@ it('stops the live Twitch reader when quitting and ignores a late chat delivery'
   await ui.quit();
   expect(stop).toHaveBeenCalledOnce();
   receiver.message({ id: 'late-message', player: { id: '123', login: 'chatter', name: 'Chatter' }, sentAt: streamNow + 50,
-    text: formatGuessCommand(1, streamAnswer, 5000, game.session.rounds[0].id) });
+    text: formatGuessCommand(1, streamAnswer, 5000, game.session.rounds[0].id, { userId: '123' }) });
   expect(ui.game).toBeNull();
   expect(localStorage.getItem(STREAM_SESSION_KEY)).toBeNull();
 });
@@ -114,10 +114,10 @@ it('receives real-channel chat in localhost mode and submits both host and chatt
   const button = (label: string) => [...document.querySelectorAll('button')].find(b => b.textContent === label)!;
   button('Start new game').click(); await flush();
   expect(mocks.channel).toHaveBeenCalledWith('streamer');
-  expect(mocks.watchChat).toHaveBeenCalledExactlyOnceWith('streamer', expect.any(Object));
+  expect(mocks.watchChat).toHaveBeenCalledExactlyOnceWith('noitaguessr', expect.any(Object));
   const receiver = mocks.watchChat.mock.calls[0][1];
   receiver.message({ id: 'message-1', player: { id: '123', login: 'streamer', name: 'WUOTE' }, sentAt: streamNow + 50,
-    text: formatGuessCommand(1, streamAnswer, 4900, game.session.rounds[0].id) });
+    text: formatGuessCommand(1, streamAnswer, 4900, game.session.rounds[0].id, { userId: '123' }) });
   expect(document.querySelector('#stream-guess-count')!.textContent).toBe('1 chat guess this round');
   expect(ui.game!.participants).toHaveLength(2);
   ui.game!.guess = streamAnswer; ui.render();

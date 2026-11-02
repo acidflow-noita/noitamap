@@ -50,6 +50,22 @@ async function fixture() {
   return { service, session, game, chat };
 }
 describe("stream round protocol and scoring", () => {
+  it('rejects copied and replayed packets using Twitch sender identity while accepting a fresh replacement', async () => {
+    const f = await fixture(); f.session.live = true;
+    const roundId = f.session.rounds[0].id;
+    const packet = formatGuessCommand(1, streamAnswer, 5000, roundId, { userId: '123' });
+    expect(f.chat('123', packet)).toBe('accepted');
+    expect(f.chat('124', packet, streamNow + 2, 'copied')).toBe('invalid');
+    expect(f.chat('123', packet, streamNow + 3, 'replayed')).toBe('duplicate');
+    const replacement = formatGuessCommand(1, { x: streamAnswer.x + 1, y: streamAnswer.y }, 4900, roundId, { userId: '123' });
+    expect(f.chat('123', replacement, streamNow + 4, 'replacement')).toBe('accepted');
+    expect(f.chat('123', packet, streamNow + 5, 'old-packet-new-message')).toBe('duplicate');
+    const restored = JSON.parse(JSON.stringify(f.game));
+    expect(acceptStreamGuess(restored, { player: { id: '123', login: 'viewer_123', name: 'Viewer 123' },
+      id: 'after-refresh', text: packet, sentAt: streamNow + 6 })).toBe('duplicate');
+    expect(f.game.participants).toHaveLength(2);
+    expect(f.game.participants[1].guesses[0]).toMatchObject({ point: { x: streamAnswer.x + 1, y: streamAnswer.y }, maximum: 4900 });
+  });
   it("recovers a lost advance acknowledgement without reopening the previous round", async () => {
     const f = await fixture();
     closeStreamRound(f.game, streamAnswer, streamNow + 10);
@@ -70,10 +86,11 @@ describe("stream round protocol and scoring", () => {
     expect(f.chat('123')).toBe('old'); // Untagged legacy commands cannot enter live games.
     expect(f.chat('123', `!noitaguessr_guess 1 -17000 500 5000 #${previous.session.rounds[0].id}`)).toBe('old');
     expect(f.chat('123', `!noitaguessr_guess 1 -17000 500 5000 #${f.session.rounds[0].id}`)).toBe('invalid');
-    const valid = formatGuessCommand(1, streamAnswer, 5000, f.session.rounds[0].id);
+    const valid = formatGuessCommand(1, streamAnswer, 5000, f.session.rounds[0].id, { userId: '123' });
     expect(f.chat('123', valid)).toBe('accepted');
+    expect(f.chat('124', valid)).toBe('invalid');
     closeStreamRound(f.game, streamAnswer, streamNow + 10);
-    expect(f.chat('124', valid, streamNow + 11)).toBe('closed');
+    expect(f.chat('123', valid, streamNow + 11)).toBe('closed');
     expect(f.game.participants).toHaveLength(2);
   });
   it("withholds every answer and area until a host-owned token is revealed", async () => {

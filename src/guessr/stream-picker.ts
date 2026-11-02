@@ -27,7 +27,7 @@ function button(label: string, action: () => unknown, className = 'secondary') {
   element.type = 'button'; element.onclick = () => void action(); return element;
 }
 
-/** Round changes replace the clue only: chat, account and map stay connected. */
+/** Round changes replace the clue only: account, transport and map stay connected. */
 export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, viewer: TwitchViewer, imageRoot: string): () => void {
   const url = new URL(location.href);
   const candidate = readGuessRoute(url).channel || '';
@@ -101,6 +101,9 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   revealBar.setAttribute('aria-live', 'polite');
   revealDetails.append(revealName, revealDistance); revealBar.append(revealDetails, revealPoints);
   const map = node('div', 'map-board'), actions = node('div', 'stream-guess-actions');
+  const signIn = node('div', 'stream-signin');
+  const signInError = node('p', 'stream-signin-error'); signInError.setAttribute('role', 'status');
+  signIn.append(connect, signInError);
   const budget = node('span', 'stream-maximum'); budget.hidden = true;
   const roomStatus = node('span', 'stream-room-status'); roomStatus.setAttribute('role', 'status');
   const retry = button('Reconnect', () => room?.retry(), 'small secondary'); retry.hidden = true;
@@ -124,7 +127,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     finally { sending = false; if (!closed) refresh(); }
   }, 'primary');
   const sendNotice = buttonNotice(send);
-  actions.append(budget, roomStatus, result, retry, send); mapPanel.append(revealBar, map, actions); layout.append(mapPanel);
+  actions.append(budget, roomStatus, result, retry, send); mapPanel.append(revealBar, signIn, map, actions); layout.append(mapPanel);
   const resultsPanel = node('section', 'game-panel stream-viewer-results'); resultsPanel.hidden = true;
   layout.append(resultsPanel);
   const chat = viewerChatPanel(viewer, channel, () => {
@@ -137,7 +140,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     history.replaceState(null, '', next);
     showChannelForm().focus(); refresh();
   });
-  layout.append(chat.panel); main.append(layout);
+  layout.prepend(chat.panel); main.append(layout);
   const board = new MapBoard(map, config.bounds, config.overview, next => {
     if (within(next, config.bounds)) { point = next; board.setMarkers(next); saveProgress(); refresh(); }
   }, config.map);
@@ -254,6 +257,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   if (!channel) showChannelForm();
   refresh = () => {
     const state = viewer.getState();
+    signIn.hidden = state.connected;
+    map.hidden = !state.connected;
+    signInError.textContent = state.error ? twitchMessageText(state.error) : '';
+    signInError.hidden = !state.error;
     if (snapshot) round.textContent = tr('Round {{round}}', { round: formatGuessrNumber(snapshot.round) });
     showOutcome();
     if (progress) budget.textContent = tr('Up to {{points}} points', { points: formatGuessrNumber(maximumScore(progress)), count: maximumScore(progress) });
@@ -270,7 +277,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       : live?.phase === 'reveal' ? 'This round is closed'
       : live && !live.online ? 'The streamer is disconnected from NoitaGuessr'
       : live?.paused ? 'The streamer has paused this round'
-      : !state.connected ? 'Sign in with Twitch above' : !point ? 'Place a pin first' : '');
+      : !state.connected ? 'Sign in with Twitch' : !point ? 'Place a pin first' : '');
     retry.hidden = !!legacyPayload || connectionState !== 'stopped';
     if (!legacyPayload && connectionState === 'connected') {
       bindText(roomStatus, !live || live.phase === 'waiting' ? 'No active NoitaGuessr game'

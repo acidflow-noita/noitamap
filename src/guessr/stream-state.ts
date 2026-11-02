@@ -72,16 +72,22 @@ export function acceptStreamGuess(
   if (command.round < game.round + 1 || message.sentAt < game.openedAt)
     return "old";
   if (command.round > game.round + 1) return "future";
+  // Twitch supplies the sender separately from the message text. This blocks
+  // verbatim copying, not a deliberately re-encoded/forged point allowance.
+  if (command.userId !== undefined && command.userId !== message.player.id) return 'invalid';
   if (game.session.live && command.roundId !== game.session.rounds[game.round].id)
     return "old";
-  if (game.session.live && !isEncodedGuessCommand(message.text)) return 'invalid';
+  if (game.session.live && (!isEncodedGuessCommand(message.text) || !command.userId)) return 'invalid';
   if (game.stage !== "guess" || game.paused) return "closed";
   if (message.player.id === game.session.host.id) return "host";
   let player = game.participants.find((p) => p.id === message.player.id);
   const previous = player?.guesses[game.round];
+  const savedNonces = game.recentNonces?.[message.player.id];
+  const nonces = Array.isArray(savedNonces) ? savedNonces.filter(value => /^[a-f0-9]{16}$/.test(value)).slice(-64) : [];
+  if (command.nonce && nonces.includes(command.nonce)) return 'duplicate';
   if (
     previous &&
-    (previous.messageId === message.id || previous.sentAt >= message.sentAt)
+    (previous.messageId === message.id || previous.sentAt >= message.sentAt || command.nonce && previous.nonce === command.nonce)
   )
     return "duplicate";
   if (!player) {
@@ -98,7 +104,12 @@ export function acceptStreamGuess(
     maximum: Math.min(maximumScore(game.clue), command.maximum ?? 5000),
     messageId: message.id,
     sentAt: message.sentAt,
+    nonce: command.nonce,
   };
+  if (command.nonce) {
+    if (!game.recentNonces || typeof game.recentNonces !== 'object' || Array.isArray(game.recentNonces)) game.recentNonces = {};
+    game.recentNonces[message.player.id] = [...nonces.slice(-63), command.nonce];
+  }
   return "accepted";
 }
 
@@ -144,6 +155,7 @@ export function advanceStreamRound(
     game.finishedAt = now;
   } else {
     game.round++;
+    game.recentNonces = {};
     game.stage = "guess";
     game.openedAt = now;
     game.closedAt = null;

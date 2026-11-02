@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { formatGuessCommand } from '../src/guessr/guess-command';
+import { parseGuessCommand } from '../src/guessr/guess-command';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { TwitchViewer, TWITCH_VIEWER_MESSAGE } from '../src/guessr/twitch-viewer';
@@ -30,7 +30,7 @@ function fixture() {
   const open = vi.fn<(url: string, name: string, features: string) => typeof popup | null>(() => popup);
   const request = vi.fn<typeof fetch>(async (url) => {
     if (String(url).endsWith('/validate')) return json(identity);
-    if (String(url).includes('/helix/users?')) return json({ data: [{ id: '456', login: 'wuote' }] });
+    if (String(url).includes('/helix/users?')) return json({ data: [{ id: '456', login: new URL(String(url)).searchParams.get('login') }] });
     if (String(url).endsWith('/helix/chat/messages')) return json({ data: [{ is_sent: true, message_id: 'sent-id' }] });
     throw Error('Unexpected request');
   });
@@ -69,15 +69,18 @@ describe('viewer Twitch sending', () => {
     expect(sessionStorage.setItem).not.toHaveBeenCalled();
   });
 
-  it('sends exactly the selected round and rounded pin to the channel in the link', async () => {
+  it('sends the selected round and rounded pin to the shared transport, bound to the signed-in sender', async () => {
     const f = fixture(); await f.connect();
     await expect(f.client.sendGuess('WUOTE', 2, { x: -3152.2, y: 874.1 })).resolves.toBe('sent-id');
-    expect(f.request.mock.calls[1][0]).toBe('https://api.twitch.tv/helix/users?login=wuote');
+    expect(f.request.mock.calls[1][0]).toBe('https://api.twitch.tv/helix/users?login=noitaguessr');
     const [url, init] = f.sends()[0];
     expect(url).toBe('https://api.twitch.tv/helix/chat/messages');
     expect(init).toMatchObject({ method: 'POST', credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error',
       headers: { Authorization: 'Bearer ' + token, 'Client-Id': 'client123' } });
-    expect(JSON.parse(init!.body as string)).toEqual({ broadcaster_id: '456', sender_id: '123', message: formatGuessCommand(2, { x: -3152, y: 874 }) });
+    const sent = JSON.parse(init!.body as string);
+    expect(sent).toMatchObject({ broadcaster_id: '456', sender_id: '123' });
+    expect(parseGuessCommand(sent.message, { rounds: 10, bounds: { x: -10000, y: -10000, width: 20000, height: 20000 } }))
+      .toMatchObject({ round: 2, x: -3152, y: 874, userId: '123', nonce: expect.stringMatching(/^[a-f0-9]{16}$/) });
     expect(f.request.mock.calls.every(([url]) => /^https:\/\/(id|api)\.twitch\.tv\//.test(String(url)))).toBe(true);
   });
 
@@ -135,7 +138,7 @@ describe('viewer Twitch sending', () => {
     [401, 'expired'], [403, 'forbidden'], [429, 'rate-limit'], [500, 'uncertain'],
   ])('reports HTTP %i and never automatically retries', async (status, code) => {
     const f = fixture(); await f.connect();
-    f.request.mockResolvedValueOnce(json({ data: [{ id: '456', login: 'wuote' }] }))
+    f.request.mockResolvedValueOnce(json({ data: [{ id: '456', login: 'noitaguessr' }] }))
       .mockResolvedValueOnce(json({}, status as number));
     await expect(f.client.sendGuess('wuote', 1, { x: 0, y: 0 })).rejects.toMatchObject({ code });
     await vi.advanceTimersByTimeAsync(10000);
@@ -145,7 +148,7 @@ describe('viewer Twitch sending', () => {
 
   it.each([false, null, 'network'] as const)('does not treat a dropped or unconfirmed message as delivered: %j', async result => {
     const f = fixture(); await f.connect();
-    f.request.mockResolvedValueOnce(json({ data: [{ id: '456', login: 'wuote' }] }));
+    f.request.mockResolvedValueOnce(json({ data: [{ id: '456', login: 'noitaguessr' }] }));
     if (result === 'network') f.request.mockRejectedValueOnce(new Error('Network failed'));
     else f.request.mockResolvedValueOnce(json({ data: [{ is_sent: result, drop_reason: { message: 'Slow mode' } }] }));
     await expect(f.client.sendGuess('wuote', 1, { x: 0, y: 0 })).rejects.toMatchObject({ code: result === false ? 'dropped' : 'uncertain' });
@@ -159,7 +162,7 @@ describe('viewer Twitch sending', () => {
     const sending = f.client.sendGuess('wuote', 1, { x: 0, y: 0 });
     await expect(f.client.sendGuess('wuote', 1, { x: 0, y: 0 })).rejects.toMatchObject({ code: 'busy' });
     f.client.disconnect();
-    finish(json({ data: [{ id: '456', login: 'wuote' }] }));
+    finish(json({ data: [{ id: '456', login: 'noitaguessr' }] }));
     await expect(sending).rejects.toMatchObject({ code: 'disconnected' });
     expect(f.sends()).toHaveLength(0);
   });
@@ -218,6 +221,8 @@ describe('viewer Twitch sending', () => {
   it('includes the viewer exploration allowance in the submitted chat command', async () => {
     const f = fixture(); await f.connect();
     await f.client.sendGuess('wuote', 2, { x: 100, y: 200 }, 4500);
-    expect(JSON.parse(f.sends()[0][1]!.body as string).message).toBe(formatGuessCommand(2, { x: 100, y: 200 }, 4500));
+    expect(parseGuessCommand(JSON.parse(f.sends()[0][1]!.body as string).message,
+      { rounds: 10, bounds: { x: -10000, y: -10000, width: 20000, height: 20000 } }))
+      .toMatchObject({ round: 2, x: 100, y: 200, maximum: 4500, userId: '123' });
   });
 });
