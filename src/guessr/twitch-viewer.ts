@@ -4,6 +4,7 @@ import { STREAM_ROUNDS } from './stream-types';
 import { TwitchChatConnection, type TwitchChatOptions } from './twitch-chat';
 import { tr } from './i18n';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
+import { ANNOUNCEMENT_SCOPE, postTwitchAnnouncement } from './twitch-announcement';
 
 /** Keep transport state in source English so an open view can change language. */
 export function twitchMessageText(source: string): string {
@@ -49,7 +50,7 @@ export interface TwitchViewerOptions {
   popup?: (url: string, name: string, features: string) => TwitchViewerPopup | null;
   socket?: TwitchChatOptions['socket'];
 }
-interface Credentials { token: string; userId: string; login: string; expiresAt: number; checkedAt: number }
+interface Credentials { token: string; userId: string; login: string; scopes: string[]; expiresAt: number; checkedAt: number }
 interface PendingAuth {
   state: string;
   popup: TwitchViewerPopup;
@@ -140,7 +141,7 @@ export class TwitchViewer {
   }
 
   /** Call directly from the Connect button so the browser permits the popup. */
-  connect(): Promise<TwitchViewerState> {
+  connect(options: { announcements?: boolean } = {}): Promise<TwitchViewerState> {
     if (this.disposed) return Promise.reject(new TwitchViewerError('disconnected', 'This Twitch connection is closed.'));
     if (!this.configured) return Promise.reject(new TwitchViewerError('configuration', 'Twitch chat sending is not configured on this site.'));
     if (this.state.sending) return Promise.reject(new TwitchViewerError('busy', 'Wait for the current guess to finish sending.'));
@@ -149,13 +150,14 @@ export class TwitchViewer {
       if (this.state.connected) return this.getState();
       throw new TwitchViewerError('expired', 'Please sign in to Twitch again.');
     });
-    if (this.#credentials && this.#credentials.expiresAt > Date.now() + 5000) return Promise.resolve(this.getState());
+    if (this.#credentials && this.#credentials.expiresAt > Date.now() + 5000
+      && (!options.announcements || this.#credentials.scopes.includes(ANNOUNCEMENT_SCOPE))) return Promise.resolve(this.getState());
     this.clearCredentials();
     const generation = ++this.generation;
     const state = Array.from(crypto.getRandomValues(new Uint8Array(32)), n => n.toString(16).padStart(2, '0')).join('');
     const authorize = new URL('https://id.twitch.tv/oauth2/authorize');
     authorize.search = new URLSearchParams({ response_type: 'token', client_id: this.clientId,
-      redirect_uri: this.redirectUri, scope: SCOPES.join(' '), state, force_verify: 'true' }).toString();
+      redirect_uri: this.redirectUri, scope: [...SCOPES, ...(options.announcements ? [ANNOUNCEMENT_SCOPE] : [])].join(' '), state, force_verify: 'true' }).toString();
     let popup: TwitchViewerPopup | null;
     try { popup = (this.options.popup ?? ((url, name, features) => window.open(url, name, features)))(
       authorize.href, 'noitamap-twitch-' + state, 'popup,width=520,height=720'); }
@@ -238,7 +240,14 @@ export class TwitchViewer {
       || typeof value.expires_in !== 'number' || !Number.isSafeInteger(value.expires_in) || value.expires_in <= 5
       || !Number.isSafeInteger(Date.now() + value.expires_in * 1000))
       throw new TwitchViewerError('validation', 'Twitch sign-in did not match this app, account, or chat permission. Connect again.');
-    return { token, userId: value.user_id, login: value.login, checkedAt: Date.now(), expiresAt: Date.now() + value.expires_in * 1000 };
+    return { token, userId: value.user_id, login: value.login, scopes: value.scopes as string[], checkedAt: Date.now(), expiresAt: Date.now() + value.expires_in * 1000 };
+  }
+  /** Local streamer testing uses the same direct announcement API as production. */
+  async postAnnouncement(channel: string, message: string): Promise<void> {
+    const credentials = await this.currentCredentials();
+    if (credentials.login !== channel) throw new TwitchViewerError('forbidden', 'Sign in as the streamer to share this game.');
+    await postTwitchAnnouncement({ ...credentials, accessToken: credentials.token, clientId: this.clientId },
+      credentials.userId, message, (url, init) => this.request(String(url), init ?? {}));
   }
   private refreshValidation(): Promise<Credentials> {
     if (this.validation) return this.validation;

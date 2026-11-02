@@ -62,10 +62,13 @@ configuration or use its zero ID for a remote database.
 
 Twitch chat reuses `/auth/twitch/callback`, which must be registered for the
 chosen auth Worker URL in the existing Twitch application. The explicit chat
-connection asks only for `user:read:chat`, using `force_verify=true`. Ordinary
+connection asks for `user:read:chat` and `moderator:manage:announcements`, using `force_verify=true`. Ordinary
 Twitch sign-in requests no scopes. The browser receives a validated user access
-token only when its app ID, stable user ID, and exact read-only scope match.
-Tokens with additional privileges are refused; refresh credentials stay in D1.
+token only when its app ID, stable user ID, and allowed chat scopes match.
+Existing read-only consent still receives guesses; sharing a game announcement
+requires the additional consent once. Other privileges are refused; refresh
+credentials stay in D1. Posting goes directly from the browser to Twitch, with
+no per-post auth Worker request and no automatic posting or retry.
 No separate bot login, bot credentials, or live messaging test is required.
 
 The game signing secret remains a separate secret shared with the secondary

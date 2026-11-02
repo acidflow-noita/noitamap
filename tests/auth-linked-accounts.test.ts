@@ -240,15 +240,15 @@ describe('durable linked Pro accounts', () => {
 });
 
 describe('explicit Twitch chat consent', () => {
-  it('requires chat scope, requests only read access, and preserves Patreon Pro through consent', async () => {
+  it('requests guess reception and announcement access and preserves Patreon Pro through consent', async () => {
     const patron = await login('patreon');
     const linked = await (await link(patron.token, 'twitch', 'twitch')).json() as any;
     expect((await request('/auth/twitch/chat-session', linked.token)).status).toBe(409);
     const start = await beginLink(linked.token, 'twitch', true);
     const authorize = new URL(start.headers.get('Location')!);
-    expect(authorize.searchParams.get('scope')).toBe('user:read:chat');
+    expect(authorize.searchParams.get('scope')).toBe('user:read:chat moderator:manage:announcements');
     expect(authorize.searchParams.get('force_verify')).toBe('true');
-    people.twitch.scope = ['user:read:chat'];
+    people.twitch.scope = ['user:read:chat', 'moderator:manage:announcements'];
     const returned = await oauth(start, 'twitch');
     const result = await request('/auth/link/complete', linked.token, { linkToken: returned.fragment.get('link_token') });
     const connected = await result.json() as any;
@@ -256,7 +256,8 @@ describe('explicit Twitch chat consent', () => {
     const response = await request('/auth/twitch/chat-session', connected.token);
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toContain('no-store');
-    expect(await response.json()).toMatchObject({ accessToken: 'access-twitch', clientId: 'twitch-client', userId: '12345', login: 'mychannel' });
+    expect(await response.json()).toMatchObject({ accessToken: 'access-twitch', clientId: 'twitch-client', userId: '12345', login: 'mychannel',
+      scopes: ['user:read:chat', 'moderator:manage:announcements'] });
   });
 
   it.each([

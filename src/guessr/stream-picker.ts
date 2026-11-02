@@ -1,5 +1,6 @@
 import { buttonNotice } from './button-notice';
 import { ClueViewport } from './clue-viewport';
+import { fitClueToPanel } from './clue-stage';
 import { attachClueControls } from './clue-view';
 import type { ImageGameConfig } from './image-game';
 import { MapBoard } from './map-board';
@@ -172,6 +173,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
           }
         });
       }
+      fitClueToPanel(clue);
     }
     board.setMarkers(point); budget.hidden = !progress; refresh();
   };
@@ -185,7 +187,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       revealName.textContent = guessrGameTerm(outcome.label);
       revealDistance.textContent = !playerId ? tr('Sign in to see your score') : own ? localizedDistance(own.distance) : tr('No guess recorded by the streamer');
       revealDistance.title = displayedGuess
-        ? tr('Δx {{x}} · Δy {{y}}', { x: formatGuessrNumber(Math.round(displayedGuess.x - outcome.answer.x)), y: formatGuessrNumber(Math.round(displayedGuess.y - outcome.answer.y)) }) : '';
+        ? tr('Δx {{x}}, Δy {{y}}', { x: formatGuessrNumber(Math.round(displayedGuess.x - outcome.answer.x)), y: formatGuessrNumber(Math.round(displayedGuess.y - outcome.answer.y)) }) : '';
       revealPoints.textContent = playerId ? tr('{{points}} points', { points: formatGuessrNumber(own?.score ?? 0), count: own?.score ?? 0 }) : '—';
       const key = `${roundKey}/${playerId ?? ''}/${own?.score ?? 'missing'}`;
       if (key !== drawnOutcome) {

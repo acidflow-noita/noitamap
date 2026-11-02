@@ -28,7 +28,7 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
   heading.append(identity, changeStreamer);
   const actions = document.createElement('div'); actions.className = 'stream-chat-actions'; actions.append(gift);
   header.append(heading, actions); panel.append(header);
-  let channel = initialChannel, key = '', stop: (() => void) | undefined, closed = false;
+  let channel = initialChannel, key = '', stop: (() => void) | undefined, closed = false, hasGame = false;
   let chatStatus: TwitchChatStatus = 'offline', chatDetail = '';
   let gameStatus: RoomConnection | null = null, gameDetail = '';
   const giftHelp = hoverHelp(gift, () => tr('Gift {{channel}} a subscription to wuote’s Twitch channel. Subscribers to wuote have Pro access and can start NoitaGuessr games for their chat.', { channel }));
@@ -61,7 +61,7 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
     const state = viewer.getState();
     header.hidden = !channel;
     changeStreamer.hidden = !channel || !onChangeStreamer;
-    gift.hidden = !channel || state.login === channel;
+    gift.hidden = !channel || hasGame || state.login === channel;
     bindText(gift, 'Gift Pro to {{channel}}', { channel }); giftHelp.update();
     title.textContent = channel;
     actions.hidden = gift.hidden;
@@ -83,9 +83,9 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
   };
   const unsubscribe = viewer.subscribe(refresh), unsubscribeLanguage = onGuessrLanguageChanged(refresh);
   window.addEventListener('offline', refresh); window.addEventListener('online', refresh);
-  return { panel, setProStatus: pro.update,
+  return { panel, setProStatus(value: Parameters<typeof pro.update>[0]) { hasGame = !!value.gameId; pro.update(value); refresh(); },
     setGameConnection(status: RoomConnection | null, detail = '') { gameStatus = status; gameDetail = detail; paint(); },
-    setChannel(value: string) { channel = value; pro.update({}); refresh(); },
+    setChannel(value: string) { channel = value; hasGame = false; pro.update({}); refresh(); },
     dispose() {
       closed = true; unsubscribe(); unsubscribeLanguage(); stop?.(); statusHelp.dispose(); giftHelp.dispose(); pro.dispose();
       window.removeEventListener('offline', refresh); window.removeEventListener('online', refresh);

@@ -22,7 +22,7 @@ async function translations() {
   i18next.addResourceBundle('de', 'guessr', {
     'Rank': 'Rang', 'Player': 'Spieler', 'Total': 'Gesamt', 'Find a player': 'Spieler suchen',
     '{{shown}} of {{players}} players_other': '{{shown}} von {{players}} Spielern',
-    ' · Streamer': ' · Streamer', '{{points}} points_other': '{{points}} Punkte',
+    ', Streamer': ', Streamer', '{{points}} points_other': '{{points}} Punkte',
     '{{rounds}} rounds_one': '{{rounds}} Runde', '{{rounds}} rounds_other': '{{rounds}} Runden',
   }, true, true);
 }
@@ -47,7 +47,7 @@ it('keeps result filtering and sorting while translating labels, numbers, and pl
   expect(filter.placeholder).toBe('Spieler suchen');
   expect(rows.firstElementChild).toBe(row);
   expect(rows.children).toHaveLength(1);
-  expect(row!.children[1].textContent).toBe('Rank · Streamer');
+  expect(row!.children[1].textContent).toBe('Rank, Streamer');
   expect(row!.lastElementChild!.textContent).toBe('2.000');
   expect(total.textContent).toBe('Gesamt');
   expect(total.parentElement!.getAttribute('aria-sort')).toBe('descending');
@@ -65,7 +65,7 @@ it('exports a localized standalone web page that filters and sorts offline witho
     const doc = offline.window.document;
     expect(doc.documentElement.lang).toBe('de');
     expect(doc.querySelector('th button')!.textContent).toBe('Rang');
-    expect(doc.querySelector('#summary')!.textContent).toContain('2.000 Punkte · 1 Runde');
+    expect(doc.querySelector('#summary')!.textContent).toContain('2.000 Punkte, 1 Runde');
     expect(doc.querySelectorAll('tbody tr')).toHaveLength(2);
     expect(doc.querySelector('tbody tr')!.children[1].textContent).toBe(unsafe.players[1].name);
     expect((offline.window as unknown as { playerTextExecuted?: boolean }).playerTextExecuted).toBeUndefined();
@@ -75,6 +75,6 @@ it('exports a localized standalone web page that filters and sorts offline witho
     expect(doc.querySelector('#count')!.textContent).toBe('1 von 2 Spielern');
     filter.value = ''; filter.dispatchEvent(new offline.window.Event('input'));
     (doc.querySelector('th button') as HTMLButtonElement).click();
-    expect(doc.querySelector('tbody tr')!.children[1].textContent).toBe('Rank · Streamer');
+    expect(doc.querySelector('tbody tr')!.children[1].textContent).toBe('Rank, Streamer');
   } finally { offline.window.close(); }
 });

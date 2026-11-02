@@ -872,7 +872,7 @@ async function handleLinkContinue(request: Request, env: Env, secrets: SessionSe
   const authorize = new URL(intent.provider === 'twitch' ? TWITCH_AUTHORIZE_URL : 'https://www.patreon.com/oauth2/authorize');
   authorize.search = new URLSearchParams({ client_id: clientId, response_type: 'code', state,
     redirect_uri: env.WORKER_URL + (intent.provider === 'twitch' ? '/auth/twitch/callback' : '/auth/callback'),
-    scope: intent.provider === 'patreon' ? 'identity identity.memberships' : intent.chat ? 'user:read:chat' : '',
+    scope: intent.provider === 'patreon' ? 'identity identity.memberships' : intent.chat ? 'user:read:chat moderator:manage:announcements' : '',
   }).toString();
   if (intent.provider === 'twitch') authorize.searchParams.set('force_verify', 'true');
   return redirectResponse(authorize.href, oauthStateCookie(nonce, request));
@@ -969,12 +969,13 @@ async function handleTwitchChatSession(request: Request, env: Env, secrets: Sess
   if (!validation.ok) return jsonResponse({ error: 'Reconnect Twitch chat.' }, origin, 409);
   const verified = await validation.json() as { client_id: string; user_id: string; login: string; scopes: string[]; expires_in: number };
   if (verified.client_id !== twitch.clientId || verified.user_id !== identity.provider_user_id
-    || !Array.isArray(verified.scopes) || verified.scopes.length !== 1 || verified.scopes[0] !== 'user:read:chat'
+    || !Array.isArray(verified.scopes) || !verified.scopes.includes('user:read:chat')
+    || verified.scopes.some(scope => !['user:read:chat', 'moderator:manage:announcements'].includes(scope))
     || !verified.login || !Number.isFinite(verified.expires_in) || verified.expires_in <= 60) {
     return jsonResponse({ error: 'Reconnect Twitch with chat read permission.' }, origin, 409);
   }
   return jsonResponse({ accessToken: credentials.accessToken, clientId: twitch.clientId,
-    userId: verified.user_id, login: verified.login, expiresAt: Date.now() + verified.expires_in * 1000 }, origin);
+    userId: verified.user_id, login: verified.login, scopes: verified.scopes, expiresAt: Date.now() + verified.expires_in * 1000 }, origin);
 }
 
 function allowedOrigins(env: Env): string[] {
@@ -1362,7 +1363,7 @@ async function handleTwitchLogin(request: Request, env: Env, secrets: SessionSec
   authUrl.searchParams.set("response_type", "code");
   // Empty scope: we only need to identify the viewer via helix/users. The
   // subscription lookup is done with the broadcaster's token, not theirs.
-  authUrl.searchParams.set("scope", chat ? 'user:read:chat' : '');
+  authUrl.searchParams.set("scope", chat ? 'user:read:chat moderator:manage:announcements' : '');
   if (chat) authUrl.searchParams.set('force_verify', 'true');
   authUrl.searchParams.set("state", state);
 

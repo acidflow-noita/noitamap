@@ -33,7 +33,7 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
     ),
     el(
       "p",
-      () => viewerId && !own ? tr('The streamer did not record a guess from this account.') : tr('{{score}} · {{rounds}} · Equal scores share a rank.', { score: tr('{{points}} points', { points: formatGuessrNumber(featured.score), count: featured.score }), rounds: tr('{{rounds}} rounds', { rounds: formatGuessrNumber(result.rounds.length), count: result.rounds.length }) }),
+      () => viewerId && !own ? tr('The streamer did not record a guess from this account.') : tr('{{score}}, {{rounds}}, Equal scores share a rank.', { score: tr('{{points}} points', { points: formatGuessrNumber(featured.score), count: featured.score }), rounds: tr('{{rounds}} rounds', { rounds: formatGuessrNumber(result.rounds.length), count: result.rounds.length }) }),
     ),
   );
   section.append(hero);
@@ -119,12 +119,12 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
         el("td", () => formatGuessrNumber(player.rank), "numeric"),
         el(
           "td",
-          () => player.name + (player.id === result.host.id ? tr(' · Streamer') : '') + (player.id === viewerId ? tr(' · You') : ''),
+          () => player.name + (player.id === result.host.id ? tr(', Streamer') : '') + (player.id === viewerId ? tr(', You') : ''),
         ),
       );
       for (const round of player.rounds) {
         const cell = el("td", () => formatGuessrNumber(round.score), "numeric");
-        bindAttribute(cell, 'title', () => tr('Area: {{area}} · Proximity: {{proximity}}', { area: formatGuessrNumber(round.areaScore), proximity: formatGuessrNumber(round.positionScore) }));
+        bindAttribute(cell, 'title', () => tr('Area: {{area}}, Proximity: {{proximity}}', { area: formatGuessrNumber(round.areaScore), proximity: formatGuessrNumber(round.positionScore) }));
         row.append(cell);
       }
       row.append(el("td", () => formatGuessrNumber(player.score), "numeric score"));
@@ -160,14 +160,14 @@ export function streamResultHtml(result: StreamResult): string {
   const labels = {
     locale: guessrLocale(),
     title: tr('NoitaGuessr stream results'),
-    heading: tr('NoitaGuessr · Chat vs Streamer'),
+    heading: tr('NoitaGuessr, Chat vs Streamer'),
     rank: tr('{{player}} — rank {{rank}} of {{players}}', { player: host.name, rank: formatGuessrNumber(host.rank), players: formatGuessrNumber(result.players.length) }),
-    summary: tr('{{score}} · {{rounds}} · {{date}}', { score: tr('{{points}} points', { points: formatGuessrNumber(host.score), count: host.score }), rounds: tr('{{rounds}} rounds', { rounds: formatGuessrNumber(result.rounds.length), count: result.rounds.length }), date: new Date(result.finishedAt).toLocaleString(guessrLocale()) }),
+    summary: tr('{{score}}, {{rounds}}, {{date}}', { score: tr('{{points}} points', { points: formatGuessrNumber(host.score), count: host.score }), rounds: tr('{{rounds}} rounds', { rounds: formatGuessrNumber(result.rounds.length), count: result.rounds.length }), date: new Date(result.finishedAt).toLocaleString(guessrLocale()) }),
     filter: tr('Find a player'),
     columns: [tr('Rank'), tr('Player'), ...result.rounds.map((_, i) => tr('Round {{round}}', { round: formatGuessrNumber(i + 1) })), tr('Total')],
-    streamer: tr(' · Streamer'),
+    streamer: tr(', Streamer'),
     count: tr('{{shown}} of {{players}} players', { shown: '{{shown}}', players: formatGuessrNumber(result.players.length), count: result.players.length }),
-    scores: tr('Area: {{area}} · Proximity: {{proximity}}', { area: '{{area}}', proximity: '{{proximity}}' }),
+    scores: tr('Area: {{area}}, Proximity: {{proximity}}', { area: '{{area}}', proximity: '{{proximity}}' }),
     note: tr('Latest valid chat guess received before the streamer closes each round counts. Equal scores share ranks. These casual game results are reported by the streamer.'),
   };
   return `<!doctype html><html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title><style>

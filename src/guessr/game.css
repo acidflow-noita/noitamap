@@ -80,6 +80,7 @@ body::before {
   pointer-events: none;
   z-index: -1;
 }
+body:has(.game-shell, .stream-viewer-shell)::before { height: 20dvh; }
 .with-icon {
   display: inline-flex;
   align-items: center;
@@ -607,6 +608,19 @@ header.page-heading {
   user-select: none;
   width: 100%;
   flex: 0 0 auto;
+}
+.clue-stage {
+  flex: 1 1 0;
+  min-block-size: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
+  background: var(--bg);
+}
+.clue-stage > .clue {
+  inline-size: min(100cqw, calc(100cqh * 2.25));
+  flex: none;
 }
 .clue img {
   position: absolute;

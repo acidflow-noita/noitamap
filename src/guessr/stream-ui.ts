@@ -2,6 +2,7 @@ import "./stream.css";
 import { gameAuth } from "./api";
 import { attachClueControls } from "./clue-view";
 import { ClueViewport } from "./clue-viewport";
+import { fitClueToPanel } from './clue-stage';
 import { supportedCamera } from "./clue-camera";
 import type { ImageGameConfig } from "./image-game";
 import type { Point } from "./rules";
@@ -27,6 +28,8 @@ import {
 } from "./stream-types";
 import { TwitchChatConnection, type TwitchChatStatus } from "./twitch-chat";
 import { TwitchViewer } from "./twitch-viewer";
+import { TwitchAnnouncementError } from './twitch-announcement';
+import { hoverHelp } from './hover-help';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import { mountStreamPicker } from "./stream-picker";
 import { liveRoomLink } from "./live-room-game";
@@ -140,6 +143,17 @@ export class StreamUI {
   private pulseTimer?: ReturnType<typeof setTimeout>;
   private roomHealthy = true;
   private proStatus?: ReturnType<typeof streamerProStatus>;
+  private statusHelp?: ReturnType<typeof hoverHelp>;
+  private shareNotice?: ReturnType<typeof buttonNotice>;
+  private sharePending = false;
+  private sharedUntil = 0;
+  private shareTimer?: ReturnType<typeof setTimeout>;
+  private disposeHeader(): void {
+    this.proStatus?.dispose(); this.proStatus = undefined;
+    this.statusHelp?.dispose(); this.statusHelp = undefined;
+    this.shareNotice?.dispose(); this.shareNotice = undefined;
+    clearTimeout(this.shareTimer);
+  }
   constructor(private hooks: StreamUIHooks) {
     const pane = readGuessRoute(new URL(location.href)).pane;
     // A chatter tab may share browser storage with the host. It must never
@@ -191,7 +205,7 @@ export class StreamUI {
     }
   };
   suspend(): void {
-    this.proStatus?.dispose(); this.proStatus = undefined;
+    this.disposeHeader();
     const wasHosting = this.mounted;
     this.mounted = false;
     clearTimeout(this.pulseTimer);
@@ -217,7 +231,7 @@ export class StreamUI {
     this.roomHealthy = false;
     game.paused = true;
     try {
-      this.proStatus?.dispose(); this.proStatus = undefined;
+      this.disposeHeader();
       clearTimeout(this.pulseTimer); this.pulseTimer = undefined;
       clearTimeout(this.saveTimer); this.saveTimer = undefined;
       this.chat?.stop(); this.chat = undefined;
@@ -241,7 +255,7 @@ export class StreamUI {
     this.hooks.home();
   };
   async open(showCompleted = false): Promise<void> {
-    this.proStatus?.dispose(); this.proStatus = undefined;
+    this.disposeHeader();
     this.mounted = true;
     if (showCompleted && this.game?.stage === "complete") {
       this.finish();
@@ -256,7 +270,7 @@ export class StreamUI {
     const accountStep = el('div'), playStep = el('div'), shareStep = el('div');
     accountStep.append(el('h2', 'Connect Twitch'));
     playStep.append(el('h2', 'Start new game'), el('p', 'Choose locations with your chat. Your own submission closes each round. There is no countdown.'));
-    shareStep.append(el('h2', 'Copy game link'), el('p', () => tr('Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.', { copyLink: tr('Copy game link') })));
+    shareStep.append(el('h2', 'Share game link in chat'), el('p', 'Post the game link as an announcement in your Twitch chat. Chatters use the same link for every round.'));
     main.append(instructionSteps(accountStep, playStep, shareStep));
     const setupActions = actionRow();
     playStep.append(setupActions);
@@ -382,7 +396,7 @@ export class StreamUI {
   }
   private async connectLocalTwitch(): Promise<void> {
     this.viewer ??= new TwitchViewer();
-    try { await this.viewer.connect(); if (this.mounted) await this.open(false); }
+    try { await this.viewer.connect({ announcements: true }); if (this.mounted) await this.open(false); }
     catch (error) { this.hooks.toast(tr((error as Error).message)); }
   }
   private async start(useTwitch = true): Promise<void> {
@@ -452,16 +466,63 @@ export class StreamUI {
   private updateStatus(): void {
     const status = document.getElementById("stream-chat-status");
     if (status) {
-      bindText(status, () => tr(this.api.local && !this.game?.session.localChat
-        ? "Local simulated chat"
-        : this.statusDetail));
-      status.dataset.status = this.status;
+      const connected = this.api.local && !this.game?.session.localChat || this.status === 'live';
+      status.dataset.connection = connected ? 'connected' : this.status === 'reconnecting' ? 'reconnecting'
+        : this.status === 'connecting' ? 'connecting' : 'disconnected';
+      bindAttribute(status, 'aria-label', connected ? 'Connected' : this.status === 'reconnecting' ? 'Reconnecting…'
+        : this.status === 'connecting' ? 'Connecting…' : 'Disconnected');
+      this.statusHelp?.update();
+    }
+    const reconnect = document.getElementById('stream-reconnect') as HTMLButtonElement | null;
+    if (reconnect) {
+      const needsGameRecovery = !this.roomHealthy || !!this.game?.paused;
+      reconnect.hidden = !needsGameRecovery && !['offline', 'auth-required', 'channel-not-found'].includes(this.status);
+      if (this.api.local && !this.game?.session.localChat && !needsGameRecovery) reconnect.hidden = true;
+      bindText(reconnect, this.status === 'auth-required' ? 'Authorize Twitch' : 'Reconnect');
     }
     const count = document.getElementById("stream-guess-count");
     if (count && this.game) {
       const total = this.game.participants.filter(p => p.id !== this.game!.session.host.id && p.guesses[this.game!.round]).length;
       bindText(count, () => tr('{{total}} chat guesses this round', { count: total, total: formatGuessrNumber(total) }));
     }
+    this.updateShareButton();
+  }
+  private updateShareButton(): void {
+    const button = document.getElementById('stream-share') as HTMLButtonElement | null;
+    if (!button) return;
+    const posted = Date.now() < this.sharedUntil;
+    clearTimeout(this.shareTimer);
+    if (posted) this.shareTimer = setTimeout(() => this.updateShareButton(), this.sharedUntil - Date.now());
+    button.disabled = this.sharePending || posted || this.status === 'connecting' || this.status === 'reconnecting';
+    button.dataset.posted = String(posted);
+    bindText(button, this.sharePending ? 'Posting…' : posted ? 'Posted in chat' : 'Share game link in chat');
+  }
+  private async shareGameLink(): Promise<void> {
+    const game = this.game;
+    if (!game || this.sharePending || Date.now() < this.sharedUntil) return;
+    this.sharePending = true; this.updateShareButton();
+    try {
+      const message = tr('Join NoitaGuessr: {{url}}', { url: this.pickerUrl() });
+      if (this.api.local) await this.viewer!.postAnnouncement(game.session.host.login, message);
+      else {
+        if (!this.chat) throw new TwitchAnnouncementError(true, 'Allow Twitch announcements to share your game link.');
+        await this.chat.postAnnouncement(game.session.host.id, message);
+      }
+      this.sharedUntil = Date.now() + 2000;
+    } catch (error) {
+      if (error instanceof TwitchAnnouncementError && error.permissionRequired) {
+        this.shareNotice?.show(tr(error.message));
+        if (this.api.local) {
+          try {
+            await this.viewer!.connect({ announcements: true });
+            if (this.mounted && this.game === game) {
+              this.stopLocalChat?.(); this.stopLocalChat = undefined; this.connectChat();
+            }
+          } catch (failure) { this.hooks.toast(tr((failure as Error).message)); }
+        }
+        else await this.connectAuth();
+      } else this.shareNotice?.show(tr((error as Error).message), 'danger');
+    } finally { this.sharePending = false; this.updateShareButton(); }
   }
   private viewerImageRoot(): string {
     return import.meta.env.VITE_GUESSR_IMAGE_ROOT || (this.api.local
@@ -526,18 +587,6 @@ export class StreamUI {
     } catch (error) { this.hooks.toast(tr((error as Error).message)); }
     finally { this.busy = false; }
   }
-  private async togglePause(): Promise<void> {
-    if (!this.game || this.busy) return;
-    this.busy = true;
-    const game = this.game, wasPaused = game.paused;
-    // Stop accepting locally immediately; resume only after the room acknowledges.
-    game.paused = true;
-    try {
-      await this.api.pause(game.session.id, !wasPaused);
-      game.paused = !wasPaused; this.roomHealthy = true;
-    } catch (error) { this.hooks.toast(tr((error as Error).message)); }
-    finally { this.save(); this.busy = false; this.render(); }
-  }
   private async nextRound(): Promise<void> {
     if (!this.game || this.busy) return;
     this.busy = true;
@@ -562,10 +611,11 @@ export class StreamUI {
     const game = this.game,
       index = review ?? game.round,
       reveal = game.reveals[index];
-    this.proStatus?.dispose();
+    this.disposeHeader();
     this.proStatus = streamerProStatus({ local: this.api.local });
     this.proStatus.update({ gameId: game.session.id, hostPro: 'active', hostProVerifiedUntil: game.session.hostProVerifiedUntil });
     const main = this.hooks.shell(true);
+    main.classList.add('stream-host-shell');
     main.append(
       this.hooks.hud({
         label: "Chat vs Streamer",
@@ -577,36 +627,35 @@ export class StreamUI {
         exit: this.exit,
       }),
     );
-    const banner = el("div", "", "stream-banner"),
-      details = el("p");
-    const count = el("strong");
+    const banner = el("div", "", "stream-banner");
+    const count = el("span", '', 'stream-guess-count');
     count.id = "stream-guess-count";
-    const status = el("span", "", "stream-status");
+    const status = el("span", "", "stream-chat-state");
     status.id = "stream-chat-status";
+    status.tabIndex = 0; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+    this.statusHelp = hoverHelp(status, () => tr(this.api.local && !game.session.localChat ? 'Local simulated chat'
+      : this.status === 'live' ? 'Receiving guesses from Twitch.' : this.statusDetail));
     const identity = el('span', '', 'stream-host-identity');
     identity.append(el('strong', () => game.session.host.login), this.proStatus.badge);
-    details.append(identity, count, status);
-    banner.append(
-      details,
-      copyAction("Copy game link", () => this.pickerUrl(), this.hooks.toast),
-    );
-    if (!this.api.local || game.session.localChat)
-      banner.append(
-        action("Reconnect chat", () => {
-          this.chat?.stop();
-          this.chat = undefined;
-          this.stopLocalChat?.(); this.stopLocalChat = undefined;
-          this.connectChat();
-        }),
-        action("Connect Twitch", () => this.api.local ? this.connectLocalTwitch() : this.connectAuth()),
-      );
+    banner.append(status, identity, count);
+    if (!this.api.local || game.session.localChat) {
+      const share = action('Share game link in chat', () => this.shareGameLink(), 'btn btn-sm btn-outline theme-secondary stream-share-button');
+      share.id = 'stream-share'; share.setAttribute('aria-live', 'polite');
+      this.shareNotice = buttonNotice(share);
+      banner.append(share);
+    }
+    const reconnect = action('Reconnect', () => {
+      if (!this.roomHealthy || game.paused) return this.resume();
+      if (this.status === 'auth-required') return this.api.local ? this.connectLocalTwitch() : this.connectAuth();
+      this.chat?.stop(); this.chat = undefined;
+      this.stopLocalChat?.(); this.stopLocalChat = undefined; this.connectChat();
+    }, 'btn btn-sm btn-outline theme-secondary');
+    reconnect.id = 'stream-reconnect'; banner.append(reconnect);
     main.append(banner);
-    if (!this.roomHealthy)
-      banner.append(action("Reconnect live room", () => this.resume(), "primary"));
     this.updateStatus();
     const host = game.participants.find((p) => p.id === game.session.host.id)!;
     const submitted = host.guesses[index];
-    const { clue, bar } = this.hooks.panels(
+    const { clue } = this.hooks.panels(
       main,
       reveal ? (submitted?.point ?? null) : game.guess,
       !!reveal || game.stage !== "guess" || game.paused || !this.roomHealthy,
@@ -635,18 +684,12 @@ export class StreamUI {
           game.clue,
           256,
           this.save,
+          { compact: true },
         ),
       );
     clue.classList.toggle("paused", game.paused && !reveal);
-    if (!reveal && game.stage === "guess")
-      bar.append(
-        action(
-          game.paused ? "Resume" : "Pause",
-          () => this.togglePause(),
-          "small",
-        ),
-      );
-    const actions = el("div", "", "game-actions");
+    fitClueToPanel(clue);
+    const actions = el("div", "", "game-actions stream-host-actions");
     if (reveal) {
       const scored = streamStandings([host], game.reveals)[0].rounds[index];
       this.hooks.markers(submitted?.point ?? null, reveal.answer);
@@ -676,21 +719,17 @@ export class StreamUI {
     } else if (game.stage === "closing") {
       actions.append(
         el("p", "Round closed. Chat guesses and your submission are saved."),
-        action("Retry reveal", () => this.submit(false), "primary"),
+        action("Retry reveal", () => this.submit(), "primary"),
       );
     } else {
       const submit = action(
         "Submit guess",
-        () => this.submit(false),
+        () => this.submit(),
         "primary",
       );
       submit.id = "confirm-guess";
       submit.disabled = !game.guess || game.paused || !this.roomHealthy;
-      const skip = action("Skip round", () => this.submit(true));
-      bindAttribute(skip, "title", "Close this round and score zero for your own guess");
-      skip.disabled = game.paused || !this.roomHealthy;
       actions.append(
-        skip,
         el(
           "p",
           game.paused
@@ -701,7 +740,7 @@ export class StreamUI {
         submit,
       );
     }
-    main.append(actions);
+    (main.querySelector('.game-panel--map') ?? main).append(actions);
     if (this.api.local && !reveal && game.stage === "guess")
       this.localInput(main);
   }
@@ -743,16 +782,16 @@ export class StreamUI {
     details.append(form);
     main.append(details);
   }
-  private async submit(skip: boolean): Promise<void> {
+  private async submit(): Promise<void> {
     if (
       !this.game ||
       this.busy ||
-      (this.game.stage === "guess" && !skip && !this.game.guess)
+      (this.game.stage === "guess" && (this.game.paused || !this.roomHealthy || !this.game.guess))
     )
       return;
     this.busy = true;
     try {
-      closeStreamRound(this.game, skip ? null : this.game.guess);
+      closeStreamRound(this.game, this.game.guess);
       this.save();
       this.render();
       const game = this.game;
@@ -774,7 +813,7 @@ export class StreamUI {
     }
   }
   private finish(): void {
-    this.proStatus?.dispose(); this.proStatus = undefined;
+    this.disposeHeader();
     if (!this.game) return;
     clearTimeout(this.pulseTimer); this.pulseTimer = undefined;
     this.chat?.stop();

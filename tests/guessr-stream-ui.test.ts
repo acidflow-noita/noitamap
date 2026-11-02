@@ -8,7 +8,7 @@ import { streamSource, streamHost, streamSecret, streamNow, streamAnswer } from 
 import { formatGuessCommand } from '../src/guessr/guess-command';
 import type { TwitchViewer } from '../src/guessr/twitch-viewer';
 
-const mocks = vi.hoisted(() => ({ pause: vi.fn(async () => ({})), quit: vi.fn(async () => ({ phase: 'waiting' })), picker: vi.fn(), notice: vi.fn(), channel: vi.fn(), watchChat: vi.fn((_channel: string, _handlers: Parameters<TwitchViewer['watchChat']>[1]) => vi.fn()), start: vi.fn(), reveal: vi.fn() }));
+const mocks = vi.hoisted(() => ({ pause: vi.fn(async () => ({})), quit: vi.fn(async () => ({ phase: 'waiting' })), picker: vi.fn(), notice: vi.fn(), channel: vi.fn(), watchChat: vi.fn((_channel: string, _handlers: Parameters<TwitchViewer['watchChat']>[1]) => vi.fn()), start: vi.fn(), reveal: vi.fn(), post: vi.fn(async (_channel: string, _message: string) => {}) }));
 vi.mock('../src/guessr/stream-api', () => ({ StreamApi: class {
   local = true; available = true; pause = mocks.pause; quit = mocks.quit; setLocalChannel = mocks.channel; start = mocks.start; reveal = mocks.reveal;
   clock = async () => ({ now: Date.now() });
@@ -17,6 +17,7 @@ vi.mock('../src/guessr/stream-picker', () => ({ mountStreamPicker: () => { mocks
 vi.mock('../src/guessr/twitch-viewer', () => ({ TwitchViewer: class {
   ready = Promise.resolve(); getState() { return { connected: true, userId: '123', login: 'streamer' }; }
   watchChat = mocks.watchChat;
+  postAnnouncement = mocks.post;
 } }));
 vi.mock('../src/guessr/clue-view', () => ({ attachClueControls: () => () => {} }));
 vi.mock('../src/guessr/clue-viewport', () => ({ ClueViewport: class { show = async () => true; destroy() {} } }));
@@ -25,12 +26,13 @@ let ui: StreamUI | undefined;
 beforeEach(() => {
   vi.clearAllMocks(); document.body.replaceChildren();
   mocks.quit.mockReset().mockResolvedValue({ phase: 'waiting' });
+  mocks.post.mockReset().mockResolvedValue(undefined);
   const values = new Map<string, string>();
   vi.stubGlobal('localStorage', { getItem: vi.fn((key: string) => values.get(key) ?? null),
     setItem: vi.fn((key: string, value: string) => { values.set(key, value); }),
     removeItem: vi.fn((key: string) => { values.delete(key); }) });
 });
-afterEach(() => { ui?.suspend(); ui = undefined; vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+afterEach(() => { ui?.suspend(); ui = undefined; vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 async function fixture() {
   const source = streamSource(), service = new StreamService(source, streamSecret);
   const session = await service.start(streamHost, streamNow); session.live = true;
@@ -38,11 +40,79 @@ async function fixture() {
   const hooks: StreamUIHooks = {
     config: await source.config(),
     shell() { const main = document.createElement('main'); document.body.replaceChildren(main); return main; },
-    panels: vi.fn(main => { const clue = document.createElement('div'), bar = document.createElement('div'); main.append(clue, bar); return { clue, bar }; }), cleanupClue: vi.fn(), markers: vi.fn(), hud: vi.fn(() => document.createElement('div')), result: vi.fn(), home: vi.fn(), toast: vi.fn(),
+    panels: vi.fn(main => {
+      const clue = document.createElement('div'), bar = document.createElement('div'), map = document.createElement('section');
+      map.className = 'game-panel game-panel--map'; main.append(clue, bar, map); return { clue, bar };
+    }), cleanupClue: vi.fn(), markers: vi.fn(), hud: vi.fn(() => document.createElement('div')), result: vi.fn(), home: vi.fn(), toast: vi.fn(),
   };
   return { game, hooks, service };
 }
 async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
+
+async function liveFixture() {
+  const f = await fixture();
+  f.game.session.host = { id: '900000000', login: 'streamer', name: 'Local host' };
+  f.game.session.localChat = true;
+  mocks.start.mockResolvedValue(f.game.session);
+  history.replaceState(null, '', '/guess/stream/');
+  ui = new StreamUI(f.hooks); await ui.open();
+  [...document.querySelectorAll('button')].find(button => button.textContent === 'Start new game')!.click();
+  await flush();
+  const receiver = mocks.watchChat.mock.calls[0][1];
+  receiver.status('live', 'Connected');
+  return { ...f, receiver };
+}
+
+it('keeps submission in the guess panel and shows recovery controls only when necessary', async () => {
+  const { receiver } = await liveFixture();
+  expect(document.getElementById('confirm-guess')!.closest('.game-panel--map')).not.toBeNull();
+  const labels = [...document.querySelectorAll('button')].map(button => button.textContent);
+  for (const label of ['Pause', 'Skip round', 'Connect Twitch', 'Reconnect chat', 'Copy game link'])
+    expect(labels).not.toContain(label);
+  const recovery = document.getElementById('stream-reconnect')!;
+  expect(recovery.hidden).toBe(true);
+  receiver.status('reconnecting', 'Reconnecting…');
+  expect(recovery.hidden).toBe(true);
+  expect(document.getElementById('stream-chat-status')!.dataset.connection).toBe('reconnecting');
+  receiver.status('auth-required', 'Please sign in to Twitch again.');
+  expect(recovery.hidden).toBe(false);
+  expect(recovery.textContent).toBe('Authorize Twitch');
+});
+
+it('announces only on click, prevents duplicate posts during sending and the two-second confirmation, even across renders', async () => {
+  vi.useFakeTimers();
+  await liveFixture();
+  expect(mocks.post).not.toHaveBeenCalled();
+  const share = () => document.getElementById('stream-share') as HTMLButtonElement;
+  let sent!: () => void;
+  mocks.post.mockImplementationOnce(() => new Promise<void>(resolve => { sent = resolve; }));
+  share().click(); share().click();
+  expect(mocks.post).toHaveBeenCalledOnce();
+  expect(mocks.post).toHaveBeenCalledWith('streamer', expect.stringMatching(/^Join NoitaGuessr: https?:\/\/.*\/guess\/stream\/streamer\/$/));
+  expect(share().textContent).toBe('Posting…');
+  ui!.render(); expect(share().disabled).toBe(true);
+  sent(); await flush();
+  expect(share().textContent).toBe('Posted in chat');
+  expect(share().disabled).toBe(true);
+  vi.advanceTimersByTime(1000); ui!.render(); share().click();
+  vi.advanceTimersByTime(999); expect(share().disabled).toBe(true);
+  expect(mocks.post).toHaveBeenCalledOnce();
+  vi.advanceTimersByTime(1);
+  expect(share().disabled).toBe(false);
+  expect(share().textContent).toBe('Share game link in chat');
+  share().click(); await flush(); expect(mocks.post).toHaveBeenCalledTimes(2);
+});
+
+it('does not claim an unconfirmed announcement was posted or retry it automatically', async () => {
+  await liveFixture();
+  mocks.post.mockRejectedValueOnce(new Error('Could not confirm the post. Check your Twitch chat before trying again.'));
+  const share = document.getElementById('stream-share') as HTMLButtonElement;
+  share.click(); await flush();
+  expect(share.disabled).toBe(false);
+  expect(share.textContent).toBe('Share game link in chat');
+  expect(mocks.notice).toHaveBeenCalledWith(expect.stringContaining('Check your Twitch chat'), 'danger');
+  expect(mocks.post).toHaveBeenCalledOnce();
+});
 
 it('keeps recovery data when quitting fails and clears only the active save after a successful retry', async () => {
   const { game, hooks } = await fixture();

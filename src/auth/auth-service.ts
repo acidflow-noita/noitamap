@@ -35,6 +35,7 @@ export interface TwitchChatSession {
   login: string;
   /** Unix timestamp in milliseconds. Keep the access token in memory only. */
   expiresAt: number;
+  scopes?: string[];
 }
 
 // Auth worker URL (configure based on environment).
@@ -293,7 +294,7 @@ class AuthService {
     void this.redirectToLogin('twitch');
   }
 
-  /** Requests only user:read:chat and binds consent to this account. */
+  /** Requests guess reception and game announcements, bound to this account. */
   async connectTwitchChat(): Promise<void> {
     await this.redirectToLogin('twitch', true);
   }

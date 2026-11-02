@@ -97,6 +97,19 @@ function fixture(broadcasterLogin?: string) {
   return { connection, sockets, message, status, request, chat, credentials };
 }
 describe("Twitch EventSub browser transport", () => {
+  it('uses the already validated host credential to announce without another credential request', async () => {
+    const f = fixture('noitaguessr');
+    f.credentials.mockResolvedValue({ userId: '100', login: 'streamer', clientId: 'client', accessToken: 'private-user-token',
+      expiresAt: Date.now() + 3600000, scopes: ['user:read:chat', 'moderator:manage:announcements'] } as any);
+    // The initial credentials call has already begun. Restart as a real reconnect would.
+    f.connection.stop(); f.connection.start(); await flush();
+    f.request.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const credentialCalls = f.credentials.mock.calls.length;
+    await f.connection.postAnnouncement('100', 'Join NoitaGuessr: https://noitamap.test/guess/stream/streamer/');
+    expect(f.credentials).toHaveBeenCalledTimes(credentialCalls);
+    expect(f.request.mock.lastCall![0]).toContain('broadcaster_id=100&moderator_id=100');
+    expect(f.request.mock.lastCall![0]).not.toContain('456');
+  });
   it('resolves the shared transport once and subscribes with the streamer identity, including after reconnect', async () => {
     const f = fixture('noitaguessr'); await flush(); await flush();
     expect(f.request.mock.calls[0][0]).toBe('https://api.twitch.tv/helix/users?login=noitaguessr');

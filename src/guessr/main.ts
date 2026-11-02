@@ -473,7 +473,7 @@ function showMapResult(
     localizedDistance(distance),
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(", ");
   const detail = node("span", "map-result-meta", msg(summary));
   bindAttribute(detail, 'title', summary);
   const points = node(
@@ -637,7 +637,7 @@ function finish(): void {
     node(
       "p",
       "",
-      msg("Maximum: {{points}} · Locations: {{locations}}", () => ({ points: (session!.results.length * 5000).toLocaleString(guessrLocale()), locations: session!.results.length })),
+      msg("Maximum: {{points}}, Locations: {{locations}}", () => ({ points: (session!.results.length * 5000).toLocaleString(guessrLocale()), locations: session!.results.length })),
     ),
   );
   main.append(pageHeading(node("h1", "", msg("Your results")), button(msg("Back"), home)), hero);
@@ -893,7 +893,7 @@ function finishImageGame(): void {
     node(
       "p",
       "",
-      msg("Maximum: {{points}} · Locations: {{locations}}", () => ({ points: (imageSession!.totalRounds * 5000).toLocaleString(guessrLocale()), locations: imageSession!.totalRounds })),
+      msg("Maximum: {{points}}, Locations: {{locations}}", () => ({ points: (imageSession!.totalRounds * 5000).toLocaleString(guessrLocale()), locations: imageSession!.totalRounds })),
     ),
   );
   main.append(pageHeading(node("h1", "", msg("Your results")), button(msg("Back"), home)), hero);
@@ -1126,7 +1126,7 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
           node(
             "p",
             "",
-            msg(() => `${a.day} · ${a.score === undefined ? tr('In progress') : tr('{{points}} points', { count: a.score, points: a.score.toLocaleString(guessrLocale()) })}`),
+            msg(() => `${a.day}, ${a.score === undefined ? tr('In progress') : tr('{{points}} points', { count: a.score, points: a.score.toLocaleString(guessrLocale()) })}`),
           ),
           button(
             msg("View"),
@@ -1160,8 +1160,8 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
       panel = node("section", "panel");
     bindText(dailyTitle, () => c.title);
     panel.append(
-      node("span", "badge pro animation-pop", msg("Daily · Pro")),
-      node("p", "", msg("{{value1}} · {{value2}} locations · No time limit.", () => ({ value1: c.day, value2: formatGuessrNumber(c.totalRounds) }))),
+      node("span", "badge pro animation-pop", msg("Daily, Pro")),
+      node("p", "", msg("{{value1}}, {{value2}} locations, No time limit.", () => ({ value1: c.day, value2: formatGuessrNumber(c.totalRounds) }))),
       node(
         "p",
         "",
@@ -1269,7 +1269,7 @@ function renderRanked(): void {
   }
   main.append(
     gameHud({
-      label: "Daily · Pro",
+      label: "Daily, Pro",
       badge: "pro",
       round: ranked.round + 1,
       total: ranked.totalRounds,
@@ -1361,7 +1361,7 @@ function reviewRanked(ordinal: number, continueGame = false): void {
   const main = shell(true);
   main.append(
     gameHud({
-      label: "Daily · Pro",
+      label: "Daily, Pro",
       badge: "pro",
       round: ordinal + 1,
       total: ranked!.totalRounds,

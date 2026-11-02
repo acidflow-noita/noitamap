@@ -1,4 +1,5 @@
 import type { StreamChatMessage } from "./stream-state";
+import { postTwitchAnnouncement } from './twitch-announcement';
 
 export interface TwitchChatCredentials {
   accessToken: string;
@@ -6,6 +7,7 @@ export interface TwitchChatCredentials {
   userId: string;
   login: string;
   expiresAt: number;
+  scopes?: string[];
 }
 export type TwitchChatStatus =
   "connecting" | "live" | "reconnecting" | "offline" | "auth-required" | "channel-not-found";
@@ -51,6 +53,9 @@ export class TwitchChatConnection {
     if (!this.stopped) return;
     this.stopped = false;
     void this.fresh(false);
+  }
+  postAnnouncement(hostId: string, message: string): Promise<void> {
+    return postTwitchAnnouncement(this.credentials, hostId, message, this.options.fetch ?? fetch);
   }
   stop(): void {
     this.stopped = true;

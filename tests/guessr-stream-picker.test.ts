@@ -132,7 +132,7 @@ describe('shared channel guess picker', () => {
     expect(gift.getAttribute('aria-description')).toContain('Gift dunkorslam a subscription to wuote’s Twitch channel.');
   });
 
-  it('shows verified streamer Pro status and expires it locally without subscription requests', () => {
+  it('keeps Pro admission and hides gifting throughout the game without subscription requests', () => {
     vi.useFakeTimers();
     const f = mount('/guess/stream/streamer/');
     const handlers = vi.mocked(watchLiveRoom).mock.calls[0][1];
@@ -145,16 +145,19 @@ describe('shared channel guess picker', () => {
     handlers.state({ ...state, revision: 0, gameId: null, hostPro: 'unknown', hostProVerifiedUntil: undefined });
     expect(badge.hidden).toBe(true);
     handlers.state(state);
-    expect(badge.textContent).toBe('Streamer has Pro');
+    expect(badge.textContent).toBe('Pro');
     expect(badge.hidden).toBe(false);
+    expect(badge.tagName).toBe('SPAN');
+    expect(f.button('Gift Pro to streamer').hidden).toBe(true);
     vi.advanceTimersByTime(500);
     handlers.state({ ...state, revision: 2, hostProVerifiedUntil: Date.now() + 2000 });
     vi.advanceTimersByTime(600);
     expect(badge.dataset.proStatus).toBe('active');
     vi.advanceTimersByTime(1400);
-    expect(badge.textContent).toBe('Pro status unavailable');
-    expect(badge.getAttribute('aria-label')).toBe('Streamer Pro status unavailable');
-    expect(badge.getAttribute('aria-description')).toContain('may still have Pro');
+    handlers.state({ ...state, revision: 3, hostPro: 'unknown', hostProVerifiedUntil: undefined });
+    expect(badge.textContent).toBe('Pro');
+    expect(badge.getAttribute('aria-description')).toContain('confirmed for this game');
+    expect(f.button('Gift Pro to streamer').hidden).toBe(true);
     expect(watchLiveRoom).toHaveBeenCalledTimes(1);
     expect(fetch).not.toHaveBeenCalled();
   });

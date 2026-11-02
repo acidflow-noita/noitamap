@@ -33,7 +33,7 @@ const button = (id: string) => byId(id) as HTMLButtonElement;
 
 for (const [i, place] of places.entries()) {
   const item = document.createElement("button");
-  item.textContent = `${place.id} · ${place.name}`;
+  item.textContent = `${place.id}, ${place.name}`;
   item.onclick = () => choose(i);
   nav.append(item);
 }
@@ -69,11 +69,11 @@ button("reset").onclick = () =>
 function update(): void {
   const p = places[selected],
     size = viewSize(camera.level);
-  byId("name").textContent = `${p.id} · ${p.name}`;
+  byId("name").textContent = `${p.id}, ${p.name}`;
   byId("coords").textContent =
-    `Starting point: ${p.x}, ${p.y}${p.hard ? " · hard candidate" : ""}`;
+    `Starting point: ${p.x}, ${p.y}${p.hard ? ", hard candidate" : ""}`;
   byId("info").textContent =
-    `${size.width} × ${size.height} native pixels · offset: ${camera.dx}, ${camera.dy} pixels`;
+    `${size.width} × ${size.height} native pixels, offset: ${camera.dx}, ${camera.dy} pixels`;
   button("zin").disabled = pending || camera.level === 0;
   button("zout").disabled = pending || camera.level === 6;
   button("reset").disabled = pending || (camera.dx === 0 && camera.dy === 0);

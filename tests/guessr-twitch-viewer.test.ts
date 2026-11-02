@@ -47,6 +47,19 @@ function fixture() {
 }
 
 describe('viewer Twitch sending', () => {
+  it('asks for announcement permission only when the local streamer explicitly enables sharing', async () => {
+    const f = fixture();
+    f.identity.scopes.push('moderator:manage:announcements');
+    const pending = f.client.connect({ announcements: true });
+    expect(new URL(f.open.mock.calls[0][0]).searchParams.get('scope'))
+      .toBe('user:read:chat user:write:chat moderator:manage:announcements');
+    f.reply(); await pending;
+    expect(f.sends()).toHaveLength(0);
+    f.request.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    await f.client.postAnnouncement('viewer', 'Join NoitaGuessr: https://noitamap.test/guess/stream/viewer/');
+    expect(f.request.mock.lastCall![0]).toContain('broadcaster_id=123&moderator_id=123');
+    await expect(f.client.postAnnouncement('someone_else', 'Join this game')).rejects.toMatchObject({ code: 'forbidden' });
+  });
   it('binds consent to the popup, origin and random state; connecting never sends a guess', async () => {
     const f = fixture(), pending = f.client.connect();
     expect(f.client.connect()).toBe(pending);

@@ -17,7 +17,7 @@ function fixture(maxBatchCharacters = 2500) {
     Back: 'Back', Close: 'Close', Saved: 'Saved',
     'Round {{round}}': 'Round {{round}}',
     'Compare {{x}} / {{x}} / {{y}}': 'Compare {{x}} / {{x}} / {{y}}',
-    ' · Streamer': ' · Streamer',
+    ' (Streamer)': ' (Streamer)',
     'Long status': 'Wait while the game prepares the next location and updates the clue shown to everybody in the current round.',
   };
   const reused = { Back: { value: 'Reviewed map back', mapKey: 'navigation.back' } };
@@ -67,7 +67,7 @@ describe('manual translation pack', () => {
     expect(catalog.Back).toBe('Reviewed map back');
     expect(catalog.Saved).toBe('Existing target saved');
     expect(catalog.Close).toBe('Translated: Close');
-    expect(catalog[' · Streamer']).toBe(' Translated: · Streamer');
+    expect(catalog[' (Streamer)']).toBe(' Translated: (Streamer)');
     const file = plan.batches[0].file;
     const entryBlocks = responses[file].match(/\[\[G[0-9a-f]{16}\]\][\s\S]*?\[\[\/G[0-9a-f]{16}\]\]/g)!;
     const reversed = responses[file].replace(entryBlocks.join('\n\n'), [...entryBlocks].reverse().join('\n\n'));

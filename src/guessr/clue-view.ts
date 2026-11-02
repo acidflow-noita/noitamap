@@ -148,7 +148,7 @@ export function attachClueControls(
           : "",
       ]
         .filter(Boolean)
-        .join(" · ");
+        .join(", ");
       return position
         ? tr("{{position}} from start. Your original starting spot stays the answer.", { position })
         : tr("The centre marks your starting spot. Zoom out or move to explore.");
