@@ -96,9 +96,6 @@
 .stream-privacy-option { display: inline-flex; align-items: center; gap: var(--control-gap); font-size: .8125rem; cursor: pointer; }
 .stream-privacy-option input { cursor: pointer; }
 .stream-privacy-option[hidden] { display: none; }
-.stream-chat-privacy { margin-block: var(--game-gutter); }
-.stream-chat-privacy > label, .stream-chat-privacy > div { margin-block-start: var(--game-gutter); }
-.stream-chat-privacy p { max-width: 65ch; margin-block: var(--game-gutter); font-size: .875rem; color: var(--text-muted); }
 .stream-chat-messages { flex: 1; min-block-size: 0; overflow-y: auto; padding: .5rem .75rem; overflow-wrap: anywhere; }
 .stream-chat-message { margin-block: .375rem; font-size: .875rem; }
 .stream-chat-message strong { color: var(--accent-fg); }

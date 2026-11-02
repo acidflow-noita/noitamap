@@ -29,7 +29,6 @@ import { TwitchChatConnection, type TwitchChatStatus } from "./twitch-chat";
 import { TwitchViewer } from "./twitch-viewer";
 import { mountStreamPicker } from "./stream-picker";
 import { liveRoomLink } from "./live-room-game";
-import { streamChatPrivacy } from './stream-chat-privacy';
 import { buttonNotice } from './button-notice';
 import { guessRouteUrl, readGuessRoute } from './routes';
 import { formatGuessCommand, parseGuessCommand } from './guess-command';
@@ -362,7 +361,6 @@ export class StreamUI {
         offline.append(el('summary', 'Offline testing'), action('Start simulated game', () => this.start(false)));
         main.append(offline);
       }
-      main.append(streamChatPrivacy());
     } catch (error) {
       if (main.isConnected) {
         bindText(loading, (error as Error).message);

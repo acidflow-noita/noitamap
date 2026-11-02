@@ -1,7 +1,6 @@
 import { within, type Bounds, type Point } from './rules';
 
 export const GUESS_CHAT_COMMAND = '!noitaguessr_guess';
-export const CHATTERINO_GUESS_FILTER = String.raw`!(message.content match ri"^\s*!noitaguessr_guess(\s|$)")`;
 export const isGuessChatMessage = (text: string): boolean => /^\s*!noitaguessr_guess(?:\s|$)/i.test(text);
 const RUNES = 'ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊ';
 const encodedPattern = new RegExp(`^!noitaguessr_guess ✦([${RUNES}]+)✦$`, 'i');
