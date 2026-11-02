@@ -12,6 +12,7 @@ import { gameTranslator } from "../game-translations/translator";
 import i18next from "../i18n";
 import spells from "../data/spells.json";
 import { EventEmitter2 } from "eventemitter2";
+import FlexSearch from 'flexsearch';
 import type { DynamicPOI } from "../dynamic-map";
 import { CREATURE_ALIASES, CREATURE_DATA } from "../data/creature-data";
 import { SPECIAL_WAND_ALIAS } from "../data/special-wands";
@@ -581,9 +582,6 @@ export interface UnifiedSearch {
   on(event: "selected", listener: (target: TargetOfInterest | { type: "spell"; spell: any }) => void): this;
 }
 
-// FlexSearch Document factory — FlexSearch is loaded as a global via script tag
-type DocumentFactory = (options: any) => any;
-
 export class UnifiedSearch extends EventEmitter2 {
   private lastSearchText: string = "";
   private lastSearchFilters: string = "";
@@ -1104,7 +1102,7 @@ export class UnifiedSearch extends EventEmitter2 {
     // Build a compound searchable text field for each POI
     const poiMap = new Map();
 
-    const index = (FlexSearch.Document as DocumentFactory)({
+    const index: any = new FlexSearch.Document({
       document: {
         id: "id",
         index: ["searchText"],

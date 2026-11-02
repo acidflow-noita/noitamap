@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
-import { finishNavbarStartup, showStartupFailure, startWhenReady, STARTUP_REQUEST_TIMEOUT_MS } from '../src/startup';
+import { afterStartupPaint, finishNavbarStartup, showStartupFailure, startWhenReady, STARTUP_REQUEST_TIMEOUT_MS } from '../src/startup';
 
 beforeEach(() => { vi.resetModules(); document.body.innerHTML = ''; });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); history.replaceState(null, '', '/'); });
@@ -44,6 +44,18 @@ describe('navbar startup', () => {
 });
 
 describe('document readiness', () => {
+  it('gives the ready toolbar a paint opportunity before heavy initialization', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+      let frame!: FrameRequestCallback;
+      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => { frame = callback; return 1; });
+      const work = vi.fn(); afterStartupPaint(work);
+      expect(work).not.toHaveBeenCalled();
+      frame(0); expect(work).not.toHaveBeenCalled();
+      await vi.runOnlyPendingTimersAsync(); expect(work).toHaveBeenCalledOnce();
+    } finally { vi.useRealTimers(); }
+  });
   it('starts once after DOM readiness, even if readiness is dispatched again while setup is pending', async () => {
     vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading');
     let resolve!: () => void;
@@ -95,6 +107,19 @@ describe('document readiness', () => {
 });
 
 describe('translation availability', () => {
+  it('provides readable controls while the selected language is still downloading', async () => {
+    history.replaceState(null, '', '/?lng=ru');
+    let release!: (response: Response) => void;
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { release = resolve; })));
+    const { default: i18n, initializeTranslations } = await import('../src/i18n');
+    const loading = initializeTranslations();
+    expect(i18n.isInitialized).not.toBe(true);
+    expect(i18n.t('dynamicMap.generate.label')).toBe('Generate');
+    await vi.waitFor(() => expect(release).toBeDefined());
+    const russian = JSON.parse(readFileSync('src/locales/ru/translation.json', 'utf8'));
+    release(new Response(JSON.stringify(russian))); await loading;
+    expect(i18n.t('dynamicMap.generate.label')).toBe(russian.dynamicMap.generate.label);
+  });
   it('starts in English without a locale request', async () => {
     history.replaceState(null, '', '/?lng=en');
     const fetcher = vi.fn(); vi.stubGlobal('fetch', fetcher);

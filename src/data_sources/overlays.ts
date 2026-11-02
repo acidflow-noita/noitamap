@@ -20,20 +20,7 @@ import { clearCreatureSpawnBiomeFocus } from './creature-spawn-biomes';
 import { attachWikiLinkPopover, hidePopovers } from '../popover-util';
 import { createDustAttribution, usesDustAnimation } from '../portals/attribution';
 
-// Preload the POI atlas, but DEFER it to browser idle. Loading it eagerly at
-// module init pulls a ~1.25 MB spritesheet + atlas decode onto the main thread
-// during the exact window the baked daily biome DZIs are trying to paint, so
-// the overlay can't draw until the sprites finish. Sprites aren't needed for
-// the biome layer; let the tiles render first, then warm the atlas. createPOI
-// still lazily awaits loadSpritesheetAndAtlas() on demand if a card opens first.
-{
-  const warmAtlas = () => { loadSpritesheetAndAtlas().catch(() => {}); };
-  const ric = (window as any).requestIdleCallback as
-    | ((cb: () => void, opts?: { timeout: number }) => number)
-    | undefined;
-  if (ric) ric(warmAtlas, { timeout: 4000 });
-  else setTimeout(warmAtlas, 1500);
-}
+// Cards and marker layers load sprites on demand; there is no startup prewarm.
 
 declare const OpenSeadragon: any;
 

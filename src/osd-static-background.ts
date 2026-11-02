@@ -94,6 +94,10 @@ export function installStaticBackgroundResidency(viewer: any, options: { maxByte
     queue = queue.filter(entry => entry.item !== item);
     schedule();
   }
+  function refresh(event: { item: any }): void {
+    remove(event);
+    add(event);
+  }
   const stats = {
     get images() { return images.size; }, get tiles() { return pinned.size; },
     get readyTiles() { return [...pinned].filter(tile => tile.loaded).length; },
@@ -107,6 +111,7 @@ export function installStaticBackgroundResidency(viewer: any, options: { maxByte
   viewer.addHandler('tile-loaded', settled);
   viewer.addHandler('tile-load-failed', settled);
   viewer.addHandler('update-viewport', schedule);
+  viewer.addHandler('map-source-version-change', refresh);
   viewer.addHandler('before-destroy', dispose);
   for (let i = 0; i < viewer.world.getItemCount(); i++) add({ item: viewer.world.getItemAt(i) });
   function dispose(): void {
@@ -117,6 +122,7 @@ export function installStaticBackgroundResidency(viewer: any, options: { maxByte
     viewer.removeHandler('tile-loaded', settled);
     viewer.removeHandler('tile-load-failed', settled);
     viewer.removeHandler('update-viewport', schedule);
+    viewer.removeHandler('map-source-version-change', refresh);
     viewer.removeHandler('before-destroy', dispose);
     if (cache._freeOldRecordRoutine === protectedFree) cache._freeOldRecordRoutine = originalFree;
     if (viewer.staticBackgroundResidency === stats) delete viewer.staticBackgroundResidency;

@@ -6,9 +6,10 @@ import { installStaticBackgroundResidency } from '../src/osd-static-background';
 import { addBakedDZIsToOSD } from '../src/telescope/baked-dzi-loader';
 
 vi.mock('../src/data_sources/overlays', () => ({ createOverlays: () => [] }));
+const versionRequest = vi.hoisted(() => ({ pending: undefined as Promise<Record<string, string>> | undefined }));
 vi.mock('../src/data_sources/tile_data', async importOriginal => ({
   ...await importOriginal<any>(),
-  fetchMapVersions: async () => Object.fromEntries(definitions['dynamic-main-branch'].map(entry => [new URL(entry.url).origin, 'current-test-version'])),
+  fetchMapVersions: () => versionRequest.pending ?? Promise.resolve(Object.fromEntries(definitions['dynamic-main-branch'].map(entry => [new URL(entry.url).origin, 'current-test-version']))),
 }));
 let OSD: any, AppOSD: any;
 const native = new WeakMap<HTMLCanvasElement, Canvas>(), frames = new Map<number, FrameRequestCallback>();
@@ -90,6 +91,50 @@ async function appFixture(options: { hold?: boolean; loaderLimit?: number } = {}
     complete() { hold = false; for (const job of requests) if (job.jobId) paint(job); },
     close() { viewer.destroy(); mount.remove(); frames.clear(); } };
 }
+
+it('opens and requests map pixels while version metadata is pending, then refreshes only static URLs', async () => {
+  let release!: (versions: Record<string, string>) => void;
+  versionRequest.pending = new Promise(resolve => { release = resolve; });
+  const f = await appFixture();
+  try {
+    expect(f.viewer.isOpen()).toBe(true);
+    await vi.waitFor(() => expect(f.requests.length).toBeGreaterThan(0));
+    const position = f.app.getZoomPos();
+    const count = f.viewer.world.getItemCount();
+    const item = f.viewer.world.getItemAt(0);
+    const source = item.source;
+    const level = source.getClosestLevel(), tiles = source.getNumTiles(level);
+    const oldTile = item._getTile(0, 0, level, OSD.now(), tiles);
+    const last = f.sources[2]; last.__bakedDzi = true; last.queryParams = '?v=bake-owned';
+    release(Object.fromEntries(definitions['dynamic-main-branch'].map(entry => [new URL(entry.url).origin, 'updated-version'])));
+    await vi.waitFor(() => expect(source.queryParams).toBe('?v=updated-version'));
+    const refreshedTile = item._getTile(0, 0, level, OSD.now(), tiles);
+    expect(refreshedTile).not.toBe(oldTile);
+    expect(refreshedTile.getUrl()).toContain('v=updated-version');
+    expect(last.queryParams).toBe('?v=bake-owned');
+    expect(f.viewer.world.getItemCount()).toBe(count);
+    expect(f.app.getZoomPos()).toEqual(position);
+    expect(f.viewer.staticBackgroundResidency.reservedBytes).toBeLessThanOrEqual(24 * 1024 * 1024);
+  } finally { versionRequest.pending = undefined; f.close(); }
+});
+
+it('reports current tile loading to late subscribers, including an already painted map', async () => {
+  const f = await appFixture({ hold: true });
+  try {
+    draw(f.viewer);
+    const loading = vi.fn();
+    f.app.onLoading(loading);
+    expect(loading).toHaveBeenLastCalledWith(true);
+    f.complete();
+    await vi.waitFor(() => {
+      draw(f.viewer);
+      expect(loading).toHaveBeenLastCalledWith(false);
+    });
+    const late = vi.fn();
+    f.app.onLoading(late);
+    expect(late).toHaveBeenCalledExactlyOnceWith(false);
+  } finally { f.close(); }
+});
 
 it('keeps every static world covered after a deep-link open and through unrelated cache eviction', async () => {
   const f = await appFixture(), { viewer } = f;

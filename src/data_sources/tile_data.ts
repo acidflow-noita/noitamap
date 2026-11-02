@@ -11,6 +11,22 @@ export type MapName = keyof typeof tileSources;
 type TileSourceMap = Record<string, TileData[]>;
 
 const tileSources = json satisfies TileSourceMap;
+const versionCache = new Map<string, string>();
+const VERSION_KEY = 'noitamap-map-version:';
+const fallbackVersion = typeof __BUILD_VERSION__ === 'undefined' ? 'startup' : __BUILD_VERSION__;
+
+/** Open from bundled geometry and a stable cached version, without a network gate. */
+export function getCachedMapVersions(mapName: MapName): Record<string, string> {
+  return Object.fromEntries(tileSources[mapName].map(({ url }) => {
+    const origin = new URL(url).origin;
+    let version = versionCache.get(origin);
+    if (!version) try {
+      const stored = localStorage.getItem(VERSION_KEY + origin);
+      if (stored && /^[A-Za-z0-9_.:-]{1,128}$/.test(stored)) version = stored;
+    } catch { /* Storage is optional. */ }
+    return [origin, version ?? fallbackVersion];
+  }));
+}
 
 export const isValidMapName = (name: string | undefined): name is MapName => {
   return typeof name === 'string' && Object.prototype.hasOwnProperty.call(tileSources, name);
@@ -37,6 +53,7 @@ export const getTileData = (name: MapName): TileData[] => tileSources[name];
  * ]
  */
 export async function fetchMapVersions(mapName: MapName): Promise<Record<string, string>> {
+  const cached = getCachedMapVersions(mapName);
   const promises = tileSources[mapName].map(async ({ url }): Promise<[string, string]> => {
     const versionFile = new URL('/currentVersion.txt', url);
 
@@ -47,11 +64,15 @@ export async function fetchMapVersions(mapName: MapName): Promise<Record<string,
     })
       .then(async res => {
         if (res.status !== 200) throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
-        return (await res.text()).trim();
+        const version = (await res.text()).trim();
+        if (!/^[A-Za-z0-9_.:-]{1,128}$/.test(version)) throw new Error('Invalid map version response');
+        versionCache.set(versionFile.origin, version);
+        try { localStorage.setItem(VERSION_KEY + versionFile.origin, version); } catch { /* Storage is optional. */ }
+        return version;
       })
       .catch(err => {
         console.error(err);
-        return Math.random().toString(36).slice(2);
+        return cached[versionFile.origin];
       });
 
     return [versionFile.origin, cacheBustString];

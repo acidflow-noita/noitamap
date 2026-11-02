@@ -9,11 +9,10 @@ import { ReportMapHighlights } from './report-map-highlights';
 import { getCachedDailyComparisonTarget, getCachedDailySeedIdentity } from './data_sources/daily_seed';
 import { getPOIDisplayName } from "./telescope/poi-display-name";
 import { getPOIBiomeDescription } from "./data_sources/biome-names";
-import { loadSpritesheetAndAtlas } from "./telescope/poi-spatial-index";
 import { getCachedGeneration } from "./telescope/tile-cache";
 import { telescopeSearchUrl } from './search/telescope-link';
 import i18next, { initializeTranslations, STARTUP_MESSAGES, SUPPORTED_LANGUAGES } from "./i18n";
-import { finishNavbarStartup, showStartupFailure, startWhenReady } from './startup';
+import { afterStartupPaint, finishNavbarStartup, showStartupFailure, startWhenReady } from './startup';
 import { setupDropOverlay } from "./drop-overlay";
 import { createProLoader } from "./pro-loader";
 import { negotiateTabHandoff, registerTabHandoff } from "./tab-coordinator";
@@ -240,18 +239,12 @@ const _tabHandoff = negotiateTabHandoff();
 
 startWhenReady(async () => {
   if (!(await _tabHandoff)) return;
-  // Start preloading the atlas for search results immediately
-  loadSpritesheetAndAtlas()
-    .catch((e) => console.warn("[Noitamap] Atlas preload failed:", e));
-
-  try {
-    await initializeTranslations();
-
-    createLanguageSelector();
-    updateTranslations();
-  } catch (error) {
+  // Bundled English is usable immediately. A slow selected-language download
+  // must not hold the viewer or the entire toolbar behind its placeholder.
+  void initializeTranslations().then(updateTranslations).catch(error => {
     console.error("i18next initialization failed:", error);
-  }
+  });
+  startDailyFastPath();
 
   // Handle map loading progress UI (non-blocking strip).
   const loadingProgress = createLoadingStripProgress();
@@ -321,6 +314,7 @@ startWhenReady(async () => {
   const tooltipElement = assertElementById("coordinate", HTMLElement);
   const coordinatesText = tooltipElement.innerText;
   const rendererForm = assertElementById("renderer-form", HTMLFormElement);
+  const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);
 
   // Initialize renderer from storage
   const storedRenderer = getStoredRenderer();
@@ -329,7 +323,7 @@ startWhenReady(async () => {
   // Parse URL state including overlays and drawing
   const urlState = parseURL();
 
-  const app = await App.create({
+  const appReady = App.create({
     mountTo: osdRootElement,
     overlayButtons: overlayButtonsElement,
     initialState: urlState,
@@ -345,16 +339,15 @@ startWhenReady(async () => {
       useWebGL: storedRenderer === "webgl",
     });
   });
+  createLanguageSelector();
+  updateTranslations();
+  const app = await appReady;
   globalApp = app;
   console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
 
-  // Kick the daily baked-overlay fast path off NOW, in parallel with all the UI
-  // wiring below. With no custom seed in the URL we know it's today's daily, so
-  // its seed + baked-manifest round-trips run during init and are already
-  // resolved by the time the dynamic pipeline (line ~681) reaches its probe —
-  // letting the daily biome DZIs queue onto OSD nearly as early as the static
-  // background instead of after all the setup + serial fetches.
-  startDailyFastPath();
+  // The generic boot spinner must not linger after the viewer is open. Actual
+  // tile/generation loading below owns subsequent visibility changes.
+  loadingIndicator.style.display = 'none';
 
   // Helper to update the map selector button: shows the current map's full
   // label plus icon-only versions of its badges. Hover popovers on the badges
@@ -728,11 +721,6 @@ startWhenReady(async () => {
       refreshActiveVariant();
     }
   }, true); // register as persistent listener
-
-  // Auto-start generation if landing on dynamic map
-  if (app.getMap() === "dynamic-main-branch") {
-    runDynamicMapFromURL(dynamicOpts).catch((e) => console.error("[Noitamap] Dynamic map init failed:", e));
-  }
 
   // Expose hooks for the pro bundle via window.__noitamap
   const proHooks: NoitamapProHooks = {
@@ -1147,8 +1135,6 @@ startWhenReady(async () => {
     updateMapSelectorText(state.map);
   });
 
-  const loadingIndicator = assertElementById("loadingIndicator", HTMLElement);
-
   const modNavigation = createModNavigation({
     href: () => window.location.href,
     getMap: () => app.getMap(),
@@ -1183,7 +1169,7 @@ startWhenReady(async () => {
   // show/hide loading indicator — BUT suppress while on the dynamic map
   // because OSD keeps emitting loading-change(true) as it lazily loads the
   // many biome tile images, which would keep the spinner stuck.
-  app.on("loading-change", (isLoading) => {
+  app.osd.onLoading((isLoading) => {
     if (app.getMap() === "dynamic-main-branch") return;
     loadingIndicator.style.display = isLoading ? "block" : "none";
   });
@@ -1665,6 +1651,13 @@ startWhenReady(async () => {
 
   initKonamiCode();
   finishNavbarStartup();
+  // Give the ready controls and base map a paint opportunity before synchronous
+  // terrain/shader initialization can occupy JS. Sprites load on demand.
+  afterStartupPaint(() => {
+    if (app.getMap() === 'dynamic-main-branch') {
+      void runDynamicMapFromURL(dynamicOpts).catch(error => console.error('[Noitamap] Dynamic map init failed:', error));
+    }
+  });
 
 }, error => showStartupFailure(error,
   i18next.t('startup.failed', { defaultValue: STARTUP_MESSAGES.failed }) || STARTUP_MESSAGES.failed,

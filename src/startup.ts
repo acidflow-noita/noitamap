@@ -1,8 +1,15 @@
 // Optional startup metadata must not leave the application waiting forever.
 export const STARTUP_REQUEST_TIMEOUT_MS = 5000;
 
-/** Reveal only after the resolved map, translated controls and event handlers
- * are installed. Terrain generation and the auth request remain independent. */
+/** Let the completed shell paint before starting optional/heavy initialization. */
+export function afterStartupPaint(work: () => void): void {
+  const run = () => setTimeout(work, 0);
+  if (document.hidden || typeof requestAnimationFrame !== 'function') run();
+  else requestAnimationFrame(run);
+}
+
+/** Reveal after the resolved map controls and event handlers are installed.
+ * Locale downloads, terrain generation and auth must remain independent. */
 export function finishNavbarStartup(): void {
   const navbar = document.querySelector<HTMLElement>('.mapNavbar');
   if (!navbar) return;

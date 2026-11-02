@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { fetchMapVersions, getTileData } from '../src/data_sources/tile_data';
+import { fetchMapVersions, getCachedMapVersions, getTileData } from '../src/data_sources/tile_data';
 import { STARTUP_REQUEST_TIMEOUT_MS } from '../src/startup';
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
@@ -18,7 +18,8 @@ it('keeps successful per-origin versions and bypasses cached manifests', async (
   }
 });
 
-it.each(['headers', 'body'])('falls back to fresh cache-bust values if version %s stall', async stage => {
+it.each(['headers', 'body'])('keeps stable cached versions if version %s stall', async stage => {
+  const cached = getCachedMapVersions('dynamic-main-branch');
   const controllers: AbortController[] = [];
   const timeout = vi.spyOn(AbortSignal, 'timeout').mockImplementation(() => {
     const controller = new AbortController(); controllers.push(controller); return controller.signal;
@@ -37,6 +38,6 @@ it.each(['headers', 'body'])('falls back to fresh cache-bust values if version %
   controllers.forEach(controller => controller.abort(new DOMException('Version request timed out', 'TimeoutError')));
   const versions = await pending;
   expect(Object.keys(versions)).toHaveLength(3);
-  expect(Object.values(versions).every(value => /^[a-z0-9]+$/.test(value))).toBe(true);
+  expect(versions).toEqual(cached);
   expect(timeout).toHaveBeenCalledWith(STARTUP_REQUEST_TIMEOUT_MS);
 });

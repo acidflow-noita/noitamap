@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { beforeAll, afterEach, describe, expect, it, vi } from "vitest";
-import { Document as SearchDocument } from "flexsearch";
 import i18next from "../src/i18n";
 import {
   getAllPOIsFlat,
@@ -85,9 +84,6 @@ afterEach(async () => {
 });
 
 function searchInventory(poisByPW: Record<string, any[]>) {
-  vi.stubGlobal("FlexSearch", {
-    Document: (options: any) => new SearchDocument(options),
-  });
   const input = document.createElement("input");
   const form = document.createElement("form");
   form.append(input);

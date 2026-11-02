@@ -1,4 +1,4 @@
-import { fetchMapVersions, getTileData, MapName } from './data_sources/tile_data';
+import { fetchMapVersions, getCachedMapVersions, getTileData, MapName } from './data_sources/tile_data';
 import { createOverlays } from './data_sources/overlays';
 import { isLightMode } from './light-mode';
 import { isSimplisticBackground } from './simplistic-background';
@@ -256,16 +256,21 @@ export class AppOSD {
   }
 
   private notifyLoadingStatus() {
+    const isLoading = this.isLoading();
+    this.listeners.forEach(fn => fn(isLoading));
+  }
+
+  isLoading(): boolean {
     const isFullyLoaded = this.getAllItems().reduce((isReady, item) => {
       if (this.failedItems.has(item)) return isReady;
       return (item as any).getDrawArea() !== null ? isReady && item.getFullyLoaded() : isReady;
     }, true);
-    const isLoading = !isFullyLoaded;
-    this.listeners.forEach(fn => fn(isLoading));
+    return !isFullyLoaded;
   }
 
   onLoading(cb: (isLoading: boolean) => void) {
     this.listeners.push(cb);
+    cb(this.isLoading());
   }
 
   private onOpen(): Promise<void> {
@@ -319,10 +324,12 @@ export class AppOSD {
   }
 
   private cacheBustHandler?: any;
-  private async bindCacheBustHandler(): Promise<void> {
+  private cacheBustRevision = 0;
+  private bindCacheBustHandler(): void {
     if (this.mapName === null) throw new Error('this.mapName should not be null');
     if (this.cacheBustHandler) this.world.removeHandler('add-item', this.cacheBustHandler);
-    const versions = await fetchMapVersions(this.mapName);
+    const mapName = this.mapName, revision = ++this.cacheBustRevision;
+    const versions = getCachedMapVersions(mapName);
     this.cacheBustHandler = (event: any) => {
       const source = event.item.source as any;
       // Baked daily DZIs carry their own per-bake cache-bust (set in
@@ -335,13 +342,36 @@ export class AppOSD {
           // (e.g. the daily workers) would otherwise get a constant
           // "?v=undefined" that never changes across bakes -> stale tiles.
           if (version !== undefined) {
-            source.queryParams = `?v=${version}`;
-            if (this.mapName === 'dynamic-main-branch') source.__staticBackground = true;
+            source.queryParams = `?v=${encodeURIComponent(version)}`;
+            if (mapName === 'dynamic-main-branch') source.__staticBackground = true;
           }
         } catch (e) {}
       }
     };
     this.world.addHandler('add-item', this.cacheBustHandler!);
+    // Version checks refresh the already usable map. Never block opening its
+    // bundled DZI descriptors, and never change a daily bake's own version.
+    void fetchMapVersions(mapName).then(fresh => {
+      if (revision !== this.cacheBustRevision || mapName !== this.mapName || !this.viewer.world) return;
+      Object.assign(versions, fresh);
+      for (const item of this.getAllItems()) {
+        const source = item.source;
+        if (source.__bakedDzi || source.__bakedBust || typeof source.tilesUrl !== 'string') continue;
+        let origin: string;
+        try { origin = new URL(source.tilesUrl).origin; } catch { continue; }
+        const version = fresh[origin];
+        if (version === undefined) continue;
+        const query = `?v=${encodeURIComponent(version)}`;
+        if (source.queryParams === query) continue;
+        source.queryParams = query;
+        // Keep the item, camera, clipping and overlay order. OSD caches each
+        // tile's URL separately, so resetting pixels alone keeps the old URL.
+        item.reset();
+        item.tilesMatrix = {};
+        this.viewer.raiseEvent('map-source-version-change', { item });
+      }
+      this.viewer.forceRedraw();
+    }).catch(error => console.warn('[OSD] Map version refresh failed:', error));
   }
 
   async setMap(mapName: MapName, pos?: ZoomPos): Promise<void> {
@@ -349,7 +379,7 @@ export class AppOSD {
     this.cancelNavigation();
     this.viewer.raiseEvent('map-change-start', { mapName });
     this.mapName = mapName;
-    await this.bindCacheBustHandler();
+    this.bindCacheBustHandler();
     this.world.removeAll();
     let sources: any = AppOSD.getTileSources(mapName);
     // Simplistic background only applies to the dynamic map (its PNG is sized

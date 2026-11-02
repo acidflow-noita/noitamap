@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { Document as SearchDocument } from "flexsearch";
+import FlexSearch, { Document as SearchDocument } from "flexsearch";
 vi.mock("../src/flexsearch", () => ({ searchOverlays: () => [] }));
 vi.mock("../src/data_sources/overlays", () => ({
   resetBiomeOverlays: () => {},
@@ -26,14 +26,12 @@ import i18next from "../src/i18n";
 function fixture() {
   vi.stubGlobal("MessageChannel", undefined);
   const indexes: any[] = [];
-  vi.stubGlobal("FlexSearch", {
-    Document: (options: any) => {
+  vi.spyOn(FlexSearch, "Document").mockImplementation(function (options: any) {
       const index = new SearchDocument(options);
       indexes.push(index);
       vi.spyOn(index, "add");
       return index;
-    },
-  });
+  } as any);
   const input = document.createElement("input"),
     form = document.createElement("form");
   form.append(input);
@@ -67,6 +65,7 @@ const records = (count: number, prefix = "test") =>
   }));
 afterEach(() => {
   document.body.replaceChildren();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
