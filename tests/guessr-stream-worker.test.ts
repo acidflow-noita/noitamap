@@ -123,10 +123,13 @@ describe("single-document stream publication", () => {
       advanceStreamRound(game, streamNow + 1000);
     }
     expect(f.calls()).toBe(0);
+    game.participants.push({ id: '888', login: 'viewer', name: 'Viewer', color: '#FF4500', guesses: [...game.participants[0].guesses] });
     const published = await f.call('/results', packStreamPublish({ token: session.token,
       finishedAt: game.finishedAt!, players: streamResult(game).players }));
     expect(published.status).toBe(201);
     expect(f.sqlite.prepare('SELECT COUNT(*) AS total FROM stream_results').get()!.total).toBe(1);
+    const stored = await (await f.call('/results/' + session.id, undefined, null)).json() as any;
+    expect(stored.players.find((p: { id: string }) => p.id === '888').color).toBe('#FF4500');
     expect((await f.call('/reveal', { token: session.rounds[0].token }, null)).status).toBe(401);
   });
   it('quits the authenticated current game idempotently without an answer or result write', async () => {

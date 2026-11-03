@@ -4,6 +4,7 @@ import type {
   StreamPublishWireInput,
   StreamResult,
 } from "./stream-types";
+import { twitchColor } from './player-color';
 
 /** Numeric pairs keep the once-per-game upload/store small. Local state and
  * downloads retain readable field names; no player or score is omitted. */
@@ -17,6 +18,7 @@ export function packStreamPublish(
       id: player.id,
       name: player.name,
       login: player.login,
+      ...(twitchColor(player.color) ? { color: twitchColor(player.color) } : {}),
       score: player.score,
       rounds: player.rounds.map((round): [number, number] => {
         if (round.score !== round.areaScore + round.positionScore)

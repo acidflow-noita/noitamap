@@ -512,5 +512,16 @@
   "End this game?": "Lopetetaanko tämä peli?",
   "End game": "Lopeta peli",
   "Game ended": "Peli päättyi",
-  "The streamer ended this game.": "Streamer päätti tämän pelin."
+  "The streamer ended this game.": "Streamer päätti tämän pelin.",
+  "Chat round {{round}}: {{total}} submitted": "Keskustelukierros {{round}}. Saadut vastaukset: {{total}}.",
+  "Timed rounds end early when the streamer and every chatter who joined before the round started have submitted.": "Aikarajoitetut kierrokset päättyvät ennenaikaisesti, kun striimaaja ja kaikki keskustelijat, jotka liittyivät mukaan ennen kierroksen alkua, ovat lähettäneet vastauksensa.",
+  "Everyone has submitted. This round is closing.": "Kaikki pelaajat ovat lähettäneet vastauksensa. Tämä kierros on päättymässä.",
+  "NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.": "NoitaGuessr {{game}}: tarkistetaan, onko vastauksia saatu. Kierrokset: {{rounds}}.",
+  "NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.": "NoitaGuessr {{game}}: tulosten palauttaminen. Kierrokset: {{rounds}}.",
+  "NoitaGuessr {{game}}: joining {{channel}}’s game.": "NoitaGuessr {{game}}: liityn {{channel}}:n peliin.",
+  "The round closed before your guess was received.": "Kierros päättyi ennen kuin vastauksesi saapui.",
+  "This guess belongs to a different round.": "Tämä vastaus kuuluu toiseen kierrokseen.",
+  "A newer guess has already been received.": "Uudempi vastaus on jo saatu.",
+  "The streamer did not receive this guess.": "Streameri ei saanut tätä vastausta.",
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Lähetetty Twitchiin. Odotetaan striimarin vahvistusta."
 }

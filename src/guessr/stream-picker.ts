@@ -12,7 +12,7 @@ import { supportedCamera } from './clue-camera';
 import { watchLiveRoom, type RoomConnection } from './live-room-client';
 import { watchTwitchGame } from './twitch-game-client';
 import { StreamViewerHistory } from './stream-viewer-history';
-import { guessReceiptKey } from './stream-wire';
+import { guessReceiptKey, guessRejectionText } from './stream-wire';
 import type { LiveRoomView } from './live-room-types';
 import { guessRouteUrl, readGuessRoute } from './routes';
 import { expandStreamResult } from './stream-codec';
@@ -21,6 +21,7 @@ import { localizedDistance } from './messages';
 import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, onGuessrLanguageChanged, tr } from './i18n';
 import { pageHeading } from './page-heading';
 import { hoverHelp } from './hover-help';
+import { twitchColor } from './player-color';
 
 const ROUND_STORAGE_KEY = 'noitamap-guessr-viewer-round-v1';
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text: string | (() => string) = '') {
@@ -151,6 +152,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         personal.identify(live.gameId!, playerId);
         personal.submit(snapshot.round - 1, receipt, submittedPoint, progress ? maximumScore(progress) : 5000);
         await viewer.sendGuess(submittedChannel, submittedRound, submittedPoint, progress ? maximumScore(progress) : 5000, live.roundId, nonce, live.gameId!);
+        personal.markSent(submittedRound - 1, receipt);
       }
       else if (live?.roundId) await viewer.sendGuess(submittedChannel, snapshot.round, submittedPoint, progress ? maximumScore(progress) : 5000, live.roundId);
       else if (progress) await viewer.sendGuess(submittedChannel, snapshot.round, submittedPoint, maximumScore(progress));
@@ -188,7 +190,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const setRound = (payload: string | null, identity: string) => {
     if (identity === roundKey && (!!payload === !!snapshot)) return;
     viewport?.destroy(); viewport = undefined; clearControls?.(); clearControls = undefined;
-    snapshot = undefined; progress = null; point = null; submitted = null; lastSent = ''; roundKey = identity;
+    snapshot = undefined; progress = null; point = null; submitted = null; lastSent = ''; actionError = ''; roundKey = identity;
     reviewedRound = null;
     drawnOutcome = ''; drawnResults = ''; revealBar.hidden = true;
     resultsPanel.hidden = true; cluePanel.hidden = false; mapPanel.hidden = false; layout.classList.remove('show-results');
@@ -345,10 +347,13 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       feed = watchTwitchGame(viewer, channel, requestedGame, { ...handlers,
         recovery: () => personal.recovery(live?.timing?.revealed ?? 0),
         reveal: (round, reveal) => { personal.reveal(round, reveal); refresh(); },
-        receipts: (round, keys, rejected) => {
+        receipts: (round, keys, rejected, reason) => {
           const before = personal.round(round);
-          personal.receipts(round, keys, rejected);
+          personal.receipts(round, keys, rejected, reason);
           if (before.pending && !personal.round(round).pending) {
+            if (rejected && reason === 'closed' && live && round === live.round - 1) {
+              live = { ...live, phase: 'reveal' }; feed?.requestRecovery();
+            }
             const recovery = personal.recovery(live?.timing?.revealed ?? 0);
             if (recovery.missing || recovery.receipts.length) feed?.requestRecovery();
           }
@@ -361,6 +366,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   };
   refresh = () => {
     const state = viewer.getState();
+    main.style.setProperty('--guessr-pin-color', twitchColor(state.color) ?? 'var(--accent-fg)');
     personal.identify(live?.gameId ?? requestedGame, state.userId ?? state.savedUserId ?? null);
     if (twitchUpdates && live?.phase === 'complete' && !state.connected) connection.insertBefore(connect, disconnect);
     else if (connect.parentElement !== signIn) signIn.prepend(connect);
@@ -377,11 +383,12 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     disconnect.hidden = !state.connected; disconnect.disabled = state.sending;
     const own = live ? personal.round(live.round - 1) : null;
     const sameGuess = !!guessKey() && guessKey() === lastSent;
-    const mayResend = twitchUpdates && sameGuess && own?.pending && Date.now() - lastSendAt >= 15_000;
+    const mayResend = twitchUpdates && sameGuess && (own?.lastStatus === 'rejected' || own?.pending && Date.now() - lastSendAt >= 15_000);
     send.disabled = !canGuess() || !state.connected || !point || !channel || sending || state.sending || sameGuess && !mayResend;
     bindText(send, mayResend ? 'Resend guess' : own?.submitted && !sameGuess ? 'Update guess' : 'Send guess');
-    const receiptStatus = sending ? 'Sending…' : own?.pending ? own.received ? 'Update awaiting confirmation. Previous guess counts.' : 'Waiting for confirmation'
-      : own?.lastStatus === 'rejected' ? own.received ? 'Update not received. Previous guess counts.' : 'Guess not received'
+    const receiptStatus = live?.ended ? 'The streamer ended this game.' : sending ? 'Sending…' : own?.pending ? own.received ? 'Update awaiting confirmation. Previous guess counts.'
+      : own.sent ? 'Sent to Twitch. Waiting for the streamer’s confirmation.' : 'Waiting for confirmation'
+      : own?.lastStatus === 'rejected' ? own.received ? 'Update not received. Previous guess counts.' : guessRejectionText(own.reason)
       : own?.received ? 'Guess received' : !twitchUpdates && sameGuess ? 'Guess sent' : 'Place a pin first';
     bindText(delivery, () => actionError || tr(receiptStatus));
     delivery.dataset.state = actionError || own?.lastStatus === 'rejected' ? 'error' : own?.received && !own.pending ? 'received' : 'waiting';
@@ -393,6 +400,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       timer.textContent = live.ended ? tr('Game ended') : live.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) })
         : live.phase !== 'guess' ? tr('Round closed') : timing.deadline === null ? tr('Manual timing')
         : `${formatGuessrNumber(Math.floor(remaining / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(remaining % 60, { minimumIntegerDigits: 2 })}`;
+      timer.hidden = timing.phase === 'lobby';
+      timer.dataset.clock = String(!live.ended && !live.paused && !starting && live.phase === 'guess' && timing.deadline !== null);
       board.setLocked(!canGuess() || reviewedRound !== null);
       let countdown = cluePanel.querySelector<HTMLElement>('.stream-countdown');
       if (starting && live.phase === 'guess' && !live.paused) {
@@ -421,6 +430,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (!legacyPayload && connectionState === 'connected') {
       bindText(roomStatus, live?.ended ? 'The streamer ended this game.' : live?.timing?.phase === 'lobby' ? 'Waiting for the streamer to start the game.' : !live || live.phase === 'waiting' ? 'No active NoitaGuessr game'
         : live.phase === 'complete' ? 'Game finished' : live.phase === 'reveal' && live.round === STREAM_ROUNDS ? 'You have finished all 10 rounds. Waiting for the streamer.' : live.phase === 'reveal' ? 'Round closed'
+        : live.timing?.early ? 'Everyone has submitted. This round is closing.'
         : !live.online ? 'Streamer disconnected from NoitaGuessr' : live.paused ? 'Paused' : isHost() ? 'You are the streamer' : '');
     } else bindText(roomStatus, connectionDetail);
     if (unavailableGame) bindText(roomStatus, 'This game is no longer active.');

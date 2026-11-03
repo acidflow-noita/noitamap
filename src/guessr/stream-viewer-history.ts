@@ -1,8 +1,9 @@
 import type { StreamReveal } from './stream-types';
 import { prepareAreaScorer } from './area-rules';
 import { within, type Bounds, type Point } from './rules';
+import type { GuessRejectionReason } from './stream-wire';
 
-export interface ViewerSubmission { key: string; point: Point; maximum: number; status: 'pending' | 'received' | 'rejected' }
+export interface ViewerSubmission { key: string; point: Point; maximum: number; status: 'pending' | 'received' | 'rejected'; reason?: GuessRejectionReason; sent?: boolean }
 interface ViewerRoundRecord { submissions: ViewerSubmission[]; reveal?: StreamReveal }
 interface ViewerGameHistory { gameId: string; playerId: string; rounds: ViewerRoundRecord[] }
 
@@ -43,10 +44,14 @@ export class StreamViewerHistory {
     record.submissions.push({ key, point: { ...point }, maximum, status: 'pending' });
     record.submissions = record.submissions.slice(-64); this.save();
   }
-  receipts(round: number, keys: string[], rejected = false): void {
+  markSent(round: number, key: string): void {
+    const submission = this.history?.rounds[round]?.submissions.find(value => value.key === key);
+    if (submission) { submission.sent = true; this.save(); }
+  }
+  receipts(round: number, keys: string[], rejected = false, reason?: GuessRejectionReason): void {
     const record = this.history?.rounds[round]; if (!record) return;
     const set = new Set(keys);
-    for (const value of record.submissions) if (set.has(value.key)) value.status = rejected ? 'rejected' : 'received';
+    for (const value of record.submissions) if (set.has(value.key)) { value.status = rejected ? 'rejected' : 'received'; value.reason = rejected ? reason : undefined; }
     this.save();
   }
   reveal(round: number, reveal: StreamReveal): void {
@@ -59,7 +64,7 @@ export class StreamViewerHistory {
     const last = record?.submissions.at(-1);
     const pending = last?.status === 'pending';
     const score = record?.reveal ? prepareAreaScorer(record.reveal.area, record.reveal.answer)(received?.point ?? null, received?.maximum ?? 5000) : undefined;
-    return { reveal: record?.reveal, received, pending, lastStatus: last?.status, submitted: !!record?.submissions.length, score };
+    return { reveal: record?.reveal, received, pending, sent: last?.sent, lastStatus: last?.status, reason: last?.reason, submitted: !!record?.submissions.length, score };
   }
   recovery(revealed: number) {
     let missing = 0;

@@ -6,6 +6,7 @@ import { tr } from './i18n';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import { ANNOUNCEMENT_SCOPE, canShareGameLink, postTwitchGameLink } from './twitch-announcement';
 import { gameCode } from './routes';
+import { twitchColor } from './player-color';
 
 /** Keep transport state in source English so an open view can change language. */
 export function twitchMessageText(source: string): string {
@@ -38,6 +39,7 @@ export interface TwitchViewerState {
   savedUserId?: string | null;
   login: string | null;
   displayName?: string;
+  color?: string;
   expiresAt: number | null;
   error: string | null;
 }
@@ -346,8 +348,8 @@ export class TwitchViewer {
         if (stopped || generation !== this.generation) return;
         connection = new TwitchChatConnection({ ...handlers, userId: identity.userId, broadcasterId,
           message: message => {
-            if (message.player.id === identity.userId && message.player.name !== this.state.displayName)
-              this.update({ displayName: message.player.name });
+            if (message.player.id === identity.userId && (message.player.name !== this.state.displayName || twitchColor(message.player.color) !== this.state.color))
+              this.update({ displayName: message.player.name, color: twitchColor(message.player.color) });
             handlers.message(message);
           },
           credentials: async () => {
@@ -440,7 +442,7 @@ export class TwitchViewer {
     this.channels.clear();
     for (const stop of this.chats) stop();
     if (forget) this.forgetSaved();
-    this.update({ connected: false, userId: null, savedUserId: null, login: null, expiresAt: null });
+    this.update({ connected: false, userId: null, savedUserId: null, login: null, expiresAt: null, displayName: undefined, color: undefined });
   }
   disconnect(forget = true): void {
     this.generation++;

@@ -49,9 +49,9 @@
   font-weight: 750;
   font-variant-numeric: tabular-nums;
 }
-.stream-host-row {
-  background: var(--daily-bg);
-}
+.stream-host-row { background: color-mix(in oklab, #9146ff 12%, transparent); }
+.stream-host-shell { --guessr-pin-color: #9146ff; }
+.stream-host-identity strong { color: #9146ff; }
 .shell.stream-setup-shell { max-width: 48rem; margin-inline: auto; }
 .stream-setup-card { --bs-card-border-radius: var(--bs-rounded-size); --bs-card-bg: var(--surface-1); --bs-card-color: var(--text); --bs-card-border-color: var(--border); --bs-card-spacer-x: var(--game-gutter); --bs-card-spacer-y: var(--game-gutter); }
 .stream-setup-card { --bs-card-body-gap: var(--game-gutter); }
@@ -62,7 +62,7 @@
 .stream-timer-settings { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-block: .5rem; }
 .stream-timer-settings input { inline-size: 6rem; }
 .stream-round-timer { font-size: 1.125rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.game-panel.stream-start-panel { display: flex; flex-direction: column; flex: none; align-items: center; align-self: center; inline-size: min(100%, 44rem); margin-block: auto; padding: clamp(1.5rem, 4vw, 3rem); gap: 1rem; text-align: center; border: 1px solid var(--border-strong); border-radius: var(--radius-panel); color: var(--text); background: radial-gradient(ellipse at 50% 0, color-mix(in oklab, var(--game-action) 20%, transparent), transparent 75%), var(--surface-1); box-shadow: 0 1rem 3rem #0003; }
+.game-panel.stream-start-panel { display: flex; flex-direction: column; flex: none; align-items: center; align-self: center; inline-size: min(100%, 44rem); margin-block: auto; padding: clamp(1.5rem, 4vw, 3rem); gap: 1rem; text-align: center; border: 1px solid var(--border-strong); border-radius: var(--radius-panel); color: var(--text); background: var(--surface-1); box-shadow: 0 1rem 3rem #0003; }
 .stream-start-panel > :is(p, h2) { margin: 0; }
 .stream-start-panel > h2 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 650; }
 .stream-start-panel > p { max-inline-size: 40ch; color: var(--text-muted); }
@@ -72,14 +72,15 @@
 .stream-waiting-timer[data-clock='true'] { font-size: clamp(4rem, 8vw, 6rem); }
 .stream-start-panel > .progress { inline-size: min(100%, 24rem); --bs-progress-height: .5rem; --bs-progress-bg: var(--border); --bs-progress-bar-bg: var(--game-action); }
 .stream-joined-count { font-size: 1rem; font-variant-numeric: tabular-nums; }
-.stream-joined-names { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; max-inline-size: 100%; }
+.stream-joined-names { max-block-size: 3.5rem; overflow: hidden; display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; max-inline-size: 100%; }
 .stream-joined-names:empty { display: none; }
 .stream-joined-names > span { max-inline-size: 12rem; overflow: hidden; text-overflow: ellipsis; }
-.stream-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--game-gutter); padding: .5rem .75rem; margin: 0; min-block-size: 3.5rem; }
+.stream-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--game-gutter); padding: .5rem .75rem; margin: 0; min-block-size: 3.75rem; }
 .stream-toolbar-navigation, .stream-toolbar-actions { display: flex; align-items: center; gap: .75rem; min-inline-size: 0; }
 .stream-toolbar-actions { justify-content: flex-end; }
 .stream-toolbar-round { display: flex; align-items: center; justify-content: center; gap: .75rem; white-space: nowrap; font-size: .875rem; }
-.stream-toolbar-round .stream-round-timer { inline-size: 11ch; text-align: end; font-size: inherit; }
+.stream-toolbar-round .stream-round-timer { inline-size: auto; text-align: center; font-size: 1rem; }
+.stream-toolbar-round .stream-round-timer[data-clock="true"] { inline-size: 5.5ch; font-size: clamp(1.75rem, 2.75vw, 2.5rem); font-weight: 700; line-height: 1.1; }
 .stream-activity { display: flex; align-items: center; gap: 1rem; min-block-size: 1.5rem; padding-inline: .75rem; font-size: .8125rem; color: var(--text-muted); overflow: hidden; }
 .stream-activity > span { white-space: nowrap; }
 .stream-activity-message { flex: 1; overflow: hidden; text-overflow: ellipsis; text-align: end; }
@@ -140,7 +141,9 @@
 .stream-account { display: flex; align-items: center; gap: var(--game-gutter); margin-inline-start: auto; }
 .stream-account .btn-twitch { width: auto; margin: 0; }
 .stream-viewer-account { font-size: .8125rem; color: var(--text-muted); }
-.stream-clue-empty { padding: 1.25rem; color: var(--text-muted); }
+.stream-clue-empty { flex: 1; min-block-size: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: .75rem; padding: clamp(1.5rem, 4vw, 3rem); color: var(--text-muted); font-size: 1rem; }
+.stream-clue-empty > strong { font-size: clamp(1.5rem, 3vw, 2.25rem); color: var(--text); }
+.stream-clue-empty > p { max-inline-size: 40ch; }
 .stream-clue-empty p { margin-block: .5rem; }
 .stream-connection-bar { grid-column: 1 / -1; grid-row: 1; }
 .stream-chat-header { display: flex; flex-wrap: wrap; align-items: center; flex: none; gap: var(--game-gutter); padding: .5rem; font-size: .875rem; }
@@ -228,3 +231,7 @@
 .stream-reveal-distance { display: block; font-size: .8125rem; color: var(--text-muted); }
 .stream-viewer-results { grid-column: 1 / -1; grid-row: 2; overflow: auto; padding: var(--game-gutter); }
 .stream-viewer-row { background: var(--accent-bg); }
+
+.stream-activity > [hidden] { display: none; }
+.stream-activity #stream-guess-count { margin-inline-end: 0; }
+.stream-player-name { background: transparent; padding: 0; font-weight: 600; }

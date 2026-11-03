@@ -512,5 +512,16 @@
   "End this game?": "Ska vi avsluta det här spelet?",
   "End game": "Avsluta spelet",
   "Game ended": "Matchen är slut",
-  "The streamer ended this game.": "Streamern avslutade den här matchen."
+  "The streamer ended this game.": "Streamern avslutade den här matchen.",
+  "Chat round {{round}}: {{total}} submitted": "Chattrunda {{round}}. Antal mottagna svar: {{total}}.",
+  "Timed rounds end early when the streamer and every chatter who joined before the round started have submitted.": "Tidsbegränsade omgångar avslutas i förtid när streamaren och alla chattdeltagare som anslutit sig innan omgången började har lämnat in sina svar.",
+  "Everyone has submitted. This round is closing.": "Alla deltagare har skickat in sina svar. Denna omgång avslutas nu.",
+  "NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.": "NoitaGuessr {{game}}: kontrollerar om svar har kommit in. Omgångar: {{rounds}}.",
+  "NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.": "NoitaGuessr {{game}}: återställer resultat. Omgångar: {{rounds}}.",
+  "NoitaGuessr {{game}}: joining {{channel}}’s game.": "NoitaGuessr {{game}}: ansluter till spelet i {{channel}}.",
+  "The round closed before your guess was received.": "Omgången avslutades innan ditt svar kom in.",
+  "This guess belongs to a different round.": "Det här svaret hör till en annan omgång.",
+  "A newer guess has already been received.": "Ett nyare svar har redan inkommit.",
+  "The streamer did not receive this guess.": "Streamern fick inte detta svar.",
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Skickat till Twitch. Väntar på bekräftelse från streamaren."
 }

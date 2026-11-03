@@ -512,5 +512,16 @@
   "End this game?": "Mau mengakhiri permainan ini?",
   "End game": "Akhiri permainan",
   "Game ended": "Permainan telah berakhir",
-  "The streamer ended this game.": "Streamer tersebut mengakhiri pertandingan ini."
+  "The streamer ended this game.": "Streamer tersebut mengakhiri pertandingan ini.",
+  "Chat round {{round}}: {{total}} submitted": "Putaran obrolan ke-{{round}}. Jumlah jawaban yang diterima: {{total}}.",
+  "Timed rounds end early when the streamer and every chatter who joined before the round started have submitted.": "Babak berwaktu akan berakhir lebih awal jika streamer dan setiap peserta obrolan yang bergabung sebelum babak dimulai telah mengirimkan jawaban mereka.",
+  "Everyone has submitted. This round is closing.": "Semua pemain telah mengirimkan jawaban mereka. Babak ini akan segera ditutup.",
+  "NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.": "NoitaGuessr {{game}}: sedang memeriksa apakah jawaban telah diterima. Putaran: {{rounds}}.",
+  "NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.": "NoitaGuessr {{game}}: memuat ulang hasil. Putaran: {{rounds}}.",
+  "NoitaGuessr {{game}}: joining {{channel}}’s game.": "NoitaGuessr {{game}}: bergabung dalam permainan di {{channel}}.",
+  "The round closed before your guess was received.": "Babak tersebut berakhir sebelum jawabanmu masuk.",
+  "This guess belongs to a different round.": "Jawaban ini termasuk dalam babak lain.",
+  "A newer guess has already been received.": "Jawaban yang lebih baru sudah diterima.",
+  "The streamer did not receive this guess.": "Streamer tersebut tidak menerima jawaban ini.",
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Sudah dikirim ke Twitch. Sedang menunggu konfirmasi dari streamer."
 }

@@ -512,5 +512,16 @@
   "End this game?": "End this game?",
   "End game": "End game",
   "Game ended": "Game ended",
-  "The streamer ended this game.": "The streamer ended this game."
+  "The streamer ended this game.": "The streamer ended this game.",
+  "Chat round {{round}}: {{total}} submitted": "Chat round {{round}}: {{total}} submitted",
+  "Timed rounds end early when the streamer and every chatter who joined before the round started have submitted.": "Timed rounds end early when the streamer and every chatter who joined before the round started have submitted.",
+  "Everyone has submitted. This round is closing.": "Everyone has submitted. This round is closing.",
+  "NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.": "NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.",
+  "NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.": "NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.",
+  "NoitaGuessr {{game}}: joining {{channel}}’s game.": "NoitaGuessr {{game}}: joining {{channel}}’s game.",
+  "The round closed before your guess was received.": "The round closed before your guess was received.",
+  "This guess belongs to a different round.": "This guess belongs to a different round.",
+  "A newer guess has already been received.": "A newer guess has already been received.",
+  "The streamer did not receive this guess.": "The streamer did not receive this guess.",
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Sent to Twitch. Waiting for the streamer’s confirmation."
 }

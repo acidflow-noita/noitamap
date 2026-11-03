@@ -83,8 +83,12 @@ it('keeps an unconfirmed submission explicit across reloads and resolves a negat
   expect(personal.recovery(1)).toEqual({ missing: 1, receipts: [{ round: 0, key: '0123456789abcdef' }] });
   personal.reveal(0, await service.reveal(session.rounds[0].token, streamHost, streamNow + 1));
   expect(personal.round(0).pending).toBe(true);
-  personal.receipts(0, ['0123456789abcdef'], true);
-  expect(personal.round(0)).toMatchObject({ pending: false, lastStatus: 'rejected', score: { score: 0 } });
+  const reader = new StreamPacketReader('streamer', session.id);
+  for (const text of await encodeStreamPacket(session.id, { type: 'receipts', round: 0, keys: ['0123456789abcdef'], rejected: true, reason: 'closed' })) {
+    const packet = await reader.receive({ player: { id: streamHost.twitchUserId, login: 'streamer', name: 'Streamer' }, id: 'rejected', text, sentAt: streamNow });
+    if (packet?.payload.type === 'receipts') personal.receipts(packet.payload.round, packet.payload.keys, true, packet.payload.reason);
+  }
+  expect(personal.round(0)).toMatchObject({ pending: false, lastStatus: 'rejected', reason: 'closed', score: { score: 0 } });
   personal.identify(session.id, '124'); expect(personal.round(0).submitted).toBe(false);
 });
 

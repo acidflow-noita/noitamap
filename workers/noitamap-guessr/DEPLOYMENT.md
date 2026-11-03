@@ -4,11 +4,19 @@ The website stays at `https://dynamic-map.noitamap.com/guess/`. Its production
 API default is `https://guessr-api.sage-data.xyz`; local Vite keeps its local
 round service unless an explicit `VITE_GUESSR_API_URL` is supplied.
 
-## Current update: stream delivery, lobby and end-game fixes
+## Current update: guess feedback, player colors and round pacing
 
-This repair is a frontend update. No Worker deployment, D1 migration, new secret,
-image upload or baker change is needed. From `/home/w/Documents/git/noitamap`,
-after the local repair commit is prepared:
+The Guessr API now preserves optional Twitch colors in the final result JSON.
+No D1 migration, new secret, image upload, baker change or primary auth Worker
+deployment is needed. From `/home/w/Documents/git/noitamap`, push the prepared
+private API commit first:
+
+```sh
+git -C task/guessr/private/repository-export-2026-10-25/noitamap-guessr push origin main
+```
+
+Wait for its connected Cloudflare build in ACID HELPER to finish, then push the
+frontend from the same repository root:
 
 ```sh
 git push origin dynamic-map-startup:dynamic-map
@@ -28,6 +36,11 @@ shared packet ID; a recovery snapshot says `state-sync`, not `round-open`.
 Confirm Wuote's Pro badge, the joined chatter count, the large warm-up countdown,
 and Exit game followed by End game. Cancellation broadcasts `game-ended` and
 changes the chatter's screen; successful completion uses `game-finished`.
+Check that names and pins use Twitch colors, the host stays purple, rejection
+feedback allows a same-pin resend, and automatic timing closes early only after
+the enrolled chatter roster and host have submitted. An absent player still uses
+the original deadline. Manual timing remains manual. Check the shared result URL
+from a fresh tab to verify that the API retained the colors.
 Actual live delivery and visual layout need the owner's manual review. No browser
 automation is used.
 

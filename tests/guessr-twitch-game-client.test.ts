@@ -1,3 +1,4 @@
+import { readChatEnvelope } from '../src/guessr/chat-envelope';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { watchTwitchGame } from '../src/guessr/twitch-game-client';
 import { encodeStreamPacket } from '../src/guessr/stream-wire';
@@ -32,7 +33,9 @@ it('uses one Twitch resync request and accepts the owner’s broadcast without a
   expect(f.sendMessage).toHaveBeenCalledOnce();
   const [channel, wire] = f.sendMessage.mock.calls[0] as unknown as [string, string];
   expect(channel).toBe('noitaguessr');
-  expect(wire).toMatch(/^NoitaGuessr [a-z0-9]{26} player-join streamer need=0$/);
+  expect(wire).toContain('joining streamer');
+  expect(wire).not.toContain('need='); expect(wire).not.toContain('[ng:');
+  expect(new TextDecoder().decode(readChatEnvelope(wire)!.subarray(3))).toMatch(/^!noitaguessr_sync streamer /);
   const frames = await encodeStreamPacket(id, { type: 'state', state });
   for (const text of frames) await f.client.receive(message(text, 'copycat', '999'));
   for (const text of frames) await f.client.receive(message(text, 'streamer', '999'));

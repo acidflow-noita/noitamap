@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { StreamService } from '../src/guessr/stream-server';
 import { newStreamGame, acceptStreamGuess, closeStreamRound, revealStreamRound, advanceStreamRound } from '../src/guessr/stream-state';
-import { startStreamTiming, startHostWindow, streamTick, hostMayGuess, suspendStreamTiming, resumeStreamTiming } from '../src/guessr/stream-timing';
+import { startStreamTiming, startHostWindow, streamTick, hostMayGuess, suspendStreamTiming, resumeStreamTiming, shortenFinishedWindow } from '../src/guessr/stream-timing';
 import { formatGuessCommand } from '../src/guessr/guess-command';
 import { streamAnswer, streamHost, streamNow, streamSecret, streamSource } from './helpers/guessr-stream';
 
@@ -17,6 +17,43 @@ async function fixture(seconds = 90) {
 }
 
 describe('chat first, timed streamer rounds', () => {
+  it('closes early only after the enrolled chatters and the streamer have submitted, preserving chat-ahead order', async () => {
+    const f = await fixture();
+    f.game.joinedPlayers = { '123': { login: 'chatter', name: 'Chatter' } };
+    startStreamTiming(f.game, 90, streamNow);
+    expect(shortenFinishedWindow(f.game, streamNow + 4000)).toBe(false);
+    expect(f.guess(0, streamNow + 4000)).toBe('accepted');
+    expect(shortenFinishedWindow(f.game, streamNow + 4000)).toBe(true);
+    expect(f.game.timing!.deadline).toBe(streamNow + 9000);
+    // A revised guess is still permitted until the advertised closing time.
+    expect(f.guess(0, streamNow + 8000)).toBe('accepted');
+    expect(streamTick(f.game, streamNow + 9000)).toBe('warmup-finished');
+    startHostWindow(f.game, streamNow + 9000);
+    expect(f.game.round).toBe(0); expect(f.game.timing!.chatRound).toBe(1);
+    expect(f.guess(1, streamNow + 13000)).toBe('accepted');
+    expect(shortenFinishedWindow(f.game, streamNow + 13000)).toBe(false);
+    closeStreamRound(f.game, streamAnswer, streamNow + 14000);
+    revealStreamRound(f.game, await f.service.reveal(f.session.rounds[0].token, streamHost, streamNow + 14000), streamNow + 14000);
+    expect(shortenFinishedWindow(f.game, streamNow + 14000)).toBe(true);
+    expect(f.game.timing!.deadline).toBe(streamNow + 22000);
+    expect(streamTick(f.game, streamNow + 22000)).toBe('advance');
+    advanceStreamRound(f.game, streamNow + 22000);
+    expect(f.game.round).toBe(1); expect(f.game.timing!.chatRound).toBe(2);
+  });
+
+  it('keeps the original deadline for absent players, manual timing and an unbounded audience', async () => {
+    const f = await fixture();
+    f.game.joinedPlayers = { '123': { login: 'first', name: 'First' }, '124': { login: 'absent', name: 'Absent' } };
+    startStreamTiming(f.game, 90, streamNow); f.guess(0, streamNow + 4000);
+    expect(shortenFinishedWindow(f.game, streamNow + 5000)).toBe(false);
+    expect(f.game.timing!.deadline).toBe(streamNow + 93000);
+    f.game.timing!.waitingFor = []; f.game.joinedOverflow = true;
+    expect(shortenFinishedWindow(f.game, streamNow + 5000)).toBe(false);
+    f.game.joinedOverflow = false; startStreamTiming(f.game, 0, streamNow);
+    f.game.timing!.waitingFor = [];
+    expect(shortenFinishedWindow(f.game, streamNow + 5000)).toBe(false);
+    expect(f.game.timing!.deadline).toBeNull();
+  });
   it('opens chat round one after a silent countdown, then starts chat two and streamer one together', async () => {
     const f = await fixture(), t = f.game.timing!;
     expect(hostMayGuess(f.game, streamNow + 10_000)).toBe(false);

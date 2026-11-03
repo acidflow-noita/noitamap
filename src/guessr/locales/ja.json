@@ -512,5 +512,16 @@
   "End this game?": "このゲームを終了しますか？",
   "End game": "ゲームを終了する",
   "Game ended": "ゲーム終了",
-  "The streamer ended this game.": "このストリーマーがこの試合を締めくくった。"
+  "The streamer ended this game.": "このストリーマーがこの試合を締めくくった。",
+  "Chat round {{round}}: {{total}} submitted": "{{round}}回目のチャット。受け取った回答数：{{total}}。",
+  "Timed rounds end early when the streamer and every chatter who joined before the round started have submitted.": "タイムアタック形式のラウンドは、ストリーマーとラウンド開始前に参加したすべてのチャット参加者が回答を提出した時点で終了します。",
+  "Everyone has submitted. This round is closing.": "すべてのプレイヤーから回答が寄せられました。今回のラウンドは終了します。",
+  "NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.": "NoitaGuessr {{game}}：回答が寄せられたかどうかを確認中。ラウンド数：{{rounds}}。",
+  "NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.": "NoitaGuessr {{game}}：結果を復元中。ラウンド数：{{rounds}}。",
+  "NoitaGuessr {{game}}: joining {{channel}}’s game.": "NoitaGuessr {{game}}: {{channel}}のゲームに参加します。",
+  "The round closed before your guess was received.": "回答が届く前にラウンドが終了しました。",
+  "This guess belongs to a different round.": "この回答は別のラウンドに属しています。",
+  "A newer guess has already been received.": "すでに新しい回答が寄せられています。",
+  "The streamer did not receive this guess.": "そのストリーマーはこの回答を受け取らなかった。",
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Twitchに送信しました。配信者の確認を待っています。"
 }

@@ -2,6 +2,7 @@ import { MapBoard } from './map-board';
 import { streamStandings } from './stream-state';
 import type { StreamGame } from './stream-types';
 import { bindText, formatGuessrNumber, guessrGameTerm, guessrLocale, onGuessrLanguageChanged, tr } from './i18n';
+import { playerColor } from './player-color';
 
 export function streamRoundResults(main: HTMLElement, game: StreamGame, index: number, actions: HTMLElement): () => void {
   const reveal = game.reveals[index], config = game.session.config;
@@ -30,7 +31,7 @@ export function streamRoundResults(main: HTMLElement, game: StreamGame, index: n
   const ranks = new Map<string, number>();
   roundOrder.forEach((p, i) => ranks.set(p.id, i && p.rounds[index].score === roundOrder[i - 1].rounds[index].score
     ? ranks.get(roundOrder[i - 1].id)! : i + 1));
-  board.setPlayers(players.map(p => ({ id: p.id, name: p.name, guess: p.rounds[index].guess })), reveal.answer, select);
+  board.setPlayers(players.map(p => ({ id: p.id, name: p.name, color: playerColor(p, game.session.host.id), guess: p.rounds[index].guess })), reveal.answer, select);
   let sort: 'rank' | 'name' | 'round' | 'total' = 'round', direction = -1;
   const columns = [['rank', 'Rank'], ['name', 'Player'], ['round', 'Round score'], ['total', 'Total']] as const;
   const headers: HTMLTableCellElement[] = [];
@@ -55,6 +56,7 @@ export function streamRoundResults(main: HTMLElement, game: StreamGame, index: n
         player.rounds[index].guess ? formatGuessrNumber(player.rounds[index].score) : '—', formatGuessrNumber(player.score)].entries()) {
         const cell = document.createElement('td'); cell.textContent = text;
         if (column !== 1) cell.className = 'numeric';
+        else cell.style.color = playerColor(player, game.session.host.id);
         if (column === 2 && !player.rounds[index].guess) cell.setAttribute('aria-label', tr('No guess recorded by the streamer'));
         row.append(cell);
       }

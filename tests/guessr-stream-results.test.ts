@@ -12,7 +12,7 @@ const result: StreamResult = {
   rounds: [{ id: 'round', answer: { x: 0, y: 0 }, name: 'Coal Pits', difficultyTier: 'normal' }],
   players: [
     { id: '123', login: 'streamer', name: 'Rank', score: 2000, rank: 2, rounds: [{ score: 2000, areaScore: 1000, positionScore: 1000 }] },
-    { id: '456', login: 'chatter', name: 'Chatter', score: 3000, rank: 1, rounds: [{ score: 3000, areaScore: 1000, positionScore: 2000 }] },
+    { id: '456', login: 'chatter', name: 'Chatter', color: '#FF4500', score: 3000, rank: 1, rounds: [{ score: 3000, areaScore: 1000, positionScore: 2000 }] },
   ],
 };
 
@@ -36,6 +36,8 @@ afterEach(async () => {
 it('keeps result filtering and sorting while translating labels, numbers, and player suffixes', async () => {
   await translations();
   const section = streamResultsView(result); document.body.append(section);
+  expect((section.querySelector('tbody tr')!.children[1] as HTMLElement).style.color).toBe('rgb(255, 69, 0)');
+  expect((section.querySelector('.stream-host-row')!.children[1] as HTMLElement).style.color).toBe('rgb(145, 70, 255)');
   const total = [...section.querySelectorAll('th button')].find(button => button.textContent === 'Total') as HTMLButtonElement;
   total.click();
   const filter = section.querySelector('input')!;

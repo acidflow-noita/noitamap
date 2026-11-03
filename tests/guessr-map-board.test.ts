@@ -133,8 +133,8 @@ describe("guess-map camera", () => {
   it('frames every submitted pin and highlights the selected player without moving the camera', async () => {
     const { board, viewer } = await fixture(), highlighted = vi.fn();
     const players = [
-      { id: '1', name: 'First', guess: { x: -15000, y: -20000 } },
-      { id: '2', name: 'Second', guess: { x: 12000, y: 30000 } },
+      { id: '1', name: 'First', color: '#9146FF', guess: { x: -15000, y: -20000 } },
+      { id: '2', name: 'Second', color: '#FF4500', guess: { x: 12000, y: 30000 } },
       { id: '3', name: 'No guess', guess: null },
     ];
     board.setPlayers(players, { x: 0, y: 0 }, highlighted); board.setLocked(true);
@@ -145,6 +145,7 @@ describe("guess-map camera", () => {
     }
     const first = board.svg.querySelector<SVGCircleElement>('[data-player="1"]')!;
     const second = board.svg.querySelector<SVGCircleElement>('[data-player="2"]')!;
+    expect(first.getAttribute('fill')).toBe('#9146FF'); expect(second.getAttribute('fill')).toBe('#FF4500');
     first.dispatchEvent(new Event('pointerenter'));
     expect(highlighted).toHaveBeenCalledWith('1');
     board.highlightPlayer('1'); expect(first.getAttribute('data-radius')).toBe('11');

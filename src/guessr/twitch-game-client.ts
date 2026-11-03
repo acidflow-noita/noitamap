@@ -1,4 +1,4 @@
-import { StreamPacketReader, streamPacketText } from './stream-wire';
+import { StreamPacketReader, streamPacketText, type GuessRejectionReason } from './stream-wire';
 import type { StreamChatMessage } from './stream-state';
 import type { StreamReveal } from './stream-types';
 import type { LiveRoomView } from './live-room-types';
@@ -8,6 +8,8 @@ import type { TwitchViewer } from './twitch-viewer';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import { gameCode, gameIdFromCode } from './routes';
 import { prepareAreaScorer } from './area-rules';
+import { chatEnvelope } from './chat-envelope';
+import { tr, formatGuessrNumber } from './i18n';
 
 /** Receives through the page's existing Twitch connection. No Cloudflare socket,
  * polling, viewer heartbeat, or per-guess Worker request. */
@@ -15,7 +17,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
   state: (state: LiveRoomView) => void;
   status: (state: RoomConnection, detail: string) => void;
   reveal: (round: number, reveal: StreamReveal) => void;
-  receipts: (round: number, keys: string[], rejected: boolean) => void;
+  receipts: (round: number, keys: string[], rejected: boolean, reason?: GuessRejectionReason) => void;
   recovery: () => { missing: number; receipts: { round: number; key: string }[] };
 }) {
   let closed = false, currentGame = expectedGame, revision = -1, connected = false, lastRequest = 0;
@@ -43,7 +45,16 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
     const recovery = handlers.recovery();
     const receipts = recovery.receipts.slice(0, 6).filter(r => r.round >= 0 && r.round < 10 && /^[a-f0-9]{16}$/.test(r.key))
       .map(r => `${r.round}:${r.key}`).join(',');
-    const message = `NoitaGuessr ${currentGame ? gameCode(currentGame, 'twitch') : '-'} player-${latest ? 'sync' : 'join'} ${channel} need=${(recovery.missing & 1023).toString(16)}${receipts ? ' receipts=' + receipts : ''}`;
+    const code = currentGame ? gameCode(currentGame, 'twitch') : '-';
+    const rounds = recovery.receipts.length ? recovery.receipts.slice(0, 6).map(r => r.round + 1)
+      : Array.from({ length: 10 }, (_, i) => i + 1).filter(round => recovery.missing & 1 << (round - 1));
+    const values = { game: code, channel, rounds: rounds.map(round => formatGuessrNumber(round)).join(', ') };
+    const label = latest && !recovery.receipts.length && !recovery.missing ? `NoitaGuessr ${code}: ${tr('Reconnecting…')}`
+      : tr(recovery.receipts.length ? 'NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.'
+      : recovery.missing ? 'NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.'
+      : 'NoitaGuessr {{game}}: joining {{channel}}’s game.', values);
+    const requestText = `!noitaguessr_sync ${channel} ${code} ${(recovery.missing & 1023).toString(16)}${receipts ? ' ' + receipts : ''}`;
+    const message = chatEnvelope(label, new Uint8Array([78, 71, 82, ...new TextEncoder().encode(requestText)]));
     void viewer.sendMessage(GUESSR_TRANSPORT_CHANNEL, message).catch(() => {
       if (!closed && !latest) handlers.status('retrying', 'Waiting for the streamer’s game update.');
     });
@@ -85,7 +96,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
       } else if (payload.type === 'reveal') {
         try { prepareAreaScorer(payload.reveal.area, payload.reveal.answer); } catch { return; }
         handlers.reveal(payload.round, payload.reveal);
-      } else handlers.receipts(payload.round, payload.keys, !!payload.rejected);
+      } else handlers.receipts(payload.round, payload.keys, !!payload.rejected, payload.reason);
     },
     transport(status: TwitchChatStatus, detail: string) {
       if (closed) return;

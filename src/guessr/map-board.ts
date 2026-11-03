@@ -4,6 +4,7 @@ import OpenSeadragon from "openseadragon";
 import { PIXEL_MAP_DRAW_OPTIONS } from "../osd-pixel-rendering";
 import { frameMap, frameMarkers } from "./map-framing";
 import { bindAttribute, bindText } from "./i18n";
+import { twitchColor } from './player-color';
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 export class MapBoard {
@@ -400,13 +401,13 @@ export class MapBoard {
     }
     if (answer)
       circle(answer, "var(--daily-fg)", "Actual location", guess ? 10 : 7);
-    if (guess) circle(guess, "var(--accent-fg)", "Your guess");
+    if (guess) circle(guess, "var(--guessr-pin-color, var(--accent-fg))", "Your guess");
     if (answer) {
       this.atHome = false;
       this.updateView();
     } else this.updateMarkers();
   }
-  setPlayers(players: { id: string; name: string; guess: Point | null }[], answer: Point, highlight: (id: string) => void): void {
+  setPlayers(players: { id: string; name: string; color?: string; guess: Point | null }[], answer: Point, highlight: (id: string) => void): void {
     this.setMarkers(null, answer);
     const answerMark = this.marks.lastElementChild!;
     const points = [answer];
@@ -414,7 +415,7 @@ export class MapBoard {
       if (!player.guess || !within(player.guess, this.bounds)) continue;
       const mark = document.createElementNS(SVG_NS, 'circle');
       mark.setAttribute('cx', String(player.guess.x)); mark.setAttribute('cy', String(player.guess.y));
-      mark.setAttribute('fill', 'var(--accent-fg)'); mark.setAttribute('stroke', 'var(--bg)'); mark.setAttribute('data-radius', '5');
+      mark.setAttribute('fill', twitchColor(player.color) ?? 'var(--accent-fg)'); mark.setAttribute('stroke', 'var(--bg)'); mark.setAttribute('data-radius', '5');
       mark.dataset.player = player.id; mark.style.pointerEvents = 'auto';
       mark.addEventListener('pointerenter', () => highlight(player.id));
       mark.addEventListener('click', () => highlight(player.id));

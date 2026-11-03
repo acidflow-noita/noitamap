@@ -521,5 +521,16 @@
   "End this game?": "Finire questa partita?",
   "End game": "Termina la partita",
   "Game ended": "La partita è terminata",
-  "The streamer ended this game.": "Lo streamer ha concluso questa partita."
+  "The streamer ended this game.": "Lo streamer ha concluso questa partita.",
+  "Chat round {{round}}: {{total}} submitted": "Round di chat {{round}}. Risposte ricevute: {{total}}.",
+  "Timed rounds end early when the streamer and every chatter who joined before the round started have submitted.": "I round a tempo terminano in anticipo quando lo streamer e tutti gli utenti che si sono collegati prima dell'inizio del round hanno inviato le loro risposte.",
+  "Everyone has submitted. This round is closing.": "Tutti i giocatori hanno inviato le loro risposte. Questo round sta per concludersi.",
+  "NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.": "NoitaGuessr {{game}}: verifica della ricezione delle risposte. Turni: {{rounds}}.",
+  "NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.": "NoitaGuessr {{game}}: ripristino dei risultati. Turni: {{rounds}}.",
+  "NoitaGuessr {{game}}: joining {{channel}}’s game.": "NoitaGuessr {{game}}: mi sto unendo alla partita su {{channel}}.",
+  "The round closed before your guess was received.": "Il round si è concluso prima che arrivasse la tua risposta.",
+  "This guess belongs to a different round.": "Questa risposta appartiene a un altro round.",
+  "A newer guess has already been received.": "È già stata ricevuta una risposta più recente.",
+  "The streamer did not receive this guess.": "Lo streamer non ha ricevuto questa risposta.",
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Inviato a Twitch. In attesa della conferma dello streamer."
 }

@@ -13,6 +13,7 @@ export interface StreamPlayer {
   id: string;
   login: string;
   name: string;
+  color?: string;
 }
 export interface StreamRound {
   id: string;
@@ -92,7 +93,8 @@ export interface StreamGame {
   /** Confirmed initial invitation posts, retained if the host refreshes in the lobby. */
   initialShareCount?: number;
   /** Unique authenticated Twitch identities seen joining this game's transport. */
-  joinedPlayers?: Record<string, { login: string; name: string }>;
+  joinedPlayers?: Record<string, { login: string; name: string; color?: string }>;
+  joinedOverflow?: boolean;
   timing?: import('./stream-timing').StreamTiming;
   receipts?: Record<number, string[]>;
   participants: StreamParticipant[];

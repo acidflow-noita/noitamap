@@ -2,6 +2,7 @@ import type { StreamChatMessage } from "./stream-state";
 import { canShareGameLink, postTwitchGameLink } from './twitch-announcement';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import { streamPacketText } from './stream-wire';
+import { twitchColor } from './player-color';
 
 export interface TwitchChatCredentials {
   accessToken: string;
@@ -316,6 +317,7 @@ export class TwitchChatConnection {
           id: chat.chatter_user_id,
           login: chat.chatter_user_login,
           name: chat.chatter_user_name,
+          ...(twitchColor(chat.color) ? { color: twitchColor(chat.color) } : {}),
         },
       });
     };

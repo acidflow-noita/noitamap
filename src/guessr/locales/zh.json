@@ -512,5 +512,16 @@
   "End this game?": "结束这场比赛？",
   "End game": "结束游戏",
   "Game ended": "比赛结束",
-  "The streamer ended this game.": "这位主播结束了这场比赛。"
+  "The streamer ended this game.": "这位主播结束了这场比赛。",
+  "Chat round {{round}}: {{total}} submitted": "第 {{round}} 轮聊天。已收到 {{total}} 条回复。",
+  "Timed rounds end early when the streamer and every chatter who joined before the round started have submitted.": "当主播以及在该轮开始前加入的所有聊天用户均已提交后，限时轮次即提前结束。",
+  "Everyone has submitted. This round is closing.": "所有玩家都已提交答案。本轮即将结束。",
+  "NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.": "NoitaGuessr {{game}}：正在检查是否收到答案。轮次：{{rounds}}。",
+  "NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.": "NoitaGuessr {{game}}：正在恢复结果。轮次：{{rounds}}。",
+  "NoitaGuessr {{game}}: joining {{channel}}’s game.": "NoitaGuessr {{game}}：正在加入 {{channel}} 的游戏。",
+  "The round closed before your guess was received.": "在你回答到达之前，本轮比赛就已经结束了。",
+  "This guess belongs to a different round.": "这个答案属于另一轮。",
+  "A newer guess has already been received.": "已经收到了一条较新的回答。",
+  "The streamer did not receive this guess.": "这位主播并没有收到这个回答。",
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "已发送至Twitch。正在等待主播的确认。"
 }

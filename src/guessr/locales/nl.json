@@ -512,5 +512,16 @@
   "End this game?": "Dit spel beëindigen?",
   "End game": "Het spel beëindigen",
   "Game ended": "Het spel is afgelopen",
-  "The streamer ended this game.": "De streamer heeft deze wedstrijd afgesloten."
+  "The streamer ended this game.": "De streamer heeft deze wedstrijd afgesloten.",
+  "Chat round {{round}}: {{total}} submitted": "Chatronde {{round}}. Ontvangen antwoorden: {{total}}.",
+  "Timed rounds end early when the streamer and every chatter who joined before the round started have submitted.": "Tijdsgebonden rondes eindigen vroegtijdig wanneer de streamer en alle deelnemers die zich vóór het begin van de ronde hebben aangemeld, hun inzendingen hebben ingediend.",
+  "Everyone has submitted. This round is closing.": "Alle spelers hebben hun antwoorden ingestuurd. Deze ronde loopt ten einde.",
+  "NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.": "NoitaGuessr {{game}}: wordt gecontroleerd of er antwoorden zijn binnengekomen. Ronden: {{rounds}}.",
+  "NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.": "NoitaGuessr {{game}}: resultaten worden hersteld. Ronden: {{rounds}}.",
+  "NoitaGuessr {{game}}: joining {{channel}}’s game.": "NoitaGuessr {{game}}: ik doe mee aan het spel van {{channel}}.",
+  "The round closed before your guess was received.": "De ronde was al afgelopen voordat je antwoord binnenkwam.",
+  "This guess belongs to a different round.": "Dit antwoord hoort bij een andere ronde.",
+  "A newer guess has already been received.": "Er is al een recenter antwoord binnengekomen.",
+  "The streamer did not receive this guess.": "De streamer heeft dit antwoord niet ontvangen.",
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Verzonden naar Twitch. Ik wacht op bevestiging van de streamer."
 }

@@ -88,6 +88,7 @@ function fixture(broadcasterLogin?: string) {
           chatter_user_id: "123",
           chatter_user_login: "viewer",
           chatter_user_name: "Viewer",
+          color: '#FF4500',
           message_id: id,
           message: { text: "!noitaguessr_guess 1 -100 20" },
         },
@@ -175,7 +176,7 @@ describe("Twitch EventSub browser transport", () => {
     f.chat(f.sockets[0], "other", "200");
     expect(f.message).toHaveBeenCalledTimes(1);
     expect(f.message.mock.calls[0][0]).toMatchObject({
-      player: { id: "123", login: "viewer" },
+      player: { id: "123", login: "viewer", color: '#FF4500' },
       text: "!noitaguessr_guess 1 -100 20",
     });
     expect(f.status).toHaveBeenLastCalledWith("live", expect.any(String));

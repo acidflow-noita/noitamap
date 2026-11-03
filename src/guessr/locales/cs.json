@@ -530,5 +530,16 @@
   "End this game?": "Ukončit tuto hru?",
   "End game": "Ukončit hru",
   "Game ended": "Hra skončila",
-  "The streamer ended this game.": "Streamer tento zápas ukončil."
+  "The streamer ended this game.": "Streamer tento zápas ukončil.",
+  "Chat round {{round}}: {{total}} submitted": "Kolo chatu {{round}}. Počet obdržených odpovědí: {{total}}.",
+  "Timed rounds end early when the streamer and every chatter who joined before the round started have submitted.": "Časově omezená kola končí předčasně, jakmile streamer a všichni účastníci chatu, kteří se připojili před začátkem kola, odešlou své příspěvky.",
+  "Everyone has submitted. This round is closing.": "Všichni hráči již zaslali své odpovědi. Toto kolo se chýlí ke konci.",
+  "NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.": "NoitaGuessr {{game}}: ověřuje, zda byly doručeny odpovědi. Kol: {{rounds}}.",
+  "NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.": "NoitaGuessr {{game}}: obnovení výsledků. Kol: {{rounds}}.",
+  "NoitaGuessr {{game}}: joining {{channel}}’s game.": "NoitaGuessr {{game}}: připojuji se ke hře na kanálu {{channel}}.",
+  "The round closed before your guess was received.": "Kolo skončilo dříve, než dorazila vaše odpověď.",
+  "This guess belongs to a different round.": "Tato odpověď patří do jiného kola.",
+  "A newer guess has already been received.": "Již byla obdržena novější odpověď.",
+  "The streamer did not receive this guess.": "Streamer tuto odpověď neobdržel.",
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Odesláno na Twitch. Čekám na potvrzení od streamera."
 }

@@ -18,7 +18,12 @@ deadline: the streamer presses Start game after people have joined. That click
 starts a silent three-second countdown
 and a configurable 90-second round timer by default. Chat plays round one while
 the streamer waits; chat round two and streamer round one then start together.
-An early streamer submission locks their guess without shortening chat's timer.
+An early streamer submission locks their guess. Once the streamer and every
+chatter enrolled when the chat round opened have submitted, automatic mode
+shortens the remaining wait to a silent five-second closing period (or the
+remaining results-view time, if longer). Revisions remain possible until closure.
+Absent players use the original deadline; manual timing is unchanged. Late
+arrivals enroll in the next round for this readiness check.
 Automatic progression leaves results visible for at least eight seconds, then
 starts the next streamer/chatter pair together after the silent countdown.
 With automatic timing disabled in setup, the streamer explicitly starts their
@@ -75,6 +80,12 @@ Round and final tables use aligned numeric columns and one caret on the active
 sort column. The host and chatter share the same toolbar arrangement, with a
 plain digital timer. Submission/activity feedback is inline in reserved space;
 it does not create popovers or replace the action button's label with a status.
+Names and guess markers use the color supplied by Twitch chat events; the streamer
+uses Twitch purple. An unset Twitch color uses a neutral fallback. Colors are
+saved with the final result without an additional identity lookup. The lobby
+renders at most ten plain names, and its bounded roster shows `3,000+` after
+reaching its storage bound. Sharing confirmation stays in the lobby, except for
+brief feedback immediately after an explicit repost during play.
 
 Chatter submissions remain `Waiting for confirmation` until the host acknowledges
 their sender/round/nonce fingerprint. Receipts are batched, not one reply per
@@ -83,6 +94,11 @@ are explicit actions. Saved guesses, receipt state and released scores survive
 refresh; an unreachable Twitch validation can still show the last saved result
 without authorizing another send. A disconnected host pauses the timer, and
 recovery extends the unfinished window without reopening previously closed rounds.
+Twitch-send confirmation and host-receipt confirmation are separate states.
+Known late, wrong-round, host-identity and superseded submissions receive a
+batched rejection with a reason. Re-delivery of an already accepted packet
+renews its receipt. A rejected current-round guess can be sent again at the same
+pin. A Twitch API success alone does not prove host receipt.
 Replacing a guess leaves the previous confirmed guess in effect until the
 replacement is received. Round ten has the same duration as the other rounds;
 chat then waits while the streamer finishes their tenth location.
@@ -678,13 +694,16 @@ not guaranteed. OBS layout, moderation exclusions and channel-point rewards
 remain deferred.
 
 Outgoing guesses use readable submission text with sender-bound bytes in a
-printable `[ng:base64url]` suffix. Required data no longer relies on invisible
+printable `[noitaguessr:base64url]` suffix. Required data no longer relies on invisible
 Unicode characters. State/receipt packets are printable and explicitly labelled:
 `NoitaGuessr <game-code> <event> r<round> v<revision> <packet-id> <part>/<parts> <data>`.
 Events distinguish `lobby-open`, `round-open`, `round-closed`, `state-sync`,
 `state-update`, `round-solution`, `guess-received`, `guess-rejected`, `game-ended`
-and `game-finished`. Join/recovery requests identify the game and channel with
-`player-join` or `player-sync`; Twitch supplies sender identity and receipt time.
+and `game-finished`. Join/recovery requests state their purpose in human-readable
+text and carry machine fields in the full-name encoded suffix. Raw recovery masks
+and receipt hashes are not exposed as `need=`/`receipts=` UI text. The earlier
+`player-join`/`player-sync` forms are still readable for already-open tabs.
+Twitch supplies sender identity, timestamp and the chosen username color.
 This provides identifiers for future log analysis without another database write.
 An in-flight multipart packet finishes before a replacement for the same key is
 sent. Identical unsolicited states are suppressed; a new join can request a

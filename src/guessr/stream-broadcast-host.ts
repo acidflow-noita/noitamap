@@ -1,16 +1,18 @@
-import { StreamBroadcaster, guessReceiptKey, STREAM_RECEIPT_BATCH } from './stream-wire';
+import { StreamBroadcaster, guessReceiptKey, STREAM_RECEIPT_BATCH, type GuessRejectionReason } from './stream-wire';
 import { readChatEnvelope } from './chat-envelope';
 import type { StreamGame } from './stream-types';
 import type { StreamChatMessage } from './stream-state';
 import type { LiveRoomView } from './live-room-types';
 import { encodeViewerClue } from './viewer-clue';
 import { gameIdFromCode } from './routes';
+import { twitchColor } from './player-color';
 
 /** Host-owned broadcast state; no response or connection per chatter. */
 export class StreamBroadcastHost {
   private publisher: StreamBroadcaster;
   private pending = new Map<number, Set<string>>();
   private rejected = new Map<number, Set<string>>();
+  private rejectionReasons = new Map<string, GuessRejectionReason>();
   private receipts = new Map<number, Set<string>>();
   private sendingReceipts = new Set<string>();
   private clues = new Map<number, string>();
@@ -61,6 +63,7 @@ export class StreamBroadcastHost {
       ...(game.published ? { resultId: game.session.id } : {}),
       timing: { phase: timing.phase, startsAt: timing.startsAt, deadline: timing.deadline,
         hostRound: game.round + 1, seconds: timing.seconds,
+        ...(timing.early ? { early: true } : {}),
         revealed: game.reveals.reduce((mask, reveal, i) => reveal ? mask | 1 << i : mask, 0) } };
   }
   publishState(full = true, resync = false): void {
@@ -93,6 +96,13 @@ export class StreamBroadcastHost {
     this.receipts.set(round, receipts);
     if (enqueue) { const pending = this.pending.get(round) ?? new Set<string>(); pending.add(key); this.pending.set(round, pending); }
   }
+  async reject(round: number, userId: string, nonce: string, reason: GuessRejectionReason): Promise<void> {
+    const key = await guessReceiptKey(this.game.session.rounds[round].id, userId, nonce);
+    if (this.stopped || this.completing) return;
+    const queue = this.rejected.get(round) ?? new Set<string>();
+    if (queue.size >= 4096) return;
+    queue.add(key); this.rejected.set(round, queue); this.rejectionReasons.set(key, reason);
+  }
   private flushReceipts(): void {
     if (![...this.pending.values(), ...this.rejected.values()].some(set => set.size)) return;
     this.save();
@@ -100,9 +110,11 @@ export class StreamBroadcastHost {
       for (const [round, pending] of queue) {
         const queueKey = `receipts-${round}-${rejected}`;
         if (!pending.size || this.sendingReceipts.has(queueKey)) continue;
-        const keys = [...pending].slice(0, STREAM_RECEIPT_BATCH); this.sendingReceipts.add(queueKey);
-        this.prepare(this.publisher.offer(queueKey, { type: 'receipts', round, keys, ...(rejected ? { rejected } : {}) }, 2, () => {
-          keys.forEach(key => pending.delete(key)); this.sendingReceipts.delete(queueKey);
+        const reason = rejected ? this.rejectionReasons.get(pending.values().next().value!) ?? 'unreceived' : undefined;
+        const keys = [...pending].filter(key => !rejected || (this.rejectionReasons.get(key) ?? 'unreceived') === reason).slice(0, STREAM_RECEIPT_BATCH);
+        this.sendingReceipts.add(queueKey);
+        this.prepare(this.publisher.offer(queueKey, { type: 'receipts', round, keys, ...(rejected ? { rejected, reason } : {}) }, 2, () => {
+          keys.forEach(key => { pending.delete(key); this.rejectionReasons.delete(key); }); this.sendingReceipts.delete(queueKey);
         }, () => { keys.forEach(key => pending.delete(key)); this.sendingReceipts.delete(queueKey); })
           .catch(error => { keys.forEach(key => pending.delete(key)); this.sendingReceipts.delete(queueKey); throw error; }));
       }
@@ -117,9 +129,19 @@ export class StreamBroadcastHost {
     if (!match || match[1] !== this.game.session.host.login || match[2] !== '-' && gameIdFromCode(match[2]) !== this.game.session.id) return;
     if (message.player.id !== this.game.session.host.id) {
       this.game.joinedPlayers ??= {};
-      if (!this.game.joinedPlayers[message.player.id] && Object.keys(this.game.joinedPlayers).length < 3000) {
-        this.game.joinedPlayers[message.player.id] = { login: message.player.login, name: message.player.name };
+      if (!this.game.joinedPlayers[message.player.id] && !this.game.joinedOverflow && Object.keys(this.game.joinedPlayers).length < 3000) {
+        this.game.joinedPlayers[message.player.id] = { login: message.player.login, name: message.player.name,
+          ...(twitchColor(message.player.color) ? { color: twitchColor(message.player.color) } : {}) };
         this.joined();
+      } else if (!this.game.joinedPlayers[message.player.id] && !this.game.joinedOverflow) {
+        this.game.joinedOverflow = true; this.joined();
+      } else if (this.game.joinedPlayers[message.player.id]) {
+        const player = this.game.joinedPlayers[message.player.id], color = twitchColor(message.player.color);
+        if (player.name !== message.player.name || color && color !== player.color) {
+          player.name = message.player.name;
+          if (color) player.color = color;
+          this.joined();
+        }
       }
     }
     const now = Date.now(), previous = this.requests.get(message.player.id) ?? 0;

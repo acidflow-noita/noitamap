@@ -264,6 +264,7 @@ export class StreamService {
         id: player.id,
         login: player.login,
         name: player.name,
+        ...(typeof player.color === 'string' && /^#[a-f0-9]{6}$/i.test(player.color) ? { color: player.color.toUpperCase() } : {}),
         rounds,
         score,
       };

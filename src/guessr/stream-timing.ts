@@ -4,6 +4,7 @@ export const STREAM_DEFAULT_SECONDS = 90;
 export const STREAM_START_COUNTDOWN_MS = 3000;
 export const STREAM_DELIVERY_GRACE_MS = 5000;
 export const STREAM_RESULTS_HOLD_MS = 8000;
+export const STREAM_EARLY_CLOSE_MS = 5000;
 
 export interface ChatRoundWindow { opensAt: number; closesAt: number | null; closed: boolean }
 export interface StreamTiming {
@@ -17,6 +18,9 @@ export interface StreamTiming {
   suspendedAt: number | null;
   lastActiveAt: number;
   revision: number;
+  waitingFor?: string[];
+  enrolled?: number;
+  early?: boolean;
 }
 export function validStreamSeconds(value: number): boolean {
   return value === 0 || Number.isInteger(value) && value >= 15 && value <= 600;
@@ -37,9 +41,24 @@ export function beginStreamTiming(game: StreamGame, now: number): void {
 }
 function openChatWindow(game: StreamGame): void {
   const timing = game.timing!;
+  timing.waitingFor = Object.keys(game.joinedPlayers ?? {}).filter(id => id !== game.session.host.id);
+  timing.enrolled = timing.waitingFor.length; timing.early = false;
   if (timing.chatRound !== null) timing.windows[timing.chatRound] = {
     opensAt: timing.startsAt, closesAt: timing.deadline, closed: false,
   };
+}
+/** The roster is fixed when a round opens. The original deadline still handles
+ * absent players; late joins participate normally and enroll in the next round. */
+export function shortenFinishedWindow(game: StreamGame, now: number): boolean {
+  const timing = game.timing;
+  if (!timing?.seconds || timing.deadline === null || timing.phase === 'lobby' || timing.early || game.paused
+    || game.joinedOverflow || !timing.enrolled || timing.waitingFor?.length || timing.chatRound === null
+    || now < timing.startsAt || timing.phase === 'play' && game.stage !== 'reveal') return false;
+  const deadline = Math.max(now + STREAM_EARLY_CLOSE_MS, timing.resultsUntil ?? now);
+  if (deadline >= timing.deadline) return false;
+  timing.deadline = deadline; timing.early = true; timing.revision++;
+  timing.windows[timing.chatRound]!.closesAt = deadline;
+  return true;
 }
 /** Close the chatter's current round without revealing its solution. */
 export function closeChatWindow(game: StreamGame, now: number): void {

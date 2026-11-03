@@ -3,6 +3,7 @@ import { isEncodedGuessCommand, parseGuessCommand } from "./guess-command";
 import { rankStreamPlayers } from "./stream-ranking";
 import { maximumScore, newClueProgress, within, type Point } from "./rules";
 import { chatRoundAccepts, closeChatWindow, startHostWindow, STREAM_RESULTS_HOLD_MS } from './stream-timing';
+import { twitchColor } from './player-color';
 import type { LiveRoomView } from "./live-room-types";
 import {
   type StreamGame,
@@ -104,6 +105,7 @@ export function acceptStreamGuess(
   }
   player.name = message.player.name;
   player.login = message.player.login;
+  if (twitchColor(message.player.color)) player.color = twitchColor(message.player.color);
   player.guesses[index] = {
     point: { x: command.x, y: command.y },
     maximum: game.timing ? command.maximum ?? 5000 : Math.min(maximumScore(game.clue), command.maximum ?? 5000),
@@ -111,6 +113,8 @@ export function acceptStreamGuess(
     sentAt: message.sentAt,
     nonce: command.nonce,
   };
+  if (game.timing?.chatRound === index && game.timing.waitingFor)
+    game.timing.waitingFor = game.timing.waitingFor.filter(id => id !== message.player.id);
   if (command.nonce) {
     if (!game.recentNonces || typeof game.recentNonces !== 'object' || Array.isArray(game.recentNonces)) game.recentNonces = {};
     game.recentNonces[nonceKey] = [...nonces.slice(-63), command.nonce];
@@ -210,6 +214,7 @@ export function streamStandings(
       id: player.id,
       name: player.name,
       login: player.login,
+      ...(twitchColor(player.color) ? { color: twitchColor(player.color) } : {}),
       rounds,
       score: rounds.reduce((sum, round) => sum + round.score, 0),
     };

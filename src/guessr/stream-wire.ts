@@ -7,10 +7,17 @@ import { readChatEnvelope } from './chat-envelope';
 const PREFIX = '!noitaguessr_state';
 export const STREAM_RECEIPT_BATCH = 35;
 const MAX_COMPRESSED = 32_768, MAX_DECODED = 98_304;
+export type GuessRejectionReason = 'closed' | 'round' | 'streamer' | 'superseded' | 'unreceived';
+export function guessRejectionText(reason?: GuessRejectionReason): string {
+  return reason === 'closed' ? 'The round closed before your guess was received.'
+    : reason === 'round' ? 'This guess belongs to a different round.'
+    : reason === 'streamer' ? 'You are the streamer. Submit your guess in the streamer tab.'
+    : reason === 'superseded' ? 'A newer guess has already been received.' : 'The streamer did not receive this guess.';
+}
 export type StreamWirePayload =
   | { type: 'state'; state: LiveRoomView; event?: 'sync' }
   | { type: 'reveal'; round: number; reveal: StreamReveal }
-  | { type: 'receipts'; round: number; keys: string[]; rejected?: boolean };
+  | { type: 'receipts'; round: number; keys: string[]; rejected?: boolean; reason?: GuessRejectionReason };
 
 function base64(bytes: Uint8Array): string {
   let text = '';
@@ -43,6 +50,7 @@ function pack(payload: StreamWirePayload): unknown[] | Uint8Array<ArrayBuffer> {
     const s = payload.state, t = s.timing;
     return [0, s.revision, s.hostId, s.phase, s.online, s.paused, s.round, s.roundId, s.clue, s.expiresAt, s.resultId,
       t ? { phase: t.phase, startsAt: t.startsAt, deadline: t.deadline, hostRound: t.hostRound, seconds: t.seconds, revealed: t.revealed,
+        ...(t.early ? { early: true } : {}),
         ...(s.ended ? { ended: true } : {}) } : undefined];
   }
   if (payload.type === 'receipts') {
@@ -63,7 +71,7 @@ export async function encodeStreamPacket(gameId: string, payload: StreamWirePayl
   const compressed = await bounded(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate')), MAX_COMPRESSED);
   const data = base64(compressed), code = gameCode(gameId, 'twitch');
   const id = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
-  const event = payload.type === 'receipts' ? payload.rejected ? 'guess-rejected' : 'guess-received'
+  const event = payload.type === 'receipts' ? payload.rejected ? 'guess-rejected' + (payload.reason ? '-' + payload.reason : '') : 'guess-received'
     : payload.type === 'reveal' ? 'round-solution'
     : payload.state.ended ? 'game-ended' : payload.event === 'sync' ? 'state-sync'
     : payload.state.phase === 'complete' ? 'game-finished' : payload.state.paused ? 'disconnected'
@@ -87,7 +95,7 @@ export function streamPacketText(message: string): string {
   return `${PREFIX} ${gameCode(id)} ${hex(raw.subarray(19, 23))} ${raw[23].toString(36)}/${raw[24].toString(36)} ${base64(raw.subarray(25))}`;
 }
 
-interface Assembly { created: number; total: number; parts: Map<number, string>; gameId: string; sentAt: number }
+interface Assembly { created: number; total: number; parts: Map<number, string>; gameId: string; sentAt: number; reason?: GuessRejectionReason }
 /** Only the actual Twitch sender matching the requested channel can publish.
  * Bound partial assemblies and decompression before trusting any JSON. */
 export class StreamPacketReader {
@@ -104,7 +112,8 @@ export class StreamPacketReader {
     let entry = this.pending.get(id);
     if (!entry) {
       if (this.pending.size >= 8) this.pending.delete(this.pending.keys().next().value!);
-      entry = { created: now, total, parts: new Map(), gameId, sentAt: message.sentAt }; this.pending.set(id, entry);
+      const reason = /^NoitaGuessr [a-z0-9]{26} guess-rejected-(closed|round|streamer|superseded|unreceived) /.exec(message.text)?.[1] as GuessRejectionReason | undefined;
+      entry = { created: now, total, parts: new Map(), gameId, sentAt: message.sentAt, reason }; this.pending.set(id, entry);
     }
     if (entry.total !== total || entry.parts.has(part) && entry.parts.get(part) !== match[5]) { this.pending.delete(id); return null; }
     entry.parts.set(part, match[5]); entry.sentAt = Math.max(entry.sentAt, message.sentAt);
@@ -118,7 +127,7 @@ export class StreamPacketReader {
         const round = decoded[1], raw = decoded.subarray(2);
         if (round >= 10 || raw.length % 8 || raw.length > 280) return null;
         const keys = Array.from({ length: raw.length / 8 }, (_, i) => Array.from(raw.subarray(i * 8, i * 8 + 8), b => b.toString(16).padStart(2, '0')).join(''));
-        return { gameId, payload: { type: 'receipts', round, keys, ...(decoded[0] === 254 ? { rejected: true } : {}) }, sentAt: entry.sentAt };
+        return { gameId, payload: { type: 'receipts', round, keys, ...(decoded[0] === 254 ? { rejected: true, ...(entry.reason ? { reason: entry.reason } : {}) } : {}) }, sentAt: entry.sentAt };
       }
       const row = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(decoded));
       if (!Array.isArray(row)) return null;
