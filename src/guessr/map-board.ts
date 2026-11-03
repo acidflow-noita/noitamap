@@ -20,6 +20,8 @@ export class MapBoard {
   private tiles?: OpenSeadragon.Viewer;
   private tilesReady = false;
   private fittedMarkers: Point[] | null = null;
+  // Retain the result after manual pan/zoom so reset can fit those points again.
+  private resultMarkers: Point[] | null = null;
   private atHome = true;
   private playerMarks = new Map<string, SVGCircleElement>();
   private highlightedPlayer?: string;
@@ -210,19 +212,23 @@ export class MapBoard {
       y: this.view.y + this.view.height / 2,
     },
   ): void {
-    this.fittedMarkers = null;
-    this.atHome = false;
     const aspect = this.view.width / this.view.height;
+    // Result padding can exceed the world bounds; zoom-out must not shrink it.
+    const resultWidth = this.resultMarkers
+      ? frameMarkers(this.resultMarkers, this.element.clientWidth, this.element.clientHeight).width : 0;
     const width = Math.max(
       Math.min(
         this.element.clientWidth / 70,
         (this.element.clientHeight / 70) * aspect,
       ),
       Math.min(
-        Math.max(this.bounds.width, this.bounds.height * aspect),
+        Math.max(this.bounds.width, this.bounds.height * aspect, resultWidth, this.view.width),
         this.view.width / factor,
       ),
     );
+    if (width === this.view.width) return;
+    this.fittedMarkers = null;
+    this.atHome = false;
     const ratio = width / this.view.width;
     this.view = {
       x: anchor.x - (anchor.x - this.view.x) * ratio,
@@ -233,8 +239,8 @@ export class MapBoard {
     this.updateView();
   }
   home(): void {
-    this.fittedMarkers = null;
-    this.atHome = true;
+    this.fittedMarkers = this.resultMarkers;
+    this.atHome = !this.resultMarkers;
     this.view = { ...this.bounds };
     this.updateView();
   }
@@ -368,7 +374,8 @@ export class MapBoard {
   setMarkers(guess: Point | null, answer?: Point): void {
     this.playerMarks.clear(); this.highlightedPlayer = undefined;
     this.point = guess;
-    this.fittedMarkers = answer ? (guess ? [guess, answer] : [answer]) : null;
+    this.resultMarkers = answer ? (guess ? [guess, answer] : [answer]) : null;
+    this.fittedMarkers = this.resultMarkers;
     this.marks.replaceChildren();
     const circle = (p: Point, color: string, label: string, radius = 7) => {
       const g = document.createElementNS(SVG_NS, "g");
@@ -422,7 +429,7 @@ export class MapBoard {
       this.playerMarks.set(player.id, mark); this.marks.append(mark); points.push(player.guess);
     }
     this.marks.append(answerMark);
-    this.fittedMarkers = points; this.atHome = false; this.updateView();
+    this.resultMarkers = points; this.fittedMarkers = this.resultMarkers; this.atHome = false; this.updateView();
   }
   highlightPlayer(id: string): void {
     const previous = this.highlightedPlayer && this.playerMarks.get(this.highlightedPlayer);

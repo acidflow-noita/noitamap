@@ -130,6 +130,27 @@ function click(mount: HTMLElement, x: number, y: number) {
 }
 
 describe("guess-map camera", () => {
+  it('returns to the streamer and target after exploring results when no chatter guessed', async () => {
+    const { board, viewer } = await fixture();
+    const host = { x: 14000, y: -22000 }, target = { x: 14600, y: -21500 };
+    board.setPlayers([{ id: 'host', name: 'Streamer', guess: host }, { id: 'chat', name: 'No guess', guess: null }], target, () => {});
+    const result = camera();
+    expect(board.svg.querySelectorAll('[data-player]')).toHaveLength(1);
+    expect(result.x + result.width / 2).toBeCloseTo((host.x + target.x) / 2);
+    expect(result.y + result.height / 2).toBeCloseTo((host.y + target.y) / 2);
+    board.zoom(4); board.home();
+    expect(camera()).toEqual(result); aligned(viewer.viewport);
+  });
+
+  it('never zooms inward when zooming out of an all-guesses result near the world edges', async () => {
+    const { board } = await fixture();
+    board.setPlayers([{ id: 'first', name: 'First', guess: { x: -17920, y: -31744 } },
+      { id: 'last', name: 'Last', guess: { x: 18432, y: 41984 } }], { x: 0, y: 0 }, () => {});
+    const before = camera(); board.zoom(0.8);
+    expect(camera().width).toBeGreaterThanOrEqual(before.width);
+    expect(camera().height).toBeGreaterThanOrEqual(before.height);
+  });
+
   it('frames every submitted pin and highlights the selected player without moving the camera', async () => {
     const { board, viewer } = await fixture(), highlighted = vi.fn();
     const players = [
@@ -219,7 +240,7 @@ describe("guess-map camera", () => {
     aligned(viewer.viewport);
   });
 
-  it("still fits both markers after submission and resets to a filled map", async () => {
+  it("fits both markers after submission and resets to a filled map for the next round", async () => {
     const { board, viewer } = await fixture();
     const markers = [
       { x: -15000, y: -28000 },
@@ -234,7 +255,7 @@ describe("guess-map camera", () => {
       expect((p.y - frame.y) / frame.height).toBeGreaterThan(0.1);
       expect((p.y - frame.y) / frame.height).toBeLessThan(0.9);
     }
-    board.home();
+    board.setMarkers(null); board.home();
     expect(camera().width).toBe(bounds.width);
     expect(camera().height).toBe(bounds.width / 2);
     aligned(viewer.viewport);
