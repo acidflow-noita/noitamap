@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({ pause: vi.fn(async () => ({})), quit: vi.fn(as
   stateBroadcast: vi.fn(), revealBroadcast: vi.fn(), roundView: vi.fn((main: HTMLElement, _game: unknown, _index: number, actions: HTMLElement) => { main.append(actions); return () => {}; }) }));
 vi.mock('../src/guessr/stream-broadcast-host', () => ({ StreamBroadcastHost: class {
   start = async () => {}; publishState = mocks.stateBroadcast; publishReveal = mocks.revealBroadcast;
-  remember = async () => {}; receiveRequest() {} dispose() {} close = async () => {};
+  remember = async () => {}; receiveRequest() {} dispose() {} close = async () => {}; complete = async () => {};
 } }));
 vi.mock('../src/guessr/stream-round-results', () => ({ streamRoundResults: mocks.roundView }));
 vi.mock('../src/guessr/stream-api', () => ({ StreamApi: class {
@@ -93,6 +93,11 @@ it('runs the warm-up and timed chat-ahead flow in the host UI without a pause or
   expect((document.getElementById('stream-round-seconds') as HTMLInputElement).value).toBe('90');
   [...document.querySelectorAll('button')].find(button => button.textContent === 'Start new game')!.click(); await flush();
   mocks.watchChat.mock.calls[0][1].status('live', 'Connected');
+  expect(ui.game!.timing!.phase).toBe('lobby');
+  await vi.advanceTimersByTimeAsync(120000);
+  expect(ui.game!.timing!.phase).toBe('lobby');
+  expect(ui.game!.timing!.windows.every(window => window === null)).toBe(true);
+  (document.getElementById('stream-start-game') as HTMLButtonElement).click();
   expect(document.querySelector('.stream-warmup')).not.toBeNull();
   expect(document.getElementById('confirm-guess')).toBeNull();
   await vi.advanceTimersByTimeAsync(93_000);
@@ -122,6 +127,9 @@ it('keeps manual timing optional and closes chat only when the streamer submits'
   [...document.querySelectorAll('button')].find(b => b.textContent === 'Start new game')!.click(); await flush();
   mocks.watchChat.mock.calls[0][1].status('live', 'Connected');
   await vi.advanceTimersByTimeAsync(120000);
+  expect(ui.game!.timing!.phase).toBe('lobby');
+  (document.getElementById('stream-start-game') as HTMLButtonElement).click();
+  await vi.advanceTimersByTimeAsync(3000);
   expect(ui.game!.timing!.phase).toBe('warmup'); expect(ui.game!.timing!.deadline).toBeNull();
   (document.getElementById('stream-first-round') as HTMLButtonElement).click();
   await vi.advanceTimersByTimeAsync(8000);
@@ -132,6 +140,33 @@ it('keeps manual timing optional and closes chat only when the streamer submits'
   expect(ui.game!.stage).toBe('reveal');
   expect(document.getElementById('stream-auto-next')).toBeNull();
   expect([...document.querySelectorAll('button')].find(b => b.textContent === 'Next round')!.disabled).toBe(false);
+});
+
+it.each([[false, 3], [true, 1]] as const)('automatically posts invitations on game creation, then waits for an explicit start (announcement: %s)', async (announcements, posts) => {
+  vi.useFakeTimers(); vi.setSystemTime(streamNow);
+  const f = await fixture(); f.game.session.transport = 'twitch'; f.game.session.localChat = true;
+  mocks.start.mockResolvedValue(f.game.session);
+  history.replaceState(null, '', '/guess/stream/'); ui = new StreamUI(f.hooks); await ui.open();
+  const toggle = document.getElementById('stream-share-announcements') as HTMLInputElement;
+  toggle.checked = announcements; toggle.dispatchEvent(new Event('change'));
+  [...document.querySelectorAll('button')].find(b => b.textContent === 'Start new game')!.click(); await flush();
+  mocks.watchChat.mock.calls[0][1].status('live', 'Connected');
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(mocks.post).toHaveBeenCalledTimes(posts);
+  for (const [channel, text, announcement] of mocks.post.mock.calls) {
+    expect(channel).toBe('streamer'); expect(channel).not.toBe('noitaguessr');
+    expect(text).toContain(`/guess/streamer/`); expect(announcement).toBe(announcements);
+  }
+  expect(document.getElementById('stream-share-status')!.textContent).toBe('Game link shared in chat.');
+  await vi.advanceTimersByTimeAsync(3600000);
+  expect(ui.game!.timing!.phase).toBe('lobby'); expect(ui.game!.timing!.deadline).toBeNull();
+  expect(ui.game!.timing!.windows.every(window => !window)).toBe(true);
+  expect(mocks.post).toHaveBeenCalledTimes(posts);
+  (document.getElementById('stream-start-game') as HTMLButtonElement).click();
+  expect(ui.game!.timing!.phase).toBe('warmup');
+  expect(ui.game!.timing!.startsAt).toBe(Date.now() + 3000);
+  expect(ui.game!.timing!.deadline).toBe(Date.now() + 93000);
+  expect(mocks.post).toHaveBeenCalledTimes(posts);
 });
 
 it('keeps submission in the guess panel and shows recovery controls only when necessary', async () => {
@@ -257,7 +292,8 @@ it('does not claim an unconfirmed announcement was posted or retry it automatica
   share.click(); await flush();
   expect(share.disabled).toBe(false);
   expect(share.textContent).toBe('Share game link in chat');
-  expect(mocks.notice).toHaveBeenCalledWith(expect.stringContaining('Check your Twitch chat'), 'danger');
+  expect(document.getElementById('stream-share-status')!.textContent).toContain('Check your Twitch chat');
+  expect(mocks.notice).not.toHaveBeenCalled();
   expect(mocks.post).toHaveBeenCalledOnce();
 });
 
@@ -335,7 +371,7 @@ it('receives real-channel chat in localhost mode and submits both host and chatt
   const receiver = mocks.watchChat.mock.calls[0][1];
   receiver.message({ id: 'message-1', player: { id: '123', login: 'streamer', name: 'WUOTE' }, sentAt: streamNow + 50,
     text: formatGuessCommand(1, streamAnswer, 4900, game.session.rounds[0].id, { userId: '123' }) });
-  expect(document.querySelector('#stream-guess-count')!.textContent).toBe('1 chat guess this round');
+  expect(document.querySelector('#stream-guess-count')!.textContent).toBe('Guesses: 1');
   expect(ui.game!.participants).toHaveLength(2);
   ui.game!.guess = streamAnswer; ui.render();
   button('Submit guess').click(); await flush();
@@ -382,6 +418,7 @@ it('opens host setup for a completed save and keeps saved results behind an expl
   expect(document.querySelector('.finish-hero')).toBeNull();
   expect(mocks.watchChat).not.toHaveBeenCalled();
   button('View saved results').click(); await flush();
+  expect(location.pathname).toBe(`/guess/results/${game.session.id}/`);
   expect(document.querySelector('.finish-hero')).not.toBeNull();
   expect(hooks.toast).not.toHaveBeenCalled();
   expect(button('Save results as a web page')).toBeDefined();
@@ -389,6 +426,9 @@ it('opens host setup for a completed save and keeps saved results behind an expl
   expect(document.body.textContent).toContain('search and sort every player’s scores offline');
   expect(mocks.pause).not.toHaveBeenCalled();
   expect(mocks.watchChat).not.toHaveBeenCalled();
+  ui.suspend(); ui = new StreamUI(hooks); await ui.publicResult(game.session.id);
+  expect(document.querySelector('.finish-hero')).not.toBeNull();
+  expect(location.pathname).toBe(`/guess/results/${game.session.id}/`);
 });
 
 it('groups result navigation and shows green punctuation-free copy feedback beside its button', async () => {

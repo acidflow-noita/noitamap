@@ -1,4 +1,5 @@
-import { StreamBroadcaster, guessReceiptKey } from './stream-wire';
+import { StreamBroadcaster, guessReceiptKey, STREAM_RECEIPT_BATCH } from './stream-wire';
+import { readChatEnvelope } from './chat-envelope';
 import type { StreamGame } from './stream-types';
 import type { StreamChatMessage } from './stream-state';
 import type { LiveRoomView } from './live-room-types';
@@ -20,6 +21,8 @@ export class StreamBroadcastHost {
   private requestedReveals = new Set<number>();
   private requests = new Map<string, number>();
   private stopped = false;
+  private completing?: Promise<void>;
+  private preparations = new Set<Promise<void>>();
   constructor(private game: StreamGame, private imageRoot: string, send: (message: string) => Promise<unknown>,
     private failed: (error: unknown) => void, private save: () => void) {
     this.publisher = new StreamBroadcaster(game.session.id, send, failed, game.session.host.id);
@@ -33,10 +36,7 @@ export class StreamBroadcastHost {
     }
     if (this.stopped) return;
     this.publishState();
-    this.timer = setInterval(() => {
-      if (Date.now() - this.lastSnapshot >= 15_000) this.publishState(false);
-      this.flushReceipts();
-    }, 2000);
+    this.timer = setInterval(() => this.flushReceipts(), 2000);
   }
   private clue(round: number): string {
     let clue = this.clues.get(round);
@@ -53,9 +53,9 @@ export class StreamBroadcastHost {
     const round = timing.chatRound ?? game.session.rounds.length - 1;
     const window = timing.windows[round];
     return { schema: 1, channel: game.session.host.login, hostId: game.session.host.id, hostPro: 'active',
-      gameId: game.session.id, revision: timing.revision, phase: game.stage === 'complete' ? 'complete' : window?.closed ? 'reveal' : 'guess',
+      gameId: game.session.id, revision: timing.revision, phase: timing.phase === 'lobby' ? 'waiting' : game.stage === 'complete' ? 'complete' : window?.closed ? 'reveal' : 'guess',
       online: !game.paused, paused: game.paused, round: round + 1, roundId: game.session.rounds[round].id,
-      clue: this.clue(round), expiresAt: game.session.expiresAt,
+      clue: timing.phase === 'lobby' ? null : this.clue(round), expiresAt: game.session.expiresAt,
       ...(game.published ? { resultId: game.session.id } : {}),
       timing: { phase: timing.phase, startsAt: timing.startsAt, deadline: timing.deadline,
         hostRound: game.round + 1, seconds: timing.seconds,
@@ -66,12 +66,16 @@ export class StreamBroadcastHost {
     this.lastSnapshot = Date.now();
     if (full) { this.lastFullSnapshot = this.lastSnapshot; clearTimeout(this.resyncTimer); this.resyncTimer = undefined; }
     const state = this.snapshot(); if (!full) state.clue = null;
-    void this.publisher.offer('state', { type: 'state', state }, 0).catch(this.failed);
+    this.prepare(this.publisher.offer('state', { type: 'state', state }, 0));
   }
   publishReveal(round: number): void {
     const reveal = this.game.reveals[round];
     if (this.stopped || !reveal || this.publisher.has(`reveal-${round}`)) return;
-    void this.publisher.offer(`reveal-${round}`, { type: 'reveal', round, reveal }, 1).catch(this.failed);
+    this.prepare(this.publisher.offer(`reveal-${round}`, { type: 'reveal', round, reveal }, 1));
+  }
+  private prepare(job: Promise<void>): void {
+    this.preparations.add(job);
+    void job.catch(this.failed).finally(() => this.preparations.delete(job));
   }
   async remember(round: number, userId: string, nonce: string, enqueue = true): Promise<void> {
     const key = await guessReceiptKey(this.game.session.rounds[round].id, userId, nonce);
@@ -91,15 +95,18 @@ export class StreamBroadcastHost {
       for (const [round, pending] of queue) {
         const queueKey = `receipts-${round}-${rejected}`;
         if (!pending.size || this.sendingReceipts.has(queueKey)) continue;
-        const keys = [...pending].slice(0, 35); this.sendingReceipts.add(queueKey);
-        void this.publisher.offer(queueKey, { type: 'receipts', round, keys, ...(rejected ? { rejected } : {}) }, 2, () => {
+        const keys = [...pending].slice(0, STREAM_RECEIPT_BATCH); this.sendingReceipts.add(queueKey);
+        this.prepare(this.publisher.offer(queueKey, { type: 'receipts', round, keys, ...(rejected ? { rejected } : {}) }, 2, () => {
           keys.forEach(key => pending.delete(key)); this.sendingReceipts.delete(queueKey);
-        }, () => this.sendingReceipts.delete(queueKey)).catch(error => { this.sendingReceipts.delete(queueKey); this.failed(error); });
+        }, () => { keys.forEach(key => pending.delete(key)); this.sendingReceipts.delete(queueKey); })
+          .catch(error => { keys.forEach(key => pending.delete(key)); this.sendingReceipts.delete(queueKey); throw error; }));
       }
   }
   receiveRequest(message: StreamChatMessage): void {
-    if (this.stopped || typeof message.text !== 'string' || message.text.length > 500) return;
-    const match = /^!noitaguessr_sync ([a-z0-9_]{1,25}) ([0-9a-z]{26}|-) ([0-9a-f]{1,3})(?: ([0-9]:[0-9a-f]{16}(?:,[0-9]:[0-9a-f]{16}){0,9}))?$/.exec(message.text);
+    if (this.stopped || this.completing || typeof message.text !== 'string' || message.text.length > 500) return;
+    const hidden = readChatEnvelope(message.text);
+    const text = hidden?.[0] === 78 && hidden[1] === 71 && hidden[2] === 82 ? new TextDecoder().decode(hidden.subarray(3)) : message.text;
+    const match = /^!noitaguessr_sync ([a-z0-9_]{1,25}) ([0-9a-z]{26}|-) ([0-9a-f]{1,3})(?: ([0-9]:[0-9a-f]{16}(?:,[0-9]:[0-9a-f]{16}){0,9}))?$/.exec(text);
     if (!match || match[1] !== this.game.session.host.login || match[2] !== '-' && match[2] !== gameCode(this.game.session.id)) return;
     const now = Date.now(), previous = this.requests.get(message.player.id) ?? 0;
     if (now - previous < 5000) return;
@@ -131,6 +138,21 @@ export class StreamBroadcastHost {
     // per-chatter send or synchronous serialization of the whole host roster.
   }
   dispose(): void { this.stopped = true; clearInterval(this.timer); clearTimeout(this.resyncTimer); this.publisher.dispose(); }
+  /** Send the final bounded queue once, then stop. No post-game heartbeat or resync replies. */
+  complete(): Promise<void> {
+    if (this.completing) return this.completing;
+    clearInterval(this.timer); clearTimeout(this.resyncTimer);
+    this.publishState();
+    this.completing = (async () => {
+      do {
+        this.flushReceipts();
+        await Promise.allSettled([...this.preparations]);
+        await this.publisher.drain();
+      } while (!this.stopped && [...this.pending.values(), ...this.rejected.values()].some(set => set.size));
+      this.dispose();
+    })();
+    return this.completing;
+  }
   /** Best-effort shared closure, without a per-viewer request or a durable write. */
   close(quit = false): Promise<void> {
     this.stopped = true; clearInterval(this.timer); clearTimeout(this.resyncTimer);

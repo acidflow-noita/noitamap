@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { encodeStreamPacket, StreamPacketReader, guessReceiptKey, StreamBroadcaster } from '../src/guessr/stream-wire';
+import { encodeStreamPacket, StreamPacketReader, guessReceiptKey, StreamBroadcaster, STREAM_RECEIPT_BATCH } from '../src/guessr/stream-wire';
 import type { StreamWirePayload } from '../src/guessr/stream-wire';
 import { streamArea, streamAnswer } from './helpers/guessr-stream';
 
@@ -33,7 +33,7 @@ it('strips private fields and reconstructs a released scoring area', async () =>
 it('packs receipt batches within a small message budget and binds receipts to the sender', async () => {
   const key = await guessReceiptKey(id, '123', '1111111111111111');
   expect(await guessReceiptKey(id, '124', '1111111111111111')).not.toBe(key);
-  const keys = await Promise.all(Array.from({ length: 35 }, (_, i) => guessReceiptKey(id, String(i), crypto.randomUUID())));
+  const keys = await Promise.all(Array.from({ length: STREAM_RECEIPT_BATCH }, (_, i) => guessReceiptKey(id, String(i), crypto.randomUUID())));
   const messages = await encodeStreamPacket(id, { type: 'receipts', round: 0, keys });
   expect(messages).toHaveLength(1);
   const reader = new StreamPacketReader('streamer', id);

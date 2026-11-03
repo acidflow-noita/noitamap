@@ -43,7 +43,7 @@ import { loadingPlaceholders } from './loading-placeholders';
 import type { LiveRoomView } from './live-room-types';
 import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, tr } from './i18n';
 import { StreamBroadcastHost } from './stream-broadcast-host';
-import { startStreamTiming, startHostWindow, streamTick, hostMayGuess, suspendStreamTiming, resumeStreamTiming, validStreamSeconds, STREAM_DELIVERY_GRACE_MS } from './stream-timing';
+import { startStreamTiming, beginStreamTiming, startHostWindow, streamTick, hostMayGuess, suspendStreamTiming, resumeStreamTiming, validStreamSeconds, STREAM_DELIVERY_GRACE_MS } from './stream-timing';
 import { streamRoundResults } from './stream-round-results';
 
 const SHARE_ANNOUNCEMENTS_KEY = 'noitamap-guessr-share-announcements';
@@ -152,6 +152,8 @@ export class StreamUI {
   private shareNotice?: ReturnType<typeof buttonNotice>;
   private sharePending = false;
   private sharedUntil = 0;
+  private shareStatus = '';
+  private autoShareOnConnect = false;
   private shareTimer?: ReturnType<typeof setTimeout>;
   private shareAnnouncements = false;
   private sharingPermissionFailed = false;
@@ -162,14 +164,14 @@ export class StreamUI {
   private timedRounds = true;
   private roundSeconds = 90;
   private hostRelease?: () => void;
-  private guessNotice?: ReturnType<typeof buttonNotice>;
+  private activityUntil = 0;
   private guessNoticeTimer?: ReturnType<typeof setTimeout>;
   private recentGuesser = '';
   private disposeHeader(): void {
     this.proStatus?.dispose(); this.proStatus = undefined;
     this.statusHelp?.dispose(); this.statusHelp = undefined;
     this.shareNotice?.dispose(); this.shareNotice = undefined;
-    this.guessNotice?.dispose(); this.guessNotice = undefined; clearTimeout(this.guessNoticeTimer); this.guessNoticeTimer = undefined;
+    clearTimeout(this.guessNoticeTimer); this.guessNoticeTimer = undefined;
     clearTimeout(this.shareTimer);
   }
   constructor(private hooks: StreamUIHooks) {
@@ -204,6 +206,7 @@ export class StreamUI {
         supportedCamera(saved.session.rounds[saved.round].clue, saved.clue)
       ) {
         this.game = saved;
+        if ((saved.initialShareCount ?? 0) >= (saved.shareAnnouncements ? 1 : 3)) this.shareStatus = 'Game link shared in chat.';
         if (typeof saved.shareAnnouncements === 'boolean') this.shareAnnouncements = saved.shareAnnouncements;
         if (this.api.local) this.api.setLocalChannel(saved.session.localChat ? saved.session.host.login : undefined);
         if (!Number.isFinite(saved.clockOffset)) saved.clockOffset = 0;
@@ -333,7 +336,7 @@ export class StreamUI {
     announcements.setAttribute('role', 'switch'); announcements.checked = this.shareAnnouncements;
     const label = el('label', 'Share game links as announcements'); label.htmlFor = announcements.id;
     switchBox.append(announcements); sharingRow.append(switchBox, label);
-    const sharingHelp = el('p', 'When off, Share posts a normal message in your Twitch channel.', 'form-text');
+    const sharingHelp = el('p', 'The link is posted three times as normal messages, or once as an announcement.', 'form-text');
     sharingHelp.id = 'stream-sharing-help'; announcements.setAttribute('aria-describedby', sharingHelp.id);
     const permissionNote = el('p', 'Sharing permission is optional. Without it, you can copy the link.', 'form-text');
     let sharingReady = false;
@@ -519,9 +522,11 @@ export class StreamUI {
       this.chat = undefined;
       this.stopLocalChat?.(); this.stopLocalChat = undefined;
       this.game = newStreamGame(session);
+      this.shareStatus = ''; this.sharedUntil = 0;
+      this.autoShareOnConnect = useTwitch;
       this.game.shareAnnouncements = this.shareAnnouncements;
       if (session.transport === 'twitch') {
-        startStreamTiming(this.game, this.timedRounds ? this.roundSeconds : 0);
+        startStreamTiming(this.game, this.timedRounds ? this.roundSeconds : 0, session.serverNow, true);
         suspendStreamTiming(this.game, streamTime(this.game));
       }
       this.roomHealthy = true;
@@ -569,6 +574,10 @@ export class StreamUI {
           void this.broadcast.start().catch(failed);
         } else this.broadcast.publishState();
         this.save(); if (needsRender) this.render(); this.startTick();
+        if (this.autoShareOnConnect && game.timing.phase === 'lobby') {
+          this.autoShareOnConnect = false;
+          void this.shareGameLink(true);
+        }
       } else if (!game.paused) {
         suspendStreamTiming(game, streamTime(game)); this.save(); this.broadcast?.publishState(); this.render();
       }
@@ -599,9 +608,9 @@ export class StreamUI {
     const starting = Math.max(0, Math.ceil((timing.startsAt - now) / 1000));
     const remaining = Math.max(0, Math.ceil(((timing.deadline ?? now) - now) / 1000));
     const clock = `${formatGuessrNumber(Math.floor(remaining / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(remaining % 60, { minimumIntegerDigits: 2 })}`;
-    const label = game.paused ? tr('Reconnecting…') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) })
+    const label = game.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) })
       : timing.deadline === null ? tr('Manual timing') : clock;
-    for (const timer of document.querySelectorAll<HTMLElement>('#stream-round-timer, #stream-warmup-timer, #stream-start-countdown'))
+    for (const timer of document.querySelectorAll<HTMLElement>('#stream-round-timer, #stream-start-countdown'))
       if (timer.textContent !== label) timer.textContent = label;
     const next = document.getElementById('stream-auto-next');
     if (next) {
@@ -613,14 +622,25 @@ export class StreamUI {
     }
     const first = document.getElementById('stream-first-round') as HTMLButtonElement | null;
     if (first) first.disabled = game.paused || !!starting;
-    const warmup = document.querySelector<HTMLElement>('.stream-warmup-clock');
-    if (warmup) warmup.style.setProperty('--remaining', String(timing.seconds ? Math.min(1, remaining / timing.seconds) : 1));
+    const start = document.getElementById('stream-start-game') as HTMLButtonElement | null;
+    if (start) start.disabled = game.paused || !this.roomHealthy || this.sharePending;
+    const activity = document.getElementById('stream-activity-message');
+    if (activity) activity.style.visibility = Date.now() < this.activityUntil ? 'visible' : 'hidden';
   }
   private renderWarmup(main: HTMLElement): void {
-    const section = el('section', '', 'game-panel stream-warmup');
+    const section = el('section', '', 'card card-body rounded-9 stream-start-panel');
+    if (this.game!.timing!.phase === 'lobby') {
+      section.append(el('h2', 'Ready to start'), el('p', 'Share the game link, then start when your chat is ready.'));
+      const start = action('Start game', () => {
+        const game = this.game!;
+        if (game.paused || !this.roomHealthy || this.sharePending) return;
+        beginStreamTiming(game, streamTime(game)); this.save(); this.broadcast?.publishState(); this.render();
+      }, 'primary');
+      start.id = 'stream-start-game'; section.append(start); main.append(section); return;
+    }
+    section.classList.add('stream-warmup');
     section.append(el('h2', 'Chat goes first'), el('p', 'Chat is playing round 1.'));
-    const clock = el('div', '', 'stream-warmup-clock'), time = el('strong'); time.id = 'stream-warmup-timer'; clock.append(time);
-    section.append(clock, el('p', 'Your first round starts when chat finishes this round.'),
+    section.append(el('p', 'Your first round starts when chat finishes this round.'),
       el('p', 'Chat submits their guesses before the streamer plays that location. This prevents cheating from the stream.', 'fine-print'));
     if (!this.game!.timing!.seconds) {
       const start = action('Start first round', () => {
@@ -667,7 +687,9 @@ export class StreamUI {
       this.recentGuesser = message.player.name;
       this.guessNoticeTimer ??= setTimeout(() => {
         this.guessNoticeTimer = undefined;
-        this.guessNotice?.show(tr('{{player}} submitted a guess', { player: this.recentGuesser }));
+        this.activityUntil = Date.now() + 6000;
+        const activity = document.getElementById('stream-activity-message');
+        if (activity) { bindText(activity, '{{player}} submitted a guess', { player: this.recentGuesser }); activity.style.visibility = 'visible'; }
       }, 1000);
       const command = parseGuessCommand(message.text, { rounds: this.game.session.rounds.length, bounds: this.game.session.config.bounds });
       if (command?.nonce) void this.broadcast?.remember(command.round - 1, message.player.id, command.nonce);
@@ -696,8 +718,9 @@ export class StreamUI {
     if (count && this.game) {
       const round = this.game.timing?.chatRound ?? this.game.round;
       const total = this.game.participants.filter(p => p.id !== this.game!.session.host.id && p.guesses[round]).length;
-      bindText(count, () => (this.game?.timing ? tr('Round {{round}}', { round: formatGuessrNumber(round + 1) }) + ': ' : '')
-        + tr('{{total}} chat guesses this round', { count: total, total: formatGuessrNumber(total) }));
+      bindText(count, 'Guesses: {{total}}', { total: formatGuessrNumber(total) });
+      const label = document.getElementById('stream-chat-round');
+      if (label) bindText(label, 'Chat round {{round}}', { round: formatGuessrNumber(round + 1) });
     }
     this.updateShareButton();
   }
@@ -711,32 +734,44 @@ export class StreamUI {
     button.dataset.posted = String(posted);
     bindText(button, this.sharePending ? 'Posting…' : posted ? 'Posted in chat'
       : this.canPostGameLink() ? 'Share game link in chat' : 'Copy game link');
+    const confirmation = document.getElementById('stream-share-status');
+    if (confirmation) bindText(confirmation, this.sharePending ? 'Posting…' : this.shareStatus);
   }
   private canPostGameLink(): boolean {
     const announcements = this.game?.shareAnnouncements === true;
     return !this.sharingPermissionFailed && (this.api.local ? !!this.viewer?.canShare(announcements)
       : !!this.chat?.canShare(announcements));
   }
-  private async shareGameLink(): Promise<void> {
+  private async shareGameLink(automatic = false): Promise<boolean> {
     const game = this.game;
-    if (!game || this.sharePending || Date.now() < this.sharedUntil) return;
+    if (!game || this.sharePending || !automatic && Date.now() < this.sharedUntil) return false;
     if (!this.canPostGameLink()) {
-      if (this.shareNotice) await copy(this.pickerUrl(), this.hooks.toast, this.shareNotice);
-      return;
+      if (!automatic && this.shareNotice) await copy(this.pickerUrl(), this.hooks.toast, this.shareNotice);
+      else { this.shareStatus = 'Sharing permission is unavailable. You can copy the game link.'; this.updateShareButton(); }
+      return false;
     }
     this.sharePending = true; this.updateShareButton();
     try {
       const message = tr('Join NoitaGuessr: {{url}}', { url: this.pickerUrl() });
-      if (this.api.local) await this.viewer!.postGameLink(game.session.host.login, message, game.shareAnnouncements === true);
-      else {
-        await this.chat!.postGameLink(game.session.host.id, message, game.shareAnnouncements === true);
+      const posts = game.shareAnnouncements ? 1 : 3;
+      const alreadySent = automatic ? Math.max(0, Math.min(posts, game.initialShareCount ?? 0)) : 0;
+      if (automatic && Date.now() < this.sharedUntil) await new Promise(resolve => setTimeout(resolve, this.sharedUntil - Date.now()));
+      for (let index = alreadySent; index < posts; index++) {
+        if (this.game !== game || !this.mounted) return false;
+        if (this.api.local) await this.viewer!.postGameLink(game.session.host.login, message, game.shareAnnouncements === true);
+        else await this.chat!.postGameLink(game.session.host.id, message, game.shareAnnouncements === true);
+        if (automatic) { game.initialShareCount = index + 1; this.save(); }
+        if (index + 1 < posts) await new Promise(resolve => setTimeout(resolve, 1100));
       }
       this.sharedUntil = Date.now() + 2000;
+      this.shareStatus = 'Game link shared in chat.';
+      return true;
     } catch (error) {
       if (error instanceof TwitchAnnouncementError && error.permissionRequired) {
         this.sharingPermissionFailed = true;
-        this.shareNotice?.show(tr('Sharing permission is unavailable. You can copy the game link.'));
-      } else this.shareNotice?.show(tr((error as Error).message), 'danger');
+        this.shareStatus = 'Sharing permission is unavailable. You can copy the game link.';
+      } else this.shareStatus = (error as Error).message;
+      return false;
     } finally { this.sharePending = false; this.updateShareButton(); }
   }
   private viewerImageRoot(): string {
@@ -818,7 +853,7 @@ export class StreamUI {
     try {
       if (!game.timing) await this.api.advance(game.session.id, game.session.rounds[game.round].id);
       advanceStreamRound(game); this.roomHealthy = true; this.save();
-      this.broadcast?.publishState();
+      if (game.stage !== 'complete') this.broadcast?.publishState();
       this.busy = false; this.render();
     } catch (error) { this.hooks.toast(tr((error as Error).message)); }
     finally { this.busy = false; }
@@ -841,25 +876,18 @@ export class StreamUI {
     this.proStatus.update({ gameId: game.session.id, hostPro: 'active', hostProVerifiedUntil: game.session.hostProVerifiedUntil });
     const main = this.hooks.shell(true);
     main.classList.add('stream-host-shell');
-    main.append(
-      this.hooks.hud({
-        label: "Chat vs Streamer",
-        twitch: true,
-        badge: "pro",
-        round: index + 1,
-        total: game.session.rounds.length,
-        score: 0,
-        exit: this.exit,
-      }),
-    );
-    if (game.timing) {
-      const timer = el('strong', '', 'stream-round-timer'); timer.id = 'stream-round-timer';
-      main.querySelector('.game-hud')?.append(timer);
-    }
-    const banner = el("div", "", "stream-banner");
+    const banner = el("div", "", "stream-banner stream-toolbar");
+    const navigation = el('div', '', 'stream-toolbar-navigation');
+    navigation.append(action('Exit game', this.exit, 'btn btn-sm btn-outline theme-secondary'));
+    const phase = el('div', '', 'stream-toolbar-round');
+    phase.append(el('strong', () => game.timing?.phase === 'lobby' ? tr('Ready to start') : game.timing?.phase === 'warmup'
+      ? tr('Chat round {{round}}', { round: formatGuessrNumber(1) })
+      : tr('Round {{value1}} / {{value2}}', { value1: formatGuessrNumber(index + 1), value2: formatGuessrNumber(game.session.rounds.length) })));
+    if (game.timing) { const timer = el('span', '', 'stream-round-timer'); timer.id = 'stream-round-timer'; phase.append(timer); }
+    const commands = el('div', '', 'stream-toolbar-actions');
+    banner.append(navigation, phase, commands);
     const count = el("span", '', 'stream-guess-count');
     count.id = "stream-guess-count";
-    this.guessNotice = buttonNotice(count);
     const status = el("span", "", "stream-chat-state");
     status.id = "stream-chat-status";
     status.tabIndex = 0; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
@@ -868,12 +896,12 @@ export class StreamUI {
     const identity = el('span', '', 'stream-host-identity');
     const name = el('span', '', 'stream-name');
     name.append(el('strong', () => game.session.host.login), this.proStatus.badge); identity.append(name);
-    banner.append(status, identity, count);
+    navigation.append(status, identity);
     if (!this.api.local || game.session.localChat) {
       const share = action('Share game link in chat', () => this.shareGameLink(), 'btn btn-sm btn-outline theme-secondary stream-share-button');
       share.id = 'stream-share'; share.setAttribute('aria-live', 'polite');
       this.shareNotice = buttonNotice(share);
-      banner.append(share);
+      commands.append(share);
     }
     const reconnect = action('Reconnect', () => {
       if (this.status === 'auth-required') return this.api.local ? this.connectLocalTwitch() : this.connectAuth();
@@ -881,10 +909,15 @@ export class StreamUI {
       this.chat?.stop(); this.chat = undefined;
       this.stopLocalChat?.(); this.stopLocalChat = undefined; this.connectChat();
     }, 'btn btn-sm btn-outline theme-secondary');
-    reconnect.id = 'stream-reconnect'; banner.append(reconnect);
-    main.append(banner);
+    reconnect.id = 'stream-reconnect'; commands.append(reconnect);
+    const activity = el('div', '', 'stream-activity');
+    const chatRound = el('span'); chatRound.id = 'stream-chat-round';
+    const recent = el('span', '', 'stream-activity-message'); recent.id = 'stream-activity-message'; recent.setAttribute('role', 'status');
+    if (Date.now() < this.activityUntil) bindText(recent, '{{player}} submitted a guess', { player: this.recentGuesser });
+    const shared = el('span', this.shareStatus, 'stream-share-status'); shared.id = 'stream-share-status'; shared.setAttribute('role', 'status');
+    activity.append(chatRound, count, recent, shared); main.append(banner, activity);
     this.updateStatus();
-    if (game.timing?.phase === 'warmup') { this.renderWarmup(main); this.updateTimer(); return; }
+    if (game.timing && game.timing.phase !== 'play') { this.renderWarmup(main); this.updateTimer(); return; }
     if (game.timing && reveal) {
       const actions = el('div', '', 'game-actions stream-host-actions');
       const next = action(review === undefined ? index === game.session.rounds.length - 1 ? 'View results' : 'Next round' : 'Back to results',
@@ -1074,6 +1107,7 @@ export class StreamUI {
   private finish(): void {
     this.disposeHeader();
     if (!this.game) return;
+    history.replaceState(null, '', guessRouteUrl('stream-result', location.href, { result: this.game.session.id }));
     clearTimeout(this.pulseTimer); this.pulseTimer = undefined;
     clearInterval(this.tickTimer);
     if (!this.game.timing) {
@@ -1082,6 +1116,9 @@ export class StreamUI {
     }
     const result = streamResult(this.game),
       main = this.hooks.shell();
+    // Public result data only. A result-page refresh must not restore or pause
+    // a private host session, and should still work if publication is unavailable.
+    try { localStorage.setItem('noitamap-guessr-result:' + result.id, JSON.stringify(result)); } catch { /* Downloads remain available. */ }
     main.append(streamResultsView(result, undefined, this.exit));
     const rounds = el("div", "", "stream-round-links");
     result.rounds.forEach((round, i) =>
@@ -1116,6 +1153,17 @@ export class StreamUI {
       action("Start another game", () => this.open(false)),
     ));
     if (!this.game.published) void this.publish();
+    else this.finishBroadcast(this.game);
+  }
+  private finishBroadcast(game: StreamGame): void {
+    const broadcast = this.broadcast;
+    if (!broadcast) return;
+    void broadcast.complete().finally(() => {
+      if (this.game !== game || this.broadcast !== broadcast) return;
+      this.broadcast = undefined; this.chat?.stop(); this.chat = undefined;
+      this.stopLocalChat?.(); this.stopLocalChat = undefined;
+      this.hostRelease?.(); this.hostRelease = undefined;
+    });
   }
   private async publish(): Promise<void> {
     if (
@@ -1134,7 +1182,7 @@ export class StreamUI {
         players: streamResult(game).players,
       });
       game.published = true;
-      if (game.timing) { game.timing.revision++; this.broadcast?.publishState(); }
+      if (game.timing) game.timing.revision++;
       this.save();
       const status = document.getElementById("stream-publish-message");
       if (status)
@@ -1147,6 +1195,7 @@ export class StreamUI {
         bindText(status, () => tr('{{error}} Download a complete copy below, or retry later.', { error: tr((error as Error).message) }));
     } finally {
       this.busy = false;
+      this.finishBroadcast(game);
     }
   }
   private downloadActions(main: HTMLElement, result: StreamResult): void {
@@ -1168,13 +1217,22 @@ export class StreamUI {
   }
   async publicResult(id: string): Promise<void> {
     this.suspend();
+    if (this.game?.session.id === id && this.game.stage === 'complete') { this.finish(); return; }
     const main = this.hooks.shell(),
       loading = el("p", "Loading results…");
     const heading = pageHeading(el('h1', 'Game results'), action('Back', this.exit));
     main.append(heading, loading);
     try {
-      const result = await this.api.result(id);
+      let cached: StreamResult | undefined;
+      try {
+        const raw = localStorage.getItem('noitamap-guessr-result:' + id);
+        const value = raw && raw.length <= 2_000_000 ? JSON.parse(raw) as StreamResult : null;
+        if (value?.schema === 1 && value.id === id && value.rounds?.length === STREAM_ROUNDS && value.players?.length
+          && value.players.every(player => player.rounds?.length === STREAM_ROUNDS)) cached = value;
+      } catch { /* Fall through to the published result. */ }
+      const result = cached ?? await this.api.result(id);
       if (!main.isConnected) return;
+      if (!cached) try { localStorage.setItem('noitamap-guessr-result:' + id, JSON.stringify(result)); } catch { /* Optional immutable result cache. */ }
       loading.remove(); heading.remove();
       main.append(streamResultsView(result, undefined, this.exit));
       this.downloadActions(main, result);

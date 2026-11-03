@@ -4,7 +4,32 @@ The website stays at `https://dynamic-map.noitamap.com/guess/`. Its production
 API default is `https://guessr-api.sage-data.xyz`; local Vite keeps its local
 round service unless an explicit `VITE_GUESSR_API_URL` is supplied.
 
-## Current update: Twitch transport and timed stream games
+## Current update: stream lobby, feedback and completion fixes
+
+This repair is a frontend update. No Worker deployment, D1 migration, new secret,
+image upload or baker change is needed. From `/home/w/Documents/git/noitamap`,
+after the local repair commit is prepared:
+
+```sh
+git push origin dynamic-map-startup:dynamic-map
+```
+
+Use fresh host and chatter tabs after deployment so both use the updated chat
+encoding. Creating a game automatically shares its unique link in the streamer's
+own channel: three normal messages or one announcement. It stays in the ready
+lobby until the streamer clicks Start game; the invitation does not start a timer.
+The existing manual share button can repost the invitation.
+
+Check readable Twitch messages, arrival of receipts, replacing a guess, the full
+last-round duration, the unique result URL after completion and refresh recovery.
+The final delivery queue must finish once; leaving the result page open must not
+produce recurring state posts. Actual Twitch preservation of the invisible data
+and visual layout need the owner's manual review. No browser automation is used.
+
+The Daily bake/publication work remains separate. PvP is queued after these fixes,
+with at least one participant required to have Pro.
+
+## Previous update: Twitch transport and timed stream games
 
 The initial alpha is already deployed. This update changes the private Guessr
 API and the public frontend only. It requires no new secrets, migrations,

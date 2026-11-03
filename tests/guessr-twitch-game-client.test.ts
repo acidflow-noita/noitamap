@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { readChatEnvelope } from '../src/guessr/chat-envelope';
 import { watchTwitchGame } from '../src/guessr/twitch-game-client';
 import { encodeStreamPacket } from '../src/guessr/stream-wire';
 import type { TwitchViewer } from '../src/guessr/twitch-viewer';
@@ -29,7 +30,10 @@ const message = (text: string, login = 'streamer', sender = '100') => ({ id: cry
 
 it('uses one Twitch resync request and accepts the owner’s broadcast without any Worker call', async () => {
   const f = fixture(); f.client.transport('live', 'Connected');
-  expect(f.sendMessage).toHaveBeenCalledWith('noitaguessr', expect.stringMatching(/^!noitaguessr_sync streamer /));
+  expect(f.sendMessage).toHaveBeenCalledOnce();
+  const [channel, wire] = f.sendMessage.mock.calls[0] as unknown as [string, string];
+  expect(channel).toBe('noitaguessr');
+  expect(new TextDecoder().decode(readChatEnvelope(wire)!.subarray(3))).toMatch(/^!noitaguessr_sync streamer /);
   const frames = await encodeStreamPacket(id, { type: 'state', state });
   for (const text of frames) await f.client.receive(message(text, 'copycat', '999'));
   for (const text of frames) await f.client.receive(message(text, 'streamer', '999'));
@@ -61,4 +65,12 @@ it('does not replace a saved game with a later game from the same streamer', asy
   expect(f.handlers.state).not.toHaveBeenCalled();
   expect(f.handlers.status).toHaveBeenLastCalledWith('stopped', 'This game is no longer active.');
   expect(fetch).not.toHaveBeenCalled();
+});
+
+it('restores a completed game without sending any Twitch resync or Worker request', () => {
+  store.set('noitamap-guessr-live:' + id, JSON.stringify({ ...state, phase: 'complete', resultId: id }));
+  const f = fixture(); f.client.transport('live', 'Connected'); f.client.requestRecovery(); f.client.retry();
+  expect(f.handlers.state).toHaveBeenCalledWith(expect.objectContaining({ phase: 'complete', resultId: id }));
+  expect(f.handlers.status).toHaveBeenLastCalledWith('connected', '');
+  expect(f.sendMessage).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
 });

@@ -12,7 +12,10 @@ The lobby has three illustrated mode cards, a resumable-game strip and actual
 recent/best results. The map navbar entry uses the same Bootstrap popover as
 the other Pro controls. The reviewed area inventory is unchanged.
 
-Chat vs Streamer has ten rounds. New games use a silent three-second countdown
+Chat vs Streamer has ten rounds. Creating a game opens a ready lobby and
+automatically posts its link in the streamer's own channel. The lobby has no
+deadline: the streamer presses Start game after people have joined. That click
+starts a silent three-second countdown
 and a configurable 90-second round timer by default. Chat plays round one while
 the streamer waits; chat round two and streamer round one then start together.
 An early streamer submission locks their guess without shortening chat's timer.
@@ -29,15 +32,21 @@ actual sender identity and event timestamp bind guesses to their player and roun
 Small delivery delays are admitted before releasing that round's solution.
 Only released answers and source-cell scoring masks are broadcast; private round
 tokens and future solutions never enter a public snapshot.
+State posts happen only on changes or shared recovery requests. There is no
+periodic state heartbeat. Final state, solutions and pending receipts are drained
+once before the broadcaster and host receiver stop. A completed chatter refresh
+uses saved results without posting another sync request.
 The setup switch "Share game links as announcements" is off by default and
 remembered locally, including across OAuth returns and game refreshes. Sharing
-posts a normal message in the host's own channel when off, or an announcement
+posts three normal messages in the host's own channel when off, or one announcement
 when on. Announcement consent is optional and offered before play; hosts who
 skip it retain a copy-link button and are never redirected for sharing mid-round.
 Normal messages use `user:write:chat`; announcements additionally require
 `moderator:manage:announcements`. This direct browser request
 does not invoke the game or auth Worker. A confirmed post disables the button
 for two seconds. Failed or uncertain requests are never retried automatically.
+Confirmed initial posts are saved so refreshing the ready lobby does not repeat
+them. The persistent status says "Game link shared in chat." after confirmation.
 Game admission requires Pro; its badge describes admission for this game rather
 than the expiry of the short-lived game ticket. Active games do not solicit gifts.
 The receiver checks the embedded sender against Twitch's actual sender and
@@ -58,6 +67,10 @@ The host's round results show every submitted pin, fit the map to all pins and
 the solution, and provide sortable round/total scores. Hovering or selecting a
 player highlights their pin. A missing guess uses a dash instead of pretending
 that an earned zero and no submission are the same thing.
+Round and final tables use aligned numeric columns and one caret on the active
+sort column. The host and chatter share the same toolbar arrangement, with a
+plain digital timer. Submission/activity feedback is inline in reserved space;
+it does not create popovers or replace the action button's label with a status.
 
 Chatter submissions remain `Waiting for confirmation` until the host acknowledges
 their sender/round/nonce fingerprint. Receipts are batched, not one reply per
@@ -66,6 +79,14 @@ are explicit actions. Saved guesses, receipt state and released scores survive
 refresh; an unreachable Twitch validation can still show the last saved result
 without authorizing another send. A disconnected host pauses the timer, and
 recovery extends the unfinished window without reopening previously closed rounds.
+Replacing a guess leaves the previous confirmed guess in effect until the
+replacement is received. Round ten has the same duration as the other rounds;
+chat then waits while the streamer finishes their tenth location.
+
+Completion moves the host to `/guess/results/<game-id>/`. Published results are
+immutable D1 records with no automatic expiry. The current 200-game cap rejects
+new publications instead of deleting existing ones. Public result data is also
+saved locally for refresh/offline recovery, without session tokens or credentials.
 
 With ordinary `npm run dev`, the host can connect the same remembered Twitch
 identity used by the chatter page. Start a new game to listen to the shared
@@ -652,7 +673,12 @@ and receipt recovery survive refresh; Twitch delivery during disconnection is
 not guaranteed. OBS layout, moderation exclusions and channel-point rewards
 remain deferred.
 
-The implemented path sends `!noitaguessr_guess ✦…✦`, with all guess fields inside a compact runic payload. Numeric plaintext examples below are for offline input and older sessions only.
+Outgoing guesses use readable submission text with sender-bound payload bytes
+encoded as invisible variation selectors. State and receipt packets use the same
+envelope. Every message remains within 500 UTF-16 code units. This is obfuscation,
+not encryption; actual Twitch delivery and character preservation require manual
+live verification. Existing runic packets remain readable for already-open tabs.
+Numeric plaintext examples below are for offline input and older sessions only.
 The deferred alternative is one reusable 1-point custom reward named
 "NoitaGuessr guess". Its required
 text is also `!noitaguessr_guess 2 -3152 874`: command, round number, X, Y. The map picker copies

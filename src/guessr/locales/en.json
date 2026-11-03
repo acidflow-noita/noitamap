@@ -493,5 +493,19 @@
   "Round score": "Round score",
   "Open the game link shared by your streamer.": "Open the game link shared by your streamer.",
   "{{player}} submitted a guess": "{{player}} submitted a guess",
-  "Waiting for results": "Waiting for results"
+  "Waiting for results": "Waiting for results",
+  "Ready to start": "Ready to start",
+  "Share the game link, then start when your chat is ready.": "Share the game link, then start when your chat is ready.",
+  "Not started": "Not started",
+  "Start game": "Start game",
+  "Guesses: {{total}}": "Guesses: {{total}}",
+  "Chat round {{round}}": "Chat round {{round}}",
+  "Update guess": "Update guess",
+  "Update awaiting confirmation. Previous guess counts.": "Update awaiting confirmation. Previous guess counts.",
+  "Update not received. Previous guess counts.": "Update not received. Previous guess counts.",
+  "Waiting for the streamer to start the game.": "Waiting for the streamer to start the game.",
+  "You have finished all 10 rounds. Waiting for the streamer.": "You have finished all 10 rounds. Waiting for the streamer.",
+  "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.",
+  "Game link shared in chat.": "Game link shared in chat.",
+  "The link is posted three times as normal messages, or once as an announcement.": "The link is posted three times as normal messages, or once as an announcement."
 }

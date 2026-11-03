@@ -53,7 +53,7 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   controls.append(filter, count);
   section.append(controls);
   const wrap = el("div", "", "table-wrap"),
-    table = el("table"),
+    table = el("table", '', 'table stream-score-table'),
     head = el("tr"),
     tbody = el("tbody");
   let sort = "rank",
@@ -66,7 +66,8 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   ];
   columns.forEach((label, index) => {
     const th = el("th", "", index === 1 ? "" : "numeric"),
-      button = el("button", label, "small secondary");
+      button = el("button", label, "stream-table-sort");
+    th.scope = 'col';
     button.type = "button";
     const key =
       index === 0

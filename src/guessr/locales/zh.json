@@ -493,5 +493,19 @@
   "Round score": "回合得分",
   "Open the game link shared by your streamer.": "请打开主播分享的游戏链接。",
   "{{player}} submitted a guess": "{{player}} 提交了猜测",
-  "Waiting for results": "等待结果"
+  "Waiting for results": "等待结果",
+  "Ready to start": "准备开始",
+  "Share the game link, then start when your chat is ready.": "分享游戏链接，等聊天室准备就绪后开始游戏。",
+  "Not started": "尚未开始",
+  "Start game": "开始游戏",
+  "Guesses: {{total}}": "已提交的答案：{{total}}",
+  "Chat round {{round}}": "第 {{round}} 轮聊天",
+  "Update guess": "修改我的答案",
+  "Update awaiting confirmation. Previous guess counts.": "新答案正在等待确认。您之前的答案仍然有效。",
+  "Update not received. Previous guess counts.": "未收到新答案。您之前的答案仍然有效。",
+  "Waiting for the streamer to start the game.": "正在等待主播开始游戏。",
+  "You have finished all 10 rounds. Waiting for the streamer.": "您已完成全部10轮。正在等待主播结束本局游戏。",
+  "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} 在 {{channel}} 的游戏 {{game}} 的第 {{round}} 轮中提交了一次猜测。",
+  "Game link shared in chat.": "聊天中分享的游戏链接。",
+  "The link is posted three times as normal messages, or once as an announcement.": "该链接可作为普通消息发布三次，或作为公告发布一次。"
 }

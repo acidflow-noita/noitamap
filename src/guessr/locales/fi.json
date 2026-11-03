@@ -493,5 +493,19 @@
   "Round score": "Kierrospisteet",
   "Open the game link shared by your streamer.": "Avaa striimaajasi jakama pelilinkki.",
   "{{player}} submitted a guess": "{{player}} lähetti arvauksen",
-  "Waiting for results": "Odotetaan tuloksia"
+  "Waiting for results": "Odotetaan tuloksia",
+  "Ready to start": "Oletko valmis aloittamaan?",
+  "Share the game link, then start when your chat is ready.": "Jaa pelilinkki ja aloita peli, kun chat on valmis.",
+  "Not started": "Ei aloitettu",
+  "Start game": "Aloita peli",
+  "Guesses: {{total}}": "Lähetetyt vastaukset: {{total}}",
+  "Chat round {{round}}": "Keskustelukierros {{round}}",
+  "Update guess": "Muokkaa vastaustani",
+  "Update awaiting confirmation. Previous guess counts.": "Uusi vastaus odottaa vahvistusta. Aikaisempi vastauksesi on edelleen voimassa.",
+  "Update not received. Previous guess counts.": "Uutta vastausta ei ole saatu. Aikaisempi vastauksesi on edelleen voimassa.",
+  "Waiting for the streamer to start the game.": "Odotetaan, että striimaaja aloittaa pelin.",
+  "You have finished all 10 rounds. Waiting for the streamer.": "Olet suorittanut kaikki 10 kierrosta. Odotetaan, että striimaaja päättää pelin.",
+  "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} lähetti arvauksen kierrokselle {{round}} pelissä {{game}} kanavalla {{channel}}.",
+  "Game link shared in chat.": "Pelin linkki jaettiin chatissa.",
+  "The link is posted three times as normal messages, or once as an announcement.": "Linkki julkaistaan joko kolme kertaa tavallisena viestinä tai kerran ilmoituksena."
 }

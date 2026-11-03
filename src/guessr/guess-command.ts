@@ -1,10 +1,11 @@
 import { within, type Bounds, type Point } from './rules';
+import { chatEnvelope, readChatEnvelope } from './chat-envelope';
 
 export const GUESS_CHAT_COMMAND = '!noitaguessr_guess';
 const RUNES = 'ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊ';
 const encodedPattern = new RegExp(`^!noitaguessr_guess ✦([${RUNES}]+)✦$`, 'i');
 const roundIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
-export const isEncodedGuessCommand = (text: string) => encodedPattern.test(text.trim().replace(/\s+/gu, ' '));
+export const isEncodedGuessCommand = (text: string) => !!readChatEnvelope(text) || encodedPattern.test(text.trim().replace(/\s+/gu, ' '));
 
 export interface GuessCommand extends Point {
   round: number;
@@ -13,7 +14,7 @@ export interface GuessCommand extends Point {
   userId?: string;
   nonce?: string;
 }
-export interface GuessIdentity { userId: string; nonce?: Uint8Array }
+export interface GuessIdentity { userId: string; nonce?: Uint8Array; label?: string }
 /** Detects copy/paste errors only. This is deliberately obfuscation, not authentication. */
 function checksum(bytes: Uint8Array): number {
   let crc = 0xffff;
@@ -48,6 +49,7 @@ export function formatGuessCommand(round: number, point: Point, maximum?: number
     data.set(identity.nonce ?? crypto.getRandomValues(new Uint8Array(8)), offset + 1 + id.length);
   }
   view.setUint16(data.length - 2, checksum(data.subarray(0, -2)));
+  if (identity?.label) return chatEnvelope(identity.label, data);
   return `${GUESS_CHAT_COMMAND} ✦${Array.from(data, byte => RUNES[byte >> 4] + RUNES[byte & 15]).join('')}✦`;
 }
 function decodePayload(runes: string): GuessCommand | null {
@@ -78,11 +80,13 @@ function decodePayload(runes: string): GuessCommand | null {
 /** Legacy plain commands remain readable for old sessions and the local simulator;
  * live games only admit the encoded format. Neither format attests client costs. */
 export function parseGuessCommand(text: unknown, limits: { rounds: number; bounds: Bounds }): GuessCommand | null {
-  if (typeof text !== 'string' || text.length > 256) return null;
+  if (typeof text !== 'string' || text.length > 500) return null;
   const plain = text.replace(/[\u2010-\u2015\u2212\ufe63\uff0d]/gu, '-').replace(/\s+/gu, ' ').trim();
+  const hidden = readChatEnvelope(text);
   const encoded = encodedPattern.exec(plain);
   let guess: GuessCommand | null;
-  if (encoded) guess = decodePayload(encoded[1]);
+  if (hidden) guess = decodePayload(Array.from(hidden, byte => RUNES[byte >> 4] + RUNES[byte & 15]).join(''));
+  else if (encoded) guess = decodePayload(encoded[1]);
   else {
     const match = /^!noitaguessr_guess (\d+) ((?:-{1,2} ?|\+ ?)?\d+) ((?:-{1,2} ?|\+ ?)?\d+)(?: (\d+))?(?: #([a-f0-9-]{36}))?$/i.exec(plain);
     if (!match) return null;

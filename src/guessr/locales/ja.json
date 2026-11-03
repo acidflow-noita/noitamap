@@ -493,5 +493,19 @@
   "Round score": "ラウンド得点",
   "Open the game link shared by your streamer.": "配信者が共有したゲームのリンクを開いてください。",
   "{{player}} submitted a guess": "{{player}}が回答を送信しました",
-  "Waiting for results": "結果を待っています"
+  "Waiting for results": "結果を待っています",
+  "Ready to start": "さあ、始めましょう",
+  "Share the game link, then start when your chat is ready.": "ゲームのリンクを共有し、チャットの準備ができたら開始してください。",
+  "Not started": "まだ開始されていません",
+  "Start game": "ゲームを開始",
+  "Guesses: {{total}}": "提出された回答数：{{total}}",
+  "Chat round {{round}}": "{{round}}ラウンドのチャット",
+  "Update guess": "回答を変更する",
+  "Update awaiting confirmation. Previous guess counts.": "確認待ちの新しい回答があります。以前の回答は引き続き有効です。",
+  "Update not received. Previous guess counts.": "新しい回答は届いていません。以前の回答は引き続き有効です。",
+  "Waiting for the streamer to start the game.": "ストリーマーがゲームを始めるのを待っています。",
+  "You have finished all 10 rounds. Waiting for the streamer.": "10ラウンドすべてを完了しました。ストリーマーがゲームを終了するのを待っています。",
+  "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}}さんが、{{channel}}のゲーム{{game}}の第{{round}}ラウンドに予想を投稿しました。",
+  "Game link shared in chat.": "チャットでゲームのリンクが共有されました。",
+  "The link is posted three times as normal messages, or once as an announcement.": "そのリンクは、通常のメッセージとして3回投稿されるか、お知らせとして1回投稿されます。"
 }

@@ -511,5 +511,19 @@
   "Round score": "Очки за раунд",
   "Open the game link shared by your streamer.": "Откройте ссылку на игру, которой поделился стример.",
   "{{player}} submitted a guess": "{{player}} отправил ответ",
-  "Waiting for results": "Ждём результатов"
+  "Waiting for results": "Ждём результатов",
+  "Ready to start": "Готовы начать?",
+  "Share the game link, then start when your chat is ready.": "Поделитесь ссылкой на игру, а затем начните, когда участники чата будут готовы.",
+  "Not started": "Не начато",
+  "Start game": "Начать игру",
+  "Guesses: {{total}}": "Отправленных ответов: {{total}}",
+  "Chat round {{round}}": "Раунд чата {{round}}",
+  "Update guess": "Изменить мой ответ",
+  "Update awaiting confirmation. Previous guess counts.": "Новый ответ ожидает подтверждения. Ваш предыдущий ответ по-прежнему актуален.",
+  "Update not received. Previous guess counts.": "Нового ответа не поступило. Ваш предыдущий ответ по-прежнему остается в силе.",
+  "Waiting for the streamer to start the game.": "Ожидание начала игры со стороны стримера.",
+  "You have finished all 10 rounds. Waiting for the streamer.": "Вы прошли все 10 раундов. Ожидается, пока стример завершит игру.",
+  "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} отправил свой вариант ответа в раунде {{round}} в игре {{game}} на канале {{channel}}.",
+  "Game link shared in chat.": "Ссылка на игру, опубликованная в чате.",
+  "The link is posted three times as normal messages, or once as an announcement.": "Ссылка публикуется три раза в виде обычных сообщений или один раз в виде объявления."
 }

@@ -493,5 +493,19 @@
   "Round score": "Rundpoäng",
   "Open the game link shared by your streamer.": "Öppna spellänken som din streamer har delat.",
   "{{player}} submitted a guess": "{{player}} skickade in en gissning",
-  "Waiting for results": "Väntar på resultat"
+  "Waiting for results": "Väntar på resultat",
+  "Ready to start": "Redo att börja",
+  "Share the game link, then start when your chat is ready.": "Dela länken till spelet och börja sedan när alla i chatten är redo.",
+  "Not started": "Har inte påbörjats",
+  "Start game": "Starta spelet",
+  "Guesses: {{total}}": "Inlämnade svar: {{total}}",
+  "Chat round {{round}}": "Chattrunda {{round}}",
+  "Update guess": "Ändra mitt svar",
+  "Update awaiting confirmation. Previous guess counts.": "Nytt svar väntar på bekräftelse. Ditt tidigare svar gäller fortfarande.",
+  "Update not received. Previous guess counts.": "Inget nytt svar har mottagits. Ditt tidigare svar gäller fortfarande.",
+  "Waiting for the streamer to start the game.": "Väntar på att streamaren ska starta spelet.",
+  "You have finished all 10 rounds. Waiting for the streamer.": "Du har klarat alla 10 omgångar. Väntar på att streamaren ska avsluta spelet.",
+  "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} lämnade in ett gissning för omgång {{round}} i {{channel}}:s spel {{game}}.",
+  "Game link shared in chat.": "Länk till spelet har delats i chatten.",
+  "The link is posted three times as normal messages, or once as an announcement.": "Länken publiceras tre gånger som vanliga inlägg, eller en gång som ett meddelande."
 }

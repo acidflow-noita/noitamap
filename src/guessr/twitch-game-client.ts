@@ -1,4 +1,5 @@
-import { StreamPacketReader } from './stream-wire';
+import { StreamPacketReader, streamPacketText } from './stream-wire';
+import { chatEnvelope } from './chat-envelope';
 import type { StreamChatMessage } from './stream-state';
 import type { StreamReveal } from './stream-types';
 import type { LiveRoomView } from './live-room-types';
@@ -26,23 +27,26 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
   const reader = new StreamPacketReader(channel, expectedGame, local);
   const watch = () => {
     clearTimeout(watchdog);
+    if (latest?.phase === 'complete' || latest?.timing?.phase === 'lobby' || latest?.timing?.deadline === null) return;
+    const delay = latest?.timing?.deadline ? Math.max(10_000, latest.timing.deadline - Date.now() - timeOffset + 15_000) : 15_000;
     watchdog = setTimeout(() => {
       if (closed) return;
-      handlers.status('stopped', 'The streamer is disconnected from NoitaGuessr');
-    }, 35_000);
+      handlers.status('retrying', 'Waiting for the streamer’s game update.');
+    }, delay);
   };
   const request = () => {
-    if (closed || !connected || !viewer.getState().connected) return;
+    if (closed || latest?.phase === 'complete' || !connected || !viewer.getState().connected) return;
     clearTimeout(requestTimer);
     if (viewer.getState().sending) { requestTimer = setTimeout(request, 1000); return; }
     const wait = lastRequest + 6000 - Date.now();
     if (wait > 0) { requestTimer = setTimeout(request, wait); return; }
     lastRequest = Date.now();
     const recovery = handlers.recovery();
-    const receipts = recovery.receipts.slice(0, 10).filter(r => r.round >= 0 && r.round < 10 && /^[a-f0-9]{16}$/.test(r.key))
+    const receipts = recovery.receipts.slice(0, 6).filter(r => r.round >= 0 && r.round < 10 && /^[a-f0-9]{16}$/.test(r.key))
       .map(r => `${r.round}:${r.key}`).join(',');
     const message = `!noitaguessr_sync ${channel} ${currentGame ? gameCode(currentGame) : '-'} ${(recovery.missing & 1023).toString(16)}${receipts ? ' ' + receipts : ''}`;
-    void viewer.sendMessage(GUESSR_TRANSPORT_CHANNEL, message).catch(() => {
+    const wrapped = chatEnvelope('NoitaGuessr: syncing.', new Uint8Array([78, 71, 82, ...new TextEncoder().encode(message)]));
+    void viewer.sendMessage(GUESSR_TRANSPORT_CHANNEL, wrapped).catch(() => {
       if (!closed && !latest) handlers.status('retrying', 'Waiting for the streamer’s game update.');
     });
   };
@@ -50,12 +54,12 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
     const raw = localStorage.getItem('noitamap-guessr-live:' + expectedGame);
     const cached = raw && raw.length < 8192 ? JSON.parse(raw) as LiveRoomView : null;
     if (cached?.gameId === expectedGame && cached.channel === channel && cached.timing && cached.expiresAt! > Date.now())
-      { latest = cached; handlers.state({ ...cached, online: false, paused: true }); }
+      { latest = cached; handlers.state(cached.phase === 'complete' ? cached : { ...cached, online: false, paused: true }); }
   } catch { /* No cache is required to join. */ }
   return {
     async receive(message: StreamChatMessage) {
       if (closed || message.player.login !== channel) return;
-      const match = /^!noitaguessr_state ([0-9a-z]{26}) /.exec(message.text);
+      const match = /^!noitaguessr_state ([0-9a-z]{26}) /.exec(streamPacketText(message.text));
       const other = match && gameIdFromCode(match[1]);
       if (currentGame && other && other !== currentGame) {
         handlers.status('stopped', 'This game is no longer active.'); return;
@@ -64,20 +68,22 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
       if (closed || !packet || currentGame && packet.gameId !== currentGame) return;
       const offset = packet.sentAt - Date.now();
       timeOffset = !hasClock || Math.abs(offset - timeOffset) > 10_000 ? offset : Math.max(timeOffset, offset); hasClock = true;
-      currentGame = packet.gameId; watch();
+      currentGame = packet.gameId;
       const payload = packet.payload;
       if (payload.type === 'state') {
         if (payload.state.revision < revision) return;
-        if (payload.state.clue === null) {
+        if (payload.state.clue === null && payload.state.timing?.phase !== 'lobby') {
           if (latest?.roundId !== payload.state.roundId || !latest.clue) { request(); return; }
           payload.state.clue = latest.clue;
         }
         revision = payload.state.revision;
         latest = payload.state;
+        watch();
         try { localStorage.setItem('noitamap-guessr-live:' + currentGame, JSON.stringify(payload.state)); } catch { /* Optional cache. */ }
         handlers.state(payload.state);
-        handlers.status(payload.state.phase === 'waiting' ? 'stopped' : payload.state.paused && payload.state.phase !== 'complete' ? 'retrying' : 'connected',
-          payload.state.phase === 'waiting' ? 'This game is no longer active.' : payload.state.paused ? 'The streamer is disconnected from NoitaGuessr' : '');
+        const ended = payload.state.phase === 'waiting' && payload.state.timing?.phase !== 'lobby';
+        handlers.status(ended ? 'stopped' : payload.state.paused && payload.state.phase !== 'complete' ? 'retrying' : 'connected',
+          ended ? 'This game is no longer active.' : payload.state.paused ? 'The streamer is disconnected from NoitaGuessr' : '');
       } else if (payload.type === 'reveal') {
         try { prepareAreaScorer(payload.reveal.area, payload.reveal.answer); } catch { return; }
         handlers.reveal(payload.round, payload.reveal);
@@ -86,7 +92,10 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
     transport(status: TwitchChatStatus, detail: string) {
       if (closed) return;
       connected = status === 'live';
-      if (connected) { handlers.status('connecting', 'Waiting for the streamer’s game update.'); watch(); request(); }
+      if (connected) {
+        if (latest?.phase === 'complete') { handlers.status('connected', ''); return; }
+        handlers.status('connecting', 'Waiting for the streamer’s game update.'); watch(); request();
+      }
       else {
         clearTimeout(watchdog);
         handlers.status(status === 'connecting' ? 'connecting' : status === 'reconnecting' ? 'retrying' : 'stopped', detail);

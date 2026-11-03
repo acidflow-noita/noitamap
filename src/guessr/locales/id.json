@@ -493,5 +493,19 @@
   "Round score": "Poin ronde",
   "Open the game link shared by your streamer.": "Buka tautan permainan yang dibagikan streamer Anda.",
   "{{player}} submitted a guess": "{{player}} mengirim tebakan",
-  "Waiting for results": "Menunggu hasil"
+  "Waiting for results": "Menunggu hasil",
+  "Ready to start": "Siap untuk memulai",
+  "Share the game link, then start when your chat is ready.": "Bagikan tautan gimnya, lalu mulailah saat obrolanmu sudah siap.",
+  "Not started": "Belum dimulai",
+  "Start game": "Mulai permainan",
+  "Guesses: {{total}}": "Jawaban yang telah dikirimkan: {{total}}",
+  "Chat round {{round}}": "Putaran obrolan {{round}}",
+  "Update guess": "Ubah jawaban saya",
+  "Update awaiting confirmation. Previous guess counts.": "Jawaban baru sedang menunggu konfirmasi. Jawaban Anda sebelumnya masih berlaku.",
+  "Update not received. Previous guess counts.": "Belum ada jawaban baru yang diterima. Jawaban Anda sebelumnya masih berlaku.",
+  "Waiting for the streamer to start the game.": "Menunggu streamer memulai permainan.",
+  "You have finished all 10 rounds. Waiting for the streamer.": "Kamu telah menyelesaikan semua 10 ronde. Sedang menunggu sang streamer menyelesaikan permainan.",
+  "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} telah mengirimkan tebakannya untuk putaran {{round}} dalam permainan {{game}} di saluran {{channel}}.",
+  "Game link shared in chat.": "Tautan game yang dibagikan di obrolan.",
+  "The link is posted three times as normal messages, or once as an announcement.": "Tautan tersebut diposting tiga kali sebagai pesan biasa, atau sekali sebagai pengumuman."
 }

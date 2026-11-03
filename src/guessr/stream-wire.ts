@@ -2,9 +2,12 @@ import { gameCode, gameIdFromCode } from './routes';
 import type { StreamChatMessage } from './stream-state';
 import type { LiveRoomView } from './live-room-types';
 import type { StreamReveal } from './stream-types';
+import { chatEnvelope, readChatEnvelope } from './chat-envelope';
 
 const PREFIX = '!noitaguessr_state';
 const PART_SIZE = 420;
+const HIDDEN_PART_BYTES = 210;
+export const STREAM_RECEIPT_BATCH = 24;
 const MAX_COMPRESSED = 32_768, MAX_DECODED = 98_304;
 export type StreamWirePayload =
   | { type: 'state'; state: LiveRoomView }
@@ -59,11 +62,23 @@ export async function encodeStreamPacket(gameId: string, payload: StreamWirePayl
   const raw = value instanceof Uint8Array ? value : new TextEncoder().encode(JSON.stringify(value));
   if (raw.length > MAX_DECODED) throw Error('Broadcast exceeds its size limit');
   const compressed = await bounded(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate')), MAX_COMPRESSED);
-  const data = base64(compressed);
-  const id = crypto.randomUUID().replaceAll('-', '').slice(0, 8), code = gameCode(gameId);
-  const total = Math.ceil(data.length / PART_SIZE);
+  const game = Uint8Array.from(gameId.replaceAll('-', '').match(/../g)!, h => parseInt(h, 16));
+  const id = crypto.getRandomValues(new Uint8Array(4));
+  const total = Math.ceil(compressed.length / HIDDEN_PART_BYTES);
   if (total > 96) throw Error('Too many broadcast parts');
-  return Array.from({ length: total }, (_, i) => `${PREFIX} ${code} ${id} ${i.toString(36)}/${total.toString(36)} ${data.slice(i * PART_SIZE, (i + 1) * PART_SIZE)}`);
+  const label = payload.type === 'receipts' ? 'NoitaGuessr: receipts.' : payload.type === 'reveal' ? 'NoitaGuessr: solution.'
+    : payload.state.phase === 'complete' ? 'NoitaGuessr: finished.' : payload.state.phase === 'waiting' ? 'NoitaGuessr: ready.'
+    : `NoitaGuessr: round ${payload.state.round}.`;
+  return Array.from({ length: total }, (_, i) => chatEnvelope(label,
+    new Uint8Array([78, 71, 83, ...game, ...id, i, total, ...compressed.subarray(i * HIDDEN_PART_BYTES, (i + 1) * HIDDEN_PART_BYTES)])));
+}
+
+export function streamPacketText(message: string): string {
+  const raw = readChatEnvelope(message);
+  if (!raw || raw.length < 26 || raw[0] !== 78 || raw[1] !== 71 || raw[2] !== 83) return message;
+  const hex = (bytes: Uint8Array) => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  const game = hex(raw.subarray(3, 19)), id = `${game.slice(0, 8)}-${game.slice(8, 12)}-${game.slice(12, 16)}-${game.slice(16, 20)}-${game.slice(20)}`;
+  return `${PREFIX} ${gameCode(id)} ${hex(raw.subarray(19, 23))} ${raw[23].toString(36)}/${raw[24].toString(36)} ${base64(raw.subarray(25))}`;
 }
 
 interface Assembly { created: number; total: number; parts: Map<number, string>; gameId: string; sentAt: number }
@@ -74,7 +89,7 @@ export class StreamPacketReader {
   constructor(private channel: string, private expectedGame?: string, private localTest = false) {}
   async receive(message: StreamChatMessage, now = Date.now()): Promise<{ gameId: string; payload: StreamWirePayload; sentAt: number } | null> {
     if (message.player.login !== this.channel || typeof message.text !== 'string' || message.text.length > 500) return null;
-    const match = /^!noitaguessr_state ([0-9a-z]{26}) ([0-9a-f]{8}) ([0-9a-z]{1,2})\/([0-9a-z]{1,2}) ([A-Za-z0-9_-]+)$/.exec(message.text);
+    const match = /^!noitaguessr_state ([0-9a-z]{26}) ([0-9a-f]{8}) ([0-9a-z]{1,2})\/([0-9a-z]{1,2}) ([A-Za-z0-9_-]+)$/.exec(streamPacketText(message.text));
     if (!match) return null;
     const gameId = gameIdFromCode(match[1]), part = parseInt(match[3], 36), total = parseInt(match[4], 36);
     if (!gameId || this.expectedGame && gameId !== this.expectedGame || total < 1 || total > 96 || part >= total || match[5].length > PART_SIZE) return null;
@@ -110,7 +125,7 @@ export class StreamPacketReader {
           || !Number.isInteger(round) || round < 1 || round > 10 || typeof roundId !== 'string' || !/^[a-f0-9-]{36}$/.test(roundId)
           || clue !== null && (typeof clue !== 'string' || !/^[A-Za-z0-9_-]{1,1024}$/.test(clue)) || !Number.isSafeInteger(expiresAt)
           || resultId !== null && resultId !== undefined && resultId !== gameId
-          || !timing || !['warmup', 'play'].includes(timing.phase) || !Number.isSafeInteger(timing.startsAt)
+          || !timing || !['lobby', 'warmup', 'play'].includes(timing.phase) || !Number.isSafeInteger(timing.startsAt)
           || timing.deadline !== null && !Number.isSafeInteger(timing.deadline)
           || !Number.isInteger(timing.hostRound) || timing.hostRound < 1 || timing.hostRound > 10
           || !Number.isInteger(timing.seconds) || timing.seconds < 0 || timing.seconds > 600) return null;
@@ -144,6 +159,7 @@ export class StreamBroadcaster {
   private timer?: ReturnType<typeof setTimeout>;
   private busy = false;
   private stopped = false;
+  private waiters = new Set<() => void>();
   private budgetKey: string;
   constructor(private gameId: string, private send: (message: string) => Promise<unknown>, private failed: (error: unknown) => void, senderId = gameId) {
     this.budgetKey = 'noitamap-guessr-broadcast-budget:' + senderId;
@@ -176,7 +192,11 @@ export class StreamBroadcaster {
     }).catch(error => {
       if (this.queue.get(key) === entry) this.queue.delete(key);
       if (!this.stopped) { entry.lost?.(); this.failed(error); }
-    }).finally(() => { this.busy = false; this.pump(); });
+    }).finally(() => { this.busy = false; this.pump(); if (!this.queue.size) this.resolveDrain(); });
   }
-  dispose(): void { this.stopped = true; clearTimeout(this.timer); this.queue.clear(); this.serial.clear(); }
+  drain(): Promise<void> {
+    return !this.busy && !this.queue.size ? Promise.resolve() : new Promise(resolve => this.waiters.add(resolve));
+  }
+  private resolveDrain(): void { for (const done of this.waiters) done(); this.waiters.clear(); }
+  dispose(): void { this.stopped = true; clearTimeout(this.timer); this.queue.clear(); this.serial.clear(); this.resolveDrain(); }
 }

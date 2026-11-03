@@ -5,6 +5,7 @@ import { TwitchChatConnection, type TwitchChatOptions } from './twitch-chat';
 import { tr } from './i18n';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import { ANNOUNCEMENT_SCOPE, canShareGameLink, postTwitchGameLink } from './twitch-announcement';
+import { gameCode } from './routes';
 
 /** Keep transport state in source English so an open view can change language. */
 export function twitchMessageText(source: string): string {
@@ -36,6 +37,7 @@ export interface TwitchViewerState {
   /** Read-only identity from this browser's saved session, usable for offline scores. */
   savedUserId?: string | null;
   login: string | null;
+  displayName?: string;
   expiresAt: number | null;
   error: string | null;
 }
@@ -343,6 +345,11 @@ export class TwitchViewer {
         const broadcasterId = await this.broadcaster(channel.toLowerCase(), identity);
         if (stopped || generation !== this.generation) return;
         connection = new TwitchChatConnection({ ...handlers, userId: identity.userId, broadcasterId,
+          message: message => {
+            if (message.player.id === identity.userId && message.player.name !== this.state.displayName)
+              this.update({ displayName: message.player.name });
+            handlers.message(message);
+          },
           credentials: async () => {
             const current = await this.currentCredentials();
             return { accessToken: current.token, clientId: this.clientId, userId: current.userId,
@@ -369,12 +376,15 @@ export class TwitchViewer {
 
   /** Exactly one send attempt, called explicitly after connect() has completed.
    * An uncertain response is never retried: Twitch may already have sent it. */
-  async sendGuess(channel: string, round: number, point: Point, maximum?: number, roundId?: string, nonce?: Uint8Array): Promise<string> {
+  async sendGuess(channel: string, round: number, point: Point, maximum?: number, roundId?: string, nonce?: Uint8Array, gameId?: string): Promise<string> {
     const credentials = await this.currentCredentials();
     let command: string;
     try {
       if (typeof channel !== 'string' || !/^[a-z0-9_]{1,25}$/i.test(channel) || round > STREAM_ROUNDS) throw Error();
-      command = formatGuessCommand(round, point, maximum, roundId, { userId: credentials.userId, nonce });
+      const label = tr('{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.', {
+        player: this.state.displayName || credentials.login, round: String(round), channel, game: gameId ? gameCode(gameId) : '',
+      });
+      command = formatGuessCommand(round, point, maximum, roundId, { userId: credentials.userId, nonce, label });
     } catch { throw new TwitchViewerError('invalid-guess', 'Choose a valid round, map position, and Twitch channel before sending.'); }
     return this.sendMessage(GUESSR_TRANSPORT_CHANNEL, command, credentials.userId);
   }

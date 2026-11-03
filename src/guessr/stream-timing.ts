@@ -8,7 +8,7 @@ export const STREAM_RESULTS_HOLD_MS = 8000;
 export interface ChatRoundWindow { opensAt: number; closesAt: number | null; closed: boolean }
 export interface StreamTiming {
   seconds: number;
-  phase: 'warmup' | 'play';
+  phase: 'lobby' | 'warmup' | 'play';
   startsAt: number;
   deadline: number | null;
   resultsUntil?: number;
@@ -21,12 +21,19 @@ export interface StreamTiming {
 export function validStreamSeconds(value: number): boolean {
   return value === 0 || Number.isInteger(value) && value >= 15 && value <= 600;
 }
-export function startStreamTiming(game: StreamGame, seconds = STREAM_DEFAULT_SECONDS, now = game.session.serverNow): void {
+export function startStreamTiming(game: StreamGame, seconds = STREAM_DEFAULT_SECONDS, now = game.session.serverNow, lobby = false): void {
   if (!validStreamSeconds(seconds)) throw Error('Choose a round duration between 15 and 600 seconds.');
-  game.timing = { seconds, phase: 'warmup', startsAt: now + STREAM_START_COUNTDOWN_MS,
-    deadline: seconds ? now + STREAM_START_COUNTDOWN_MS + seconds * 1000 : null,
+  game.timing = { seconds, phase: lobby ? 'lobby' : 'warmup', startsAt: now + STREAM_START_COUNTDOWN_MS,
+    deadline: !lobby && seconds ? now + STREAM_START_COUNTDOWN_MS + seconds * 1000 : null,
     chatRound: 0, windows: game.session.rounds.map(() => null), suspendedAt: null, lastActiveAt: now, revision: 1 };
-  openChatWindow(game);
+  if (!lobby) openChatWindow(game);
+}
+export function beginStreamTiming(game: StreamGame, now: number): void {
+  const timing = game.timing!;
+  if (timing.phase !== 'lobby' || game.paused) return;
+  timing.phase = 'warmup'; timing.startsAt = now + STREAM_START_COUNTDOWN_MS;
+  timing.deadline = timing.seconds ? timing.startsAt + timing.seconds * 1000 : null;
+  timing.lastActiveAt = now; timing.revision++; openChatWindow(game);
 }
 function openChatWindow(game: StreamGame): void {
   const timing = game.timing!;
@@ -91,7 +98,7 @@ export function resumeStreamTiming(game: StreamGame, now: number): void {
 export type StreamTick = 'warmup-finished' | 'submit' | 'advance' | 'finish' | null;
 export function streamTick(game: StreamGame, now: number): StreamTick {
   const timing = game.timing;
-  if (!timing || game.paused || game.stage === 'complete') return null;
+  if (!timing || timing.phase === 'lobby' || game.paused || game.stage === 'complete') return null;
   timing.lastActiveAt = now;
   if (game.stage === 'reveal' && timing.resultsUntil && now < timing.resultsUntil) return null;
   if (game.stage === 'reveal' && game.round === game.session.rounds.length - 1) return 'finish';

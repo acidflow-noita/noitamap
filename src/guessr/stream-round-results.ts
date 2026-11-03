@@ -15,7 +15,7 @@ export function streamRoundResults(main: HTMLElement, game: StreamGame, index: n
   const heading = document.createElement('div'); heading.className = 'panel-bar';
   bindText(heading, 'Round {{round}} results', { round: formatGuessrNumber(index + 1) });
   const wrap = document.createElement('div'); wrap.className = 'stream-round-score-scroll';
-  const table = document.createElement('table'); table.className = 'table stream-round-score-table';
+  const table = document.createElement('table'); table.className = 'table stream-score-table stream-round-score-table';
   const head = document.createElement('thead'), header = document.createElement('tr'), body = document.createElement('tbody');
   head.append(header); table.append(head, body); wrap.append(table); scores.append(heading, wrap, actions); grid.append(mapPanel, scores); main.append(grid);
   const board = new MapBoard(map, config.bounds, config.overview, () => {}, config.map); board.setLocked(true);
@@ -31,11 +31,12 @@ export function streamRoundResults(main: HTMLElement, game: StreamGame, index: n
   roundOrder.forEach((p, i) => ranks.set(p.id, i && p.rounds[index].score === roundOrder[i - 1].rounds[index].score
     ? ranks.get(roundOrder[i - 1].id)! : i + 1));
   board.setPlayers(players.map(p => ({ id: p.id, name: p.name, guess: p.rounds[index].guess })), reveal.answer, select);
-  let sort: 'rank' | 'name' | 'round' | 'total' = 'rank', direction = 1;
+  let sort: 'rank' | 'name' | 'round' | 'total' = 'round', direction = -1;
   const columns = [['rank', 'Rank'], ['name', 'Player'], ['round', 'Round score'], ['total', 'Total']] as const;
   const headers: HTMLTableCellElement[] = [];
   for (const [key, label] of columns) {
     const th = document.createElement('th'), button = document.createElement('button');
+    th.scope = 'col'; if (key !== 'name') th.className = 'numeric';
     button.type = 'button'; button.className = 'stream-table-sort'; bindText(button, label);
     button.onclick = () => { direction = sort === key ? -direction : key === 'rank' || key === 'name' ? 1 : -1; sort = key; render(); };
     th.append(button); header.append(th); headers.push(th);

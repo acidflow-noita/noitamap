@@ -493,5 +493,19 @@
   "Round score": "Rondepunten",
   "Open the game link shared by your streamer.": "Open de spellink die je streamer heeft gedeeld.",
   "{{player}} submitted a guess": "{{player}} heeft een gok ingediend",
-  "Waiting for results": "Wachten op resultaten"
+  "Waiting for results": "Wachten op resultaten",
+  "Ready to start": "Klaar om te beginnen",
+  "Share the game link, then start when your chat is ready.": "Deel de link naar het spel en begin zodra je chat klaar is.",
+  "Not started": "Nog niet begonnen",
+  "Start game": "Start het spel",
+  "Guesses: {{total}}": "Ingezonden antwoorden: {{total}}",
+  "Chat round {{round}}": "Chatronde {{round}}",
+  "Update guess": "Mijn antwoord wijzigen",
+  "Update awaiting confirmation. Previous guess counts.": "Nieuw antwoord in afwachting van bevestiging. Je vorige antwoord is nog steeds geldig.",
+  "Update not received. Previous guess counts.": "Er is geen nieuw antwoord ontvangen. Uw vorige antwoord is nog steeds geldig.",
+  "Waiting for the streamer to start the game.": "Ik wacht tot de streamer het spel start.",
+  "You have finished all 10 rounds. Waiting for the streamer.": "Je hebt alle 10 rondes voltooid. Je wacht nu tot de streamer het spel afrondt.",
+  "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} heeft een gok ingediend voor ronde {{round}} in het spel {{game}} van {{channel}}.",
+  "Game link shared in chat.": "Link naar het spel gedeeld in de chat.",
+  "The link is posted three times as normal messages, or once as an announcement.": "De link wordt drie keer als gewoon bericht geplaatst, of één keer als mededeling."
 }

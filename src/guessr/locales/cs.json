@@ -511,5 +511,19 @@
   "Round score": "Body za kolo",
   "Open the game link shared by your streamer.": "Otevřete odkaz na hru sdílený vaším streamerem.",
   "{{player}} submitted a guess": "{{player}} odeslal tip",
-  "Waiting for results": "Čekání na výsledky"
+  "Waiting for results": "Čekání na výsledky",
+  "Ready to start": "Jste připraveni začít?",
+  "Share the game link, then start when your chat is ready.": "Sdílejte odkaz na hru a začněte, až bude váš chat připraven.",
+  "Not started": "Ještě nezačalo",
+  "Start game": "Spustit hru",
+  "Guesses: {{total}}": "Počet odeslaných odpovědí: {{total}}",
+  "Chat round {{round}}": "Kolo chatu {{round}}",
+  "Update guess": "Změnit svou odpověď",
+  "Update awaiting confirmation. Previous guess counts.": "Nová odpověď čeká na potvrzení. Vaše předchozí odpověď je stále platná.",
+  "Update not received. Previous guess counts.": "Nová odpověď nebyla doručena. Vaše předchozí odpověď zůstává v platnosti.",
+  "Waiting for the streamer to start the game.": "Čekám, až streamer spustí hru.",
+  "You have finished all 10 rounds. Waiting for the streamer.": "Dokončili jste všech 10 kol. Čekáme, až streamer dokončí hru.",
+  "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} zaslal tip pro kolo {{round}} ve hře {{game}} na kanálu {{channel}}.",
+  "Game link shared in chat.": "Odkaz na hru sdílený v chatu.",
+  "The link is posted three times as normal messages, or once as an announcement.": "Odkaz je zveřejněn třikrát jako běžné příspěvky nebo jednou jako oznámení."
 }

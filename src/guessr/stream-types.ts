@@ -89,6 +89,8 @@ export interface StreamGame {
   paused: boolean;
   /** Browser preference for the current game's explicit share action. */
   shareAnnouncements?: boolean;
+  /** Confirmed initial invitation posts, retained if the host refreshes in the lobby. */
+  initialShareCount?: number;
   timing?: import('./stream-timing').StreamTiming;
   receipts?: Record<number, string[]>;
   participants: StreamParticipant[];

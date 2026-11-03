@@ -35,6 +35,7 @@ it('runs ten rounds with a chatter ahead, reconstructs receipts and scores after
   };
   for (let chatRound = 0; chatRound < 10; chatRound++) {
     const window = game.timing!.windows[chatRound]!;
+    expect(window.closesAt! - window.opensAt).toBe(90_000);
     const nonce = crypto.getRandomValues(new Uint8Array(8)), nonceHex = Array.from(nonce, b => b.toString(16).padStart(2, '0')).join('');
     const key = await guessReceiptKey(session.rounds[chatRound].id, '123', nonceHex);
     personal.submit(chatRound, key, streamAnswer, 5000);
@@ -85,4 +86,35 @@ it('keeps an unconfirmed submission explicit across reloads and resolves a negat
   personal.receipts(0, ['0123456789abcdef'], true);
   expect(personal.round(0)).toMatchObject({ pending: false, lastStatus: 'rejected', score: { score: 0 } });
   personal.identify(session.id, '124'); expect(personal.round(0).submitted).toBe(false);
+});
+
+it('keeps the last confirmed guess until its replacement arrives and preserves the same score after F5', async () => {
+  const service = new StreamService(streamSource(), streamSecret), session = await service.start(streamHost, streamNow, 'twitch');
+  session.live = true;
+  const game = newStreamGame(session, streamNow); startStreamTiming(game, 90, streamNow);
+  let own = new StreamViewerHistory(session.config.bounds); own.identify(session.id, '123');
+  const point = { x: streamAnswer.x + 10, y: streamAnswer.y + 20 };
+  const submit = async (index: number, target = point, deliver = true) => {
+    const nonce = new Uint8Array(8).fill(index), hex = Array.from(nonce, v => v.toString(16).padStart(2, '0')).join('');
+    const key = await guessReceiptKey(session.rounds[0].id, '123', hex);
+    own.submit(0, key, target, 5000);
+    if (deliver) {
+      const text = formatGuessCommand(1, target, 5000, session.rounds[0].id, { userId: '123', nonce, label: 'Chatter submitted a guess.' });
+      expect(text).not.toMatch(/[ᚠ-ᛊ]/u); expect(text.length).toBeLessThanOrEqual(500);
+      const message = { id: String(index), player: { id: '123', login: 'chatter', name: 'Chatter' }, text, sentAt: streamNow + 4000 + index };
+      expect(acceptStreamGuess(game, { ...message, player: { ...message.player, id: '999' } }, message.sentAt)).toBe('invalid');
+      expect(acceptStreamGuess(game, message, message.sentAt)).toBe('accepted');
+    }
+    return key;
+  };
+  const first = await submit(1); own.receipts(0, [first]);
+  const lost = await submit(2, streamAnswer, false);
+  expect(own.round(0)).toMatchObject({ pending: true, received: { point } });
+  const replacement = await submit(3, streamAnswer); own.receipts(0, [replacement]);
+  own.receipts(0, [first]); own.receipts(0, [lost], true);
+  const reveal = await service.reveal(session.rounds[0].token, streamHost, streamNow + 100000); own.reveal(0, reveal);
+  expect(game.participants[1].guesses[0]!.point).toEqual(streamAnswer);
+  expect(own.round(0)).toMatchObject({ pending: false, received: { point: streamAnswer }, score: { score: 5000 } });
+  own = new StreamViewerHistory(session.config.bounds); own.identify(session.id, '123');
+  expect(own.round(0).score!.score).toBe(5000); expect(fetch).not.toHaveBeenCalled();
 });

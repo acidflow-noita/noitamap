@@ -18,14 +18,14 @@
   flex: 0 1 auto;
 }
 .stream-banner .stream-guess-count { margin-inline-end: auto; font-size: .8125rem; color: var(--text-muted); }
-.stream-share-button { white-space: nowrap; }
+.stream-share-button { inline-size: 18rem; max-inline-size: 100%; block-size: 3rem; line-height: 1.15; white-space: normal; }
 .stream-share-button[data-posted="true"]:disabled { opacity: 1; color: var(--success-fg); }
 .stream-host-shell .stream-host-actions { flex: none; margin: 0; border: 0; border-top: 1px solid var(--border); border-radius: 0; padding: .5rem .75rem; }
 .stream-host-shell .stream-host-actions > .primary { min-inline-size: 10rem; min-block-size: 2.75rem; padding: .5rem 1rem; }
 @media (min-width: 901px) {
   #guess-app:has(.stream-host-shell) { block-size: 100dvh; min-block-size: 0; }
   #guess-app:has(.stream-host-shell) > .site-header { flex: none; }
-  #guess-app > .stream-host-shell { min-block-size: 0; }
+  #guess-app > .stream-host-shell { min-block-size: 0; flex: 1; display: flex; flex-direction: column; gap: var(--game-gutter); }
   .stream-host-shell .game-grid { min-block-size: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .stream-host-shell .game-panel { min-block-size: 0; }
   .stream-host-shell .map-board { min-block-size: 0; }
@@ -62,19 +62,33 @@
 .stream-timer-settings { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-block: .5rem; }
 .stream-timer-settings input { inline-size: 6rem; }
 .stream-round-timer { font-size: 1.125rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.stream-warmup { flex: 1; min-block-size: 0; align-items: center; justify-content: center; gap: .75rem; padding: 1rem; text-align: center; }
-.stream-warmup > p { margin: 0; max-inline-size: 55ch; }
-.stream-warmup-clock { --remaining: 1; display: grid; place-items: center; inline-size: min(32dvh, 13rem); aspect-ratio: 1; padding: .375rem; border-radius: 50%; background: conic-gradient(var(--game-action) calc(var(--remaining) * 1turn), var(--border) 0); }
-.stream-warmup-clock > strong { display: grid; place-items: center; inline-size: 100%; block-size: 100%; border-radius: 50%; background: var(--surface-1); font-size: clamp(1rem, 3vw, 2rem); padding: .5rem; }
+.stream-start-panel { --bs-card-bg: var(--surface-1); --bs-card-color: var(--text); --bs-card-border-color: var(--border); --bs-card-border-radius: var(--radius-panel); align-self: center; inline-size: min(100%, 40rem); margin-block: auto; padding: var(--game-gutter); gap: var(--game-gutter); text-align: center; }
+.stream-start-panel > :is(p, h2) { margin: 0; }
+.stream-start-panel > button { align-self: center; min-inline-size: 12rem; }
+.stream-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--game-gutter); padding: .5rem .75rem; margin: 0; min-block-size: 3.5rem; }
+.stream-toolbar-navigation, .stream-toolbar-actions { display: flex; align-items: center; gap: .75rem; min-inline-size: 0; }
+.stream-toolbar-actions { justify-content: flex-end; }
+.stream-toolbar-round { display: flex; align-items: center; justify-content: center; gap: .75rem; white-space: nowrap; font-size: .875rem; }
+.stream-toolbar-round .stream-round-timer { inline-size: 11ch; text-align: end; font-size: inherit; }
+.stream-activity { display: flex; align-items: center; gap: 1rem; min-block-size: 1.5rem; padding-inline: .75rem; font-size: .8125rem; color: var(--text-muted); overflow: hidden; }
+.stream-activity > span { white-space: nowrap; }
+.stream-activity-message { flex: 1; overflow: hidden; text-overflow: ellipsis; text-align: end; }
 .stream-host-shell .game-grid { position: relative; }
 .stream-countdown { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: var(--surface-1); color: var(--text); font-size: clamp(1.5rem, 5vw, 3rem); border-radius: var(--radius-panel); }
 .stream-round-score-scroll { flex: 1; min-block-size: 0; overflow: auto; }
 .stream-round-score-table { margin: 0; inline-size: 100%; }
 .stream-round-score-table thead { position: sticky; inset-block-start: 0; background: var(--surface-1); z-index: 1; }
 #guess-app .stream-table-sort { border: 0; background: transparent; border-radius: 0; padding: .25rem 0; font: inherit; min-height: 0; }
-.stream-table-sort::after { content: ' ↕'; opacity: .5; }
-[aria-sort='ascending'] > .stream-table-sort::after { content: ' ↑'; opacity: 1; }
-[aria-sort='descending'] > .stream-table-sort::after { content: ' ↓'; opacity: 1; }
+.stream-table-sort::after { content: ''; display: inline-block; inline-size: .4rem; block-size: .4rem; margin-inline-start: .5rem; vertical-align: .15em; visibility: hidden; border-inline-end: 2px solid; border-block-end: 2px solid; transform: rotate(45deg); }
+[aria-sort='ascending'] > .stream-table-sort::after { visibility: visible; transform: rotate(225deg); vertical-align: 0; }
+[aria-sort='descending'] > .stream-table-sort::after { visibility: visible; }
+.stream-score-table { --bs-table-color: var(--text); --bs-table-bg: transparent; --bs-table-border-color: var(--border); border-collapse: collapse; }
+.stream-score-table :is(th, td) { padding: .65rem .9rem; border-block-end: 1px solid var(--border); vertical-align: middle; }
+.stream-score-table th { font-size: .8125rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+.stream-score-table .numeric { text-align: end; font-variant-numeric: tabular-nums; }
+.stream-score-table :is(th, td):nth-child(2) { text-align: start; }
+.stream-round-score-table :is(th, td):first-child { inline-size: 4rem; }
+.stream-round-score-table :is(th, td):nth-child(2) { inline-size: auto; }
 .stream-round-score-table tr.selected { background: var(--accent-bg); outline: 1px solid var(--accent-fg); outline-offset: -1px; }
 .stream-round-score-table tbody tr { cursor: pointer; }
 .stream-table-controls input {
@@ -82,10 +96,9 @@
   max-width: 100%;
 }
 .stream-viewer-page { block-size: 100dvh; display: flex; flex-direction: column; }
-.stream-viewer-page > .site-header { flex: none; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
-.stream-viewer-page .site-header .header-identity { grid-column: 1; justify-self: start; min-inline-size: 0; max-inline-size: 100%; }
+.stream-viewer-page > .site-header { flex: none; }
+.stream-viewer-page .site-header .header-identity { min-inline-size: 0; max-inline-size: 100%; }
 .stream-viewer-page .site-header .brand img { max-inline-size: 100%; }
-.stream-viewer-page .site-header .header-actions { grid-column: 3; justify-self: end; }
 .stream-viewer-shell { flex: 1; min-block-size: 0; display: flex; padding-block: var(--game-gutter); }
 .stream-viewer-layout {
   display: grid; flex: 1; min-inline-size: 0; min-block-size: 0;
@@ -95,13 +108,20 @@
 }
 .stream-viewer-layout > .game-panel { min-block-size: 0; }
 .stream-viewer-clue { align-self: stretch; position: relative; }
-.stream-delivery, .stream-viewer-timer { font-size: .8125rem; white-space: nowrap; }
+.stream-delivery { font-size: .8125rem; block-size: 2.5em; line-height: 1.25; display: flex; align-items: center; overflow-wrap: anywhere; overflow: auto; color: var(--text-muted); }
+.stream-delivery[data-state='received'] { color: var(--success-fg); }
+.stream-delivery[data-state='error'] { color: var(--danger-fg); }
 .stream-viewer-results > .stream-rank { font-size: 2rem; }
 .stream-picker .map-board { flex: 1; min-block-size: 0; block-size: auto; }
-.stream-guess-actions { display: flex; flex: none; align-items: center; justify-content: flex-end; gap: var(--game-gutter); padding: .5rem; border-top: 1px solid var(--border); }
-.stream-header-round { grid-column: 2; justify-self: center; text-align: center; white-space: nowrap; font-weight: 600; }
+.stream-guess-actions { display: grid; flex: none; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .25rem var(--game-gutter); padding: .5rem .75rem; border-top: 1px solid var(--border); }
+.stream-guess-actions > .stream-delivery { grid-column: 1 / -1; grid-row: 1; }
+.stream-guess-actions > .primary { grid-column: 2; grid-row: 2; inline-size: 10rem; min-block-size: 2.75rem; }
+.stream-guess-actions > .stream-secondary-actions { grid-column: 1; grid-row: 2; min-block-size: 1.75rem; display: flex; align-items: center; gap: .75rem; font-size: .8125rem; }
+.stream-secondary-actions > [hidden] { display: none; }
+.stream-maximum { flex: 1; }
 .stream-maximum { margin-inline-end: auto; font-size: .8125rem; color: var(--text-muted); }
 .stream-room-status { min-inline-size: 0; max-inline-size: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .8125rem; color: var(--text-muted); }
+.stream-room-status.stream-activity { max-inline-size: none; inline-size: 100%; }
 .stream-guess-actions > [hidden] { display: none; }
 .stream-viewer-clue .clue-controls-compact { display: flex; justify-content: center; flex-wrap: wrap; padding: .5rem; }
 .clue-controls-compact > [hidden] { display: none; }
@@ -113,6 +133,7 @@
 .stream-clue-empty p { margin-block: .5rem; }
 .stream-connection-bar { grid-column: 1 / -1; grid-row: 1; }
 .stream-chat-header { display: flex; flex-wrap: wrap; align-items: center; flex: none; gap: var(--game-gutter); padding: .5rem; font-size: .875rem; }
+.stream-chat-header.stream-toolbar { display: grid; padding: .5rem .75rem; }
 .stream-chat-header[hidden] { display: none; }
 .stream-chat-heading { flex: 0 1 auto; }
 .stream-chat-heading, .stream-chat-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--game-gutter); min-inline-size: 0; }
@@ -149,13 +170,14 @@
 .stream-signin-error { max-inline-size: 36ch; margin: 0; color: var(--danger-fg); text-align: center; }
 .stream-signin[hidden], .stream-signin-error[hidden], .stream-picker .map-board[hidden] { display: none; }
 @media (max-width: 48rem) {
+  .stream-toolbar { grid-template-columns: minmax(0, 1fr) auto; }
+  .stream-toolbar-actions { grid-column: 1 / -1; }
+  .stream-share-button { inline-size: 100%; }
   .stream-viewer-page { block-size: auto; min-block-size: 100dvh; }
-  .stream-viewer-page > .site-header { grid-template-columns: minmax(0, 1fr) auto; }
   .stream-viewer-layout { display: flex; flex-direction: column; }
   .stream-viewer-layout > .stream-picker,
   .stream-viewer-layout > .stream-viewer-clue { min-block-size: 55dvh; block-size: 65dvh; flex: none; }
   .stream-viewer-clue { align-self: stretch; }
-  .stream-viewer-page .site-header .header-actions { grid-column: 1 / -1; grid-row: 2; }
 }
 .stream-command {
   font:
