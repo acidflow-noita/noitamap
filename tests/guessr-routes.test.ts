@@ -1,8 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { readGuessRoute, guessRouteUrl, isGuessrPagePath } from '../src/guessr/routes';
+import { readGuessRoute, guessRouteUrl, isGuessrPagePath, gameCode, gameIdFromCode } from '../src/guessr/routes';
 
 const origin = 'http://localhost:5173';
 describe('Guessr page routes', () => {
+  it('keeps a unique game identity in the URL through refresh and login returns', () => {
+    const id = '11111111-1111-4111-8111-111111111111';
+    const link = guessRouteUrl('stream-picker', new URL('/guess/?auth_resume=saved', origin), { channel: 'Wuote', game: id });
+    expect(link.pathname).toBe(`/guess/wuote/${gameCode(id)}/`);
+    expect(gameCode(id)).toHaveLength(26);
+    expect(gameIdFromCode(gameCode(id))).toBe(id);
+    expect(readGuessRoute(link)).toEqual({ pane: 'stream-picker', channel: 'wuote', game: id });
+    expect(guessRouteUrl('stream-picker', link).href).toBe(link.href);
+    expect(isGuessrPagePath(link.pathname)).toBe(true);
+    expect(readGuessRoute(guessRouteUrl('stream-picker', link, { channel: 'other' })).game).toBeUndefined();
+    expect(gameIdFromCode('z'.repeat(26))).toBeUndefined();
+    for (let i = 0; i < 25; i++) {
+      const next = crypto.randomUUID(); expect(gameIdFromCode(gameCode(next))).toBe(next);
+      expect(gameCode(next)).not.toBe(gameCode(id));
+    }
+    const reserved = guessRouteUrl('stream-picker', origin, { channel: 'stream', game: id });
+    expect(readGuessRoute(reserved)).toEqual({ pane: 'stream-picker', channel: 'stream', game: id });
+  });
   it.each([
     ['/guess/?pane=stream', '/guess/stream/', 'stream'],
     ['/guess/?channel=wuote', '/guess/stream/wuote/', 'stream-picker'],

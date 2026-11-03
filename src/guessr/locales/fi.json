@@ -462,5 +462,6 @@
   "When off, Share posts a normal message in your Twitch channel.": "Kun asetus on pois päältä, linkki julkaistaan tavallisena viestinä Twitch-chatissasi.",
   "Sharing permission is optional. Without it, you can copy the link.": "Jakamislupa on valinnainen. Ilman sitä voit kopioida linkin.",
   "Enable sharing in chat": "Salli jakaminen chattiin",
-  "Sharing permission is unavailable. You can copy the game link.": "Jakamislupa puuttuu. Voit kopioida pelilinkin."
+  "Sharing permission is unavailable. You can copy the game link.": "Jakamislupa puuttuu. Voit kopioida pelilinkin.",
+  "This game is no longer active.": "Tämä peli ei ole enää käynnissä."
 }

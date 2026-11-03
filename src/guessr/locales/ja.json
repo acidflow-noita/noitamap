@@ -462,5 +462,6 @@
   "When off, Share posts a normal message in your Twitch channel.": "オフの場合、自分のTwitchチャットに通常のメッセージとしてリンクを投稿します。",
   "Sharing permission is optional. Without it, you can copy the link.": "投稿の許可は任意です。許可しなくてもリンクをコピーできます。",
   "Enable sharing in chat": "チャットでの共有を許可",
-  "Sharing permission is unavailable. You can copy the game link.": "投稿の権限がありません。ゲームのリンクをコピーできます。"
+  "Sharing permission is unavailable. You can copy the game link.": "投稿の権限がありません。ゲームのリンクをコピーできます。",
+  "This game is no longer active.": "このゲームは現在開催されていません。"
 }

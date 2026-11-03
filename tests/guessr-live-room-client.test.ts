@@ -86,9 +86,10 @@ describe('stable room connection budget', () => {
     room.dispose();
   });
   it('shares only a short channel URL, with no clue, round or credentials', () => {
-    expect(liveRoomLink('https://dynamic-map.noitamap.com/anything#secret', 'Wuote'))
-      .toBe('https://dynamic-map.noitamap.com/guess/stream/wuote/');
-    expect(liveRoomLink('https://dynamic-map.noitamap.com', 'a'.repeat(25)).length).toBeLessThan(80);
-    expect(() => liveRoomLink('https://example.com', 'x/y')).toThrow();
+    const id = '00000000-0000-0000-0000-000000000001';
+    expect(liveRoomLink('https://dynamic-map.noitamap.com/anything#secret', 'Wuote', id))
+      .toBe('https://dynamic-map.noitamap.com/guess/wuote/00000000000000000000000001/');
+    expect(liveRoomLink('https://dynamic-map.noitamap.com', 'a'.repeat(25), id).length).toBeLessThan(100);
+    expect(() => liveRoomLink('https://example.com', 'x/y', id)).toThrow();
   });
 });

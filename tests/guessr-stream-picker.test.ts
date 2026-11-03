@@ -66,6 +66,25 @@ function mount(url: string) {
 }
 
 describe('shared channel guess picker', () => {
+  it('never switches a game-specific link to another game hosted by the same channel', async () => {
+    const f = mount('/guess/wuote/00000000000000000000000001/');
+    const handlers = vi.mocked(watchLiveRoom).mock.calls[0][1];
+    const state: LiveRoomView = {
+      schema: 1, channel: 'wuote', gameId: '00000000-0000-0000-0000-000000000001',
+      roundId: '22222222-2222-4222-8222-222222222222', revision: 1, phase: 'guess', online: true, paused: false,
+      round: 1, clue: new URL(roundLink('/guess/?channel=wuote', 1, true)).hash.slice(6), expiresAt: Date.now() + 99999,
+    };
+    handlers.state(state); handlers.status('connected', '');
+    f.button('Sign in with Twitch').click(); await flush(); ui.pick({ x: 10, y: 20 });
+    expect(f.button('Send guess').disabled).toBe(false);
+    handlers.state({ ...state, revision: 2, gameId: '00000000-0000-0000-0000-000000000002' });
+    expect(f.button('Send guess').disabled).toBe(true);
+    expect(f.main.textContent).toContain('This game is no longer active.');
+    expect(location.pathname).toBe('/guess/wuote/00000000000000000000000001/');
+    expect(f.main.querySelector<HTMLAnchorElement>('.stream-guess-actions a')!.href)
+      .toContain('/guess/results/00000000-0000-0000-0000-000000000001/');
+    expect(f.viewer.sendGuess).not.toHaveBeenCalled();
+  });
   it('shows combined connection health without polling or moving the indicator', async () => {
     const f = mount('/guess/stream/wuote/');
     f.button('Sign in with Twitch').click(); await flush();

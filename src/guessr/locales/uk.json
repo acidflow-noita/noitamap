@@ -480,5 +480,6 @@
   "When off, Share posts a normal message in your Twitch channel.": "Якщо вимкнено, посилання надсилається звичайним повідомленням у ваш чат Twitch.",
   "Sharing permission is optional. Without it, you can copy the link.": "Дозвіл на надсилання необов’язковий. Без нього можна скопіювати посилання.",
   "Enable sharing in chat": "Дозволити надсилання в чат",
-  "Sharing permission is unavailable. You can copy the game link.": "Немає дозволу на надсилання. Ви можете скопіювати посилання на гру."
+  "Sharing permission is unavailable. You can copy the game link.": "Немає дозволу на надсилання. Ви можете скопіювати посилання на гру.",
+  "This game is no longer active.": "Ця гра вже не активна."
 }

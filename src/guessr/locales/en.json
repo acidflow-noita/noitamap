@@ -462,5 +462,6 @@
   "When off, Share posts a normal message in your Twitch channel.": "When off, Share posts a normal message in your Twitch channel.",
   "Sharing permission is optional. Without it, you can copy the link.": "Sharing permission is optional. Without it, you can copy the link.",
   "Enable sharing in chat": "Enable sharing in chat",
-  "Sharing permission is unavailable. You can copy the game link.": "Sharing permission is unavailable. You can copy the game link."
+  "Sharing permission is unavailable. You can copy the game link.": "Sharing permission is unavailable. You can copy the game link.",
+  "This game is no longer active.": "This game is no longer active."
 }

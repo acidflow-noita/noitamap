@@ -471,5 +471,6 @@
   "When off, Share posts a normal message in your Twitch channel.": "Se disattivato, il link viene pubblicato come messaggio normale nella tua chat di Twitch.",
   "Sharing permission is optional. Without it, you can copy the link.": "L’autorizzazione a condividere è facoltativa. Senza di essa puoi copiare il link.",
   "Enable sharing in chat": "Consenti la condivisione in chat",
-  "Sharing permission is unavailable. You can copy the game link.": "L’autorizzazione a condividere non è disponibile. Puoi copiare il link della partita."
+  "Sharing permission is unavailable. You can copy the game link.": "L’autorizzazione a condividere non è disponibile. Puoi copiare il link della partita.",
+  "This game is no longer active.": "Questa partita non è più attiva."
 }

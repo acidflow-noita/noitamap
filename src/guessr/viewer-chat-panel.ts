@@ -20,7 +20,8 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
   changeStreamer.onclick = () => onChangeStreamer?.();
   const light = document.createElement('span'); light.className = 'stream-chat-state';
   light.tabIndex = 0; light.setAttribute('role', 'status'); light.setAttribute('aria-live', 'polite');
-  identity.append(light, title, pro.badge);
+  const name = document.createElement('span'); name.className = 'stream-name';
+  name.append(title, pro.badge); identity.append(light, name);
   const gift = document.createElement('button'); gift.type = 'button'; gift.className = 'btn btn-patron stream-gift-pro';
   gift.dataset.proGift = 'choose';
   gift.onclick = () => { void import('./pro-gift-dialog').then(({ showStreamerGift }) => showStreamerGift(channel)); };

@@ -462,5 +462,6 @@
   "When off, Share posts a normal message in your Twitch channel.": "När inställningen är av publiceras länken som ett vanligt meddelande i din Twitch-chatt.",
   "Sharing permission is optional. Without it, you can copy the link.": "Tillstånd att dela är valfritt. Utan det kan du kopiera länken.",
   "Enable sharing in chat": "Tillåt delning i chatten",
-  "Sharing permission is unavailable. You can copy the game link.": "Tillstånd att dela saknas. Du kan kopiera spellänken."
+  "Sharing permission is unavailable. You can copy the game link.": "Tillstånd att dela saknas. Du kan kopiera spellänken.",
+  "This game is no longer active.": "Det här spelet är inte längre aktivt."
 }

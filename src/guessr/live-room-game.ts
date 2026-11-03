@@ -26,8 +26,8 @@ export function liveRoomGame(session: StreamSession, imageRoot: string): LiveRoo
   };
 }
 
-/** One link per channel, valid across rounds and games. No clue or credential in it. */
-export function liveRoomLink(origin: string, channel: string): string {
+/** One stable link per game, across rounds and reloads. No clue or credential in it. */
+export function liveRoomLink(origin: string, channel: string, gameId: string): string {
   if (!/^[a-z0-9_]{1,25}$/i.test(channel)) throw new Error('Invalid Twitch channel.');
-  return guessRouteUrl('stream-picker', new URL('/guess/', origin), { channel }).href;
+  return guessRouteUrl('stream-picker', new URL('/guess/', origin), { channel, game: gameId }).href;
 }

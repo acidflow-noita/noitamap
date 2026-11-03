@@ -23,7 +23,8 @@ try {
   }));
   const pages = ['/', '/guess/', '/guess/demo', '/guess/demo/', '/guess/daily/', '/guess/history/',
     '/guess/join/', '/guess/stream/', '/guess/stream/wuote/', '/guess/stream/dunkorslam/?auth_resume=example',
-    '/guess/results/11111111-1111-4111-8111-111111111111/'];
+    '/guess/results/11111111-1111-4111-8111-111111111111/',
+    '/guess/wuote/00000000000000000000000001/', '/guess/wuote/00000000000000000000000001?auth_resume=example'];
   for (const page of pages) {
     const response = await runtime.dispatchFetch('https://example.com' + page);
     assert.equal(response.status, 200, page);

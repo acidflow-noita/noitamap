@@ -584,7 +584,7 @@ export class StreamUI {
   private pickerUrl(): string {
     const url = guessRouteUrl("stream-picker", location.origin);
     if (!this.game) return url.href;
-    return liveRoomLink(location.origin, this.game.session.host.login);
+    return liveRoomLink(location.origin, this.game.session.host.login, this.game.session.id);
   }
   private updateProStatus(room: LiveRoomView): void {
     if (!this.game) return;
@@ -689,7 +689,8 @@ export class StreamUI {
     this.statusHelp = hoverHelp(status, () => tr(this.api.local && !game.session.localChat ? 'Local simulated chat'
       : this.status === 'live' ? 'Receiving guesses from Twitch.' : this.statusDetail));
     const identity = el('span', '', 'stream-host-identity');
-    identity.append(el('strong', () => game.session.host.login), this.proStatus.badge);
+    const name = el('span', '', 'stream-name');
+    name.append(el('strong', () => game.session.host.login), this.proStatus.badge); identity.append(name);
     banner.append(status, identity, count);
     if (!this.api.local || game.session.localChat) {
       const share = action('Share game link in chat', () => this.shareGameLink(), 'btn btn-sm btn-outline theme-secondary stream-share-button');

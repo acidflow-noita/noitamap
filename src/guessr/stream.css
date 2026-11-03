@@ -105,6 +105,15 @@
 .stream-host-identity { margin-inline-end: var(--game-gutter); }
 .stream-pro-status { align-self: flex-start; padding: .125rem .4rem; font-size: .75rem; line-height: 1.25; white-space: nowrap; cursor: default; }
 .stream-pro-status[hidden] { display: none; }
+.stream-name { position: relative; display: inline-flex; align-items: baseline; gap: .5rem; min-inline-size: 0; }
+.stream-name > strong { overflow-wrap: anywhere; }
+.stream-name:has(> [data-pro-status="active"]:not([hidden])) { margin-inline-end: 2.25rem; }
+.stream-name > .stream-pro-status[data-pro-status="active"] {
+  position: absolute;
+  inset-inline-start: calc(100% - .1em);
+  inset-block-start: -.65em;
+  font-size: .625rem;
+}
 .stream-pro-status[data-pro-status="unknown"] { color: var(--text-muted); }
 .stream-chat-header .stream-gift-pro { max-width: 100%; min-inline-size: 0; margin: 0; padding: .5rem .75rem; white-space: normal; overflow-wrap: anywhere; font-size: .8125rem; }
 .stream-chat-header .stream-gift-pro[hidden] { display: none; }

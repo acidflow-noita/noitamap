@@ -462,5 +462,6 @@
   "When off, Share posts a normal message in your Twitch channel.": "Saat nonaktif, tautan dikirim sebagai pesan biasa di chat Twitch Anda.",
   "Sharing permission is optional. Without it, you can copy the link.": "Izin berbagi bersifat opsional. Tanpa izin, Anda tetap dapat menyalin tautan.",
   "Enable sharing in chat": "Izinkan berbagi di chat",
-  "Sharing permission is unavailable. You can copy the game link.": "Izin berbagi tidak tersedia. Anda dapat menyalin tautan permainan."
+  "Sharing permission is unavailable. You can copy the game link.": "Izin berbagi tidak tersedia. Anda dapat menyalin tautan permainan.",
+  "This game is no longer active.": "Permainan ini sudah tidak aktif."
 }

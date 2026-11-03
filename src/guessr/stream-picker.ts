@@ -32,6 +32,8 @@ function button(label: string, action: () => unknown, className = 'secondary') {
 export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, viewer: TwitchViewer, imageRoot: string): () => void {
   const url = new URL(location.href);
   const candidate = readGuessRoute(url).channel || '';
+  let requestedGame = readGuessRoute(url).game;
+  let unavailableGame = false;
   let channel = /^[a-z0-9_]{1,25}$/.test(candidate) ? candidate : '';
   let legacyPayload = new URLSearchParams(url.hash.slice(1)).get('clue');
   let point: Point | null = null, lastSent = '', sending = false, closed = false;
@@ -132,7 +134,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const resultsPanel = node('section', 'game-panel stream-viewer-results'); resultsPanel.hidden = true;
   layout.append(resultsPanel);
   const chat = viewerChatPanel(viewer, channel, () => {
-    channel = ''; legacyPayload = null;
+    channel = ''; requestedGame = undefined; unavailableGame = false; legacyPayload = null;
     startRoom(); chat.setChannel('');
     setRound(null, 'choose-channel');
     const next = guessRouteUrl('stream-picker', location.href, { channel: '' });
@@ -225,6 +227,14 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     room = watchLiveRoom(channel, {
       state: state => {
         if (closed || epoch !== roomEpoch || live && state.revision < live.revision) return;
+        unavailableGame = !!requestedGame && state.gameId !== requestedGame;
+        if (unavailableGame) {
+          live = null; chat.setProStatus({}); setRound(null, `unavailable/${requestedGame}`); refresh(); return;
+        }
+        if (!requestedGame && state.gameId) {
+          requestedGame = state.gameId;
+          history.replaceState(null, '', guessRouteUrl('stream-picker', location.href, { channel, game: requestedGame }));
+        }
         live = state;
         chat.setProStatus(state);
         setRound(state.clue, state.gameId && state.roundId ? `${state.gameId}/${state.roundId}` : `waiting/${channel}`);
@@ -250,7 +260,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       event.preventDefault();
       const next = enteredChannel();
       if (!/^[a-z0-9_]{1,25}$/.test(next)) return;
-      channel = next; history.replaceState(null, '', guessRouteUrl('stream-picker', url, { channel }));
+      channel = next; requestedGame = undefined; unavailableGame = false;
+      history.replaceState(null, '', guessRouteUrl('stream-picker', new URL('/guess/join/', location.origin), { channel }));
       form.remove(); chat.setChannel(channel); startRoom(); refresh();
     };
     chat.panel.prepend(form);
@@ -286,9 +297,11 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         : live.phase === 'complete' ? 'Game finished' : live.phase === 'reveal' ? 'Round closed'
         : !live.online ? 'Streamer disconnected from NoitaGuessr' : live.paused ? 'Paused' : isHost() ? 'You are the streamer' : '');
     } else bindText(roomStatus, connectionDetail);
+    if (unavailableGame) bindText(roomStatus, 'This game is no longer active.');
     roomStatus.hidden = !channel || !!legacyPayload || !roomStatus.textContent;
-    result.hidden = !live?.resultId;
-    if (live?.resultId) result.href = guessRouteUrl('stream-result', location.origin, { result: live.resultId }).href;
+    result.hidden = !live?.resultId && !(unavailableGame && requestedGame);
+    const resultId = live?.resultId ?? (unavailableGame ? requestedGame : undefined);
+    if (resultId) result.href = guessRouteUrl('stream-result', location.origin, { result: resultId }).href;
   };
   if (legacyPayload) setRound(legacyPayload, legacyPayload);
   const unsubscribe = viewer.subscribe(refresh);

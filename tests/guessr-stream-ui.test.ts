@@ -99,7 +99,7 @@ it('announces only on click, prevents duplicate posts during sending and the two
   mocks.post.mockImplementationOnce(() => new Promise<void>(resolve => { sent = resolve; }));
   share().click(); share().click();
   expect(mocks.post).toHaveBeenCalledOnce();
-  expect(mocks.post).toHaveBeenCalledWith('streamer', expect.stringMatching(/^Join NoitaGuessr: https?:\/\/.*\/guess\/stream\/streamer\/$/), true);
+  expect(mocks.post).toHaveBeenCalledWith('streamer', expect.stringMatching(/^Join NoitaGuessr: https?:\/\/.*\/guess\/streamer\/[0-9a-z]{26}\/$/), true);
   expect(share().textContent).toBe('Posting…');
   ui!.render(); expect(share().disabled).toBe(true);
   sent(); await flush();
@@ -153,7 +153,7 @@ it('keeps hosting available with copy fallback and never redirects for sharing p
   const share = document.getElementById('stream-share') as HTMLButtonElement;
   expect(share.textContent).toBe('Copy game link');
   share.click(); await flush();
-  expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/guess/stream/streamer/'));
+  expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/\/guess\/streamer\/[0-9a-z]{26}\/$/));
   expect(mocks.connect).not.toHaveBeenCalled();
   expect(mocks.post).not.toHaveBeenCalled();
   expect(document.getElementById('confirm-guess')).not.toBeNull();
@@ -286,7 +286,7 @@ it('receives real-channel chat in localhost mode and submits both host and chatt
   expect(ui.game!.stage).toBe('reveal');
 });
 
-it.each(['/guess/?channel=streamer', '/guess/stream/streamer/'])('opening chatter URL %s never restores, writes or pauses the host game', async url => {
+it.each(['/guess/?channel=streamer', '/guess/stream/streamer/', '/guess/streamer/00000000000000000000000001/'])('opening chatter URL %s never restores, writes or pauses the host game', async url => {
   const { game, hooks } = await fixture();
   const saved = JSON.stringify(game); localStorage.setItem(STREAM_SESSION_KEY, saved);
   history.replaceState(null, '', url);

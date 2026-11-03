@@ -480,5 +480,6 @@
   "When off, Share posts a normal message in your Twitch channel.": "Když je přepínač vypnutý, odkaz se zveřejní jako běžná zpráva ve vašem chatu na Twitchi.",
   "Sharing permission is optional. Without it, you can copy the link.": "Oprávnění ke sdílení je volitelné. Bez něj můžete odkaz zkopírovat.",
   "Enable sharing in chat": "Povolit sdílení v chatu",
-  "Sharing permission is unavailable. You can copy the game link.": "Oprávnění ke sdílení není dostupné. Odkaz na hru můžete zkopírovat."
+  "Sharing permission is unavailable. You can copy the game link.": "Oprávnění ke sdílení není dostupné. Odkaz na hru můžete zkopírovat.",
+  "This game is no longer active.": "Tato hra už není aktivní."
 }

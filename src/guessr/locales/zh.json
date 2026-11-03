@@ -462,5 +462,6 @@
   "When off, Share posts a normal message in your Twitch channel.": "关闭时，链接会以普通消息的形式发送到你自己的 Twitch 聊天中。",
   "Sharing permission is optional. Without it, you can copy the link.": "分享权限不是必需的。未授权时，你仍可复制链接。",
   "Enable sharing in chat": "允许在聊天中分享",
-  "Sharing permission is unavailable. You can copy the game link.": "分享权限不可用。你可以复制游戏链接。"
+  "Sharing permission is unavailable. You can copy the game link.": "分享权限不可用。你可以复制游戏链接。",
+  "This game is no longer active.": "这场游戏已不再进行。"
 }

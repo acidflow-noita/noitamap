@@ -12,3 +12,5 @@
 /guess/stream/* /guess/ 200
 /guess/results /guess/ 200
 /guess/results/* /guess/ 200
+/guess/:channel/:game /guess/ 200
+/guess/:channel/:game/ /guess/ 200
