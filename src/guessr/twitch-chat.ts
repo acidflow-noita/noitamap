@@ -1,5 +1,6 @@
 import type { StreamChatMessage } from "./stream-state";
 import { canShareGameLink, postTwitchGameLink } from './twitch-announcement';
+import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 
 export interface TwitchChatCredentials {
   accessToken: string;
@@ -57,6 +58,21 @@ export class TwitchChatConnection {
   canShare(announcements: boolean): boolean { return canShareGameLink(this.credentials, announcements); }
   postGameLink(hostId: string, message: string, announcements: boolean): Promise<void> {
     return postTwitchGameLink(this.credentials, hostId, message, announcements, this.options.fetch ?? fetch);
+  }
+  async sendTransport(message: string): Promise<void> {
+    const credentials = this.credentials;
+    if (this.options.broadcasterLogin !== GUESSR_TRANSPORT_CHANNEL || !this.broadcasterId || !credentials
+      || !canShareGameLink(credentials, false) || !/^!noitaguessr_(state|sync) /.test(message) || message.length > 500)
+      throw Error('Reconnect Twitch to send game updates.');
+    const response = await (this.options.fetch ?? fetch)('https://api.twitch.tv/helix/chat/messages', {
+      method: 'POST', credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(10000),
+      headers: { Authorization: `Bearer ${credentials.accessToken}`, 'Client-Id': credentials.clientId, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ broadcaster_id: this.broadcasterId, sender_id: credentials.userId, message }),
+    });
+    if (response.status === 401) this.authRequired();
+    if (!response.ok) throw Error('Twitch could not send the game update.');
+    const body = await response.json() as { data?: { is_sent?: boolean }[] };
+    if (body.data?.length !== 1 || body.data[0]?.is_sent !== true) throw Error('Twitch could not send the game update.');
   }
   stop(): void {
     this.stopped = true;
@@ -245,7 +261,7 @@ export class TwitchChatConnection {
           )
             throw Error();
           this.options.status(
-            "reconnecting",
+            "live",
             "Twitch is moving the connection; chat remains active during the handoff.",
           );
           this.connect(target, true, epoch);

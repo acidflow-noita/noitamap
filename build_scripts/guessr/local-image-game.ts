@@ -179,12 +179,13 @@ export function localImageGameMiddleware(root: string, rooms = new LocalLiveRoom
         const service = await streams();
         const room = rooms.getByName(localHost.twitchLogin);
         if (path === "/stream/sessions" && req.method === "POST") {
-          const session = await service.start(localHost);
-          await room.start(localHost.sub, liveRoomGame(session, (await get()).imageRoot));
+          const session = await service.start(localHost, Date.now(), body.transport === 'twitch' ? 'twitch' : undefined);
+          if (session.transport !== 'twitch') await room.start(localHost.sub, liveRoomGame(session, (await get()).imageRoot));
           return send(201, { ...session, live: true, ...(body.localChannel ? { localChat: true } : {}) });
         }
         if (path === "/stream/reveal" && req.method === "POST") {
-          const { gameId, reveal, config } = await service.revealForRoom(body.token, localHost);
+          const { gameId, reveal, config, transport } = await service.revealForRoom(body.token, localHost);
+          if (transport === 'twitch') return send(200, reveal);
           const outcome = prepareStreamRoundOutcome(reveal, body.submissions, config.bounds);
           await room.reveal(localHost.sub, gameId, reveal.roundId, outcome);
           return send(200, reveal);
@@ -219,7 +220,7 @@ export function localImageGameMiddleware(root: string, rooms = new LocalLiveRoom
           }
         }
         if (path === "/stream/results" && req.method === "POST") {
-          const { result } = await service.result(
+          const { result, transport } = await service.result(
             body as unknown as StreamPublishWireInput,
             localHost,
           );
@@ -240,7 +241,7 @@ export function localImageGameMiddleware(root: string, rooms = new LocalLiveRoom
                 "This game already has an immutable published result.",
               );
           }
-          await room.publish(localHost.sub, result.id, result).catch(() => {});
+          if (transport !== 'twitch') await room.publish(localHost.sub, result.id, result).catch(() => {});
           return send(200, { id: result.id, published: true });
         }
         return send(404, { error: "Stream route not found." });

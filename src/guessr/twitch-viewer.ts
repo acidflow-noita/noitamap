@@ -33,6 +33,8 @@ export interface TwitchViewerState {
   restoring?: boolean;
   sending: boolean;
   userId: string | null;
+  /** Read-only identity from this browser's saved session, usable for offline scores. */
+  savedUserId?: string | null;
   login: string | null;
   expiresAt: number | null;
   error: string | null;
@@ -81,6 +83,7 @@ export class TwitchViewer {
   private chats = new Set<() => void>();
   private disposed = false;
   private generation = 0;
+  private sends: { at: number; channel: string }[] = [];
 
   constructor(private options: TwitchViewerOptions = {}) {
     this.clientId = options.clientId ?? import.meta.env.VITE_GUESSR_TWITCH_CLIENT_ID ?? DEFAULT_TWITCH_CLIENT_ID;
@@ -111,7 +114,7 @@ export class TwitchViewer {
         || !Number.isSafeInteger(saved.expiresAt) || saved.expiresAt <= Date.now() + 5000) throw Error();
     } catch { this.forgetSaved(); return; }
     const generation = this.generation;
-    this.update({ connecting: true, restoring: true });
+    this.update({ connecting: true, restoring: true, savedUserId: saved.userId });
     try {
       const credentials = await this.validateToken(saved.token, saved.userId);
       if (this.disposed || generation !== this.generation) return;
@@ -122,7 +125,9 @@ export class TwitchViewer {
       this.scheduleValidation();
     } catch (error) {
       if (this.disposed || generation !== this.generation) return;
-      if (error instanceof TwitchViewerError && ['expired', 'validation'].includes(error.code)) this.forgetSaved();
+      if (error instanceof TwitchViewerError && ['expired', 'validation'].includes(error.code)) {
+        this.forgetSaved(); this.update({ savedUserId: null });
+      }
       this.update({ error: 'Could not restore Twitch access. Please sign in again.' });
     } finally {
       if (generation === this.generation) this.update({ connecting: false, restoring: false });
@@ -364,12 +369,12 @@ export class TwitchViewer {
 
   /** Exactly one send attempt, called explicitly after connect() has completed.
    * An uncertain response is never retried: Twitch may already have sent it. */
-  async sendGuess(channel: string, round: number, point: Point, maximum?: number, roundId?: string): Promise<string> {
+  async sendGuess(channel: string, round: number, point: Point, maximum?: number, roundId?: string, nonce?: Uint8Array): Promise<string> {
     const credentials = await this.currentCredentials();
     let command: string;
     try {
       if (typeof channel !== 'string' || !/^[a-z0-9_]{1,25}$/i.test(channel) || round > STREAM_ROUNDS) throw Error();
-      command = formatGuessCommand(round, point, maximum, roundId, { userId: credentials.userId });
+      command = formatGuessCommand(round, point, maximum, roundId, { userId: credentials.userId, nonce });
     } catch { throw new TwitchViewerError('invalid-guess', 'Choose a valid round, map position, and Twitch channel before sending.'); }
     return this.sendMessage(GUESSR_TRANSPORT_CHANNEL, command, credentials.userId);
   }
@@ -384,10 +389,16 @@ export class TwitchViewer {
     try {
       const credentials = await this.currentCredentials();
       const id = await this.broadcaster(channel.toLowerCase(), credentials);
+      const now = Date.now(), target = channel.toLowerCase();
+      this.sends = this.sends.filter(send => send.at > now - 30000);
+      const last = this.sends.slice().reverse().find(send => send.channel === target)?.at ?? 0;
+      const wait = Math.max(0, last + 1100 - now, this.sends.length >= 14 ? this.sends[0].at + 30001 - now : 0);
+      if (wait) await new Promise(resolve => setTimeout(resolve, wait));
       if (generation !== this.generation || this.#credentials?.token !== credentials.token || this.disposed
         || expectedUserId !== undefined && credentials.userId !== expectedUserId)
         throw new TwitchViewerError('disconnected', 'The Twitch connection changed. Click Send after connecting again.');
       attempted = true;
+      this.sends.push({ at: Date.now(), channel: target });
       const response = await this.request(SEND_URL, { method: 'POST', headers: { ...this.headers(credentials), 'Content-Type': 'application/json' },
         body: JSON.stringify({ broadcaster_id: id, sender_id: credentials.userId, message }) });
       if (response.status === 401) {
@@ -419,7 +430,7 @@ export class TwitchViewer {
     this.channels.clear();
     for (const stop of this.chats) stop();
     if (forget) this.forgetSaved();
-    this.update({ connected: false, userId: null, login: null, expiresAt: null });
+    this.update({ connected: false, userId: null, savedUserId: null, login: null, expiresAt: null });
   }
   disconnect(forget = true): void {
     this.generation++;

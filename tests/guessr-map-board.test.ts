@@ -130,6 +130,28 @@ function click(mount: HTMLElement, x: number, y: number) {
 }
 
 describe("guess-map camera", () => {
+  it('frames every submitted pin and highlights the selected player without moving the camera', async () => {
+    const { board, viewer } = await fixture(), highlighted = vi.fn();
+    const players = [
+      { id: '1', name: 'First', guess: { x: -15000, y: -20000 } },
+      { id: '2', name: 'Second', guess: { x: 12000, y: 30000 } },
+      { id: '3', name: 'No guess', guess: null },
+    ];
+    board.setPlayers(players, { x: 0, y: 0 }, highlighted); board.setLocked(true);
+    const before = camera();
+    for (const point of [players[0].guess!, players[1].guess!, { x: 0, y: 0 }]) {
+      expect(point.x).toBeGreaterThanOrEqual(before.x); expect(point.x).toBeLessThanOrEqual(before.x + before.width);
+      expect(point.y).toBeGreaterThanOrEqual(before.y); expect(point.y).toBeLessThanOrEqual(before.y + before.height);
+    }
+    const first = board.svg.querySelector<SVGCircleElement>('[data-player="1"]')!;
+    const second = board.svg.querySelector<SVGCircleElement>('[data-player="2"]')!;
+    first.dispatchEvent(new Event('pointerenter'));
+    expect(highlighted).toHaveBeenCalledWith('1');
+    board.highlightPlayer('1'); expect(first.getAttribute('data-radius')).toBe('11');
+    board.highlightPlayer('2'); expect(first.getAttribute('data-radius')).toBe('5'); expect(second.getAttribute('data-radius')).toBe('11');
+    expect(camera()).toEqual(before); aligned(viewer.viewport);
+    expect(board.svg.querySelectorAll('[data-player]')).toHaveLength(2);
+  });
   it("translates map and marker labels without changing the camera or rebuilding markers", async () => {
     const { default: i18next } = await import('../src/i18n');
     const { initializeGuessrTranslations } = await import('../src/guessr/i18n');

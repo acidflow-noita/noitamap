@@ -97,6 +97,16 @@ describe('viewer Twitch sending', () => {
     expect(f.request.mock.calls.every(([url]) => /^https:\/\/(id|api)\.twitch\.tv\//.test(String(url)))).toBe(true);
   });
 
+  it('spaces a guess after a synchronization message instead of violating the per-channel send limit', async () => {
+    const f = fixture(); await f.connect();
+    await f.client.sendMessage('noitaguessr', '!noitaguessr_sync viewer - 0');
+    const pending = f.client.sendGuess('viewer', 1, { x: 0, y: 0 });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(f.sends()).toHaveLength(1); expect(f.client.getState().sending).toBe(true);
+    await vi.advanceTimersByTimeAsync(100);
+    await pending; expect(f.sends()).toHaveLength(2);
+  });
+
   it.each([
     [200, { data: [] }, 'channel-not-found', 'No Twitch account matches that username.'],
     [503, {}, 'channel', 'Twitch could not check this channel.'],
@@ -203,6 +213,17 @@ describe('viewer Twitch sending', () => {
     expect(popup).not.toHaveBeenCalled(); expect(f.sends()).toHaveLength(0);
     next.disconnect();
     expect(localStorage.getItem('noitamap-guessr-twitch-v1:client123')).toBeNull();
+  });
+
+  it('retains a read-only saved identity for score recovery when Twitch is unreachable', async () => {
+    const f = fixture(); await f.connect(); f.client.dispose();
+    f.request.mockRejectedValueOnce(new TypeError('Offline'));
+    const next = new TwitchViewer({ clientId: 'client123', fetch: f.request, popup: f.open }); clients.push(next);
+    expect(next.getState()).toMatchObject({ connected: false, restoring: true, savedUserId: '123' });
+    await next.ready;
+    expect(next.getState()).toMatchObject({ connected: false, savedUserId: '123' });
+    expect(f.sends()).toHaveLength(0);
+    next.disconnect(); expect(next.getState().savedUserId).toBeNull();
   });
 
   it('drops a revoked remembered token without opening a popup or sending a message', async () => {

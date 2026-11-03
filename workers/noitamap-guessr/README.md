@@ -12,16 +12,28 @@ The lobby has three illustrated mode cards, a resumable-game strip and actual
 recent/best results. The map navbar entry uses the same Bootstrap popover as
 the other Pro controls. The reviewed area inventory is unchanged.
 
-Chat vs Streamer has ten rounds using the demo's HUD, clue controls and
-guess board. Guesses travel through the shared `noitaguessr` Twitch channel.
-The host receives them using their own linked Twitch identity and explicit
-`user:read:chat` permission. EventSub runs directly between their browser and
-Twitch; each viewer's latest valid `!noitaguessr_guess ✦…✦` before submission wins.
+Chat vs Streamer has ten rounds. New games use a silent three-second countdown
+and a configurable 90-second round timer by default. Chat plays round one while
+the streamer waits; chat round two and streamer round one then start together.
+An early streamer submission locks their guess without shortening chat's timer.
+Automatic progression leaves results visible for at least eight seconds, then
+starts the next streamer/chatter pair together after the silent countdown.
+With automatic timing disabled in setup, the streamer explicitly starts their
+first round and later submissions close chat's current round.
+
+Guesses, shared round snapshots and batched receipt confirmations travel through
+the `noitaguessr` Twitch channel. The host's linked Twitch connection needs
+`user:read:chat` and `user:write:chat`. Viewers reuse one Twitch subscription;
+new games have no per-viewer Cloudflare socket, polling or heartbeat. Twitch's
+actual sender identity and event timestamp bind guesses to their player and round.
+Small delivery delays are admitted before releasing that round's solution.
+Only released answers and source-cell scoring masks are broadcast; private round
+tokens and future solutions never enter a public snapshot.
 The setup switch "Share game links as announcements" is off by default and
 remembered locally, including across OAuth returns and game refreshes. Sharing
 posts a normal message in the host's own channel when off, or an announcement
-when on. Setup offers optional Twitch posting consent before play; hosts who
-skip consent retain a copy-link button and are never redirected mid-round.
+when on. Announcement consent is optional and offered before play; hosts who
+skip it retain a copy-link button and are never redirected for sharing mid-round.
 Normal messages use `user:write:chat`; announcements additionally require
 `moderator:manage:announcements`. This direct browser request
 does not invoke the game or auth Worker. A confirmed post disables the button
@@ -36,6 +48,25 @@ Equal totals share a rank. The free map picker sends through the viewer's Twitch
 account without a Noitamap account. All participants, including the streamer, appear in the final
 searchable/sortable table and downloadable HTML/JSON results.
 
+Each shared game uses `/guess/<channel>/<game-code>/`. The code preserves the
+entire UUID and identifies the transport version without a database lookup.
+It stays unchanged across rounds, F5 and OAuth returns. A link cannot silently
+join a different game from the same streamer. Previously shared legacy links
+remain readable while existing games finish.
+
+The host's round results show every submitted pin, fit the map to all pins and
+the solution, and provide sortable round/total scores. Hovering or selecting a
+player highlights their pin. A missing guess uses a dash instead of pretending
+that an earned zero and no submission are the same thing.
+
+Chatter submissions remain `Waiting for confirmation` until the host acknowledges
+their sender/round/nonce fingerprint. Receipts are batched, not one reply per
+viewer. There is no automatic guess resend. `Check delivery` and `Resend guess`
+are explicit actions. Saved guesses, receipt state and released scores survive
+refresh; an unreachable Twitch validation can still show the last saved result
+without authorizing another send. A disconnected host pauses the timer, and
+recovery extends the unfinished window without reopening previously closed rounds.
+
 With ordinary `npm run dev`, the host can connect the same remembered Twitch
 identity used by the chatter page. Start a new game to listen to the shared
 transport channel. The localhost host score uses a separate synthetic identity, so the
@@ -44,8 +75,10 @@ verified Pro/Twitch host identity and excludes a second host entry. The explicit
 Offline testing option retains the simulator; it never receives real Twitch chat.
 
 Production solo sessions use encrypted continuation tokens instead of D1
-session rows. Live stream state uses one SQLite Durable Object per channel;
-only optional final publication writes an immutable D1 result row. Results are host-reported casual
+session rows. New stream sessions also use encrypted continuation tokens and
+keep live state in the host browser. Existing sessions retain the older Durable
+Object path while they finish. Only optional final publication writes an immutable
+D1 result row. Results are host-reported casual
 scores: the server verifies the host, bounded score components, participants,
 round counts and totals, but does not attest messages observed in the browser.
 Prepared Daily rounds use the same area/proximity scoring and exploration
@@ -68,7 +101,7 @@ The interface uses Noitamap's shared dark-blue theme. Guessr explicitly loads
 the same Inter stylesheet as the main map and inherits the dynamic seed field's
 tabular/slashed-zero and alternate-digit features. The game uses the available
 viewport width instead of the old 1,360px cap. The clue and guess panels have
-matching heights, larger internal spacing and a distinct blue primary action;
+matching heights, larger internal spacing and a distinct green primary action;
 the same round components style both demo and the older Daily fixture.
 Guessr now uses Bootstrap **6.0.0-alpha.1**, bundled through Vite. How to play
 uses Bootstrap's `Dialog` plugin with a native `<dialog class="dialog
@@ -402,46 +435,49 @@ commands must carry the current server-issued round UUID. This is a casual game:
 the host's locally collected standings and client-reported assistance are not a
 server-attested anti-cheat system.
 
-### Live-room request budget
+### Twitch game request budget
 
-Viewers do not poll, send application heartbeats, or send guesses to the Worker.
-The host makes one pulse request per minute, which broadcasts an outgoing
-heartbeat to everyone. The coordinator uses hibernation rather than timers.
-The host's Pro ticket refreshes separately (currently every 20 minutes); viewers
-never contact the main-account Pro Worker for room state.
+For one new ten-round game, regardless of whether 1 or 1,000 chatters join:
 
-For 1,000 viewers remaining connected for an eight-hour, 20-game stream:
-
-| Operation | Worker requests |
+| Operation | Guessr Worker requests |
 | --- | ---: |
-| Viewer joins | 1,000 |
-| Host minute pulses | 480 |
-| 20 starts, 100 reveals, 100 advances, 20 publications | 240 |
-| Total before reconnects/preflights/result reads | **1,720** |
+| Host starts the game | 1 |
+| Host retrieves ten released solutions | 10 |
+| Host publishes the final result | 1 |
+| Chatter joins, F5, round updates, guesses and receipts | 0 |
+| Core game total | **12** |
 
-The separate DO request count is similar, plus infrequent alarm invocations.
-Each host update normally writes state plus an alarm: approximately 1,440 SQLite
-row writes in this example. There are no per-viewer or per-guess writes. Each
-viewer's fresh join per game would instead make the Worker total about 20,720.
-Result-page reads, retries, pauses, reconnects, host clock/auth requests and CORS
-preflights add to these estimates. The client caps automatic reconnection at six
-retries per outage and then offers manual Reconnect. Each room currently admits
-up to 1,500 simultaneous viewers.
+Host clock recovery, authentication, preflights and explicit retries are additional.
+Opening the published full standings makes a result read; it is not automatically
+polled. New sessions do not use a Durable Object or per-round database work.
+Publication inserts one final result record. Existing legacy sessions may keep
+using their previous coordinator until finished; its bindings remain for that
+transition and do not require a migration for this release.
 
-Workers Free and DO Free each have their own 100,000-request daily limit; DO
-storage/compute limits are separate too. Outgoing WebSocket messages are not
-metered as requests. Free limits fail closed rather than enabling paid usage,
-but application checks cannot prevent abusive traffic consuming requests.
-Keep this deployment on the secondary account. No R2 or billing change.
-See [Cloudflare's DO pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/)
-and [Workers limits](https://developers.cloudflare.com/workers/platform/limits/).
+Host broadcasts are capped at 14 messages per rolling 30 seconds, spaced at least
+1.8 seconds apart. The sender budget survives reloads. Repeated synchronization
+requests coalesce into a shared snapshot, and up to 35 receipt fingerprints fit
+in one message. The simulated 1,000-player receipt test completes within a
+90-second round under that cap; actual delivery still depends on Twitch and the
+network. Normal Twitch chat activity elsewhere also uses the account's limits.
+See [Twitch chat limits](https://dev.twitch.tv/docs/chat/#twitch-chat-rate-limits).
 
-Vite includes its own local WebSocket/file adapter using the same room reducer.
-Deployment uses `LIVE_ROOMS` and the SQLite migration in `wrangler.jsonc`.
-Production remains disabled pending hosting setup. The independent runtime
-checks run with `npm test` in `workers/noitamap-guessr/`; they include hibernation,
-durable closure and late joins. The main tests cover bounded reconnection,
-zero viewer messages through 20 games/eight simulated hours, and stale guesses.
+The transport never authenticates against the `noitaguessr` account or checks
+subscriptions there. Pro remains the existing wuote/Twitch or Patreon decision.
+The shared channel is only message transport. Nothing is posted to a streamer's
+own channel unless they explicitly press the sharing button.
+
+To synchronize an existing clean private API checkout before a release:
+
+```sh
+node --import tsx build_scripts/guessr/sync-worker-repository.mts --repo=task/guessr/private/repository-export-2026-10-25/noitamap-guessr
+```
+
+The command copies only code, tests, migrations and dependency metadata. It does
+not copy credentials or regenerate/copy private puzzle assets. It does not commit,
+push or deploy. Deploy the API update before the frontend update. The primary auth
+Worker already supports the required read/write scopes; no new secret or database
+migration is needed for the Twitch round protocol.
 
 The existing Twitch application **noitamap-map-auth** has the user-confirmed
 callbacks `https://dynamic-map.noitamap.com/guess/twitch-callback.html` and
@@ -582,8 +618,8 @@ The ordinary Vite dev server serves the demo and local stream simulator at
   around the same target when zooming out; progressively lower the maximum score.
 - The original point stays the answer after travel. New exploration costs
   points; revisiting already revealed views or returning to the start is free.
-- No countdowns, speed scoring, synchronized match barriers, or custom shared
-  challenges. The common daily is sufficient. Yesterday can be replayed.
+- Solo modes have no countdown or speed scoring. Chat vs Streamer uses the
+  silent synchronized timer described above, without a speed bonus.
 - Three free demo rounds with random valid starts. Full content and extended
   modes are for Pro.
 - Pro controls access to content; the round UI and clue-control presets must
@@ -611,8 +647,9 @@ login, never a client-supplied name or display name. The ordinary signed-session
 and game-ticket gates then carry that access. This requires deploying the auth
 Worker; an existing non-Pro access token needs a fresh Twitch sign-in or refresh.
 
-The host sees a participant count and connection state. OBS layout, moderation
-exclusions, channel-point rewards and guaranteed reconnect submission recovery
+The host sees a participant count and connection state. Saved accepted guesses
+and receipt recovery survive refresh; Twitch delivery during disconnection is
+not guaranteed. OBS layout, moderation exclusions and channel-point rewards
 remain deferred.
 
 The implemented path sends `!noitaguessr_guess ✦…✦`, with all guess fields inside a compact runic payload. Numeric plaintext examples below are for offline input and older sessions only.

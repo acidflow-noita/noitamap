@@ -4,7 +4,51 @@ The website stays at `https://dynamic-map.noitamap.com/guess/`. Its production
 API default is `https://guessr-api.sage-data.xyz`; local Vite keeps its local
 round service unless an explicit `VITE_GUESSR_API_URL` is supplied.
 
-## Alpha: exact setup and release order
+## Current update: Twitch transport and timed stream games
+
+The initial alpha is already deployed. This update changes the private Guessr
+API and the public frontend only. It requires no new secrets, migrations,
+image uploads, Pro bundle build or primary auth Worker deployment.
+
+From `/home/w/Documents/git/noitamap`, push the prepared private API commit first:
+
+```sh
+git -C task/guessr/private/repository-export-2026-10-25/noitamap-guessr push origin main
+```
+
+Wait for the connected Cloudflare build of `noitamap-guessr` in **ACID HELPER**
+(`3d75ffad634d443fca37da68c0ed4f3c`) to succeed. Then push the prepared website
+commits from the same map repository root:
+
+```sh
+git push origin dynamic-map-startup:dynamic-map
+```
+
+Start a **new** Chat vs Streamer game to test the new transport. Existing games
+keep their previous transport while they finish. The shared game link includes
+a unique code and stays unchanged across rounds, refresh and login.
+
+Manual checks after the website deploys:
+
+1. Open the shared game link as a chatter. Confirm the silent countdown and chat
+   round one while the streamer waits, then chat round two and streamer round
+   one starting together.
+2. Send a guess. It must say `Waiting for confirmation` until the host receipt
+   arrives, then `Guess received`. Refresh the chatter page and confirm the
+   same game, current round and recorded scores return.
+3. Disconnect/reconnect the host. Both screens must show recovery; the remaining
+   round time resumes without opening a closed round again.
+4. Check the all-player result pins and table, automatic timeout and manual
+   timing option. At timeout, results remain visible for at least eight seconds.
+
+Unit, local Worker runtime and build checks do not replace this real Twitch
+delivery and visual review. The failed GitLab Guessr Daily publication remains
+a separate follow-up; these commits do not deploy or fix the baker.
+
+## Initial alpha provisioning record (2026-10-31)
+
+The instructions below record the initial rollout. Use the current update above
+for this release instead of repeating provisioning or the old branch workflow.
 
 The owner confirmed both GitLab variables were added on 2026-10-31. Steps 1–2
 are complete; their permissions will be exercised by the first publication job.

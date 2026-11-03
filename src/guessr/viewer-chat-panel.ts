@@ -7,15 +7,17 @@ import { gameApiOrigin } from './api';
 import { hoverHelp } from './hover-help';
 import type { RoomConnection } from './live-room-client';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
+import type { StreamChatMessage } from './stream-state';
 
 /** A compact game connection bar. The transport channel is never a chat UI. */
-export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, onChangeStreamer?: () => void) {
+export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, onChangeStreamer?: () => void,
+  events?: { message(message: StreamChatMessage): void; status(status: TwitchChatStatus, detail: string): void }) {
   const panel = document.createElement('section'); panel.className = 'game-panel stream-connection-bar';
   const header = document.createElement('div'); header.className = 'stream-chat-header';
   const title = document.createElement('strong');
   const identity = document.createElement('div'); identity.className = 'stream-chat-identity';
   const pro = streamerProStatus({ local: !gameApiOrigin() && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) });
-  const changeStreamer = bindText(document.createElement('button'), 'Change streamer');
+  const changeStreamer = bindText(document.createElement('button'), 'Exit game');
   changeStreamer.type = 'button'; changeStreamer.className = 'btn btn-sm btn-outline theme-secondary stream-change-channel';
   changeStreamer.onclick = () => onChangeStreamer?.();
   const light = document.createElement('span'); light.className = 'stream-chat-state';
@@ -26,7 +28,7 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
   gift.dataset.proGift = 'choose';
   gift.onclick = () => { void import('./pro-gift-dialog').then(({ showStreamerGift }) => showStreamerGift(channel)); };
   const heading = document.createElement('div'); heading.className = 'stream-chat-heading';
-  heading.append(identity, changeStreamer);
+  heading.append(changeStreamer, identity);
   const actions = document.createElement('div'); actions.className = 'stream-chat-actions'; actions.append(gift);
   header.append(heading, actions); panel.append(header);
   let channel = initialChannel, key = '', stop: (() => void) | undefined, closed = false, hasGame = false;
@@ -76,15 +78,16 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
     stop = viewer.watchChat(GUESSR_TRANSPORT_CHANNEL, {
       status: (status, detail) => {
         if (closed || key !== next) return;
-        chatStatus = status; chatDetail = detail; paint();
+        chatStatus = status; chatDetail = detail; paint(); events?.status(status, detail);
       },
       // Ordinary chat is neither retained in memory nor rendered into the page.
-      message: () => {},
+      message: message => events?.message(message),
     });
   };
   const unsubscribe = viewer.subscribe(refresh), unsubscribeLanguage = onGuessrLanguageChanged(refresh);
   window.addEventListener('offline', refresh); window.addEventListener('online', refresh);
   return { panel, setProStatus(value: Parameters<typeof pro.update>[0]) { hasGame = !!value.gameId; pro.update(value); refresh(); },
+    transportState() { return { status: chatStatus, detail: chatDetail }; },
     setGameConnection(status: RoomConnection | null, detail = '') { gameStatus = status; gameDetail = detail; paint(); },
     setChannel(value: string) { channel = value; hasGame = false; pro.update({}); refresh(); },
     dispose() {

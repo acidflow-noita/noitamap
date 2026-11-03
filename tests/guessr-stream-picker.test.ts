@@ -12,6 +12,10 @@ import type { StreamPublishedResult } from '../src/guessr/stream-types';
 import i18next from '../src/i18n';
 import { initializeGuessrTranslations } from '../src/guessr/i18n';
 import { streamerProStatus } from '../src/guessr/streamer-pro-status';
+import { gameCode } from '../src/guessr/routes';
+import { encodeStreamPacket, guessReceiptKey } from '../src/guessr/stream-wire';
+import { Blob as NodeBlob } from 'node:buffer';
+import { streamArea, streamAnswer } from './helpers/guessr-stream';
 
 const ui = vi.hoisted(() => ({ pick: (_point: Point) => {}, show: vi.fn(async (_camera: unknown, ready?: () => void) => { await Promise.resolve(); ready?.(); return true; }), destroy: vi.fn(), notice: vi.fn(), markers: vi.fn() }));
 vi.mock('../src/guessr/button-notice', () => ({ buttonNotice: () => ({ show: ui.notice, dispose: vi.fn() }) }));
@@ -30,7 +34,12 @@ const config: ImageGameConfig = {
   bounds: { x: -17920, y: -31744, width: 36352, height: 73728 }, map: {} as ImageGameConfig['map'],
 };
 let dispose: (() => void) | undefined;
-beforeEach(() => { vi.clearAllMocks(); vi.stubGlobal('fetch', vi.fn(() => { throw Error('Unexpected network request'); })); });
+beforeEach(() => {
+  vi.clearAllMocks(); const values = new Map<string, string>();
+  vi.stubGlobal('localStorage', { getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key), clear: () => values.clear() });
+  vi.stubGlobal('fetch', vi.fn(() => { throw Error('Unexpected network request'); }));
+});
 afterEach(async () => { dispose?.(); dispose = undefined; document.body.replaceChildren();
   if (i18next.isInitialized) await i18next.changeLanguage('en');
   vi.unstubAllGlobals(); vi.useRealTimers(); });
@@ -43,9 +52,9 @@ function roundLink(base = '/guess/?channel=wuote', round = 2, explore = false) {
   }, { version: config.version, imageRoot: '/guessr-images/images' });
   return viewerClueLink(new URL(base, location.origin).href, payload).url;
 }
-function mount(url: string) {
+function mount(url: string, initial: Partial<TwitchViewerState> = {}) {
   history.replaceState(null, '', url);
-  let state: TwitchViewerState = { connected: false, connecting: false, sending: false, userId: null, login: null, expiresAt: null, error: null };
+  let state: TwitchViewerState = { connected: false, connecting: false, sending: false, userId: null, login: null, expiresAt: null, error: null, ...initial };
   const listeners = new Set<() => void>();
   const update = (value: Partial<TwitchViewerState>) => { state = { ...state, ...value }; listeners.forEach(fn => fn()); };
   const viewer = {
@@ -60,12 +69,50 @@ function mount(url: string) {
   const page = document.createElement('div');
   page.innerHTML = '<header class="site-header"><span>Logo</span><div class="header-actions"></div></header>';
   const main = document.createElement('main'); page.append(main); document.body.append(page);
-  dispose = mountStreamPicker(main, config, viewer as unknown as TwitchViewer, '/guessr-images/images');
+  const leave = vi.fn(() => { dispose?.(); dispose = undefined; page.remove(); });
+  dispose = mountStreamPicker(main, config, viewer as unknown as TwitchViewer, '/guessr-images/images', leave);
   const button = (label: string) => [...page.querySelectorAll('button')].find(b => b.textContent === label)!;
-  return { main, viewer, update, button };
+  return { main, viewer, update, button, leave };
 }
 
 describe('shared channel guess picker', () => {
+  it('receives timed clues and receipt-confirmed scores through Twitch, then recovers them after F5 with no live Worker connection', async () => {
+    vi.stubGlobal('Blob', NodeBlob);
+    const id = '11111111-1111-4111-8111-111111111111';
+    const url = `/guess/wuote/${gameCode(id, 'twitch')}/`;
+    const f = mount(url);
+    f.button('Sign in with Twitch').click(); await flush();
+    const transport = f.viewer.watchChat.mock.calls[0][1]; transport.status('live', 'Connected');
+    expect(watchLiveRoom).not.toHaveBeenCalled();
+    const state: LiveRoomView = { schema: 1, channel: 'wuote', gameId: id, hostId: '456', revision: 1, phase: 'guess',
+      online: true, paused: false, round: 1, roundId: id, clue: new URL(roundLink('/guess/?channel=wuote', 1, true)).hash.slice(6),
+      expiresAt: Date.now() + 999999, timing: { phase: 'warmup', startsAt: Date.now() - 1000, deadline: Date.now() + 90000, seconds: 90, hostRound: 1 } };
+    const deliver = async (payload: Parameters<typeof encodeStreamPacket>[1]) => {
+      for (const text of await encodeStreamPacket(id, payload)) transport.message({ player: { id: '456', login: 'wuote', name: 'WUOTE' },
+        id: crypto.randomUUID(), sentAt: Date.now(), text });
+    };
+    await deliver({ type: 'state', state });
+    await vi.waitFor(() => expect(document.querySelector('.stream-header-round')!.textContent).toBe('Round 1'));
+    ui.pick({ x: streamAnswer.x + .4, y: streamAnswer.y + .4 }); f.button('Send guess').click();
+    await vi.waitFor(() => expect(f.viewer.sendGuess).toHaveBeenCalledOnce());
+    const sent = vi.mocked(f.viewer.sendGuess).mock.calls[0] as unknown as Parameters<TwitchViewer['sendGuess']>;
+    expect(sent[2]).toEqual(streamAnswer);
+    const key = await guessReceiptKey(id, '123', Array.from(sent[5]!, b => b.toString(16).padStart(2, '0')).join(''));
+    expect(f.button('Waiting for confirmation').disabled).toBe(true);
+    await deliver({ type: 'receipts', round: 0, keys: [key] });
+    await vi.waitFor(() => expect(f.button('Guess received')).toBeDefined());
+    await deliver({ type: 'state', state: { ...state, revision: 2, round: 2, roundId: '22222222-2222-4222-8222-222222222222',
+      clue: new URL(roundLink('/guess/?channel=wuote', 2, true)).hash.slice(6), timing: { ...state.timing!, phase: 'play', revealed: 1 } } });
+    await deliver({ type: 'reveal', round: 0, reveal: { roundId: id, answer: streamAnswer, area: streamArea } });
+    await vi.waitFor(() => expect([...f.main.querySelectorAll('button')].find(b => b.textContent === 'Round 1: 5,000')).toBeDefined());
+    const review = [...f.main.querySelectorAll('button')].find(b => b.textContent === 'Round 1: 5,000')!;
+    review.click(); expect(ui.markers).toHaveBeenLastCalledWith(streamAnswer, streamAnswer);
+    f.leave();
+    const restored = mount(url, { savedUserId: '123', restoring: true });
+    expect(restored.main.textContent).toContain('5,000');
+    expect(restored.button('Send guess').disabled).toBe(true);
+    expect(watchLiveRoom).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+  });
   it('never switches a game-specific link to another game hosted by the same channel', async () => {
     const f = mount('/guess/wuote/00000000000000000000000001/');
     const handlers = vi.mocked(watchLiveRoom).mock.calls[0][1];
@@ -128,24 +175,18 @@ describe('shared channel guess picker', () => {
     expect(status.getAttribute('aria-description')).toContain('Reconnecting to chat');
     expect(status.hasAttribute('title')).toBe(false);
     expect(f.button('Gift Pro to missing_streamer').hidden).toBe(false);
-    f.button('Change streamer').click();
+    f.button('Exit game').click();
     expect(oldRoom.dispose).toHaveBeenCalledOnce();
     expect(oldChatStop).toHaveBeenCalledOnce();
     expect(f.viewer.disconnect).not.toHaveBeenCalled();
     expect(f.viewer.getState().connected).toBe(true);
-    expect(location.pathname).toBe('/guess/join/');
-    const input = f.main.querySelector<HTMLInputElement>('input[name=channel]')!;
-    expect(document.activeElement).toBe(input);
+    expect(f.leave).toHaveBeenCalledOnce();
     oldChatHandlers.status('live', 'Connected');
     oldRoomHandlers.status('connected', '');
-    expect(status.hidden).toBe(true);
-    expect(f.main.querySelector('.stream-room-status')!.textContent).toBe('');
-    input.value = '@DunkOrSlam'; input.dispatchEvent(new Event('input'));
-    expect(f.button('Join dunkorslam’s game')).toBeDefined();
-    input.form!.dispatchEvent(new Event('submit', { cancelable: true }));
-    expect(location.pathname).toBe('/guess/stream/dunkorslam/');
+    expect(status.isConnected).toBe(false);
+    const next = mount('/guess/stream/dunkorslam/');
     expect(watchLiveRoom).toHaveBeenCalledTimes(2);
-    const gift = f.button('Gift Pro to dunkorslam');
+    const gift = next.button('Gift Pro to dunkorslam');
     expect(gift.classList.contains('btn-patron')).toBe(true);
     expect(gift.hidden).toBe(false);
     expect(gift.getAttribute('aria-description')).toContain('Gift dunkorslam a subscription to wuote’s Twitch channel.');
@@ -352,14 +393,13 @@ describe('shared channel guess picker', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('rejects a malformed channel and allows an explicit valid replacement', () => {
+  it('asks for the streamer’s game link instead of presenting a channel connection form', () => {
     const f = mount('/guess/?pane=stream-picker&channel=bad%2Fchannel');
     expect(f.main.querySelector('iframe')).toBeNull();
-    const input = f.main.querySelector<HTMLInputElement>('input[name=channel]')!;
-    input.value = '@DunkOrSlam';
-    f.main.querySelector('.stream-channel-form')!.dispatchEvent(new Event('submit', { cancelable: true }));
-    expect(f.main.querySelector('.stream-chat-header strong')!.textContent).toBe('dunkorslam');
-    expect(location.pathname).toBe('/guess/stream/dunkorslam/');
+    expect(f.main.querySelector('input[name=channel]')).toBeNull();
+    expect(f.main.textContent).toContain('Open the game link shared by your streamer.');
+    expect(watchLiveRoom).not.toHaveBeenCalled();
+    f.button('Back').click(); expect(f.leave).toHaveBeenCalledOnce();
   });
 
   it('shows token expiry and permits a different connected user to submit the same pin', async () => {

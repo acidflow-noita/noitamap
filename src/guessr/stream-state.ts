@@ -2,6 +2,7 @@ import { prepareAreaScorer } from "./area-rules";
 import { isEncodedGuessCommand, parseGuessCommand } from "./guess-command";
 import { rankStreamPlayers } from "./stream-ranking";
 import { maximumScore, newClueProgress, within, type Point } from "./rules";
+import { chatRoundAccepts, closeChatWindow, startHostWindow, STREAM_RESULTS_HOLD_MS } from './stream-timing';
 import type { LiveRoomView } from "./live-room-types";
 import {
   type StreamGame,
@@ -53,6 +54,7 @@ export interface StreamChatMessage {
 export function acceptStreamGuess(
   game: StreamGame,
   message: StreamChatMessage,
+  receivedAt = streamTime(game),
 ): GuessAdmission {
   const command = parseGuessCommand(message.text, {
     rounds: game.session.rounds.length,
@@ -69,20 +71,23 @@ export function acceptStreamGuess(
     !Number.isFinite(message.sentAt)
   )
     return "invalid";
-  if (command.round < game.round + 1 || message.sentAt < game.openedAt)
+  const index = command.round - 1;
+  const current = game.timing?.chatRound ?? game.round;
+  if (!game.timing && (command.round < game.round + 1 || message.sentAt < game.openedAt))
     return "old";
-  if (command.round > game.round + 1) return "future";
+  if (index > current) return "future";
   // Twitch supplies the sender separately from the message text. This blocks
   // verbatim copying, not a deliberately re-encoded/forged point allowance.
   if (command.userId !== undefined && command.userId !== message.player.id) return 'invalid';
-  if (game.session.live && command.roundId !== game.session.rounds[game.round].id)
+  if (game.session.live && command.roundId !== game.session.rounds[index]?.id)
     return "old";
   if (game.session.live && (!isEncodedGuessCommand(message.text) || !command.userId)) return 'invalid';
-  if (game.stage !== "guess" || game.paused) return "closed";
+  if (game.timing ? !chatRoundAccepts(game, index, message.sentAt, receivedAt) : game.stage !== "guess" || game.paused) return "closed";
   if (message.player.id === game.session.host.id) return "host";
   let player = game.participants.find((p) => p.id === message.player.id);
-  const previous = player?.guesses[game.round];
-  const savedNonces = game.recentNonces?.[message.player.id];
+  const previous = player?.guesses[index];
+  const nonceKey = game.timing ? `${index}/${message.player.id}` : message.player.id;
+  const savedNonces = game.recentNonces?.[nonceKey];
   const nonces = Array.isArray(savedNonces) ? savedNonces.filter(value => /^[a-f0-9]{16}$/.test(value)).slice(-64) : [];
   if (command.nonce && nonces.includes(command.nonce)) return 'duplicate';
   if (
@@ -99,16 +104,16 @@ export function acceptStreamGuess(
   }
   player.name = message.player.name;
   player.login = message.player.login;
-  player.guesses[game.round] = {
+  player.guesses[index] = {
     point: { x: command.x, y: command.y },
-    maximum: Math.min(maximumScore(game.clue), command.maximum ?? 5000),
+    maximum: game.timing ? command.maximum ?? 5000 : Math.min(maximumScore(game.clue), command.maximum ?? 5000),
     messageId: message.id,
     sentAt: message.sentAt,
     nonce: command.nonce,
   };
   if (command.nonce) {
     if (!game.recentNonces || typeof game.recentNonces !== 'object' || Array.isArray(game.recentNonces)) game.recentNonces = {};
-    game.recentNonces[message.player.id] = [...nonces.slice(-63), command.nonce];
+    game.recentNonces[nonceKey] = [...nonces.slice(-63), command.nonce];
   }
   return "accepted";
 }
@@ -122,6 +127,9 @@ export function closeStreamRound(
   if (game.stage === "closing") return;
   if (game.stage !== "guess" || game.paused)
     throw new Error("This round is not accepting guesses.");
+  if (game.timing?.phase === 'warmup' || game.timing && now < game.timing.startsAt)
+    throw new Error('Your round has not started yet.');
+  if (game.timing && !game.timing.seconds) closeChatWindow(game, now);
   if (guess !== null && !within(guess, game.session.config.bounds))
     throw new Error("Place a pin inside the map.");
   game.participants[0].guesses[game.round] = {
@@ -136,6 +144,7 @@ export function closeStreamRound(
 export function revealStreamRound(
   game: StreamGame,
   reveal: StreamReveal,
+  now = streamTime(game),
 ): void {
   if (
     game.stage !== "closing" ||
@@ -144,6 +153,7 @@ export function revealStreamRound(
     throw new Error("This reveal belongs to another round.");
   game.reveals[game.round] = reveal;
   game.stage = "reveal";
+  if (game.timing?.seconds) game.timing.resultsUntil = now + STREAM_RESULTS_HOLD_MS;
 }
 export function advanceStreamRound(
   game: StreamGame,
@@ -155,13 +165,14 @@ export function advanceStreamRound(
     game.finishedAt = now;
   } else {
     game.round++;
-    game.recentNonces = {};
+    if (!game.timing) game.recentNonces = {};
     game.stage = "guess";
     game.openedAt = now;
     game.closedAt = null;
     game.clue = newClueProgress();
     game.guess = null;
     game.paused = false;
+    if (game.timing) startHostWindow(game, now);
   }
 }
 /** Recover an acknowledged server advance whose HTTP response/browser save was

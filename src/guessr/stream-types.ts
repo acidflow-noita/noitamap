@@ -20,6 +20,7 @@ export interface StreamRound {
   token: string;
 }
 export interface StreamSession {
+  transport?: 'twitch';
   /** Current rounds are coordinated by the channel's live room. */
   live?: true;
   /** Loopback testing: real Twitch channel, separate synthetic host score. */
@@ -88,6 +89,8 @@ export interface StreamGame {
   paused: boolean;
   /** Browser preference for the current game's explicit share action. */
   shareAnnouncements?: boolean;
+  timing?: import('./stream-timing').StreamTiming;
+  receipts?: Record<number, string[]>;
   participants: StreamParticipant[];
   /** Bounded deduplication for retries in the active round, retained across F5. */
   recentNonces?: Record<string, string[]>;

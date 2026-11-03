@@ -20,6 +20,10 @@ describe('Guessr page routes', () => {
     }
     const reserved = guessRouteUrl('stream-picker', origin, { channel: 'stream', game: id });
     expect(readGuessRoute(reserved)).toEqual({ pane: 'stream-picker', channel: 'stream', game: id });
+    const modern = guessRouteUrl('stream-picker', origin, { channel: 'wuote', game: id, transport: 'twitch' });
+    expect(gameIdFromCode(gameCode(id, 'twitch'))).toBe(id);
+    expect(readGuessRoute(modern)).toEqual({ pane: 'stream-picker', channel: 'wuote', game: id, transport: 'twitch' });
+    expect(guessRouteUrl('stream-picker', modern).href).toBe(modern.href);
   });
   it.each([
     ['/guess/?pane=stream', '/guess/stream/', 'stream'],

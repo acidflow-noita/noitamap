@@ -159,20 +159,24 @@ export async function streamRoute(
     const user = await hostIdentity(request, env, now);
     if (path.endsWith("/time")) return json({ now });
     const data = await boundedBody(request);
-    if (!env.LIVE_ROOMS) throw new ImageGameError(503, "Live rooms are not configured.");
-    const room = env.LIVE_ROOMS.getByName(user.twitchLogin);
+    // Existing open tabs may finish their older games. New Twitch sessions do
+    // not construct an object, open a socket, pulse or write round state.
+    const room = () => {
+      if (!env.LIVE_ROOMS) throw new ImageGameError(503, "Live rooms are not configured.");
+      return env.LIVE_ROOMS.getByName(user.twitchLogin);
+    };
     if (["/advance", "/pulse", "/pause", "/quit"].some(action => path.endsWith(action))) {
       if (typeof data.gameId !== "string" || !idPattern.test(data.gameId))
         throw new ImageGameError(400, "Invalid game.");
-      if (path.endsWith("/pulse")) return json(await room.pulse(user.sub, data.gameId, user.hostProVerifiedUntil));
-      if (path.endsWith("/quit")) return json(await room.quit(user.sub, data.gameId));
+      if (path.endsWith("/pulse")) return json(await room().pulse(user.sub, data.gameId, user.hostProVerifiedUntil));
+      if (path.endsWith("/quit")) return json(await room().quit(user.sub, data.gameId));
       if (path.endsWith("/pause")) {
         if (typeof data.paused !== "boolean") throw new ImageGameError(400, "Invalid pause.");
-        return json(await room.pause(user.sub, data.gameId, data.paused));
+        return json(await room().pause(user.sub, data.gameId, data.paused));
       }
       if (typeof data.roundId !== "string" || !idPattern.test(data.roundId))
         throw new ImageGameError(400, "Invalid round.");
-      return json(await room.advance(user.sub, data.gameId, data.roundId));
+      return json(await room().advance(user.sub, data.gameId, data.roundId));
     }
     const service = new StreamService(
       source ??
@@ -186,18 +190,19 @@ export async function streamRoute(
       env.STREAM_SIGNING_SECRET || "",
     );
     if (path.endsWith("/sessions")) {
-      const session = await service.start(user, now);
-      await room.start(user.sub, liveRoomGame(session, env.STREAM_IMAGE_ROOT || "https://guessr-tiles.sage-data.xyz/images"));
+      const session = await service.start(user, now, data.transport === 'twitch' ? 'twitch' : undefined);
+      if (session.transport !== 'twitch') await room().start(user.sub, liveRoomGame(session, env.STREAM_IMAGE_ROOT || "https://guessr-tiles.sage-data.xyz/images"));
       return json({ ...session, live: true }, 201);
     }
     if (path.endsWith("/reveal")) {
-      const { gameId, reveal, config } = await service.revealForRoom(data.token, user, now);
+      const { gameId, reveal, config, transport } = await service.revealForRoom(data.token, user, now);
+      if (transport === 'twitch') return json(reveal);
       const outcome = prepareStreamRoundOutcome(reveal, data.submissions, config.bounds);
       // Close durably before returning an answer, even if the HTTP response is lost.
-      await room.reveal(user.sub, gameId, reveal.roundId, outcome);
+      await room().reveal(user.sub, gameId, reveal.roundId, outcome);
       return json(reveal);
     }
-    const { owner, result } = await service.result(
+    const { owner, result, transport } = await service.result(
       data as unknown as StreamPublishWireInput,
       user,
       now,
@@ -214,7 +219,8 @@ export async function streamRoute(
       (v) => v.toString(16).padStart(2, "0"),
     ).join("");
     const notifyRoom = async () => {
-      try { await room.publish(user.sub, result.id, result); }
+      if (transport === 'twitch') return;
+      try { await room().publish(user.sub, result.id, result); }
       catch (error) {
         // Older immutable results remain publishable while a newer game is live.
         if (liveRoomErrorStatus(error) !== 409 || liveRoomErrorMessage(error) !== "This game is no longer active.")

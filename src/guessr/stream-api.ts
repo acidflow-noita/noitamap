@@ -46,8 +46,8 @@ export class StreamApi {
       );
     return this.api.request<T>("/api/streams" + path, { body });
   }
-  start(): Promise<StreamSession> {
-    return this.request("/sessions", {});
+  start(transport?: 'twitch'): Promise<StreamSession> {
+    return this.request("/sessions", transport ? { transport } : {});
   }
   clock(): Promise<{ now: number }> {
     return this.request("/time", {});

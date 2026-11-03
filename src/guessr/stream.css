@@ -59,6 +59,24 @@
 .stream-setup-card .guessr-steps { grid-auto-rows: auto; margin: 0; }
 .stream-setup-card .stepper-item > div { min-inline-size: 0; }
 .stream-setup-card .stepper-item p { margin-block: .5rem; }
+.stream-timer-settings { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-block: .5rem; }
+.stream-timer-settings input { inline-size: 6rem; }
+.stream-round-timer { font-size: 1.125rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stream-warmup { flex: 1; min-block-size: 0; align-items: center; justify-content: center; gap: .75rem; padding: 1rem; text-align: center; }
+.stream-warmup > p { margin: 0; max-inline-size: 55ch; }
+.stream-warmup-clock { --remaining: 1; display: grid; place-items: center; inline-size: min(32dvh, 13rem); aspect-ratio: 1; padding: .375rem; border-radius: 50%; background: conic-gradient(var(--game-action) calc(var(--remaining) * 1turn), var(--border) 0); }
+.stream-warmup-clock > strong { display: grid; place-items: center; inline-size: 100%; block-size: 100%; border-radius: 50%; background: var(--surface-1); font-size: clamp(1rem, 3vw, 2rem); padding: .5rem; }
+.stream-host-shell .game-grid { position: relative; }
+.stream-countdown { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: var(--surface-1); color: var(--text); font-size: clamp(1.5rem, 5vw, 3rem); border-radius: var(--radius-panel); }
+.stream-round-score-scroll { flex: 1; min-block-size: 0; overflow: auto; }
+.stream-round-score-table { margin: 0; inline-size: 100%; }
+.stream-round-score-table thead { position: sticky; inset-block-start: 0; background: var(--surface-1); z-index: 1; }
+#guess-app .stream-table-sort { border: 0; background: transparent; border-radius: 0; padding: .25rem 0; font: inherit; min-height: 0; }
+.stream-table-sort::after { content: ' ↕'; opacity: .5; }
+[aria-sort='ascending'] > .stream-table-sort::after { content: ' ↑'; opacity: 1; }
+[aria-sort='descending'] > .stream-table-sort::after { content: ' ↓'; opacity: 1; }
+.stream-round-score-table tr.selected { background: var(--accent-bg); outline: 1px solid var(--accent-fg); outline-offset: -1px; }
+.stream-round-score-table tbody tr { cursor: pointer; }
 .stream-table-controls input {
   min-width: 14rem;
   max-width: 100%;
@@ -76,7 +94,9 @@
   gap: var(--game-gutter); align-items: stretch;
 }
 .stream-viewer-layout > .game-panel { min-block-size: 0; }
-.stream-viewer-clue { align-self: stretch; }
+.stream-viewer-clue { align-self: stretch; position: relative; }
+.stream-delivery, .stream-viewer-timer { font-size: .8125rem; white-space: nowrap; }
+.stream-viewer-results > .stream-rank { font-size: 2rem; }
 .stream-picker .map-board { flex: 1; min-block-size: 0; block-size: auto; }
 .stream-guess-actions { display: flex; flex: none; align-items: center; justify-content: flex-end; gap: var(--game-gutter); padding: .5rem; border-top: 1px solid var(--border); }
 .stream-header-round { grid-column: 2; justify-self: center; text-align: center; white-space: nowrap; font-weight: 600; }
@@ -123,9 +143,7 @@
 .stream-chat-state::before { content: ""; inline-size: .5rem; block-size: .5rem; border-radius: 50%; background: var(--connection-color); box-shadow: 0 0 .3rem var(--connection-color), 0 0 .65rem color-mix(in oklab, var(--connection-color) 55%, transparent); }
 .stream-chat-state:focus-visible { outline: 2px solid var(--accent-fg); outline-offset: 2px; }
 .stream-chat-state[hidden] { display: none; }
-.stream-channel-form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .75rem; inline-size: fit-content; max-inline-size: 100%; }
-.stream-channel-form input { min-inline-size: 0; inline-size: 16rem; max-inline-size: 100%; }
-.stream-channel-form button { inline-size: auto; white-space: normal; overflow-wrap: anywhere; }
+.stream-join-instructions { max-inline-size: 38rem; margin-inline: auto; }
 .stream-signin { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--game-gutter); padding: var(--game-gutter); }
 .stream-signin .btn-twitch { inline-size: auto; max-inline-size: 100%; margin: 0; }
 .stream-signin-error { max-inline-size: 36ch; margin: 0; color: var(--danger-fg); text-align: center; }

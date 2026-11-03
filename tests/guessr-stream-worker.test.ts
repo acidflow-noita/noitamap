@@ -108,6 +108,27 @@ async function fixture() {
   return { ...db, env, call, request, completed };
 }
 describe("single-document stream publication", () => {
+  it('runs a Twitch game with no live object or per-round database work, then writes one final result', async () => {
+    const f = await fixture(); f.env.LIVE_ROOMS = undefined;
+    const start = await f.call('/sessions', { transport: 'twitch' });
+    expect(start.status).toBe(201);
+    const session = await start.json() as StreamSession;
+    expect(session.transport).toBe('twitch');
+    const game = newStreamGame(session, streamNow + 1000);
+    for (let round = 0; round < 10; round++) {
+      closeStreamRound(game, streamAnswer, streamNow + 1000);
+      const response = await f.call('/reveal', { token: session.rounds[round].token });
+      expect(response.status).toBe(200);
+      revealStreamRound(game, await response.json());
+      advanceStreamRound(game, streamNow + 1000);
+    }
+    expect(f.calls()).toBe(0);
+    const published = await f.call('/results', packStreamPublish({ token: session.token,
+      finishedAt: game.finishedAt!, players: streamResult(game).players }));
+    expect(published.status).toBe(201);
+    expect(f.sqlite.prepare('SELECT COUNT(*) AS total FROM stream_results').get()!.total).toBe(1);
+    expect((await f.call('/reveal', { token: session.rounds[0].token }, null)).status).toBe(401);
+  });
   it('quits the authenticated current game idempotently without an answer or result write', async () => {
     const f = await fixture();
     const session = await (await f.call('/sessions', {})).json() as StreamSession;

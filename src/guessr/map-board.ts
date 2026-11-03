@@ -20,6 +20,9 @@ export class MapBoard {
   private tilesReady = false;
   private fittedMarkers: Point[] | null = null;
   private atHome = true;
+  private playerMarks = new Map<string, SVGCircleElement>();
+  private highlightedPlayer?: string;
+  private markerUnit = 1;
   constructor(
     readonly element: HTMLElement,
     readonly bounds: Bounds,
@@ -186,6 +189,7 @@ export class MapBoard {
     const unit = matrix
       ? 1 / Math.max(0.00001, Math.hypot(matrix.a, matrix.b))
       : this.view.width / Math.max(300, this.element.clientWidth);
+    this.markerUnit = unit;
     this.marks.querySelectorAll("circle").forEach((circle) => {
       circle.setAttribute(
         "r",
@@ -361,6 +365,7 @@ export class MapBoard {
     this.onGuess(next);
   };
   setMarkers(guess: Point | null, answer?: Point): void {
+    this.playerMarks.clear(); this.highlightedPlayer = undefined;
     this.point = guess;
     this.fittedMarkers = answer ? (guess ? [guess, answer] : [answer]) : null;
     this.marks.replaceChildren();
@@ -400,6 +405,29 @@ export class MapBoard {
       this.atHome = false;
       this.updateView();
     } else this.updateMarkers();
+  }
+  setPlayers(players: { id: string; name: string; guess: Point | null }[], answer: Point, highlight: (id: string) => void): void {
+    this.setMarkers(null, answer);
+    const answerMark = this.marks.lastElementChild!;
+    const points = [answer];
+    for (const player of players) {
+      if (!player.guess || !within(player.guess, this.bounds)) continue;
+      const mark = document.createElementNS(SVG_NS, 'circle');
+      mark.setAttribute('cx', String(player.guess.x)); mark.setAttribute('cy', String(player.guess.y));
+      mark.setAttribute('fill', 'var(--accent-fg)'); mark.setAttribute('stroke', 'var(--bg)'); mark.setAttribute('data-radius', '5');
+      mark.dataset.player = player.id; mark.style.pointerEvents = 'auto';
+      mark.addEventListener('pointerenter', () => highlight(player.id));
+      mark.addEventListener('click', () => highlight(player.id));
+      this.playerMarks.set(player.id, mark); this.marks.append(mark); points.push(player.guess);
+    }
+    this.marks.append(answerMark);
+    this.fittedMarkers = points; this.atHome = false; this.updateView();
+  }
+  highlightPlayer(id: string): void {
+    const previous = this.highlightedPlayer && this.playerMarks.get(this.highlightedPlayer);
+    if (previous) { previous.setAttribute('data-radius', '5'); previous.setAttribute('r', String(this.markerUnit * 5)); previous.setAttribute('stroke', 'var(--bg)'); }
+    const mark = this.playerMarks.get(id); this.highlightedPlayer = id;
+    if (mark) { mark.setAttribute('data-radius', '11'); mark.setAttribute('r', String(this.markerUnit * 11)); mark.setAttribute('stroke', 'white'); }
   }
   setLocked(value: boolean): void {
     this.locked = value;

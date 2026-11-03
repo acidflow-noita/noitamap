@@ -33,6 +33,7 @@ export interface StreamHostIdentity {
   hostProVerifiedUntil?: number;
 }
 interface Envelope {
+  transport?: 'twitch';
   kind: "session" | "round";
   owner: string;
   id: string;
@@ -134,6 +135,7 @@ export class StreamService {
   async start(
     user: StreamHostIdentity,
     now = Date.now(),
+    transport?: 'twitch',
   ): Promise<StreamSession> {
     const started = performance.now();
     const config = await this.source.config(),
@@ -151,6 +153,7 @@ export class StreamService {
       area: r.area,
     }));
     const envelope: Envelope = {
+      ...(transport ? { transport } : {}),
       kind: "session",
       owner: user.sub,
       id,
@@ -173,6 +176,7 @@ export class StreamService {
       })),
     );
     return {
+      ...(transport ? { transport } : {}),
       id,
       version: config.version,
       createdAt: now,
@@ -194,7 +198,7 @@ export class StreamService {
   }
   async revealForRoom(token: unknown, user: StreamHostIdentity, now = Date.now()) {
     const envelope = await this.open(token, user, "round", now);
-    return { gameId: envelope.id, reveal: envelope.reveals[0], config: envelope.config };
+    return { gameId: envelope.id, reveal: envelope.reveals[0], config: envelope.config, transport: envelope.transport };
   }
   async result(
     input: StreamPublishWireInput,
@@ -291,6 +295,6 @@ export class StreamService {
       })),
       players: rankStreamPlayers(players),
     };
-    return { owner: envelope.owner, result };
+    return { owner: envelope.owner, result, transport: envelope.transport };
   }
 }
