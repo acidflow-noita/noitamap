@@ -507,5 +507,10 @@
   "You have finished all 10 rounds. Waiting for the streamer.": "10ラウンドすべてを完了しました。ストリーマーがゲームを終了するのを待っています。",
   "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}}さんが、{{channel}}のゲーム{{game}}の第{{round}}ラウンドに予想を投稿しました。",
   "Game link shared in chat.": "チャットでゲームのリンクが共有されました。",
-  "The link is posted three times as normal messages, or once as an announcement.": "そのリンクは、通常のメッセージとして3回投稿されるか、お知らせとして1回投稿されます。"
+  "The link is posted three times as normal messages, or once as an announcement.": "そのリンクは、通常のメッセージとして3回投稿されるか、お知らせとして1回投稿されます。",
+  "Chatters joined: {{total}}": "チャットに参加した人数：{{total}}",
+  "End this game?": "このゲームを終了しますか？",
+  "End game": "ゲームを終了する",
+  "Game ended": "ゲーム終了",
+  "The streamer ended this game.": "このストリーマーがこの試合を締めくくった。"
 }

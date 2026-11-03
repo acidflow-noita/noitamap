@@ -507,5 +507,10 @@
   "You have finished all 10 rounds. Waiting for the streamer.": "Je hebt alle 10 rondes voltooid. Je wacht nu tot de streamer het spel afrondt.",
   "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} heeft een gok ingediend voor ronde {{round}} in het spel {{game}} van {{channel}}.",
   "Game link shared in chat.": "Link naar het spel gedeeld in de chat.",
-  "The link is posted three times as normal messages, or once as an announcement.": "De link wordt drie keer als gewoon bericht geplaatst, of één keer als mededeling."
+  "The link is posted three times as normal messages, or once as an announcement.": "De link wordt drie keer als gewoon bericht geplaatst, of één keer als mededeling.",
+  "Chatters joined: {{total}}": "Aantal deelnemers aan de chat: {{total}}",
+  "End this game?": "Dit spel beëindigen?",
+  "End game": "Het spel beëindigen",
+  "Game ended": "Het spel is afgelopen",
+  "The streamer ended this game.": "De streamer heeft deze wedstrijd afgesloten."
 }

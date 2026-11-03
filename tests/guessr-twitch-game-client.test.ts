@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { readChatEnvelope } from '../src/guessr/chat-envelope';
 import { watchTwitchGame } from '../src/guessr/twitch-game-client';
 import { encodeStreamPacket } from '../src/guessr/stream-wire';
 import type { TwitchViewer } from '../src/guessr/twitch-viewer';
@@ -33,7 +32,7 @@ it('uses one Twitch resync request and accepts the owner’s broadcast without a
   expect(f.sendMessage).toHaveBeenCalledOnce();
   const [channel, wire] = f.sendMessage.mock.calls[0] as unknown as [string, string];
   expect(channel).toBe('noitaguessr');
-  expect(new TextDecoder().decode(readChatEnvelope(wire)!.subarray(3))).toMatch(/^!noitaguessr_sync streamer /);
+  expect(wire).toMatch(/^NoitaGuessr [a-z0-9]{26} player-join streamer need=0$/);
   const frames = await encodeStreamPacket(id, { type: 'state', state });
   for (const text of frames) await f.client.receive(message(text, 'copycat', '999'));
   for (const text of frames) await f.client.receive(message(text, 'streamer', '999'));
@@ -73,4 +72,17 @@ it('restores a completed game without sending any Twitch resync or Worker reques
   expect(f.handlers.state).toHaveBeenCalledWith(expect.objectContaining({ phase: 'complete', resultId: id }));
   expect(f.handlers.status).toHaveBeenLastCalledWith('connected', '');
   expect(f.sendMessage).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+});
+
+it('applies an explicit game-ended event without needing a clue and retains it across refresh', async () => {
+  const f = fixture();
+  for (const text of await encodeStreamPacket(id, { type: 'state', state: { ...state, phase: 'waiting', ended: true,
+    online: false, paused: true, clue: null, timing: { ...state.timing!, phase: 'lobby' } } })) {
+    expect(text).toContain(' game-ended r1 '); await f.client.receive(message(text));
+  }
+  expect(f.handlers.state).toHaveBeenCalledWith(expect.objectContaining({ ended: true }));
+  expect(f.handlers.status).toHaveBeenLastCalledWith('stopped', 'The streamer ended this game.');
+  f.client.dispose(); const restored = fixture(); restored.client.transport('live', 'Connected'); restored.client.retry();
+  expect(restored.handlers.state).toHaveBeenCalledWith(expect.objectContaining({ ended: true }));
+  expect(restored.sendMessage).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
 });

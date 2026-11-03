@@ -1,5 +1,4 @@
 import { StreamPacketReader, streamPacketText } from './stream-wire';
-import { chatEnvelope } from './chat-envelope';
 import type { StreamChatMessage } from './stream-state';
 import type { StreamReveal } from './stream-types';
 import type { LiveRoomView } from './live-room-types';
@@ -27,15 +26,15 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
   const reader = new StreamPacketReader(channel, expectedGame, local);
   const watch = () => {
     clearTimeout(watchdog);
-    if (latest?.phase === 'complete' || latest?.timing?.phase === 'lobby' || latest?.timing?.deadline === null) return;
+    if (latest?.ended || latest?.phase === 'complete' || latest?.timing?.phase === 'lobby' || latest?.timing?.deadline === null) return;
     const delay = latest?.timing?.deadline ? Math.max(10_000, latest.timing.deadline - Date.now() - timeOffset + 15_000) : 15_000;
     watchdog = setTimeout(() => {
       if (closed) return;
-      handlers.status('retrying', 'Waiting for the streamer’s game update.');
+      handlers.status('retrying', 'NoitaGuessr game connection unavailable. Try reconnecting.');
     }, delay);
   };
   const request = () => {
-    if (closed || latest?.phase === 'complete' || !connected || !viewer.getState().connected) return;
+    if (closed || latest?.ended || latest?.phase === 'complete' || !connected || !viewer.getState().connected) return;
     clearTimeout(requestTimer);
     if (viewer.getState().sending) { requestTimer = setTimeout(request, 1000); return; }
     const wait = lastRequest + 6000 - Date.now();
@@ -44,9 +43,8 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
     const recovery = handlers.recovery();
     const receipts = recovery.receipts.slice(0, 6).filter(r => r.round >= 0 && r.round < 10 && /^[a-f0-9]{16}$/.test(r.key))
       .map(r => `${r.round}:${r.key}`).join(',');
-    const message = `!noitaguessr_sync ${channel} ${currentGame ? gameCode(currentGame) : '-'} ${(recovery.missing & 1023).toString(16)}${receipts ? ' ' + receipts : ''}`;
-    const wrapped = chatEnvelope('NoitaGuessr: syncing.', new Uint8Array([78, 71, 82, ...new TextEncoder().encode(message)]));
-    void viewer.sendMessage(GUESSR_TRANSPORT_CHANNEL, wrapped).catch(() => {
+    const message = `NoitaGuessr ${currentGame ? gameCode(currentGame, 'twitch') : '-'} player-${latest ? 'sync' : 'join'} ${channel} need=${(recovery.missing & 1023).toString(16)}${receipts ? ' receipts=' + receipts : ''}`;
+    void viewer.sendMessage(GUESSR_TRANSPORT_CHANNEL, message).catch(() => {
       if (!closed && !latest) handlers.status('retrying', 'Waiting for the streamer’s game update.');
     });
   };
@@ -54,7 +52,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
     const raw = localStorage.getItem('noitamap-guessr-live:' + expectedGame);
     const cached = raw && raw.length < 8192 ? JSON.parse(raw) as LiveRoomView : null;
     if (cached?.gameId === expectedGame && cached.channel === channel && cached.timing && cached.expiresAt! > Date.now())
-      { latest = cached; handlers.state(cached.phase === 'complete' ? cached : { ...cached, online: false, paused: true }); }
+      { latest = cached; handlers.state(cached.ended || cached.phase === 'complete' ? cached : { ...cached, online: false, paused: true }); }
   } catch { /* No cache is required to join. */ }
   return {
     async receive(message: StreamChatMessage) {
@@ -72,7 +70,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
       const payload = packet.payload;
       if (payload.type === 'state') {
         if (payload.state.revision < revision) return;
-        if (payload.state.clue === null && payload.state.timing?.phase !== 'lobby') {
+        if (payload.state.clue === null && !payload.state.ended && payload.state.timing?.phase !== 'lobby') {
           if (latest?.roundId !== payload.state.roundId || !latest.clue) { request(); return; }
           payload.state.clue = latest.clue;
         }
@@ -81,9 +79,9 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
         watch();
         try { localStorage.setItem('noitamap-guessr-live:' + currentGame, JSON.stringify(payload.state)); } catch { /* Optional cache. */ }
         handlers.state(payload.state);
-        const ended = payload.state.phase === 'waiting' && payload.state.timing?.phase !== 'lobby';
+        const ended = payload.state.ended || payload.state.phase === 'waiting' && payload.state.timing?.phase !== 'lobby';
         handlers.status(ended ? 'stopped' : payload.state.paused && payload.state.phase !== 'complete' ? 'retrying' : 'connected',
-          ended ? 'This game is no longer active.' : payload.state.paused ? 'The streamer is disconnected from NoitaGuessr' : '');
+          ended ? 'The streamer ended this game.' : payload.state.paused ? 'The streamer is disconnected from NoitaGuessr' : '');
       } else if (payload.type === 'reveal') {
         try { prepareAreaScorer(payload.reveal.area, payload.reveal.answer); } catch { return; }
         handlers.reveal(payload.round, payload.reveal);
@@ -93,6 +91,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
       if (closed) return;
       connected = status === 'live';
       if (connected) {
+        if (latest?.ended) { handlers.status('stopped', 'The streamer ended this game.'); return; }
         if (latest?.phase === 'complete') { handlers.status('connected', ''); return; }
         handlers.status('connecting', 'Waiting for the streamer’s game update.'); watch(); request();
       }

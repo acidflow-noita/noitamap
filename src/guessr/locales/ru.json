@@ -525,5 +525,10 @@
   "You have finished all 10 rounds. Waiting for the streamer.": "Вы прошли все 10 раундов. Ожидается, пока стример завершит игру.",
   "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} отправил свой вариант ответа в раунде {{round}} в игре {{game}} на канале {{channel}}.",
   "Game link shared in chat.": "Ссылка на игру, опубликованная в чате.",
-  "The link is posted three times as normal messages, or once as an announcement.": "Ссылка публикуется три раза в виде обычных сообщений или один раз в виде объявления."
+  "The link is posted three times as normal messages, or once as an announcement.": "Ссылка публикуется три раза в виде обычных сообщений или один раз в виде объявления.",
+  "Chatters joined: {{total}}": "Присоединившихся к чату: {{total}}",
+  "End this game?": "Завершить игру?",
+  "End game": "Завершить игру",
+  "Game ended": "Игра завершилась",
+  "The streamer ended this game.": "Стример завершил эту игру."
 }

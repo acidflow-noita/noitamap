@@ -12,12 +12,12 @@ export function confirmQuitGame(quit: () => unknown | Promise<unknown>, descript
   dialog.innerHTML = `<div class="dialog-header"><h1 class="dialog-title fs-lg" id="guessr-quit-title"></h1><button type="button" class="btn-close" data-bs-dismiss="dialog"></button></div>
     <div class="dialog-body"><p id="guessr-quit-description"></p><p class="fg-danger" role="alert" hidden></p></div>
     <div class="dialog-footer"><button type="button" class="btn-outline" data-bs-dismiss="dialog" autofocus></button><button type="button" class="btn-solid theme-danger" data-confirm-quit disabled></button></div>`;
-  bindText(dialog.querySelector('#guessr-quit-title')!, 'Quit this game?');
+  bindText(dialog.querySelector('#guessr-quit-title')!, 'End this game?');
   bindAttribute(dialog.querySelector('.btn-close')!, 'aria-label', 'Close');
   bindText(dialog.querySelector('#guessr-quit-description')!, description);
   const confirm = dialog.querySelector<HTMLButtonElement>('[data-confirm-quit]')!;
   const cancel = dialog.querySelector<HTMLButtonElement>('[autofocus]')!;
-  bindText(confirm, 'Quit game');
+  bindText(confirm, 'End game');
   bindText(cancel, 'Cancel');
   const dismiss = [...dialog.querySelectorAll<HTMLButtonElement>('[data-bs-dismiss]')];
   const error = dialog.querySelector<HTMLElement>('[role="alert"]')!;

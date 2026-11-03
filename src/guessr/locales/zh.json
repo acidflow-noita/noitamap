@@ -507,5 +507,10 @@
   "You have finished all 10 rounds. Waiting for the streamer.": "您已完成全部10轮。正在等待主播结束本局游戏。",
   "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} 在 {{channel}} 的游戏 {{game}} 的第 {{round}} 轮中提交了一次猜测。",
   "Game link shared in chat.": "聊天中分享的游戏链接。",
-  "The link is posted three times as normal messages, or once as an announcement.": "该链接可作为普通消息发布三次，或作为公告发布一次。"
+  "The link is posted three times as normal messages, or once as an announcement.": "该链接可作为普通消息发布三次，或作为公告发布一次。",
+  "Chatters joined: {{total}}": "已加入聊天室的用户：{{total}}",
+  "End this game?": "结束这场比赛？",
+  "End game": "结束游戏",
+  "Game ended": "比赛结束",
+  "The streamer ended this game.": "这位主播结束了这场比赛。"
 }

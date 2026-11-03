@@ -507,5 +507,10 @@
   "You have finished all 10 rounds. Waiting for the streamer.": "You have finished all 10 rounds. Waiting for the streamer.",
   "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.",
   "Game link shared in chat.": "Game link shared in chat.",
-  "The link is posted three times as normal messages, or once as an announcement.": "The link is posted three times as normal messages, or once as an announcement."
+  "The link is posted three times as normal messages, or once as an announcement.": "The link is posted three times as normal messages, or once as an announcement.",
+  "Chatters joined: {{total}}": "Chatters joined: {{total}}",
+  "End this game?": "End this game?",
+  "End game": "End game",
+  "Game ended": "Game ended",
+  "The streamer ended this game.": "The streamer ended this game."
 }

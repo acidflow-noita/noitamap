@@ -2,15 +2,13 @@ import { gameCode, gameIdFromCode } from './routes';
 import type { StreamChatMessage } from './stream-state';
 import type { LiveRoomView } from './live-room-types';
 import type { StreamReveal } from './stream-types';
-import { chatEnvelope, readChatEnvelope } from './chat-envelope';
+import { readChatEnvelope } from './chat-envelope';
 
 const PREFIX = '!noitaguessr_state';
-const PART_SIZE = 420;
-const HIDDEN_PART_BYTES = 210;
-export const STREAM_RECEIPT_BATCH = 24;
+export const STREAM_RECEIPT_BATCH = 35;
 const MAX_COMPRESSED = 32_768, MAX_DECODED = 98_304;
 export type StreamWirePayload =
-  | { type: 'state'; state: LiveRoomView }
+  | { type: 'state'; state: LiveRoomView; event?: 'sync' }
   | { type: 'reveal'; round: number; reveal: StreamReveal }
   | { type: 'receipts'; round: number; keys: string[]; rejected?: boolean };
 
@@ -44,7 +42,8 @@ function pack(payload: StreamWirePayload): unknown[] | Uint8Array<ArrayBuffer> {
   if (payload.type === 'state') {
     const s = payload.state, t = s.timing;
     return [0, s.revision, s.hostId, s.phase, s.online, s.paused, s.round, s.roundId, s.clue, s.expiresAt, s.resultId,
-      t ? { phase: t.phase, startsAt: t.startsAt, deadline: t.deadline, hostRound: t.hostRound, seconds: t.seconds, revealed: t.revealed } : undefined];
+      t ? { phase: t.phase, startsAt: t.startsAt, deadline: t.deadline, hostRound: t.hostRound, seconds: t.seconds, revealed: t.revealed,
+        ...(s.ended ? { ended: true } : {}) } : undefined];
   }
   if (payload.type === 'receipts') {
     if (payload.keys.length > 35 || payload.keys.some(key => !/^[a-f0-9]{16}$/.test(key))) throw Error('Invalid receipts');
@@ -62,18 +61,25 @@ export async function encodeStreamPacket(gameId: string, payload: StreamWirePayl
   const raw = value instanceof Uint8Array ? value : new TextEncoder().encode(JSON.stringify(value));
   if (raw.length > MAX_DECODED) throw Error('Broadcast exceeds its size limit');
   const compressed = await bounded(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate')), MAX_COMPRESSED);
-  const game = Uint8Array.from(gameId.replaceAll('-', '').match(/../g)!, h => parseInt(h, 16));
-  const id = crypto.getRandomValues(new Uint8Array(4));
-  const total = Math.ceil(compressed.length / HIDDEN_PART_BYTES);
+  const data = base64(compressed), code = gameCode(gameId, 'twitch');
+  const id = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
+  const event = payload.type === 'receipts' ? payload.rejected ? 'guess-rejected' : 'guess-received'
+    : payload.type === 'reveal' ? 'round-solution'
+    : payload.state.ended ? 'game-ended' : payload.event === 'sync' ? 'state-sync'
+    : payload.state.phase === 'complete' ? 'game-finished' : payload.state.paused ? 'disconnected'
+    : payload.state.phase === 'waiting' ? 'lobby-open' : payload.state.phase === 'reveal' ? 'round-closed'
+    : payload.state.clue === null ? 'state-update' : 'round-open';
+  const round = payload.type === 'state' ? payload.state.round : payload.round + 1;
+  const revision = payload.type === 'state' ? payload.state.revision : 0;
+  const size = 500 - `NoitaGuessr ${code} ${event} r${round} v${revision} ${id} 96/96 `.length;
+  const total = Math.ceil(data.length / size);
   if (total > 96) throw Error('Too many broadcast parts');
-  const label = payload.type === 'receipts' ? 'NoitaGuessr: receipts.' : payload.type === 'reveal' ? 'NoitaGuessr: solution.'
-    : payload.state.phase === 'complete' ? 'NoitaGuessr: finished.' : payload.state.phase === 'waiting' ? 'NoitaGuessr: ready.'
-    : `NoitaGuessr: round ${payload.state.round}.`;
-  return Array.from({ length: total }, (_, i) => chatEnvelope(label,
-    new Uint8Array([78, 71, 83, ...game, ...id, i, total, ...compressed.subarray(i * HIDDEN_PART_BYTES, (i + 1) * HIDDEN_PART_BYTES)])));
+  return Array.from({ length: total }, (_, i) => `NoitaGuessr ${code} ${event} r${round} v${revision} ${id} ${i + 1}/${total} ${data.slice(i * size, (i + 1) * size)}`);
 }
 
 export function streamPacketText(message: string): string {
+  const readable = /^(?:NoitaGuessr|NG) ([0-9a-z]{26}) [a-z-]+ r\d{1,2} v\d+ ([0-9a-f]{8}) (\d{1,2})\/(\d{1,2}) ([A-Za-z0-9_-]+)$/.exec(message);
+  if (readable) return `${PREFIX} ${readable[1]} ${readable[2]} ${(Number(readable[3]) - 1).toString(36)}/${Number(readable[4]).toString(36)} ${readable[5]}`;
   const raw = readChatEnvelope(message);
   if (!raw || raw.length < 26 || raw[0] !== 78 || raw[1] !== 71 || raw[2] !== 83) return message;
   const hex = (bytes: Uint8Array) => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
@@ -92,7 +98,7 @@ export class StreamPacketReader {
     const match = /^!noitaguessr_state ([0-9a-z]{26}) ([0-9a-f]{8}) ([0-9a-z]{1,2})\/([0-9a-z]{1,2}) ([A-Za-z0-9_-]+)$/.exec(streamPacketText(message.text));
     if (!match) return null;
     const gameId = gameIdFromCode(match[1]), part = parseInt(match[3], 36), total = parseInt(match[4], 36);
-    if (!gameId || this.expectedGame && gameId !== this.expectedGame || total < 1 || total > 96 || part >= total || match[5].length > PART_SIZE) return null;
+    if (!gameId || this.expectedGame && gameId !== this.expectedGame || total < 1 || total > 96 || part >= total || match[5].length > 500) return null;
     for (const [id, entry] of this.pending) if (now - entry.created > 90_000) this.pending.delete(id);
     const id = `${message.player.id}/${match[1]}/${match[2]}`;
     let entry = this.pending.get(id);
@@ -130,7 +136,7 @@ export class StreamPacketReader {
           || !Number.isInteger(timing.hostRound) || timing.hostRound < 1 || timing.hostRound > 10
           || !Number.isInteger(timing.seconds) || timing.seconds < 0 || timing.seconds > 600) return null;
         payload = { type: 'state', state: { schema: 1, channel: this.channel, gameId, revision, hostId, hostPro: 'active', phase,
-          online, paused, round, roundId, clue, expiresAt, ...(resultId ? { resultId } : {}), timing } };
+          online, paused, round, roundId, clue, expiresAt, ...(resultId ? { resultId } : {}), ...(timing.ended ? { ended: true } : {}), timing } };
       } else if (row[0] === 1 && row.length === 5 && Number.isInteger(row[1]) && row[1] >= 0 && row[1] < 10) {
         const [, round, roundId, point, area] = row;
         if (typeof roundId !== 'string' || !/^[a-f0-9-]{36}$/.test(roundId) || !Array.isArray(point) || point.length !== 2
@@ -149,7 +155,7 @@ export async function guessReceiptKey(roundId: string, userId: string, nonce: st
   return Array.from(hash.subarray(0, 8), n => n.toString(16).padStart(2, '0')).join('');
 }
 
-interface Publication { frames: string[]; next: number; priority: number; done?: () => void; lost?: () => void }
+interface Publication { frames: string[]; next: number; priority: number; done?: () => void; lost?: () => void; successor?: Publication }
 /** At most 14 messages per rolling 30 seconds and at least 1.8 seconds apart.
  * Coalesce repeated snapshots; never create a response queue per viewer. */
 export class StreamBroadcaster {
@@ -158,6 +164,7 @@ export class StreamBroadcaster {
   private sent: number[] = [];
   private timer?: ReturnType<typeof setTimeout>;
   private busy = false;
+  private active?: Publication;
   private stopped = false;
   private waiters = new Set<() => void>();
   private budgetKey: string;
@@ -175,7 +182,10 @@ export class StreamBroadcaster {
     const frames = await encodeStreamPacket(this.gameId, payload);
     if (this.stopped || this.serial.get(key) !== version) return;
     if (this.queue.size >= 64 && !this.queue.has(key)) throw Error('Broadcast queue is full');
-    this.queue.set(key, { frames, next: 0, priority, done, lost }); this.pump();
+    const publication = { frames, next: 0, priority, done, lost }, current = this.queue.get(key);
+    if (current && (current.next > 0 || current === this.active)) current.successor = publication;
+    else this.queue.set(key, publication);
+    this.pump();
   }
   private pump(): void {
     if (this.busy || this.stopped || !this.queue.size) return;
@@ -184,15 +194,18 @@ export class StreamBroadcaster {
     const wait = Math.max(0, (this.sent.at(-1) ?? 0) + 1800 - now, this.sent.length >= 14 ? this.sent[0] + 30_001 - now : 0);
     if (wait) { this.timer = setTimeout(() => this.pump(), wait); return; }
     const [key, entry] = [...this.queue].sort((a, b) => a[1].priority - b[1].priority)[0];
-    this.busy = true; this.sent.push(now);
+    this.busy = true; this.active = entry; this.sent.push(now);
     try { localStorage.setItem(this.budgetKey, JSON.stringify(this.sent)); } catch { /* Optional refresh protection. */ }
     void this.send(entry.frames[entry.next]).then(() => {
       if (this.stopped || this.queue.get(key) !== entry) return;
-      if (++entry.next === entry.frames.length) { this.queue.delete(key); entry.done?.(); }
+      if (++entry.next === entry.frames.length) {
+        if (entry.successor) this.queue.set(key, entry.successor); else this.queue.delete(key);
+        entry.done?.();
+      }
     }).catch(error => {
       if (this.queue.get(key) === entry) this.queue.delete(key);
       if (!this.stopped) { entry.lost?.(); this.failed(error); }
-    }).finally(() => { this.busy = false; this.pump(); if (!this.queue.size) this.resolveDrain(); });
+    }).finally(() => { this.busy = false; this.active = undefined; this.pump(); if (!this.queue.size) this.resolveDrain(); });
   }
   drain(): Promise<void> {
     return !this.busy && !this.queue.size ? Promise.resolve() : new Promise(resolve => this.waiters.add(resolve));

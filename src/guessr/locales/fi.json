@@ -507,5 +507,10 @@
   "You have finished all 10 rounds. Waiting for the streamer.": "Olet suorittanut kaikki 10 kierrosta. Odotetaan, että striimaaja päättää pelin.",
   "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} lähetti arvauksen kierrokselle {{round}} pelissä {{game}} kanavalla {{channel}}.",
   "Game link shared in chat.": "Pelin linkki jaettiin chatissa.",
-  "The link is posted three times as normal messages, or once as an announcement.": "Linkki julkaistaan joko kolme kertaa tavallisena viestinä tai kerran ilmoituksena."
+  "The link is posted three times as normal messages, or once as an announcement.": "Linkki julkaistaan joko kolme kertaa tavallisena viestinä tai kerran ilmoituksena.",
+  "Chatters joined: {{total}}": "Liittyneet keskustelijat: {{total}}",
+  "End this game?": "Lopetetaanko tämä peli?",
+  "End game": "Lopeta peli",
+  "Game ended": "Peli päättyi",
+  "The streamer ended this game.": "Streamer päätti tämän pelin."
 }

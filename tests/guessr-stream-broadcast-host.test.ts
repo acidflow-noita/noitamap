@@ -12,9 +12,10 @@ afterEach(() => { hosts.splice(0).forEach(h => h.dispose()); vi.useRealTimers();
 async function fixture() {
   const session = await new StreamService(streamSource(), streamSecret).start(streamHost, streamNow, 'twitch');
   const game = newStreamGame(session, streamNow); startStreamTiming(game, 90, streamNow);
-  const sent: { text: string; at: number }[] = [], save = vi.fn(), failure = vi.fn();
-  const host = new StreamBroadcastHost(game, '/images', async text => { sent.push({ text, at: Date.now() }); }, failure, save);
-  hosts.push(host); return { game, host, sent, save, failure };
+  const sent: { text: string; at: number }[] = [], save = vi.fn(), failure = vi.fn(), joined = vi.fn();
+  const send = vi.fn(async (text: string) => { sent.push({ text, at: Date.now() }); });
+  const host = new StreamBroadcastHost(game, '/images', send, failure, save, joined);
+  hosts.push(host); return { game, host, sent, save, failure, joined, send };
 }
 
 it.each([false, true])('broadcasts a newer closed state when leaving the host page (quit: %s)', async quit => {
@@ -26,8 +27,18 @@ it.each([false, true])('broadcasts a newer closed state when leaving the host pa
   for (const item of f.sent) received = await reader.receive({ player: { id: '100', login: 'streamer', name: 'Streamer' },
     id: crypto.randomUUID(), text: item.text, sentAt: item.at });
   expect(received?.payload).toMatchObject({ type: 'state', state: { online: false, paused: true, clue: null,
-    revision: f.game.timing!.revision, ...(quit ? { phase: 'waiting' } : {}) } });
+    revision: f.game.timing!.revision, ...(quit ? { phase: 'waiting', ended: true } : {}) } });
+  if (quit) expect(f.sent[0].text).toContain(' game-ended ');
   expect(f.save).not.toHaveBeenCalled(); expect(f.failure).not.toHaveBeenCalled();
+});
+
+it('reports an unconfirmed end event and permits an explicit retry without silently ending locally', async () => {
+  const f = await fixture(); f.send.mockRejectedValueOnce(Error('Offline'));
+  await expect(f.host.close(true)).rejects.toThrow('Twitch could not send the game update.');
+  expect(f.sent).toHaveLength(0);
+  await f.host.close(true);
+  expect(f.sent).toHaveLength(1); expect(f.sent[0].text).toContain(' game-ended ');
+  expect(f.send).toHaveBeenCalledTimes(2);
 });
 
 it('sends no idle heartbeats and permanently stops after draining the final state and receipts', async () => {
@@ -69,6 +80,16 @@ it('coalesces a thousand simultaneous joins into one snapshot instead of a respo
   expect(new Set(f.sent.map(m => streamPacketText(m.text).split(' ')[2])).size).toBe(1);
   expect(f.sent.length).toBeLessThanOrEqual(2);
   expect(f.save).not.toHaveBeenCalled(); expect(f.failure).not.toHaveBeenCalled();
+});
+
+it('counts unique chatter joins using existing sync messages, without counting host or retries', async () => {
+  const f = await fixture();
+  const join = (id: string) => f.host.receiveRequest({ player: { id, login: 'chatter', name: 'Chatter' },
+    id: crypto.randomUUID(), text: `NoitaGuessr ${gameCode(f.game.session.id, 'twitch')} player-join streamer need=0`, sentAt: streamNow });
+  join('123'); join('123'); join('124'); join(f.game.session.host.id);
+  expect(Object.keys(f.game.joinedPlayers!)).toEqual(['123', '124']);
+  expect(f.joined).toHaveBeenCalledTimes(2); expect(f.save).not.toHaveBeenCalled();
+  f.host.dispose();
 });
 
 it('delivers a burst of a thousand confirmations without exceeding the Twitch message budget', async () => {

@@ -525,5 +525,10 @@
   "You have finished all 10 rounds. Waiting for the streamer.": "Dokončili jste všech 10 kol. Čekáme, až streamer dokončí hru.",
   "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} zaslal tip pro kolo {{round}} ve hře {{game}} na kanálu {{channel}}.",
   "Game link shared in chat.": "Odkaz na hru sdílený v chatu.",
-  "The link is posted three times as normal messages, or once as an announcement.": "Odkaz je zveřejněn třikrát jako běžné příspěvky nebo jednou jako oznámení."
+  "The link is posted three times as normal messages, or once as an announcement.": "Odkaz je zveřejněn třikrát jako běžné příspěvky nebo jednou jako oznámení.",
+  "Chatters joined: {{total}}": "Počet připojených uživatelů chatu: {{total}}",
+  "End this game?": "Ukončit tuto hru?",
+  "End game": "Ukončit hru",
+  "Game ended": "Hra skončila",
+  "The streamer ended this game.": "Streamer tento zápas ukončil."
 }

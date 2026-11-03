@@ -49,6 +49,10 @@ Confirmed initial posts are saved so refreshing the ready lobby does not repeat
 them. The persistent status says "Game link shared in chat." after confirmation.
 Game admission requires Pro; its badge describes admission for this game rather
 than the expiry of the short-lived game ticket. Active games do not solicit gifts.
+The public Wuote/Dunkorslam grants are shown immediately without another account
+request. A game-specific invitation never displays a gift prompt while state is
+loading. The lobby counts unique chatter identities from existing join messages;
+this is "chatters joined", not an online-presence estimate or a viewer poll.
 The receiver checks the embedded sender against Twitch's actual sender and
 rejects copied packets, recent repeated nonces, other round IDs and closed rounds.
 This prevents direct copy/paste; the encoding does not attest client point costs.
@@ -673,11 +677,20 @@ and receipt recovery survive refresh; Twitch delivery during disconnection is
 not guaranteed. OBS layout, moderation exclusions and channel-point rewards
 remain deferred.
 
-Outgoing guesses use readable submission text with sender-bound payload bytes
-encoded as invisible variation selectors. State and receipt packets use the same
-envelope. Every message remains within 500 UTF-16 code units. This is obfuscation,
-not encryption; actual Twitch delivery and character preservation require manual
-live verification. Existing runic packets remain readable for already-open tabs.
+Outgoing guesses use readable submission text with sender-bound bytes in a
+printable `[ng:base64url]` suffix. Required data no longer relies on invisible
+Unicode characters. State/receipt packets are printable and explicitly labelled:
+`NoitaGuessr <game-code> <event> r<round> v<revision> <packet-id> <part>/<parts> <data>`.
+Events distinguish `lobby-open`, `round-open`, `round-closed`, `state-sync`,
+`state-update`, `round-solution`, `guess-received`, `guess-rejected`, `game-ended`
+and `game-finished`. Join/recovery requests identify the game and channel with
+`player-join` or `player-sync`; Twitch supplies sender identity and receipt time.
+This provides identifiers for future log analysis without another database write.
+An in-flight multipart packet finishes before a replacement for the same key is
+sent. Identical unsolicited states are suppressed; a new join can request a
+complete coalesced resync, even when it arrived halfway through an earlier packet.
+All messages stay within 500 characters. This remains obfuscation, not encryption.
+Older runic/invisible envelopes are read for compatibility, but are never emitted.
 Numeric plaintext examples below are for offline input and older sessions only.
 The deferred alternative is one reusable 1-point custom reward named
 "NoitaGuessr guess". Its required

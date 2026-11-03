@@ -133,7 +133,7 @@ function continueGame(
     details,
     progress,
     actionButton(msg(resume.continueLabel), resume.action, true),
-    actionButton(msg("Quit game"), () => confirmQuitGame(resume.quit, resume.quitDescription)),
+    actionButton(msg("Exit game"), () => confirmQuitGame(resume.quit, resume.quitDescription)),
   );
   card.append(body);
   return card;

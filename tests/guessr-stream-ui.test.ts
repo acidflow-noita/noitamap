@@ -100,7 +100,13 @@ it('runs the warm-up and timed chat-ahead flow in the host UI without a pause or
   (document.getElementById('stream-start-game') as HTMLButtonElement).click();
   expect(document.querySelector('.stream-warmup')).not.toBeNull();
   expect(document.getElementById('confirm-guess')).toBeNull();
-  await vi.advanceTimersByTimeAsync(93_000);
+  await vi.advanceTimersByTimeAsync(3000);
+  expect(document.getElementById('stream-waiting-timer')!.textContent).toBe('01:30');
+  expect(document.getElementById('stream-waiting-timer')!.dataset.clock).toBe('true');
+  ui.game!.joinedPlayers = { '123': { login: 'chatter', name: 'Chatter' } }; ui.render();
+  expect(document.getElementById('stream-joined-count')!.textContent).toBe('Chatters joined: 1');
+  expect(document.getElementById('stream-joined-names')!.textContent).toBe('Chatter');
+  await vi.advanceTimersByTimeAsync(90_000);
   expect(ui.game!.round).toBe(0); expect(ui.game!.timing!.chatRound).toBe(1);
   await vi.advanceTimersByTimeAsync(8000);
   ui.game!.guess = streamAnswer; ui.render();

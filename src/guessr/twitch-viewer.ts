@@ -382,7 +382,7 @@ export class TwitchViewer {
     try {
       if (typeof channel !== 'string' || !/^[a-z0-9_]{1,25}$/i.test(channel) || round > STREAM_ROUNDS) throw Error();
       const label = tr('{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.', {
-        player: this.state.displayName || credentials.login, round: String(round), channel, game: gameId ? gameCode(gameId) : '',
+        player: this.state.displayName || credentials.login, round: String(round), channel, game: gameId ? gameCode(gameId, 'twitch') : '',
       });
       command = formatGuessCommand(round, point, maximum, roundId, { userId: credentials.userId, nonce, label });
     } catch { throw new TwitchViewerError('invalid-guess', 'Choose a valid round, map position, and Twitch channel before sending.'); }

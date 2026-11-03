@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { encodeStreamPacket, StreamPacketReader, guessReceiptKey, StreamBroadcaster, STREAM_RECEIPT_BATCH } from '../src/guessr/stream-wire';
 import type { StreamWirePayload } from '../src/guessr/stream-wire';
 import { streamArea, streamAnswer } from './helpers/guessr-stream';
+import { gameCode } from '../src/guessr/routes';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const packet: StreamWirePayload = { type: 'state', state: { schema: 1, channel: 'streamer', hostId: '123', hostPro: 'active', gameId: id,
@@ -13,6 +14,9 @@ afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 it('round-trips bounded packets only from the requested actual Twitch sender and game', async () => {
   const messages = await encodeStreamPacket(id, packet), reader = new StreamPacketReader('streamer', id);
   expect(messages.every(text => text.length <= 500)).toBe(true);
+  expect(messages.every(text => /^[\x20-\x7e]+$/.test(text))).toBe(true);
+  expect(messages[0]).toMatch(/^NoitaGuessr [a-z0-9]{26} round-open r2 v2 [a-f0-9]{8} 1\/\d+ /);
+  expect(messages[0].split(' ')[1]).toBe(gameCode(id, 'twitch'));
   for (const text of messages) expect(await reader.receive(chat(text, 'copycat'))).toBeNull();
   let received;
   for (const text of [...messages].reverse()) received = await reader.receive(chat(text));
@@ -84,4 +88,27 @@ it('preserves the sender budget across a reload instead of allowing another imme
   expect(send).toHaveBeenCalledTimes(14);
   await vi.advanceTimersByTimeAsync(1); expect(send).toHaveBeenCalledTimes(15);
   expect(failure).not.toHaveBeenCalled(); reloaded.dispose();
+});
+
+it('finishes an in-flight multipart clue before sending a newer state for the same game', async () => {
+  const randomClue = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(600)))).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+  const first: StreamWirePayload = { type: 'state', state: { ...(packet as Extract<StreamWirePayload, { type: 'state' }>).state, clue: randomClue, revision: 10 } };
+  const second: StreamWirePayload = { type: 'state', state: { ...first.state, revision: 11 } };
+  const sent: string[] = [];
+  let release!: () => void;
+  const firstSend = new Promise<void>(resolve => { release = resolve; });
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] }); vi.setSystemTime(1_000_000);
+  const broadcaster = new StreamBroadcaster(id, async text => { sent.push(text); if (sent.length === 1) await firstSend; }, error => { throw error; });
+  await broadcaster.offer('state', first);
+  expect(sent).toHaveLength(1);
+  expect(sent[0]).not.toContain(' 1/1 ');
+  await broadcaster.offer('state', second);
+  release(); await vi.advanceTimersByTimeAsync(30000); broadcaster.dispose(); vi.useRealTimers();
+  const reader = new StreamPacketReader('streamer', id), delivered = [];
+  for (const text of sent) {
+    const value = await reader.receive(chat(text.replace(/[\p{C}\p{M}]/gu, '')));
+    if (value?.payload.type === 'state') delivered.push(value.payload.state);
+  }
+  expect(delivered.map(state => state.revision)).toEqual([10, 11]);
+  expect(delivered.every(state => state.clue === randomClue)).toBe(true);
 });

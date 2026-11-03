@@ -64,9 +64,9 @@ it('translates the open confirmation and error while preserving Cancel focus and
   await initializeGuessrTranslations();
   i18next.addResourceBundle('de', 'translation', {}, true, true);
   i18next.addResourceBundle('de', 'guessr', {
-    'Quit this game?': 'Dieses Spiel beenden?',
+    'End this game?': 'Dieses Spiel beenden?',
     'Your progress in this game will be discarded.': 'Der Fortschritt wird verworfen.',
-    'Cancel': 'Abbrechen', 'Quit game': 'Spiel beenden', 'Close': 'Schließen',
+    'Cancel': 'Abbrechen', 'End game': 'Spiel beenden', 'Close': 'Schließen',
     'Could not quit the game. Please retry.': 'Spiel konnte nicht beendet werden. Bitte erneut versuchen.',
   }, true, true);
   const quit = vi.fn().mockRejectedValueOnce(null).mockResolvedValue(undefined);

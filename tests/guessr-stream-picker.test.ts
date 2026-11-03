@@ -81,6 +81,8 @@ describe('shared channel guess picker', () => {
     const id = '11111111-1111-4111-8111-111111111111';
     const url = `/guess/wuote/${gameCode(id, 'twitch')}/`;
     const f = mount(url);
+    expect(f.button('Gift Pro to wuote').hidden).toBe(true);
+    expect(f.main.querySelector<HTMLElement>('.stream-pro-status')!.dataset.proStatus).toBe('active');
     f.button('Sign in with Twitch').click(); await flush();
     const transport = f.viewer.watchChat.mock.calls[0][1]; transport.status('live', 'Connected');
     expect(watchLiveRoom).not.toHaveBeenCalled();
@@ -94,6 +96,8 @@ describe('shared channel guess picker', () => {
     await deliver({ type: 'state', state: { ...state, phase: 'waiting', clue: null,
       timing: { ...state.timing!, phase: 'lobby', deadline: null } } });
     await vi.waitFor(() => expect(f.main.textContent).toContain('Waiting for the streamer to start the game.'));
+    expect(f.main.querySelector<HTMLElement>('.stream-chat-state')!.dataset.connection).toBe('connected');
+    expect(f.button('Send guess').getAttribute('aria-description')).toBe('Waiting for the streamer to start the game.');
     expect(f.main.querySelector('.stream-viewer-clue .clue')).toBeNull();
     expect(f.button('Send guess').disabled).toBe(true);
     await deliver({ type: 'state', state: { ...state, revision: 2 } });
@@ -195,7 +199,7 @@ describe('shared channel guess picker', () => {
     expect(watchLiveRoom).toHaveBeenCalledTimes(2);
     const gift = next.button('Gift Pro to dunkorslam');
     expect(gift.classList.contains('btn-patron')).toBe(true);
-    expect(gift.hidden).toBe(false);
+    expect(gift.hidden).toBe(true);
     expect(gift.getAttribute('aria-description')).toContain('Gift dunkorslam a subscription to wuote’s Twitch channel.');
   });
 
@@ -324,7 +328,7 @@ describe('shared channel guess picker', () => {
       round: 1, clue: new URL(roundLink('/guess/?channel=wuote', 1, true)).hash.slice(6), expiresAt: Date.now() + 99999 });
     handlers.status('connected', ''); f.button('Sign in with Twitch').click(); await flush(); ui.pick({ x: 10, y: 20 });
     expect(f.button('Send guess').disabled).toBe(true);
-    expect(f.button('Send guess').title).toContain('streamer tab');
+    expect(f.button('Send guess').getAttribute('aria-description')).toContain('streamer tab');
     expect(f.viewer.sendGuess).not.toHaveBeenCalled();
   });
   it('keeps one channel link and chat connection while live rounds advance, closes late guesses and restores current clue for late joins', async () => {

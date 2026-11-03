@@ -507,5 +507,10 @@
   "You have finished all 10 rounds. Waiting for the streamer.": "Kamu telah menyelesaikan semua 10 ronde. Sedang menunggu sang streamer menyelesaikan permainan.",
   "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} telah mengirimkan tebakannya untuk putaran {{round}} dalam permainan {{game}} di saluran {{channel}}.",
   "Game link shared in chat.": "Tautan game yang dibagikan di obrolan.",
-  "The link is posted three times as normal messages, or once as an announcement.": "Tautan tersebut diposting tiga kali sebagai pesan biasa, atau sekali sebagai pengumuman."
+  "The link is posted three times as normal messages, or once as an announcement.": "Tautan tersebut diposting tiga kali sebagai pesan biasa, atau sekali sebagai pengumuman.",
+  "Chatters joined: {{total}}": "Jumlah peserta obrolan: {{total}}",
+  "End this game?": "Mau mengakhiri permainan ini?",
+  "End game": "Akhiri permainan",
+  "Game ended": "Permainan telah berakhir",
+  "The streamer ended this game.": "Streamer tersebut mengakhiri pertandingan ini."
 }

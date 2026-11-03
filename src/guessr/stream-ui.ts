@@ -45,6 +45,7 @@ import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, tr } from 
 import { StreamBroadcastHost } from './stream-broadcast-host';
 import { startStreamTiming, beginStreamTiming, startHostWindow, streamTick, hostMayGuess, suspendStreamTiming, resumeStreamTiming, validStreamSeconds, STREAM_DELIVERY_GRACE_MS } from './stream-timing';
 import { streamRoundResults } from './stream-round-results';
+import { confirmQuitGame } from './quit-game';
 
 const SHARE_ANNOUNCEMENTS_KEY = 'noitamap-guessr-share-announcements';
 
@@ -284,14 +285,18 @@ export class StreamUI {
         localStorage.removeItem(STREAM_SESSION_KEY);
       if (this.game === game) this.game = null;
       this.saveWarning = false;
+    } catch (error) {
+      this.mounted = true; this.render();
+      throw error;
     } finally {
       this.quitting = false;
       this.busy = false;
     }
   }
   private exit = (): void => {
-    this.suspend();
-    this.hooks.home();
+    if (!this.game || this.game.stage === 'complete') { this.suspend(); this.hooks.home(); return; }
+    confirmQuitGame(async () => { await this.quit(); this.hooks.home(); },
+      'This ends the game for you and your chat. The unfinished game will not be added to results.');
   };
   async open(showCompleted = false): Promise<void> {
     this.disposeHeader();
@@ -570,7 +575,9 @@ export class StreamUI {
           };
           const viewer = this.viewer, receiver = this.chat;
           this.broadcast = new StreamBroadcastHost(game, this.viewerImageRoot(), text => this.api.local
-            ? viewer!.sendMessage(GUESSR_TRANSPORT_CHANNEL, text) : receiver!.sendTransport(text), failed, this.save);
+            ? viewer!.sendMessage(GUESSR_TRANSPORT_CHANNEL, text) : receiver!.sendTransport(text), failed, this.save, () => {
+              this.saveTimer ??= setTimeout(this.save, 250); this.updateLobby();
+            });
           void this.broadcast.start().catch(failed);
         } else this.broadcast.publishState();
         this.save(); if (needsRender) this.render(); this.startTick();
@@ -610,8 +617,10 @@ export class StreamUI {
     const clock = `${formatGuessrNumber(Math.floor(remaining / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(remaining % 60, { minimumIntegerDigits: 2 })}`;
     const label = game.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) })
       : timing.deadline === null ? tr('Manual timing') : clock;
-    for (const timer of document.querySelectorAll<HTMLElement>('#stream-round-timer, #stream-start-countdown'))
+    for (const timer of document.querySelectorAll<HTMLElement>('#stream-round-timer, #stream-start-countdown, #stream-waiting-timer'))
       if (timer.textContent !== label) timer.textContent = label;
+    const waitingTimer = document.getElementById('stream-waiting-timer');
+    if (waitingTimer) waitingTimer.dataset.clock = String(!game.paused && !starting && timing.deadline !== null);
     const next = document.getElementById('stream-auto-next');
     if (next) {
       const final = game.round === game.session.rounds.length - 1;
@@ -626,9 +635,29 @@ export class StreamUI {
     if (start) start.disabled = game.paused || !this.roomHealthy || this.sharePending;
     const activity = document.getElementById('stream-activity-message');
     if (activity) activity.style.visibility = Date.now() < this.activityUntil ? 'visible' : 'hidden';
+    const bar = document.getElementById('stream-waiting-progress');
+    if (bar) {
+      const fraction = timing.seconds ? Math.max(0, Math.min(1, remaining / timing.seconds)) : 1;
+      bar.style.inlineSize = `${fraction * 100}%`;
+      bar.parentElement!.setAttribute('aria-valuenow', String(Math.round(fraction * 100)));
+    }
+  }
+  private updateLobby(): void {
+    if (!this.game) return;
+    const players = Object.values(this.game.joinedPlayers ?? {});
+    const count = document.getElementById('stream-joined-count');
+    if (count) bindText(count, 'Chatters joined: {{total}}', { total: formatGuessrNumber(players.length) });
+    const names = document.getElementById('stream-joined-names');
+    if (names && names.dataset.count !== String(players.length)) {
+      names.dataset.count = String(players.length);
+      names.replaceChildren(...players.slice(-10).map(player => { const name = el('span', '', 'badge-subtle theme-secondary'); name.textContent = player.name; return name; }));
+    }
   }
   private renderWarmup(main: HTMLElement): void {
-    const section = el('section', '', 'card card-body rounded-9 stream-start-panel');
+    const section = el('section', '', 'game-panel stream-start-panel');
+    section.append(el('span', 'Chat vs Streamer', 'badge-subtle theme-primary twitch-mode-label'));
+    const count = el('strong', '', 'stream-joined-count'); count.id = 'stream-joined-count';
+    const names = el('div', '', 'stream-joined-names'); names.id = 'stream-joined-names';
     if (this.game!.timing!.phase === 'lobby') {
       section.append(el('h2', 'Ready to start'), el('p', 'Share the game link, then start when your chat is ready.'));
       const start = action('Start game', () => {
@@ -636,12 +665,16 @@ export class StreamUI {
         if (game.paused || !this.roomHealthy || this.sharePending) return;
         beginStreamTiming(game, streamTime(game)); this.save(); this.broadcast?.publishState(); this.render();
       }, 'primary');
-      start.id = 'stream-start-game'; section.append(start); main.append(section); return;
+      start.id = 'stream-start-game'; section.append(count, names, start); main.append(section); this.updateLobby(); return;
     }
     section.classList.add('stream-warmup');
-    section.append(el('h2', 'Chat goes first'), el('p', 'Chat is playing round 1.'));
-    section.append(el('p', 'Your first round starts when chat finishes this round.'),
-      el('p', 'Chat submits their guesses before the streamer plays that location. This prevents cheating from the stream.', 'fine-print'));
+    section.append(el('h2', 'Chat is playing round 1.'));
+    const time = el('output', '', 'stream-waiting-timer'); time.id = 'stream-waiting-timer';
+    const progress = el('div', '', 'progress theme-primary'); progress.setAttribute('role', 'progressbar');
+    bindAttribute(progress, 'aria-label', 'Your first round starts when chat finishes this round.');
+    progress.setAttribute('aria-valuemin', '0'); progress.setAttribute('aria-valuemax', '100');
+    const bar = el('div', '', 'progress-bar'); bar.id = 'stream-waiting-progress'; progress.append(bar);
+    section.append(time, progress, el('p', 'Your first round starts when chat finishes this round.'), count, names);
     if (!this.game!.timing!.seconds) {
       const start = action('Start first round', () => {
         const game = this.game!;
@@ -650,7 +683,7 @@ export class StreamUI {
       }, 'primary');
       start.id = 'stream-first-round'; section.append(start);
     }
-    main.append(section);
+    main.append(section); this.updateLobby();
   }
   private connectChat(): void {
     if (
@@ -1095,7 +1128,7 @@ export class StreamUI {
         })),
       );
       revealStreamRound(game, reveal);
-      if (game.timing) { game.timing.revision++; this.broadcast?.publishState(); this.broadcast?.publishReveal(game.round); }
+      if (game.timing) { game.timing.revision++; this.broadcast?.publishState(false); this.broadcast?.publishReveal(game.round); }
       this.save();
       if (this.mounted) this.render();
     } catch (error) {

@@ -4,7 +4,7 @@ import type { StreamGame } from './stream-types';
 import type { StreamChatMessage } from './stream-state';
 import type { LiveRoomView } from './live-room-types';
 import { encodeViewerClue } from './viewer-clue';
-import { gameCode } from './routes';
+import { gameIdFromCode } from './routes';
 
 /** Host-owned broadcast state; no response or connection per chatter. */
 export class StreamBroadcastHost {
@@ -17,14 +17,16 @@ export class StreamBroadcastHost {
   private timer?: ReturnType<typeof setInterval>;
   private lastSnapshot = 0;
   private lastFullSnapshot = 0;
+  private lastState = '';
   private resyncTimer?: ReturnType<typeof setTimeout>;
   private requestedReveals = new Set<number>();
   private requests = new Map<string, number>();
   private stopped = false;
+  private publisherDisposed = false;
   private completing?: Promise<void>;
   private preparations = new Set<Promise<void>>();
-  constructor(private game: StreamGame, private imageRoot: string, send: (message: string) => Promise<unknown>,
-    private failed: (error: unknown) => void, private save: () => void) {
+  constructor(private game: StreamGame, private imageRoot: string, private send: (message: string) => Promise<unknown>,
+    private failed: (error: unknown) => void, private save: () => void, private joined: () => void = () => {}) {
     this.publisher = new StreamBroadcaster(game.session.id, send, failed, game.session.host.id);
     for (const [round, keys] of Object.entries(game.receipts ?? {})) this.receipts.set(Number(round), new Set(keys));
   }
@@ -61,12 +63,15 @@ export class StreamBroadcastHost {
         hostRound: game.round + 1, seconds: timing.seconds,
         revealed: game.reveals.reduce((mask, reveal, i) => reveal ? mask | 1 << i : mask, 0) } };
   }
-  publishState(full = true): void {
+  publishState(full = true, resync = false): void {
     if (this.stopped) return;
+    const state = this.snapshot(); if (!full) state.clue = null;
+    const signature = JSON.stringify(state);
+    if (!resync && signature === this.lastState) return;
+    this.lastState = signature;
     this.lastSnapshot = Date.now();
     if (full) { this.lastFullSnapshot = this.lastSnapshot; clearTimeout(this.resyncTimer); this.resyncTimer = undefined; }
-    const state = this.snapshot(); if (!full) state.clue = null;
-    this.prepare(this.publisher.offer('state', { type: 'state', state }, 0));
+    this.prepare(this.publisher.offer('state', { type: 'state', state, ...(resync ? { event: 'sync' as const } : {}) }, 0));
   }
   publishReveal(round: number): void {
     const reveal = this.game.reveals[round];
@@ -105,16 +110,27 @@ export class StreamBroadcastHost {
   receiveRequest(message: StreamChatMessage): void {
     if (this.stopped || this.completing || typeof message.text !== 'string' || message.text.length > 500) return;
     const hidden = readChatEnvelope(message.text);
-    const text = hidden?.[0] === 78 && hidden[1] === 71 && hidden[2] === 82 ? new TextDecoder().decode(hidden.subarray(3)) : message.text;
+    let text = hidden?.[0] === 78 && hidden[1] === 71 && hidden[2] === 82 ? new TextDecoder().decode(hidden.subarray(3)) : message.text;
+    const request = /^(?:NoitaGuessr|NG) ([0-9a-z]{26}|-) player-(?:join|sync) ([a-z0-9_]{1,25}) need=([0-9a-f]{1,3})(?: receipts=(.+))?$/.exec(text);
+    if (request) text = `!noitaguessr_sync ${request[2]} ${request[1]} ${request[3]}${request[4] ? ' ' + request[4] : ''}`;
     const match = /^!noitaguessr_sync ([a-z0-9_]{1,25}) ([0-9a-z]{26}|-) ([0-9a-f]{1,3})(?: ([0-9]:[0-9a-f]{16}(?:,[0-9]:[0-9a-f]{16}){0,9}))?$/.exec(text);
-    if (!match || match[1] !== this.game.session.host.login || match[2] !== '-' && match[2] !== gameCode(this.game.session.id)) return;
+    if (!match || match[1] !== this.game.session.host.login || match[2] !== '-' && gameIdFromCode(match[2]) !== this.game.session.id) return;
+    if (message.player.id !== this.game.session.host.id) {
+      this.game.joinedPlayers ??= {};
+      if (!this.game.joinedPlayers[message.player.id] && Object.keys(this.game.joinedPlayers).length < 3000) {
+        this.game.joinedPlayers[message.player.id] = { login: message.player.login, name: message.player.name };
+        this.joined();
+      }
+    }
     const now = Date.now(), previous = this.requests.get(message.player.id) ?? 0;
     if (now - previous < 5000) return;
     if (this.requests.size >= 3000) this.requests.delete(this.requests.keys().next().value!);
     this.requests.set(message.player.id, now);
     // A join/refresh storm still produces one shared snapshot at most every 5s.
-    if (Date.now() - this.lastFullSnapshot >= 5000) this.publishState();
-    else if (!this.resyncTimer) this.resyncTimer = setTimeout(() => this.publishState(), this.lastFullSnapshot + 5000 - Date.now());
+    // A viewer joining halfway through a packet needs a complete following
+    // snapshot. The broadcaster finishes the in-flight packet before this one.
+    if (Date.now() - this.lastFullSnapshot >= 5000) this.publishState(true, true);
+    else if (!this.resyncTimer) this.resyncTimer = setTimeout(() => this.publishState(true, true), this.lastFullSnapshot + 5000 - Date.now());
     const missing = parseInt(match[3], 16);
     const participant = missing ? this.game.participants.find(p => p.id === message.player.id) : undefined;
     for (let round = 0; round < this.game.reveals.length; round++) if (missing & 1 << round) {
@@ -137,7 +153,7 @@ export class StreamBroadcastHost {
     // The fixed batch timer handles both receipt kinds; requests never cause a
     // per-chatter send or synchronous serialization of the whole host roster.
   }
-  dispose(): void { this.stopped = true; clearInterval(this.timer); clearTimeout(this.resyncTimer); this.publisher.dispose(); }
+  dispose(): void { this.stopped = true; clearInterval(this.timer); clearTimeout(this.resyncTimer); this.publisher.dispose(); this.publisherDisposed = true; }
   /** Send the final bounded queue once, then stop. No post-game heartbeat or resync replies. */
   complete(): Promise<void> {
     if (this.completing) return this.completing;
@@ -155,15 +171,20 @@ export class StreamBroadcastHost {
   }
   /** Best-effort shared closure, without a per-viewer request or a durable write. */
   close(quit = false): Promise<void> {
+    if (this.publisherDisposed) {
+      this.publisher = new StreamBroadcaster(this.game.session.id, this.send, this.failed, this.game.session.host.id);
+      this.publisherDisposed = false;
+    }
     this.stopped = true; clearInterval(this.timer); clearTimeout(this.resyncTimer);
     this.game.timing!.revision++;
     const state = this.snapshot();
     state.online = false; state.paused = true; state.clue = null;
-    if (quit) state.phase = 'waiting';
-    return new Promise(resolve => {
-      const done = () => { clearTimeout(timeout); this.dispose(); resolve(); };
-      const timeout = setTimeout(done, 10_000);
-      void this.publisher.offer('state', { type: 'state', state }, 0, done, done).catch(done);
+    if (quit) { state.phase = 'waiting'; state.ended = true; }
+    return new Promise((resolve, reject) => {
+      const done = (error?: unknown) => { clearTimeout(timeout); this.dispose(); if (quit && error) reject(error); else resolve(); };
+      const failed = () => done(Error('Twitch could not send the game update.'));
+      const timeout = setTimeout(failed, 35_000);
+      void this.publisher.offer('termination', { type: 'state', state }, -1, () => done(), failed).catch(done);
     });
   }
 }

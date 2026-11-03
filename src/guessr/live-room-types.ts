@@ -12,6 +12,7 @@ export interface LiveRoomView {
   phase: 'waiting' | 'guess' | 'reveal' | 'complete';
   online: boolean;
   paused: boolean;
+  ended?: boolean;
   round: number;
   roundId: string | null;
   clue: string | null;

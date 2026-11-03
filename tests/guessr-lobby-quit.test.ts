@@ -47,7 +47,7 @@ it('explains the unconfigured daily and returns home without querying Pro authen
 it('quits the demo only after confirmation and keeps completed history', async () => {
   await import('../src/guessr/main');
   expect(button('Continue demo')).toBeDefined();
-  button('Quit game').click();
+  button('Exit game').click();
   expect(saved.has(imageKey)).toBe(true);
   expect(document.querySelector('.lobby-resume')).not.toBeNull();
   await app.confirm.mock.calls[0][0]();
@@ -66,7 +66,7 @@ it('resumes the most recently played daily and forfeits it without deleting an o
   expect(button('Continue daily')).toBeDefined();
   expect(button('Continue demo')).toBeUndefined();
   expect(app.api).not.toHaveBeenCalled(); expect(app.auth).not.toHaveBeenCalled();
-  button('Quit game').click();
+  button('Exit game').click();
   expect(app.confirm.mock.calls[0][1]).toContain('cannot restart this daily');
   await app.confirm.mock.calls[0][0]();
   expect(app.api).toHaveBeenCalledExactlyOnceWith('/api/attempts/daily-1/quit', { body: {} });
@@ -79,7 +79,7 @@ it('retains the daily bookmark if the quit request fails', async () => {
   saved.set(ACTIVE_MODE_KEY, 'daily');
   saved.set(DAILY_RESUME_KEY, JSON.stringify({ id: 'daily-1', day: '2026-10-22', round: 0, totalRounds: 5, completedRounds: 0 }));
   app.api.mockRejectedValue(Error('Offline'));
-  await import('../src/guessr/main'); button('Quit game').click();
+  await import('../src/guessr/main'); button('Exit game').click();
   await expect(app.confirm.mock.calls[0][0]()).rejects.toThrow('Offline');
   expect(saved.has(DAILY_RESUME_KEY)).toBe(true);
   expect(button('Continue daily')).toBeDefined();

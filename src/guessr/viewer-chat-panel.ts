@@ -1,5 +1,5 @@
 import type { TwitchViewer } from './twitch-viewer';
-import { streamerProStatus } from './streamer-pro-status';
+import { streamerProStatus, hasKnownStreamerPro } from './streamer-pro-status';
 import type { TwitchChatStatus } from './twitch-chat';
 import { bindText, onGuessrLanguageChanged, tr } from './i18n';
 import { twitchMessageText } from './twitch-viewer';
@@ -11,12 +11,12 @@ import type { StreamChatMessage } from './stream-state';
 
 /** A compact game connection bar. The transport channel is never a chat UI. */
 export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, onChangeStreamer?: () => void,
-  events?: { message(message: StreamChatMessage): void; status(status: TwitchChatStatus, detail: string): void }) {
+  events?: { message(message: StreamChatMessage): void; status(status: TwitchChatStatus, detail: string): void }, gameId?: string) {
   const panel = document.createElement('section'); panel.className = 'game-panel stream-connection-bar';
   const header = document.createElement('div'); header.className = 'stream-chat-header';
   const title = document.createElement('strong');
   const identity = document.createElement('div'); identity.className = 'stream-chat-identity';
-  const pro = streamerProStatus({ local: !gameApiOrigin() && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) });
+  const pro = streamerProStatus({ channel: initialChannel, local: !gameApiOrigin() && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) });
   const changeStreamer = bindText(document.createElement('button'), 'Exit game');
   changeStreamer.type = 'button'; changeStreamer.className = 'btn btn-sm btn-outline theme-secondary stream-change-channel';
   changeStreamer.onclick = () => onChangeStreamer?.();
@@ -64,7 +64,7 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
     const state = viewer.getState();
     header.hidden = !channel;
     changeStreamer.hidden = !channel || !onChangeStreamer;
-    gift.hidden = !channel || hasGame || state.login === channel;
+    gift.hidden = !channel || !!gameId || hasGame || hasKnownStreamerPro(channel) || state.login === channel;
     bindText(gift, 'Gift Pro to {{channel}}', { channel }); giftHelp.update();
     title.textContent = channel;
     actions.hidden = gift.hidden;

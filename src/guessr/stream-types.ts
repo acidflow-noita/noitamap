@@ -91,6 +91,8 @@ export interface StreamGame {
   shareAnnouncements?: boolean;
   /** Confirmed initial invitation posts, retained if the host refreshes in the lobby. */
   initialShareCount?: number;
+  /** Unique authenticated Twitch identities seen joining this game's transport. */
+  joinedPlayers?: Record<string, { login: string; name: string }>;
   timing?: import('./stream-timing').StreamTiming;
   receipts?: Record<number, string[]>;
   participants: StreamParticipant[];

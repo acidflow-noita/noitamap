@@ -62,9 +62,19 @@
 .stream-timer-settings { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-block: .5rem; }
 .stream-timer-settings input { inline-size: 6rem; }
 .stream-round-timer { font-size: 1.125rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.stream-start-panel { --bs-card-bg: var(--surface-1); --bs-card-color: var(--text); --bs-card-border-color: var(--border); --bs-card-border-radius: var(--radius-panel); align-self: center; inline-size: min(100%, 40rem); margin-block: auto; padding: var(--game-gutter); gap: var(--game-gutter); text-align: center; }
+.game-panel.stream-start-panel { display: flex; flex-direction: column; flex: none; align-items: center; align-self: center; inline-size: min(100%, 44rem); margin-block: auto; padding: clamp(1.5rem, 4vw, 3rem); gap: 1rem; text-align: center; border: 1px solid var(--border-strong); border-radius: var(--radius-panel); color: var(--text); background: radial-gradient(ellipse at 50% 0, color-mix(in oklab, var(--game-action) 20%, transparent), transparent 75%), var(--surface-1); box-shadow: 0 1rem 3rem #0003; }
 .stream-start-panel > :is(p, h2) { margin: 0; }
+.stream-start-panel > h2 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 650; }
+.stream-start-panel > p { max-inline-size: 40ch; color: var(--text-muted); }
+.stream-start-panel > .badge-subtle { align-self: center; }
 .stream-start-panel > button { align-self: center; min-inline-size: 12rem; }
+.stream-waiting-timer { display: block; min-block-size: 1.1em; font-size: 1.75rem; line-height: 1.1; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
+.stream-waiting-timer[data-clock='true'] { font-size: clamp(4rem, 8vw, 6rem); }
+.stream-start-panel > .progress { inline-size: min(100%, 24rem); --bs-progress-height: .5rem; --bs-progress-bg: var(--border); --bs-progress-bar-bg: var(--game-action); }
+.stream-joined-count { font-size: 1rem; font-variant-numeric: tabular-nums; }
+.stream-joined-names { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; max-inline-size: 100%; }
+.stream-joined-names:empty { display: none; }
+.stream-joined-names > span { max-inline-size: 12rem; overflow: hidden; text-overflow: ellipsis; }
 .stream-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--game-gutter); padding: .5rem .75rem; margin: 0; min-block-size: 3.5rem; }
 .stream-toolbar-navigation, .stream-toolbar-actions { display: flex; align-items: center; gap: .75rem; min-inline-size: 0; }
 .stream-toolbar-actions { justify-content: flex-end; }
@@ -115,7 +125,8 @@
 .stream-picker .map-board { flex: 1; min-block-size: 0; block-size: auto; }
 .stream-guess-actions { display: grid; flex: none; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .25rem var(--game-gutter); padding: .5rem .75rem; border-top: 1px solid var(--border); }
 .stream-guess-actions > .stream-delivery { grid-column: 1 / -1; grid-row: 1; }
-.stream-guess-actions > .primary { grid-column: 2; grid-row: 2; inline-size: 10rem; min-block-size: 2.75rem; }
+.stream-send-control { grid-column: 2; grid-row: 2; display: inline-flex; inline-size: 10rem; }
+.stream-send-control > .primary { inline-size: 100%; min-block-size: 2.75rem; }
 .stream-guess-actions > .stream-secondary-actions { grid-column: 1; grid-row: 2; min-block-size: 1.75rem; display: flex; align-items: center; gap: .75rem; font-size: .8125rem; }
 .stream-secondary-actions > [hidden] { display: none; }
 .stream-maximum { flex: 1; }
@@ -156,7 +167,7 @@
   font-size: .625rem;
 }
 .stream-pro-status[data-pro-status="unknown"] { color: var(--text-muted); }
-.stream-chat-header .stream-gift-pro { max-width: 100%; min-inline-size: 0; margin: 0; padding: .5rem .75rem; white-space: normal; overflow-wrap: anywhere; font-size: .8125rem; }
+.stream-chat-header .stream-gift-pro { width: auto; inline-size: max-content; max-inline-size: min(15rem, 100%); flex: 0 0 auto; min-inline-size: 0; margin: 0; padding: .5rem .75rem; white-space: normal; overflow-wrap: anywhere; font-size: .8125rem; }
 .stream-chat-header .stream-gift-pro[hidden] { display: none; }
 .stream-chat-state { --connection-color: var(--danger-fg, #f87171); display: inline-flex; flex: none; align-items: center; justify-content: center; inline-size: 1.25rem; block-size: 1.25rem; border-radius: 50%; cursor: default; }
 .stream-chat-state[data-connection="connected"] { --connection-color: var(--daily-strong); }

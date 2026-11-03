@@ -507,5 +507,10 @@
   "You have finished all 10 rounds. Waiting for the streamer.": "Du har klarat alla 10 omgångar. Väntar på att streamaren ska avsluta spelet.",
   "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} lämnade in ett gissning för omgång {{round}} i {{channel}}:s spel {{game}}.",
   "Game link shared in chat.": "Länk till spelet har delats i chatten.",
-  "The link is posted three times as normal messages, or once as an announcement.": "Länken publiceras tre gånger som vanliga inlägg, eller en gång som ett meddelande."
+  "The link is posted three times as normal messages, or once as an announcement.": "Länken publiceras tre gånger som vanliga inlägg, eller en gång som ett meddelande.",
+  "Chatters joined: {{total}}": "Antal deltagare i chatten: {{total}}",
+  "End this game?": "Ska vi avsluta det här spelet?",
+  "End game": "Avsluta spelet",
+  "Game ended": "Matchen är slut",
+  "The streamer ended this game.": "Streamern avslutade den här matchen."
 }

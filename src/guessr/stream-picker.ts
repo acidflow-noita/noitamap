@@ -20,6 +20,7 @@ import { streamResultsView } from './stream-results';
 import { localizedDistance } from './messages';
 import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, onGuessrLanguageChanged, tr } from './i18n';
 import { pageHeading } from './page-heading';
+import { hoverHelp } from './hover-help';
 
 const ROUND_STORAGE_KEY = 'noitamap-guessr-viewer-round-v1';
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text: string | (() => string) = '') {
@@ -40,7 +41,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const personal = new StreamViewerHistory(config.bounds);
   personal.identify(requestedGame, viewer.getState().userId ?? viewer.getState().savedUserId ?? null);
   let feed: ReturnType<typeof watchTwitchGame> | undefined;
-  let reviewedRound: number | null = null, lastSendAt = 0, actionError = '';
+  let reviewedRound: number | null = null, lastSendAt = 0, actionError = '', sendReason = '';
   let recoveryRequested = '';
   let unavailableGame = false;
   let channel = /^[a-z0-9_]{1,25}$/.test(candidate) ? candidate : '';
@@ -99,10 +100,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
 
   const layout = node('div', 'stream-viewer-layout has-clue');
   const cluePanel = node('section', 'game-panel stream-viewer-clue');
-  const emptyClue = (detail = 'The next clue appears here automatically.') => {
+  const emptyClue = (detail = 'The next clue appears here automatically.', title = 'Waiting for a round') => {
     bindAttribute(cluePanel, 'aria-label', 'Waiting for a round');
     const empty = node('div', 'stream-clue-empty');
-    empty.append(node('strong', '', 'Waiting for a round'), node('p', '', detail));
+    empty.append(node('strong', '', title), node('p', '', detail));
     if (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) {
       const local = node('a', '', 'Start a local test round'); local.href = '/guess/stream/'; empty.append(local);
     }
@@ -164,13 +165,15 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     }
     finally { sending = false; if (!closed) refresh(); }
   }, 'primary');
+  const sendControl = node('span', 'stream-send-control'); sendControl.append(send);
+  const sendHelp = hoverHelp(sendControl, () => tr(sendReason), send);
   const secondaryActions = node('div', 'stream-secondary-actions');
   secondaryActions.append(budget, previousResult, result, retry);
-  actions.append(delivery, send, secondaryActions); mapPanel.append(revealBar, signIn, map, actions); layout.append(mapPanel);
+  actions.append(delivery, sendControl, secondaryActions); mapPanel.append(revealBar, signIn, map, actions); layout.append(mapPanel);
   const resultsPanel = node('section', 'game-panel stream-viewer-results'); resultsPanel.hidden = true;
   layout.append(resultsPanel);
   const chat = viewerChatPanel(viewer, channel, leave,
-    { message: message => { void feed?.receive(message); }, status: (status, detail) => feed?.transport(status, detail) });
+    { message: message => { void feed?.receive(message); }, status: (status, detail) => feed?.transport(status, detail) }, requestedGame);
   const toolbar = chat.panel.querySelector<HTMLElement>('.stream-chat-header')!;
   toolbar.classList.add('stream-toolbar');
   toolbar.querySelector('.stream-chat-heading')?.classList.add('stream-toolbar-navigation');
@@ -322,6 +325,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         personal.identify(state.gameId ?? requestedGame, viewer.getState().userId ?? viewer.getState().savedUserId ?? null);
         chat.setProStatus(state);
         setRound(state.clue, state.gameId && state.roundId ? `${state.gameId}/${state.roundId}` : `waiting/${channel}`);
+        if (state.ended) emptyClue('The streamer ended this game.', 'Game ended');
+        else if (state.timing?.phase === 'lobby') emptyClue('Waiting for the streamer to start the game.', 'Ready to start');
         if (twitchUpdates && feed) {
           const recovery = personal.recovery(state.timing?.revealed ?? 0);
           const signature = JSON.stringify(recovery);
@@ -385,7 +390,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (twitchUpdates && live?.timing) {
       const timing = live.timing, now = gameNow(), starting = Math.max(0, Math.ceil((timing.startsAt - now) / 1000));
       const remaining = Math.max(0, Math.ceil(((timing.deadline ?? now) - now) / 1000));
-      timer.textContent = live.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) })
+      timer.textContent = live.ended ? tr('Game ended') : live.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) })
         : live.phase !== 'guess' ? tr('Round closed') : timing.deadline === null ? tr('Manual timing')
         : `${formatGuessrNumber(Math.floor(remaining / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(remaining % 60, { minimumIntegerDigits: 2 })}`;
       board.setLocked(!canGuess() || reviewedRound !== null);
@@ -395,19 +400,26 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         countdown.textContent = timer.textContent;
       } else countdown?.remove();
     }
-    bindAttribute(send, 'title', isHost() ? 'You are the streamer. Submit your guess in the streamer tab.' : !channel ? 'Choose a Twitch channel'
+    const disabledReason = live?.ended ? 'The streamer ended this game.' : !state.connected ? 'Sign in with Twitch'
+      : isHost() ? 'You are the streamer. Submit your guess in the streamer tab.' : !channel ? 'Open the game link shared by your streamer.'
+      : live?.timing?.phase === 'lobby' ? 'Waiting for the streamer to start the game.'
       : !legacyPayload && connectionState !== 'connected' ? 'The NoitaGuessr game connection is unavailable'
       : !snapshot ? 'Waiting for the streamer to start a round'
       : live?.phase === 'complete' ? 'This game has finished'
       : live?.phase === 'reveal' ? 'This round is closed'
       : live && !live.online ? 'The streamer is disconnected from NoitaGuessr'
       : live?.paused ? twitchUpdates ? 'The streamer is disconnected from NoitaGuessr' : 'The streamer has paused this round'
-      : !state.connected ? 'Sign in with Twitch' : !point ? 'Place a pin first' : '');
+      : live?.timing && gameNow() < live.timing.startsAt ? 'Your round has not started yet.'
+      : live?.timing?.deadline && gameNow() >= live.timing.deadline ? 'This round is closed'
+      : !point ? 'Place a pin first' : '';
+    sendControl.tabIndex = send.disabled ? 0 : -1;
+    if (disabledReason !== sendReason) { sendReason = disabledReason; sendHelp.update(); }
+    if (!sending && !actionError && !own?.submitted && disabledReason) bindText(delivery, disabledReason);
     const needsReceipt = twitchUpdates && own?.pending && Date.now() - lastSendAt > 15_000;
-    retry.hidden = !!legacyPayload || live?.phase === 'complete' || connectionState !== 'stopped' && !needsReceipt;
+    retry.hidden = !!legacyPayload || live?.ended || live?.phase === 'complete' || !['stopped', 'retrying'].includes(connectionState) && !needsReceipt;
     bindText(retry, needsReceipt && connectionState !== 'stopped' ? 'Check delivery' : 'Reconnect');
     if (!legacyPayload && connectionState === 'connected') {
-      bindText(roomStatus, live?.timing?.phase === 'lobby' ? 'Waiting for the streamer to start the game.' : !live || live.phase === 'waiting' ? 'No active NoitaGuessr game'
+      bindText(roomStatus, live?.ended ? 'The streamer ended this game.' : live?.timing?.phase === 'lobby' ? 'Waiting for the streamer to start the game.' : !live || live.phase === 'waiting' ? 'No active NoitaGuessr game'
         : live.phase === 'complete' ? 'Game finished' : live.phase === 'reveal' && live.round === STREAM_ROUNDS ? 'You have finished all 10 rounds. Waiting for the streamer.' : live.phase === 'reveal' ? 'Round closed'
         : !live.online ? 'Streamer disconnected from NoitaGuessr' : live.paused ? 'Paused' : isHost() ? 'You are the streamer' : '');
     } else bindText(roomStatus, connectionDetail);
@@ -428,7 +440,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     closed = true; room?.dispose(); unsubscribe(); unsubscribeLanguage(); chat.dispose(); board.destroy(); viewport?.destroy(); clearControls?.();
     clearInterval(ticks);
     window.removeEventListener('offline', refresh); window.removeEventListener('online', refresh);
-    connection.remove(); round.remove(); roomStatus.remove();
+    sendHelp.dispose(); connection.remove(); round.remove(); roomStatus.remove();
     page?.classList.remove('stream-viewer-page'); main.classList.remove('stream-viewer-shell');
   };
 }

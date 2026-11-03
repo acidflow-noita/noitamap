@@ -516,5 +516,10 @@
   "You have finished all 10 rounds. Waiting for the streamer.": "Vous avez terminé les 10 manches. En attente que le streamer termine la partie.",
   "{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.": "{{player}} a soumis une réponse pour le tour {{round}} dans le jeu {{game}} de la chaîne {{channel}}.",
   "Game link shared in chat.": "Lien vers le jeu partagé dans le chat.",
-  "The link is posted three times as normal messages, or once as an announcement.": "Le lien est publié trois fois sous forme de messages normaux, ou une fois sous forme d'annonce."
+  "The link is posted three times as normal messages, or once as an announcement.": "Le lien est publié trois fois sous forme de messages normaux, ou une fois sous forme d'annonce.",
+  "Chatters joined: {{total}}": "Nombre de participants au chat : {{total}}",
+  "End this game?": "Mettre fin à cette partie ?",
+  "End game": "Terminer la partie",
+  "Game ended": "La partie est terminée",
+  "The streamer ended this game.": "C'est le streamer qui a mis fin à cette partie."
 }
