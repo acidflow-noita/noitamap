@@ -47,7 +47,7 @@ function stripes() {
   return context;
 }
 
-function drawingFixture(filter = smoothInstantTile, animate = true, edgeZoom = Infinity) {
+function drawingFixture(filter = smoothInstantTile, animate = true, edgeZoom = PIXEL_MAP_DRAW_OPTIONS.smoothTileEdgesMinZoom) {
   const canvas = createCanvas(96, 32), sketch = createCanvas(96, 32);
   const drawer = Object.create(OSD.CanvasDrawer.prototype);
   const states: boolean[] = [];
@@ -138,11 +138,32 @@ describe('pixel map rendering through the installed OpenSeadragon', () => {
     expect(drawer.sketchContext.imageSmoothingEnabled).toBe(false);
   });
 
-  it('keeps the installed tile-edge sketch pass crisp without disabling seam protection', () => {
+  it('documents the out-of-canvas copy in the upstream tile-edge sketch pass', () => {
     const { drawer, canvas, states, tile, image } = drawingFixture(smoothInstantTile, true, 1.1);
+    const copies = vi.spyOn(drawer.context, 'drawImage');
     drawer.draw([image([tile(.25), tile(16.25)], false, true), image([tile(48.25), tile(64.25)], true)]);
+    expect(copies.mock.calls.some((call: any[]) => call.length === 9 && (call[1] < 0 || call[2] < 0 || call[1] + call[3] > call[0].width || call[2] + call[4] > call[0].height))).toBe(true);
     expect(states).toEqual([false, false, false, false]);
     expect(mixedPixels(canvas, 1, 29)).toBe(0);
     expect(mixedPixels(canvas, 49, 29)).toBe(0);
+    const pixels = canvas.getContext('2d').getImageData(1, 2, 29, 10).data;
+    expect([...pixels].filter((_, i) => i % 4 === 3 && pixels[i] === 255).length).toBe(290);
   });
+  it('keeps terrain visible across seven zoom steps in both directions without out-of-bounds sketch copies', () => {
+    const { drawer, canvas, tile, image } = drawingFixture();
+    const copies = vi.spyOn(drawer.context, 'drawImage');
+    const zooms = [.25, .5, 1, 1.1, 1.2, 2, 4];
+    for (const zoom of [...zooms, ...[...zooms].reverse(), ...zooms]) {
+      const width = 16 * zoom, tiles = Array.from({ length: Math.ceil(96 / width) + 1 }, (_, i) => ({ ...tile(i * width - .25, width + 1), hasTransparency: false }));
+      const terrain = image(tiles, false, true); terrain.viewportToImageZoom = () => zoom;
+      copies.mockClear(); drawer.draw([terrain]);
+      const pixels = canvas.getContext('2d').getImageData(0, 1, 96, 1).data;
+      for (let x = 0; x < 96; x++) {
+        expect(pixels[x * 4 + 3], `coverage at zoom ${zoom}, x=${x}`).toBe(255);
+        expect(pixels[x * 4] + pixels[x * 4 + 2]).toBe(255);
+      }
+      expect(copies.mock.calls.every((call: any[]) => call[0] !== drawer.sketchCanvas)).toBe(true);
+    }
+  });
+
 });

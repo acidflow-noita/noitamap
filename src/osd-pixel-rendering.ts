@@ -7,6 +7,11 @@ export const PIXEL_MAP_DRAW_OPTIONS = {
   immediateRender: true,
   imageSmoothingEnabled: false,
   blendTime: 0,
+  // Pixel maps already have overlapping static tiles and aligned terrain edges.
+  // OSD 6.1's additional >110% edge-smoothing pass copies a translated source
+  // rectangle beyond its sketch canvas. Avoid this zoom-dependent canvas copy,
+  // which can drop terrain on some Canvas2D backends, and keep nearest pixels.
+  smoothTileEdgesMinZoom: Infinity,
   // One request per frame takes ~0.7s to refill an FHD view even when every
   // requested image is already in the terrain cache. Cached copies can enter
   // immediately; generated cold tiles wait in admission before any OSD timeout.
