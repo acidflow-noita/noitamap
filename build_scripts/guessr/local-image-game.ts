@@ -1,6 +1,6 @@
 /** Local development adapter. Public images are served separately; private
  * catalog and session files never pass through a static asset route. */
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
   ImageGameError,
@@ -14,6 +14,7 @@ import { StreamService } from "../../src/guessr/stream-server.ts";
 import {
   STREAM_MAX_DOCUMENT_BYTES,
   type StreamPublishWireInput,
+  type StreamPublishedResult,
 } from "../../src/guessr/stream-types.ts";
 import { LocalLiveRooms } from './local-live-room.ts';
 import { liveRoomGame } from '../../src/guessr/live-room-game.ts';
@@ -200,6 +201,14 @@ export function localImageGameMiddleware(root: string, rooms = new LocalLiveRoom
           }
           if (typeof body.roundId !== 'string') throw new ImageGameError(400, 'Invalid round.');
           return send(200, await room.advance(localHost.sub, body.gameId, body.roundId));
+        }
+        const historyPath = path.match(/^\/stream\/history\/([a-z0-9_]{1,25})$/);
+        if (historyPath && req.method === 'GET') {
+          const files = (await readdir(streamDirectory)).filter(file => /^[a-f0-9-]{36}\.json$/.test(file));
+          const games = (await Promise.all(files.map(async file => JSON.parse(await readFile(resolve(streamDirectory, file), 'utf8')) as StreamPublishedResult)))
+            .filter(result => result.host.login === historyPath[1]).sort((a, b) => b.finishedAt - a.finishedAt)
+            .map(result => ({ id: result.id, finishedAt: result.finishedAt, players: result.players.length, hostName: result.host.name }));
+          return send(200, { games });
         }
         const resultPath = path.match(/^\/stream\/results\/([a-f0-9-]{36})$/);
         if (resultPath && req.method === "GET") {

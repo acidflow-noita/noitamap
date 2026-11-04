@@ -35,9 +35,9 @@ describe('chat first, timed streamer rounds', () => {
     closeStreamRound(f.game, streamAnswer, streamNow + 14000);
     revealStreamRound(f.game, await f.service.reveal(f.session.rounds[0].token, streamHost, streamNow + 14000), streamNow + 14000);
     expect(shortenFinishedWindow(f.game, streamNow + 14000)).toBe(true);
-    expect(f.game.timing!.deadline).toBe(streamNow + 22000);
-    expect(streamTick(f.game, streamNow + 22000)).toBe('advance');
-    advanceStreamRound(f.game, streamNow + 22000);
+    expect(f.game.timing!.deadline).toBe(streamNow + 29000);
+    expect(streamTick(f.game, streamNow + 29000)).toBe('advance');
+    advanceStreamRound(f.game, streamNow + 29000);
     expect(f.game.round).toBe(1); expect(f.game.timing!.chatRound).toBe(2);
   });
 
@@ -91,6 +91,19 @@ describe('chat first, timed streamer rounds', () => {
     expect(streamTick(f.game, f.game.timing!.deadline!)).toBe('advance');
   });
 
+  it('closes chat on its deadline even when the streamer still has 15 seconds to read results', async () => {
+    const f = await fixture(); startHostWindow(f.game, streamNow + 93000);
+    const deadline = f.game.timing!.deadline!;
+    closeStreamRound(f.game, streamAnswer, deadline - 1000);
+    revealStreamRound(f.game, await f.service.reveal(f.session.rounds[0].token, streamHost, deadline - 500), deadline - 500);
+    expect(streamTick(f.game, deadline)).toBeNull();
+    expect(f.game.timing!.windows[1]!.closed).toBe(true);
+    expect(f.game.timing!.resultsUntil).toBe(deadline + 14500);
+    expect(f.guess(1, deadline + 1)).toBe('closed');
+    expect(streamTick(f.game, deadline + 14499)).toBeNull();
+    expect(streamTick(f.game, deadline + 14500)).toBe('advance');
+  });
+
   it('supports explicit manual closure without a deadline', async () => {
     const f = await fixture(0);
     expect(streamTick(f.game, streamNow + 500_000)).toBeNull();
@@ -125,9 +138,9 @@ describe('chat first, timed streamer rounds', () => {
       closeStreamRound(f.game, i === 3 ? null : streamAnswer, end);
       // Even a slow reveal response must leave time to inspect the round results.
       revealStreamRound(f.game, await f.service.reveal(f.session.rounds[i].token, streamHost, end + 10000), end + 10000);
-      expect(streamTick(f.game, end + 17999)).toBeNull();
-      expect(streamTick(f.game, end + 18000)).toBe(i < 9 ? 'advance' : 'finish');
-      advanceStreamRound(f.game, end + 18000);
+      expect(streamTick(f.game, end + 24999)).toBeNull();
+      expect(streamTick(f.game, end + 25000)).toBe(i < 9 ? 'advance' : 'finish');
+      advanceStreamRound(f.game, end + 25000);
     }
     expect(f.game.stage).toBe('complete');
     expect(f.game.timing!.windows.filter(Boolean)).toHaveLength(10);

@@ -523,5 +523,21 @@
   "This guess belongs to a different round.": "Dit antwoord hoort bij een andere ronde.",
   "A newer guess has already been received.": "Er is al een recenter antwoord binnengekomen.",
   "The streamer did not receive this guess.": "De streamer heeft dit antwoord niet ontvangen.",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Verzonden naar Twitch. Ik wacht op bevestiging van de streamer."
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Verzonden naar Twitch. Ik wacht op bevestiging van de streamer.",
+  "Your round {{round}} / {{total}}": "Je ronde {{round}} / {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "Deze browser kon het resultaat niet opslaan. Download een kopie voordat u deze pagina sluit.",
+  "Saved on this device. Not published yet.": "Op dit apparaat opgeslagen. Nog niet gepubliceerd.",
+  "Not published. Retry publishing to make the result available to everyone.": "Niet gepubliceerd. Probeer het opnieuw te publiceren om het resultaat voor iedereen beschikbaar te maken.",
+  "The result was not saved. Please retry publishing.": "Het resultaat is niet opgeslagen. Probeer het publiceren nogmaals.",
+  "Streamer": "Streamer",
+  "Players": "Deelnemers aan het spel",
+  "Load more": "Meer laden",
+  "Could not load game history.": "De spelgeschiedenis kon niet worden geladen.",
+  "Result hosting is not configured.": "De hosting van Result is niet geconfigureerd.",
+  "Invalid history page.": "Ongeldige geschiedenis-pagina.",
+  "All 10 rounds for chatters are over.": "Alle 10 rondes voor de chatters zijn afgelopen.",
+  "Select a streamer to see their saved game results.": "Kies een streamer om zijn of haar opgeslagen spelresultaten te bekijken.",
+  "No published game results yet.": "Er zijn nog geen wedstrijdresultaten gepubliceerd.",
+  "Your last 30 games in Demo mode on this device.": "Je laatste 30 spellen in de demomodus op dit apparaat.",
+  "You have not finished a game in Demo mode yet.": "Je hebt nog geen spel in de demomodus uitgespeeld."
 }

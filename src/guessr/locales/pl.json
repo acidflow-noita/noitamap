@@ -541,5 +541,21 @@
   "This guess belongs to a different round.": "Ta odpowiedź dotyczy innej rundy.",
   "A newer guess has already been received.": "Otrzymano już nowszą odpowiedź.",
   "The streamer did not receive this guess.": "Streamer nie otrzymał tej odpowiedzi.",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Wysłano na Twitch. Czekamy na potwierdzenie od streamera."
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Wysłano na Twitch. Czekamy na potwierdzenie od streamera.",
+  "Your round {{round}} / {{total}}": "Twoja runda {{round}} / {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "Ta przeglądarka nie mogła zapisać wyniku. Przed zamknięciem tej strony pobierz kopię.",
+  "Saved on this device. Not published yet.": "Zapisano na tym urządzeniu. Jeszcze nieopublikowane.",
+  "Not published. Retry publishing to make the result available to everyone.": "Nie opublikowano. Spróbuj ponownie opublikować, aby wynik był dostępny dla wszystkich.",
+  "The result was not saved. Please retry publishing.": "Wynik nie został zapisany. Spróbuj ponownie opublikować.",
+  "Streamer": "Streamer",
+  "Players": "Uczestnicy gry",
+  "Load more": "Pobierz więcej",
+  "Could not load game history.": "Nie udało się załadować historii gier.",
+  "Result hosting is not configured.": "Hosting wyników nie został skonfigurowany.",
+  "Invalid history page.": "Nieprawidłowa strona historii.",
+  "All 10 rounds for chatters are over.": "Wszystkie 10 rund dla uczestników czatu dobiegły końca.",
+  "Select a streamer to see their saved game results.": "Wybierz streamera, aby wyświetlić wyniki jego zapisanych rozgrywek.",
+  "No published game results yet.": "Nie opublikowano jeszcze wyników meczu.",
+  "Your last 30 games in Demo mode on this device.": "Twoje ostatnie 30 gier w trybie demo na tym urządzeniu.",
+  "You have not finished a game in Demo mode yet.": "Nie ukończyłeś jeszcze żadnej gry w trybie demo."
 }

@@ -541,5 +541,21 @@
   "This guess belongs to a different round.": "Этот ответ относится к другому раунду.",
   "A newer guess has already been received.": "Уже поступил более свежий ответ.",
   "The streamer did not receive this guess.": "Стример не получил этот ответ.",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Отправлено на Twitch. Ожидается подтверждение от стримера."
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Отправлено на Twitch. Ожидается подтверждение от стримера.",
+  "Your round {{round}} / {{total}}": "Ваш раунд {{round}} из {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "Этот браузер не смог сохранить результат. Скачайте копию, прежде чем закрывать эту страницу.",
+  "Saved on this device. Not published yet.": "Сохранено на этом устройстве. Еще не опубликовано.",
+  "Not published. Retry publishing to make the result available to everyone.": "Не опубликовано. Повторите попытку публикации, чтобы результат стал доступен всем.",
+  "The result was not saved. Please retry publishing.": "Результат не был сохранен. Пожалуйста, повторите попытку публикации.",
+  "Streamer": "Стример",
+  "Players": "Участники игры",
+  "Load more": "Показать ещё",
+  "Could not load game history.": "Не удалось загрузить историю игр.",
+  "Result hosting is not configured.": "Хостинг результатов не настроен.",
+  "Invalid history page.": "Неверная страница истории.",
+  "All 10 rounds for chatters are over.": "Все 10 раундов для участников чата завершились.",
+  "Select a streamer to see their saved game results.": "Выберите стримера, чтобы посмотреть результаты его сохраненных игр.",
+  "No published game results yet.": "Результаты матчей пока не опубликованы.",
+  "Your last 30 games in Demo mode on this device.": "Ваши последние 30 игр в режиме «Демо» на этом устройстве.",
+  "You have not finished a game in Demo mode yet.": "Вы ещё не завершили игру в демо-режиме."
 }

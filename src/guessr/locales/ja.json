@@ -523,5 +523,21 @@
   "This guess belongs to a different round.": "この回答は別のラウンドに属しています。",
   "A newer guess has already been received.": "すでに新しい回答が寄せられています。",
   "The streamer did not receive this guess.": "そのストリーマーはこの回答を受け取らなかった。",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Twitchに送信しました。配信者の確認を待っています。"
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Twitchに送信しました。配信者の確認を待っています。",
+  "Your round {{round}} / {{total}}": "現在のラウンド {{round}} / {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "このブラウザでは結果を保存できませんでした。このページを閉じる前に、結果をダウンロードしてください。",
+  "Saved on this device. Not published yet.": "このデバイスに保存されました。まだ公開されていません。",
+  "Not published. Retry publishing to make the result available to everyone.": "公開されていません。結果をすべてのユーザーが閲覧できるようにするには、公開を再試行してください。",
+  "The result was not saved. Please retry publishing.": "結果が保存されませんでした。公開をもう一度お試しください。",
+  "Streamer": "・ストリーマー",
+  "Players": "ゲームの参加者",
+  "Load more": "さらに表示",
+  "Could not load game history.": "ゲーム履歴を読み込めませんでした。",
+  "Result hosting is not configured.": "Result Hosting が設定されていません。",
+  "Invalid history page.": "無効な履歴ページです。",
+  "All 10 rounds for chatters are over.": "チャット参加者の10ラウンドすべてが終了しました。",
+  "Select a streamer to see their saved game results.": "ストリーマーを選択して、そのストリーマーの保存済みゲーム結果を確認してください。",
+  "No published game results yet.": "まだ試合結果は公表されていません。",
+  "Your last 30 games in Demo mode on this device.": "このデバイスでのデモモードにおける直近30試合。",
+  "You have not finished a game in Demo mode yet.": "まだデモモードでゲームをクリアしていません。"
 }

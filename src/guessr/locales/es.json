@@ -532,5 +532,21 @@
   "This guess belongs to a different round.": "Esta respuesta pertenece a otra ronda.",
   "A newer guess has already been received.": "Ya se ha recibido una respuesta más reciente.",
   "The streamer did not receive this guess.": "El streamer no recibió esta respuesta.",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Enviado a Twitch. A la espera de la confirmación del streamer."
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Enviado a Twitch. A la espera de la confirmación del streamer.",
+  "Your round {{round}} / {{total}}": "Tu ronda {{round}} / {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "Este navegador no ha podido guardar el resultado. Descarga una copia antes de cerrar esta página.",
+  "Saved on this device. Not published yet.": "Guardado en este dispositivo. Aún no se ha publicado.",
+  "Not published. Retry publishing to make the result available to everyone.": "No se ha publicado. Vuelve a intentarlo para que el resultado esté disponible para todo el mundo.",
+  "The result was not saved. Please retry publishing.": "No se ha guardado el resultado. Intenta volver a publicar.",
+  "Streamer": "Streamer",
+  "Players": "Participantes en el juego",
+  "Load more": "Cargar más",
+  "Could not load game history.": "No se ha podido cargar el historial de partidas.",
+  "Result hosting is not configured.": "El alojamiento de resultados no está configurado.",
+  "Invalid history page.": "Página de historial no válida.",
+  "All 10 rounds for chatters are over.": "Ya han terminado las 10 rondas para los participantes en el chat.",
+  "Select a streamer to see their saved game results.": "Selecciona un streamer para ver los resultados de sus partidas guardadas.",
+  "No published game results yet.": "Aún no se han publicado los resultados de los partidos.",
+  "Your last 30 games in Demo mode on this device.": "Tus últimos 30 juegos en modo Demo en este dispositivo.",
+  "You have not finished a game in Demo mode yet.": "Aún no has terminado ninguna partida en modo demo."
 }

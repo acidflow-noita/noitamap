@@ -61,7 +61,9 @@ export class StreamBroadcastHost {
       online: !game.paused, paused: game.paused, round: round + 1, roundId: game.session.rounds[round].id,
       clue: timing.phase === 'lobby' ? null : this.clue(round), expiresAt: game.session.expiresAt,
       ...(game.published ? { resultId: game.session.id } : {}),
-      timing: { phase: timing.phase, startsAt: timing.startsAt, deadline: timing.deadline,
+      timing: { phase: timing.phase, startsAt: window?.opensAt ?? timing.startsAt,
+        deadline: timing.chatRound === null ? null : window?.closesAt ?? timing.deadline,
+        chatRound: timing.chatRound === null ? null : timing.chatRound + 1,
         hostRound: game.round + 1, seconds: timing.seconds,
         ...(timing.early ? { early: true } : {}),
         revealed: game.reveals.reduce((mask, reveal, i) => reveal ? mask | 1 << i : mask, 0) } };

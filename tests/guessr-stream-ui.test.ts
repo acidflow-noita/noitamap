@@ -3,15 +3,16 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { StreamUI, type StreamUIHooks } from '../src/guessr/stream-ui';
 import { STREAM_SESSION_KEY } from '../src/guessr/stream-types';
 import { StreamService } from '../src/guessr/stream-server';
-import { newStreamGame, closeStreamRound, revealStreamRound, advanceStreamRound } from '../src/guessr/stream-state';
+import { newStreamGame, closeStreamRound, revealStreamRound, advanceStreamRound, streamResult } from '../src/guessr/stream-state';
 import { streamSource, streamHost, streamSecret, streamNow, streamAnswer } from './helpers/guessr-stream';
 import { formatGuessCommand } from '../src/guessr/guess-command';
 import type { TwitchViewer } from '../src/guessr/twitch-viewer';
+import { startStreamTiming, startHostWindow } from '../src/guessr/stream-timing';
 import { TwitchAnnouncementError } from '../src/guessr/twitch-announcement';
 
 const mocks = vi.hoisted(() => ({ pause: vi.fn(async () => ({})), quit: vi.fn(async () => ({ phase: 'waiting' })), picker: vi.fn(), notice: vi.fn(), channel: vi.fn(), watchChat: vi.fn((_channel: string, _handlers: Parameters<TwitchViewer['watchChat']>[1]) => vi.fn()), start: vi.fn(), reveal: vi.fn(), post: vi.fn(async (_channel: string, _message: string, _announcements: boolean) => {}),
   shareAccess: true, announcementAccess: true, connect: vi.fn(async (_options: { announcements?: boolean }) => {}),
-  stateBroadcast: vi.fn(), revealBroadcast: vi.fn(), receipt: vi.fn(async () => {}), reject: vi.fn(async () => {}), roundView: vi.fn((main: HTMLElement, _game: unknown, _index: number, actions: HTMLElement) => { main.append(actions); return () => {}; }) }));
+  publish: vi.fn(), result: vi.fn(), stateBroadcast: vi.fn(), revealBroadcast: vi.fn(), receipt: vi.fn(async () => {}), reject: vi.fn(async () => {}), roundView: vi.fn((main: HTMLElement, _game: unknown, _index: number, actions: HTMLElement) => { main.append(actions); return () => {}; }) }));
 vi.mock('../src/guessr/stream-broadcast-host', () => ({ StreamBroadcastHost: class {
   start = async () => {}; publishState = mocks.stateBroadcast; publishReveal = mocks.revealBroadcast;
   remember = mocks.receipt; reject = mocks.reject; receiveRequest() {} dispose() {} close = async () => {}; complete = async () => {};
@@ -19,6 +20,7 @@ vi.mock('../src/guessr/stream-broadcast-host', () => ({ StreamBroadcastHost: cla
 vi.mock('../src/guessr/stream-round-results', () => ({ streamRoundResults: mocks.roundView }));
 vi.mock('../src/guessr/stream-api', () => ({ StreamApi: class {
   local = true; available = true; pause = mocks.pause; quit = mocks.quit; setLocalChannel = mocks.channel; start = mocks.start; reveal = mocks.reveal;
+  publish = mocks.publish; result = mocks.result;
   clock = async () => ({ now: Date.now() });
 } }));
 vi.mock('../src/guessr/stream-picker', () => ({ mountStreamPicker: () => { mocks.picker(); return () => {}; } }));
@@ -35,6 +37,7 @@ vi.mock('../src/guessr/button-notice', () => ({ buttonNotice: () => ({ show: moc
 let ui: StreamUI | undefined;
 beforeEach(() => {
   vi.clearAllMocks(); document.body.replaceChildren();
+  mocks.publish.mockReset(); mocks.result.mockReset();
   mocks.quit.mockReset().mockResolvedValue({ phase: 'waiting' });
   mocks.post.mockReset().mockResolvedValue(undefined);
   mocks.shareAccess = true; mocks.announcementAccess = true;
@@ -43,7 +46,7 @@ beforeEach(() => {
     if (options.announcements) mocks.announcementAccess = true;
   });
   const values = new Map<string, string>();
-  vi.stubGlobal('localStorage', { getItem: vi.fn((key: string) => values.get(key) ?? null),
+  vi.stubGlobal('localStorage', { get length() { return values.size; }, key: (i: number) => [...values.keys()][i] ?? null, getItem: vi.fn((key: string) => values.get(key) ?? null),
     setItem: vi.fn((key: string, value: string) => { values.set(key, value); }),
     removeItem: vi.fn((key: string) => { values.delete(key); }) });
 });
@@ -479,4 +482,73 @@ it('groups result navigation and shows green punctuation-free copy feedback besi
   expect(writeText).toHaveBeenCalledWith(location.origin + '/guess/results/' + game.session.id + '/');
   expect(mocks.notice).toHaveBeenCalledWith('Copied', 'success');
   expect(hooks.toast).not.toHaveBeenCalled();
+});
+
+
+it('recovers a failed publication from its result URL after a new game and F5, then retries exactly once', async () => {
+  const { game, hooks, service } = await fixture();
+  for (const round of game.session.rounds) {
+    closeStreamRound(game, streamAnswer, streamNow + 1);
+    revealStreamRound(game, await service.reveal(round.token, streamHost, streamNow + 2));
+    advanceStreamRound(game, streamNow + 3);
+  }
+  mocks.publish.mockRejectedValueOnce(new Error('Offline'));
+  history.replaceState(null, '', '/guess/stream/'); ui = new StreamUI(hooks); ui.game = game; ui.render();
+  await vi.waitFor(() => expect(document.getElementById('stream-publish-message')?.textContent).toContain('Not published.'));
+  expect(mocks.publish).toHaveBeenCalledOnce();
+  expect(document.getElementById('stream-publish-message')!.closest('.stream-publication')!.compareDocumentPosition(document.querySelector('.stream-score-table')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  // The next game replaces the singleton host session; the prior retry survives.
+  ui.game = (await fixture()).game; ui.save();
+  ui.suspend(); ui = new StreamUI(hooks); await ui.publicResult(game.session.id);
+  expect(mocks.result).not.toHaveBeenCalled();
+  await vi.waitFor(() => expect(document.body.textContent).toContain('Not published yet.'));
+  expect(document.body.textContent).not.toContain(game.session.token);
+  mocks.publish.mockResolvedValue({ id: game.session.id, published: true });
+  [...document.querySelectorAll('button')].find(button => button.textContent === 'Retry publishing')!.click();
+  await vi.waitFor(() => expect(document.getElementById('stream-publish-message')?.textContent).toContain('Result saved to the local test server.'));
+  expect(mocks.publish).toHaveBeenCalledTimes(2);
+  expect(mocks.publish.mock.calls[1][0]).toEqual({ token: game.session.token, finishedAt: game.finishedAt, players: streamResult(game).players });
+  expect(JSON.parse(localStorage.getItem(STREAM_SESSION_KEY)!).session.id).not.toBe(game.session.id);
+  expect([...document.querySelectorAll('button')].find(button => button.textContent === 'Copy result link')!.disabled).toBe(false);
+});
+
+
+it('labels the streamer’s last round and gives its rendered score table 15 seconds, not the unused round timer', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(streamNow);
+  const { game, hooks, service } = await fixture();
+  for (const round of game.session.rounds.slice(0, 9)) {
+    closeStreamRound(game, streamAnswer, streamNow + 1);
+    revealStreamRound(game, await service.reveal(round.token, streamHost, streamNow + 2));
+    advanceStreamRound(game, streamNow + 3);
+  }
+  startStreamTiming(game, 90, streamNow - 4000); startHostWindow(game, streamNow - 4000);
+  closeStreamRound(game, streamAnswer, streamNow);
+  revealStreamRound(game, await service.reveal(game.session.rounds[9].token, streamHost, streamNow), streamNow);
+  mocks.roundView.mockImplementationOnce((main, _game, _index, actions) => { vi.setSystemTime(streamNow + 3000); main.append(actions); return () => {}; });
+  history.replaceState(null, '', '/guess/stream/'); ui = new StreamUI(hooks); ui.game = game; ui.render();
+  expect(game.timing!.resultsUntil).toBe(streamNow + 18000);
+  expect(document.getElementById('stream-auto-next')!.textContent).toBe('View results: 00:15');
+  expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:15');
+  expect(document.querySelector('.stream-toolbar-round')!.textContent).toContain('Your round 10 / 10');
+  expect(document.body.textContent).toContain('All 10 rounds for chatters are over.');
+  vi.setSystemTime(streamNow + 4000); ui.render();
+  expect(game.timing!.resultsUntil).toBe(streamNow + 18000); // Rendering again must not restart the timer.
+});
+
+
+it('does not discard an unpublished game when both browser storage and the upload fail', async () => {
+  const { game, hooks, service } = await fixture();
+  for (const round of game.session.rounds) {
+    closeStreamRound(game, streamAnswer, streamNow + 1);
+    revealStreamRound(game, await service.reveal(round.token, streamHost, streamNow + 2));
+    advanceStreamRound(game, streamNow + 3);
+  }
+  vi.mocked(localStorage.setItem).mockImplementation(() => { throw new Error('Quota exceeded'); });
+  mocks.publish.mockRejectedValue(new Error('Offline'));
+  history.replaceState(null, '', '/guess/stream/'); ui = new StreamUI(hooks); ui.game = game; ui.render();
+  await vi.waitFor(() => expect(document.getElementById('stream-publish-message')?.textContent).toContain('Download a copy before closing'));
+  [...document.querySelectorAll('button')].find(button => button.textContent === 'Start another game')!.click();
+  await vi.waitFor(() => expect(hooks.toast).toHaveBeenCalledWith('This browser could not save the result. Download a copy before closing this page.'));
+  expect(document.querySelector('.finish-hero')).not.toBeNull();
+  expect(ui.game).toBe(game);
 });

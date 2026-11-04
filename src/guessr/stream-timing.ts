@@ -3,7 +3,7 @@ import type { StreamGame } from './stream-types';
 export const STREAM_DEFAULT_SECONDS = 90;
 export const STREAM_START_COUNTDOWN_MS = 3000;
 export const STREAM_DELIVERY_GRACE_MS = 5000;
-export const STREAM_RESULTS_HOLD_MS = 8000;
+export const STREAM_RESULTS_HOLD_MS = 15000;
 export const STREAM_EARLY_CLOSE_MS = 5000;
 
 export interface ChatRoundWindow { opensAt: number; closesAt: number | null; closed: boolean }
@@ -119,10 +119,11 @@ export function streamTick(game: StreamGame, now: number): StreamTick {
   const timing = game.timing;
   if (!timing || timing.phase === 'lobby' || game.paused || game.stage === 'complete') return null;
   timing.lastActiveAt = now;
+  // Closing chat's window and holding the host's results are separate events.
+  if (timing.deadline !== null && now >= timing.deadline) closeChatWindow(game, timing.deadline);
   if (game.stage === 'reveal' && timing.resultsUntil && now < timing.resultsUntil) return null;
   if (game.stage === 'reveal' && game.round === game.session.rounds.length - 1) return 'finish';
   if (timing.deadline === null || now < timing.deadline) return null;
-  closeChatWindow(game, timing.deadline);
   if (timing.phase === 'warmup') return 'warmup-finished';
   if (game.stage === 'guess') return 'submit';
   return game.stage === 'reveal' ? 'advance' : null;

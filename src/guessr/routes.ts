@@ -62,7 +62,9 @@ export function guessRouteUrl(pane: GuessPane, from: string | URL, details: { ch
   url.pathname = pane === 'stream-picker' && channel && /^[a-z0-9_]{1,25}$/i.test(channel)
     ? game ? `/guess/${channel.toLowerCase()}/${gameCode(game, transport)}/` : `/guess/stream/${channel.toLowerCase()}/`
     : pane === 'stream-result' && result && /^[a-f0-9-]{36}$/.test(result) ? `/guess/results/${result}/` : paths[pane];
-  for (const key of ['pane', 'channel', 'result', 'round']) url.searchParams.delete(key);
+  for (const key of ['pane', 'channel', 'result', 'round']) {
+    if (key !== 'channel' || pane !== 'history' || previous.pane !== 'history') url.searchParams.delete(key);
+  }
   if (pane !== 'ranked') for (const key of ['a', 'c']) url.searchParams.delete(key);
   const fragment = new URLSearchParams(url.hash.slice(1));
   if (pane !== 'stream-picker' && fragment.has('clue')) {

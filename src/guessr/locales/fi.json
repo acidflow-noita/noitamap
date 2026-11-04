@@ -523,5 +523,21 @@
   "This guess belongs to a different round.": "Tämä vastaus kuuluu toiseen kierrokseen.",
   "A newer guess has already been received.": "Uudempi vastaus on jo saatu.",
   "The streamer did not receive this guess.": "Streameri ei saanut tätä vastausta.",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Lähetetty Twitchiin. Odotetaan striimarin vahvistusta."
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Lähetetty Twitchiin. Odotetaan striimarin vahvistusta.",
+  "Your round {{round}} / {{total}}": "Kierros {{round}} / {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "Tämä selain ei voinut tallentaa tulosta. Lataa kopio ennen kuin suljet tämän sivun.",
+  "Saved on this device. Not published yet.": "Tallennettu tähän laitteeseen. Ei vielä julkaistu.",
+  "Not published. Retry publishing to make the result available to everyone.": "Ei julkaistu. Yritä julkaista uudelleen, jotta tulos on kaikkien saatavilla.",
+  "The result was not saved. Please retry publishing.": "Tulosta ei tallennettu. Yritä julkaista uudelleen.",
+  "Streamer": "Striimaaja",
+  "Players": "Pelin osallistujat",
+  "Load more": "Lataa lisää",
+  "Could not load game history.": "Pelihistoriaa ei voitu ladata.",
+  "Result hosting is not configured.": "Tulosten isännöintiä ei ole määritetty.",
+  "Invalid history page.": "Virheellinen historiatiedosto.",
+  "All 10 rounds for chatters are over.": "Kaikki 10 kierrosta keskustelijoille ovat päättyneet.",
+  "Select a streamer to see their saved game results.": "Valitse striimaaja nähdäksesi hänen tallennetut pelituloksensa.",
+  "No published game results yet.": "Ottelutuloksia ei ole vielä julkaistu.",
+  "Your last 30 games in Demo mode on this device.": "Viimeiset 30 peliäsi demotilassa tällä laitteella.",
+  "You have not finished a game in Demo mode yet.": "Et ole vielä pelannut peliä loppuun demotilassa."
 }

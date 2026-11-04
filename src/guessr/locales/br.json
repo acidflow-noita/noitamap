@@ -541,5 +541,21 @@
   "This guess belongs to a different round.": "Essa resposta pertence a outra rodada.",
   "A newer guess has already been received.": "Já foi recebida uma resposta mais recente.",
   "The streamer did not receive this guess.": "O streamer não recebeu essa resposta.",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Enviado para o Twitch. Aguardando a confirmação do streamer."
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Enviado para o Twitch. Aguardando a confirmação do streamer.",
+  "Your round {{round}} / {{total}}": "Sua rodada {{round}} / {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "Este navegador não conseguiu salvar o resultado. Baixe uma cópia antes de fechar esta página.",
+  "Saved on this device. Not published yet.": "Salvo neste dispositivo. Ainda não publicado.",
+  "Not published. Retry publishing to make the result available to everyone.": "Não publicado. Tente publicar novamente para que o resultado fique disponível para todos.",
+  "The result was not saved. Please retry publishing.": "O resultado não foi salvo. Tente publicar novamente.",
+  "Streamer": "Streamer",
+  "Players": "Participantes do jogo",
+  "Load more": "Carregar mais",
+  "Could not load game history.": "Não foi possível carregar o histórico de jogos.",
+  "Result hosting is not configured.": "A hospedagem de resultados não está configurada.",
+  "Invalid history page.": "Página de histórico inválida.",
+  "All 10 rounds for chatters are over.": "Todas as 10 rodadas para os participantes do chat já terminaram.",
+  "Select a streamer to see their saved game results.": "Selecione um streamer para ver os resultados dos jogos salvos dele.",
+  "No published game results yet.": "Ainda não há resultados de jogos publicados.",
+  "Your last 30 games in Demo mode on this device.": "Seus últimos 30 jogos no modo Demo neste dispositivo.",
+  "You have not finished a game in Demo mode yet.": "Você ainda não terminou nenhum jogo no modo Demo."
 }

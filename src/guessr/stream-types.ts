@@ -127,6 +127,10 @@ export interface StreamPublishInput {
   /** Host-reported casual standings; the service validates and recomputes ranks. */
   players: Omit<StreamResult["players"][number], "rank">[];
 }
+export interface StreamHistoryPage {
+  games: { id: string; finishedAt: number; players: number; hostName: string }[];
+  next?: string;
+}
 export interface StreamPublishedResult extends Omit<StreamResult, "players"> {
   format: "compact-scores-v1";
   players: (StreamPlayer & {

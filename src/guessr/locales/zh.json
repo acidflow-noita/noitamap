@@ -523,5 +523,21 @@
   "This guess belongs to a different round.": "这个答案属于另一轮。",
   "A newer guess has already been received.": "已经收到了一条较新的回答。",
   "The streamer did not receive this guess.": "这位主播并没有收到这个回答。",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "已发送至Twitch。正在等待主播的确认。"
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "已发送至Twitch。正在等待主播的确认。",
+  "Your round {{round}} / {{total}}": "您当前的回合 {{round}} / {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "此浏览器无法保存结果。请在关闭此页面之前下载一份副本。",
+  "Saved on this device. Not published yet.": "已保存在此设备上。尚未发布。",
+  "Not published. Retry publishing to make the result available to everyone.": "尚未发布。请重试发布，以便让所有人都能查看结果。",
+  "The result was not saved. Please retry publishing.": "结果未保存。请重试发布。",
+  "Streamer": "主播",
+  "Players": "游戏参与者",
+  "Load more": "加载更多",
+  "Could not load game history.": "无法加载游戏历史记录。",
+  "Result hosting is not configured.": "结果托管尚未配置。",
+  "Invalid history page.": "历史记录页面无效。",
+  "All 10 rounds for chatters are over.": "聊天用户的全部10轮比赛均已结束。",
+  "Select a streamer to see their saved game results.": "选择一位主播，查看其保存的游戏成绩。",
+  "No published game results yet.": "目前尚未公布比赛结果。",
+  "Your last 30 games in Demo mode on this device.": "您在此设备上以演示模式进行的最近30场比赛。",
+  "You have not finished a game in Demo mode yet.": "您尚未在试玩模式下通关过任何游戏。"
 }

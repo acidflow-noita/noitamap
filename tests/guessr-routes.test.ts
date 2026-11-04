@@ -3,6 +3,13 @@ import { readGuessRoute, guessRouteUrl, isGuessrPagePath, gameCode, gameIdFromCo
 
 const origin = 'http://localhost:5173';
 describe('Guessr page routes', () => {
+  it('preserves a channel history link through F5 and language changes, but removes it when leaving history', () => {
+    const url = new URL('/guess/history/?channel=wuote&lng=ru', origin);
+    expect(readGuessRoute(url).pane).toBe('history');
+    expect(guessRouteUrl('history', url).searchParams.get('channel')).toBe('wuote');
+    expect(guessRouteUrl('home', url).searchParams.has('channel')).toBe(false);
+    expect(guessRouteUrl('stream', url).searchParams.has('channel')).toBe(false);
+  });
   it('keeps a unique game identity in the URL through refresh and login returns', () => {
     const id = '11111111-1111-4111-8111-111111111111';
     const link = guessRouteUrl('stream-picker', new URL('/guess/?auth_resume=saved', origin), { channel: 'Wuote', game: id });

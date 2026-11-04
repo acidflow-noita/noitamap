@@ -50,6 +50,7 @@ function pack(payload: StreamWirePayload): unknown[] | Uint8Array<ArrayBuffer> {
     const s = payload.state, t = s.timing;
     return [0, s.revision, s.hostId, s.phase, s.online, s.paused, s.round, s.roundId, s.clue, s.expiresAt, s.resultId,
       t ? { phase: t.phase, startsAt: t.startsAt, deadline: t.deadline, hostRound: t.hostRound, seconds: t.seconds, revealed: t.revealed,
+        ...(t.chatRound !== undefined ? { chatRound: t.chatRound } : {}),
         ...(t.early ? { early: true } : {}),
         ...(s.ended ? { ended: true } : {}) } : undefined];
   }
@@ -143,6 +144,7 @@ export class StreamPacketReader {
           || !timing || !['lobby', 'warmup', 'play'].includes(timing.phase) || !Number.isSafeInteger(timing.startsAt)
           || timing.deadline !== null && !Number.isSafeInteger(timing.deadline)
           || !Number.isInteger(timing.hostRound) || timing.hostRound < 1 || timing.hostRound > 10
+          || timing.chatRound !== undefined && timing.chatRound !== null && (!Number.isInteger(timing.chatRound) || timing.chatRound < 1 || timing.chatRound > 10)
           || !Number.isInteger(timing.seconds) || timing.seconds < 0 || timing.seconds > 600) return null;
         payload = { type: 'state', state: { schema: 1, channel: this.channel, gameId, revision, hostId, hostPro: 'active', phase,
           online, paused, round, roundId, clue, expiresAt, ...(resultId ? { resultId } : {}), ...(timing.ended ? { ended: true } : {}), timing } };

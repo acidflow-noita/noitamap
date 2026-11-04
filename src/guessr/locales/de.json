@@ -523,5 +523,21 @@
   "This guess belongs to a different round.": "Diese Antwort gehört zu einer anderen Runde.",
   "A newer guess has already been received.": "Es ist bereits eine neuere Antwort eingegangen.",
   "The streamer did not receive this guess.": "Der Streamer hat diese Antwort nicht erhalten.",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "An Twitch gesendet. Ich warte auf die Bestätigung des Streamers."
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "An Twitch gesendet. Ich warte auf die Bestätigung des Streamers.",
+  "Your round {{round}} / {{total}}": "Deine Runde {{round}} / {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "Dieser Browser konnte das Ergebnis nicht speichern. Laden Sie eine Kopie herunter, bevor Sie diese Seite schließen.",
+  "Saved on this device. Not published yet.": "Auf diesem Gerät gespeichert. Noch nicht veröffentlicht.",
+  "Not published. Retry publishing to make the result available to everyone.": "Nicht veröffentlicht. Versuchen Sie erneut, den Beitrag zu veröffentlichen, damit das Ergebnis für alle zugänglich ist.",
+  "The result was not saved. Please retry publishing.": "Das Ergebnis wurde nicht gespeichert. Bitte versuchen Sie die Veröffentlichung erneut.",
+  "Streamer": "Streamer",
+  "Players": "Spielteilnehmer",
+  "Load more": "Mehr laden",
+  "Could not load game history.": "Der Spielverlauf konnte nicht geladen werden.",
+  "Result hosting is not configured.": "Das Ergebnis-Hosting ist nicht konfiguriert.",
+  "Invalid history page.": "Ungültige Verlaufsseite.",
+  "All 10 rounds for chatters are over.": "Alle 10 Runden für die Chatter sind beendet.",
+  "Select a streamer to see their saved game results.": "Wähle einen Streamer aus, um dessen gespeicherte Spielergebnisse anzuzeigen.",
+  "No published game results yet.": "Es wurden noch keine Spielergebnisse veröffentlicht.",
+  "Your last 30 games in Demo mode on this device.": "Deine letzten 30 Spiele im Demo-Modus auf diesem Gerät.",
+  "You have not finished a game in Demo mode yet.": "Du hast im Demo-Modus noch kein Spiel zu Ende gespielt."
 }

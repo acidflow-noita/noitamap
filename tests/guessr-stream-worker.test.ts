@@ -40,6 +40,7 @@ async function fixture() {
       "utf8",
     ),
   );
+  db.sqlite.exec(readFileSync("workers/noitamap-guessr/migrations/0005_stream_history.sql", "utf8"));
   const ticket = await signGameTicket(
     streamHost.sub,
     streamHost.name,
@@ -235,6 +236,34 @@ describe("single-document stream publication", () => {
     input.players[0].rounds[0] = [0, 0];
     input.players[0].score -= 5000;
     expect((await f.call("/results", input)).status).toBe(409);
+  });
+  it('lists only published games for one channel, with indexed pagination and no read-side writes', async () => {
+    const f = await fixture(), input = await f.completed();
+    const publication = await (await f.call('/results', input)).json() as any;
+    const stored = f.sqlite.prepare('SELECT * FROM stream_results WHERE id=?').get(publication.id) as any;
+    const original = JSON.parse(stored.result_json);
+    const insert = f.sqlite.prepare('INSERT INTO stream_results VALUES(?,?,?,?,?,?,?)');
+    for (let i = 0; i < 24; i++) {
+      const id = crypto.randomUUID(), result = { ...original, id };
+      if (i === 23) result.host = { ...result.host, login: 'another_streamer' };
+      insert.run(id, stored.owner, stored.day, stored.created_at + (i % 3), stored.bytes, stored.digest, JSON.stringify(result));
+    }
+    const changes = f.sqlite.prepare('SELECT total_changes() AS n').get();
+    const calls = f.calls();
+    const first = await f.call('/history/' + original.host.login, undefined, null);
+    expect(first.status).toBe(200);
+    expect(first.headers.get('Cache-Control')).toContain('max-age=30');
+    const page = await first.json() as any;
+    expect(page.games).toHaveLength(20); expect(page.next).toBeTruthy();
+    expect(f.calls() - calls).toBe(1);
+    const second = await (await f.call('/history/' + original.host.login + '?before=' + page.next, undefined, null)).json() as any;
+    expect(second.games).toHaveLength(4); expect(second.next).toBeUndefined();
+    expect(new Set([...page.games, ...second.games].map(game => game.id)).size).toBe(24);
+    expect(Object.keys(page.games[0]).sort()).toEqual(['finishedAt', 'hostName', 'id', 'players']);
+    const plan = f.sqlite.prepare("EXPLAIN QUERY PLAN SELECT id FROM stream_results WHERE json_extract(result_json, '$.host.login')=? AND (created_at, id) < (?, ?) ORDER BY created_at DESC, id DESC LIMIT 21").all(original.host.login, Number.MAX_SAFE_INTEGER, 'z');
+    expect(JSON.stringify(plan)).toContain('stream_results_channel_history');
+    expect(f.sqlite.prepare('SELECT total_changes() AS n').get()).toEqual(changes);
+    expect((await f.call('/history/' + original.host.login + '?before=broken', undefined, null)).status).toBe(400);
   });
   it("rejects unauthenticated writes before DB work, bounds bodies and hides private assets", async () => {
     const f = await fixture();

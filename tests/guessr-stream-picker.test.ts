@@ -136,6 +136,29 @@ describe('shared channel guess picker', () => {
     expect(restored.button('Send guess').disabled).toBe(true);
     expect(watchLiveRoom).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
   });
+  it('does not restart a chatter countdown when the streamer begins round ten, and remembers the published game', async () => {
+    vi.stubGlobal('Blob', NodeBlob);
+    const id = '11111111-1111-4111-8111-111111111111';
+    const f = mount(`/guess/wuote/${gameCode(id, 'twitch')}/`);
+    f.button('Sign in with Twitch').click(); await flush();
+    const transport = f.viewer.watchChat.mock.calls[0][1]; transport.status('live', 'Connected');
+    const state: LiveRoomView = { schema: 1, channel: 'wuote', gameId: id, hostId: '456', revision: 1, phase: 'reveal',
+      online: true, paused: false, round: 10, roundId: id, clue: new URL(roundLink('/guess/?channel=wuote', 10, true)).hash.slice(6),
+      expiresAt: Date.now() + 999999, timing: { phase: 'play', startsAt: Date.now() + 3000, deadline: null, seconds: 90, hostRound: 10, chatRound: null } };
+    const deliver = async () => {
+      for (const text of await encodeStreamPacket(id, { type: 'state', state })) transport.message({ player: { id: '456', login: 'wuote', name: 'WUOTE' },
+        id: crypto.randomUUID(), sentAt: Date.now(), text });
+    };
+    await deliver();
+    await vi.waitFor(() => expect(f.main.textContent).toContain('You have finished all 10 rounds. Waiting for the streamer.'));
+    expect(f.main.textContent).not.toContain('Starting in');
+    expect(f.main.querySelector<HTMLElement>('.stream-round-timer')!.hidden).toBe(true);
+    state.phase = 'complete'; state.revision++; state.resultId = id;
+    await deliver(); await vi.waitFor(() => expect(localStorage.getItem('noitamap-guessr-published-history')).toContain(id));
+    expect(JSON.parse(localStorage.getItem('noitamap-guessr-published-history')!)).toHaveLength(1);
+    expect(fetch).not.toHaveBeenCalled(); expect(watchLiveRoom).not.toHaveBeenCalled();
+  });
+
   it('never switches a game-specific link to another game hosted by the same channel', async () => {
     const f = mount('/guess/wuote/00000000000000000000000001/');
     const handlers = vi.mocked(watchLiveRoom).mock.calls[0][1];

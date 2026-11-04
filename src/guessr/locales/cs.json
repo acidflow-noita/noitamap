@@ -541,5 +541,21 @@
   "This guess belongs to a different round.": "Tato odpověď patří do jiného kola.",
   "A newer guess has already been received.": "Již byla obdržena novější odpověď.",
   "The streamer did not receive this guess.": "Streamer tuto odpověď neobdržel.",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Odesláno na Twitch. Čekám na potvrzení od streamera."
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Odesláno na Twitch. Čekám na potvrzení od streamera.",
+  "Your round {{round}} / {{total}}": "Vaše kolo {{round}} / {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "Tento prohlížeč nemohl výsledek uložit. Před zavřením této stránky si stáhněte kopii.",
+  "Saved on this device. Not published yet.": "Uloženo na tomto zařízení. Zatím nezveřejněno.",
+  "Not published. Retry publishing to make the result available to everyone.": "Nebylo zveřejněno. Zkuste zveřejnění znovu, aby byl výsledek dostupný všem.",
+  "The result was not saved. Please retry publishing.": "Výsledek nebyl uložen. Zkuste publikování prosím znovu.",
+  "Streamer": "Streamer",
+  "Players": "Účastníci hry",
+  "Load more": "Načíst další",
+  "Could not load game history.": "Nepodařilo se načíst historii her.",
+  "Result hosting is not configured.": "Hosting výsledků není nakonfigurován.",
+  "Invalid history page.": "Neplatná stránka s historií.",
+  "All 10 rounds for chatters are over.": "Všech 10 kol pro účastníky chatu je u konce.",
+  "Select a streamer to see their saved game results.": "Vyberte streamera a podívejte se na jeho uložené výsledky her.",
+  "No published game results yet.": "Zatím nebyly zveřejněny žádné výsledky zápasů.",
+  "Your last 30 games in Demo mode on this device.": "Tvých posledních 30 her v režimu Demo na tomto zařízení.",
+  "You have not finished a game in Demo mode yet.": "V demo režimu jste ještě žádnou hru nedohráli."
 }

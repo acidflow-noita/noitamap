@@ -523,5 +523,21 @@
   "This guess belongs to a different round.": "Jawaban ini termasuk dalam babak lain.",
   "A newer guess has already been received.": "Jawaban yang lebih baru sudah diterima.",
   "The streamer did not receive this guess.": "Streamer tersebut tidak menerima jawaban ini.",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Sudah dikirim ke Twitch. Sedang menunggu konfirmasi dari streamer."
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Sudah dikirim ke Twitch. Sedang menunggu konfirmasi dari streamer.",
+  "Your round {{round}} / {{total}}": "Putaran Anda {{round}} / {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "Browser ini tidak dapat menyimpan hasilnya. Silakan unduh salinannya sebelum menutup halaman ini.",
+  "Saved on this device. Not published yet.": "Tersimpan di perangkat ini. Belum dipublikasikan.",
+  "Not published. Retry publishing to make the result available to everyone.": "Belum dipublikasikan. Coba publikasikan kembali agar hasilnya dapat diakses oleh semua orang.",
+  "The result was not saved. Please retry publishing.": "Hasilnya belum disimpan. Silakan coba publikasikan kembali.",
+  "Streamer": "Streamer",
+  "Players": "Peserta permainan",
+  "Load more": "Muat lebih banyak",
+  "Could not load game history.": "Tidak dapat memuat riwayat permainan.",
+  "Result hosting is not configured.": "Hosting Result belum dikonfigurasi.",
+  "Invalid history page.": "Halaman riwayat tidak valid.",
+  "All 10 rounds for chatters are over.": "Kesepuluh babak untuk para peserta obrolan telah usai.",
+  "Select a streamer to see their saved game results.": "Pilih seorang streamer untuk melihat hasil permainan yang telah disimpannya.",
+  "No published game results yet.": "Belum ada hasil pertandingan yang dipublikasikan.",
+  "Your last 30 games in Demo mode on this device.": "30 pertandingan terakhir Anda dalam mode Demo di perangkat ini.",
+  "You have not finished a game in Demo mode yet.": "Kamu belum menyelesaikan satu game pun dalam mode Demo."
 }

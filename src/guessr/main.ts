@@ -47,6 +47,7 @@ import { loadingPlaceholders, clueLoadingPlaceholder } from './loading-placehold
 import { iconLabel, type ControlIcon } from './control-icons';
 import { ACTIVE_MODE_KEY, readDailyResume, rememberDailyResume, forgetDailyResume } from './resume-progress';
 import { StreamUI } from "./stream-ui";
+import { streamHistorySection } from './stream-history';
 import {
   GameApi,
   gameApiOrigin,
@@ -959,14 +960,21 @@ async function reviewImageGame(ordinal: number): Promise<void> {
 }
 
 function history(): void {
+  const channel = new URL(location.href).searchParams.get('channel');
   view = "history";
   setPane('history');
   const main = shell();
+  if (channel && /^[a-z0-9_]{1,25}$/.test(channel)) {
+    const url = guessRouteUrl('history', location.href); url.searchParams.set('channel', channel); historyReplace(url);
+    main.append(pageHeading(node('h1', '', msg('History'), 'clock-history'), button(msg('Back'), () => { const url = guessRouteUrl('history', location.href); url.searchParams.delete('channel'); historyReplace(url); history(); })));
+    void streamHistorySection(main, channel); return;
+  }
   const entries = readHistory(storage);
   main.append(
     pageHeading(node("h1", "", msg("History"), 'clock-history'), button(msg('Back'), home)),
-    node("p", "muted", msg("Your last 30 games on this device.")),
   );
+  void streamHistorySection(main);
+  main.append(node("h2", "", msg("Demo")), node("p", "muted", msg("Your last 30 games in Demo mode on this device.")));
   const stats = node("div", "stats-grid");
   for (const [n, label] of [
     [entries.length, "Games finished"],
@@ -983,7 +991,7 @@ function history(): void {
   main.append(stats);
   if (!entries.length) {
     main.append(
-      node("div", "empty-state", msg("No completed games yet.")),
+      node("div", "empty-state", msg("You have not finished a game in Demo mode yet.")),
       button(msg("Start demo"), startPractice, "primary"),
     );
     return;

@@ -541,5 +541,21 @@
   "This guess belongs to a different round.": "Ця відповідь належить до іншого раунду.",
   "A newer guess has already been received.": "Вже надійшла новіша відповідь.",
   "The streamer did not receive this guess.": "Стрімер не отримав цієї відповіді.",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Надіслано на Twitch. Чекаємо на підтвердження від стрімера."
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Надіслано на Twitch. Чекаємо на підтвердження від стрімера.",
+  "Your round {{round}} / {{total}}": "Ваш раунд {{round}} / {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "Цей браузер не зміг зберегти результат. Завантажте копію, перш ніж закрити цю сторінку.",
+  "Saved on this device. Not published yet.": "Збережено на цьому пристрої. Ще не опубліковано.",
+  "Not published. Retry publishing to make the result available to everyone.": "Не опубліковано. Спробуйте опублікувати ще раз, щоб результат став доступним для всіх.",
+  "The result was not saved. Please retry publishing.": "Результат не було збережено. Будь ласка, спробуйте опублікувати ще раз.",
+  "Streamer": "Стример",
+  "Players": "Учасники гри",
+  "Load more": "Завантажити ще",
+  "Could not load game history.": "Не вдалося завантажити історію ігор.",
+  "Result hosting is not configured.": "Хостинг результатів не налаштований.",
+  "Invalid history page.": "Неправильна сторінка історії.",
+  "All 10 rounds for chatters are over.": "Усі 10 раундів для учасників чату завершилися.",
+  "Select a streamer to see their saved game results.": "Виберіть стрімера, щоб переглянути його збережені результати ігор.",
+  "No published game results yet.": "Результати матчів ще не опубліковано.",
+  "Your last 30 games in Demo mode on this device.": "Ваші останні 30 ігор у режимі «Демо» на цьому пристрої.",
+  "You have not finished a game in Demo mode yet.": "Ви ще не завершили гру в демо-режимі."
 }

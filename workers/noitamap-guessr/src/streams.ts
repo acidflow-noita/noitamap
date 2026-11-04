@@ -110,6 +110,27 @@ export async function streamRoute(
         "Stream hosting is not available on this site yet. The guess picker and downloaded results remain available.",
       );
     const path = new URL(request.url).pathname;
+    const historyMatch = /^\/api\/streams\/history\/([a-z0-9_]{1,25})$/.exec(path);
+    if (historyMatch && request.method === 'GET') {
+      const cursor = new URL(request.url).searchParams.get('before');
+      const match = cursor?.match(/^(\d{1,16})_([a-f0-9-]{36})$/);
+      if (cursor && (!match || !Number.isSafeInteger(Number(match[1])) || !idPattern.test(match[2])))
+        throw new ImageGameError(400, 'Invalid history page.');
+      const query = env.DB.prepare(`SELECT id, created_at,
+        json_extract(result_json, '$.finishedAt') AS finishedAt,
+        json_array_length(result_json, '$.players') AS players,
+        json_extract(result_json, '$.host.name') AS hostName
+        FROM stream_results WHERE json_extract(result_json, '$.host.login')=?
+        ${match ? 'AND (created_at, id) < (?, ?)' : ''}
+        ORDER BY created_at DESC, id DESC LIMIT 21`);
+      const { results } = await query.bind(historyMatch[1], ...(match ? [Number(match[1]), match[2]] : []))
+        .all<{ id: string; created_at: number; finishedAt: number; players: number; hostName: string }>();
+      const rows = results.slice(0, 20), last = rows.at(-1);
+      return new Response(JSON.stringify({ games: rows.map(({ created_at, ...result }) => result),
+        ...(results.length > 20 && last ? { next: `${last.created_at}_${last.id}` } : {}) }), {
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=30' },
+      });
+    }
     const roomMatch = /^\/api\/streams\/rooms\/([a-z0-9_]{1,25})$/.exec(path);
     if (roomMatch && request.method === "GET") {
       const origin = request.headers.get("Origin");

@@ -20,7 +20,7 @@ export interface LiveRoomView {
   resultId?: string;
   outcome?: StreamRoundOutcome;
   result?: StreamPublishedResult;
-  timing?: { phase: 'lobby' | 'warmup' | 'play'; startsAt: number; deadline: number | null; hostRound: number; seconds: number; revealed?: number; early?: boolean };
+  timing?: { phase: 'lobby' | 'warmup' | 'play'; startsAt: number; deadline: number | null; hostRound: number; chatRound?: number | null; seconds: number; revealed?: number; early?: boolean };
 }
 export interface LiveRoomGame {
   channel: string;

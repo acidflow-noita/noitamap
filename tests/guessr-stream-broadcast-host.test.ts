@@ -3,7 +3,7 @@ import { StreamBroadcastHost } from '../src/guessr/stream-broadcast-host';
 import { StreamBroadcaster, StreamPacketReader, guessReceiptKey, streamPacketText } from '../src/guessr/stream-wire';
 import { StreamService } from '../src/guessr/stream-server';
 import { newStreamGame } from '../src/guessr/stream-state';
-import { startStreamTiming } from '../src/guessr/stream-timing';
+import { startStreamTiming, startHostWindow, closeChatWindow } from '../src/guessr/stream-timing';
 import { gameCode } from '../src/guessr/routes';
 import { streamNow, streamSecret, streamHost, streamSource } from './helpers/guessr-stream';
 const hosts: StreamBroadcastHost[] = [];
@@ -119,4 +119,19 @@ it('delivers a burst of a thousand confirmations without exceeding the Twitch me
   for (const item of f.sent) expect(f.sent.filter(other => other.at > item.at - 30_000 && other.at <= item.at).length).toBeLessThanOrEqual(14);
   expect(f.sent.every(item => item.text.length <= 500)).toBe(true);
   expect(f.failure).not.toHaveBeenCalled();
+});
+
+
+it('keeps chat round ten closed during the streamer’s final countdown and final result hold', async () => {
+  const f = await fixture(), timing = f.game.timing!;
+  f.game.round = 8; startHostWindow(f.game, streamNow + 100000);
+  const opened = timing.windows[9]!.opensAt, closed = timing.windows[9]!.closesAt!;
+  closeChatWindow(f.game, closed);
+  f.game.round = 9; startHostWindow(f.game, closed + 15000);
+  const state = f.host.snapshot();
+  expect(state.round).toBe(10); expect(state.phase).toBe('reveal');
+  expect(state.timing).toMatchObject({ chatRound: null, hostRound: 10, startsAt: opened, deadline: null });
+  expect(state.timing!.startsAt).not.toBe(timing.startsAt);
+  f.game.stage = 'reveal'; timing.resultsUntil = timing.startsAt + 105000;
+  expect(f.host.snapshot().phase).toBe('reveal');
 });

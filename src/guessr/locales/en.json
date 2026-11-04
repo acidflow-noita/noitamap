@@ -523,5 +523,21 @@
   "This guess belongs to a different round.": "This guess belongs to a different round.",
   "A newer guess has already been received.": "A newer guess has already been received.",
   "The streamer did not receive this guess.": "The streamer did not receive this guess.",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Sent to Twitch. Waiting for the streamer’s confirmation."
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Sent to Twitch. Waiting for the streamer’s confirmation.",
+  "Load more": "Load more",
+  "All 10 rounds for chatters are over.": "All 10 rounds for chatters are over.",
+  "Not published. Retry publishing to make the result available to everyone.": "Not published. Retry publishing to make the result available to everyone.",
+  "Could not load game history.": "Could not load game history.",
+  "Streamer": "Streamer",
+  "Players": "Players",
+  "No published game results yet.": "No published game results yet.",
+  "You have not finished a game in Demo mode yet.": "You have not finished a game in Demo mode yet.",
+  "This browser could not save the result. Download a copy before closing this page.": "This browser could not save the result. Download a copy before closing this page.",
+  "Saved on this device. Not published yet.": "Saved on this device. Not published yet.",
+  "The result was not saved. Please retry publishing.": "The result was not saved. Please retry publishing.",
+  "Result hosting is not configured.": "Result hosting is not configured.",
+  "Your round {{round}} / {{total}}": "Your round {{round}} / {{total}}",
+  "Invalid history page.": "Invalid history page.",
+  "Select a streamer to see their saved game results.": "Select a streamer to see their saved game results.",
+  "Your last 30 games in Demo mode on this device.": "Your last 30 games in Demo mode on this device."
 }

@@ -532,5 +532,21 @@
   "This guess belongs to a different round.": "Cette réponse concerne une autre manche.",
   "A newer guess has already been received.": "Une réponse plus récente a déjà été reçue.",
   "The streamer did not receive this guess.": "Le streamer n'a pas reçu cette réponse.",
-  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Envoyé à Twitch. En attente de la confirmation du streamer."
+  "Sent to Twitch. Waiting for the streamer’s confirmation.": "Envoyé à Twitch. En attente de la confirmation du streamer.",
+  "Your round {{round}} / {{total}}": "Votre manche {{round}} / {{total}}",
+  "This browser could not save the result. Download a copy before closing this page.": "Ce navigateur n'a pas pu enregistrer le résultat. Téléchargez une copie avant de fermer cette page.",
+  "Saved on this device. Not published yet.": "Enregistré sur cet appareil. Pas encore publié.",
+  "Not published. Retry publishing to make the result available to everyone.": "Non publié. Réessayez de publier ce contenu pour que tout le monde puisse y accéder.",
+  "The result was not saved. Please retry publishing.": "Le résultat n'a pas été enregistré. Veuillez réessayer de publier.",
+  "Streamer": "Streamer",
+  "Players": "Participants au jeu",
+  "Load more": "Afficher plus",
+  "Could not load game history.": "Impossible de charger l'historique des parties.",
+  "Result hosting is not configured.": "L'hébergement des résultats n'est pas configuré.",
+  "Invalid history page.": "Page d'historique non valide.",
+  "All 10 rounds for chatters are over.": "Les 10 manches destinées aux participants au chat sont terminées.",
+  "Select a streamer to see their saved game results.": "Sélectionnez un streamer pour consulter les résultats de ses parties enregistrées.",
+  "No published game results yet.": "Aucun résultat de match n'a encore été publié.",
+  "Your last 30 games in Demo mode on this device.": "Vos 30 derniers jeux en mode démo sur cet appareil.",
+  "You have not finished a game in Demo mode yet.": "Vous n'avez pas encore terminé une partie en mode démo."
 }

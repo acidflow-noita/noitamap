@@ -43,10 +43,11 @@ import { loadingPlaceholders } from './loading-placeholders';
 import type { LiveRoomView } from './live-room-types';
 import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, tr } from './i18n';
 import { StreamBroadcastHost } from './stream-broadcast-host';
-import { startStreamTiming, beginStreamTiming, startHostWindow, streamTick, hostMayGuess, suspendStreamTiming, resumeStreamTiming, validStreamSeconds, shortenFinishedWindow, STREAM_DELIVERY_GRACE_MS } from './stream-timing';
+import { startStreamTiming, beginStreamTiming, startHostWindow, streamTick, hostMayGuess, suspendStreamTiming, resumeStreamTiming, validStreamSeconds, shortenFinishedWindow, STREAM_DELIVERY_GRACE_MS, STREAM_RESULTS_HOLD_MS } from './stream-timing';
 import { streamRoundResults } from './stream-round-results';
 import { confirmQuitGame } from './quit-game';
 import { playerColor } from './player-color';
+import { StreamResultArchive, type ArchivedStreamResult } from './stream-result-archive';
 
 const SHARE_ANNOUNCEMENTS_KEY = 'noitamap-guessr-share-announcements';
 
@@ -171,6 +172,9 @@ export class StreamUI {
   private guessNoticeTimer?: ReturnType<typeof setTimeout>;
   private recentGuesser = '';
   private lobbyTimer?: ReturnType<typeof setTimeout>;
+  private presentedRound?: string;
+  private archive = new StreamResultArchive();
+  private publications = new Map<string, Promise<void>>();
   private disposeHeader(): void {
     this.proStatus?.dispose(); this.proStatus = undefined;
     this.statusHelp?.dispose(); this.statusHelp = undefined;
@@ -612,7 +616,9 @@ export class StreamUI {
       if (this.busy) return;
       if (shortenFinishedWindow(game, now)) { this.save(); this.broadcast?.publishState(false); this.updateTimer(); }
       if (document.querySelector('.stream-host-shell[data-starting]') && now >= game.timing.startsAt && !game.paused) this.render();
+      const revision = game.timing.revision;
       const next = streamTick(game, now);
+      if (!next && game.timing.revision !== revision) this.broadcast?.publishState(false);
       if (next === 'warmup-finished') {
         startHostWindow(game, now); this.save(); this.broadcast?.publishState(); this.render();
       } else if (next === 'submit') void this.submit(true);
@@ -625,7 +631,9 @@ export class StreamUI {
     if (!game || !timing) return;
     const now = game.paused ? timing.suspendedAt ?? timing.lastActiveAt : streamTime(game);
     const starting = Math.max(0, Math.ceil((timing.startsAt - now) / 1000));
-    const remaining = Math.max(0, Math.ceil(((timing.deadline ?? now) - now) / 1000));
+    const deadline = game.stage === 'reveal' ? Math.max(game.round === game.session.rounds.length - 1 ? now : timing.deadline ?? now, timing.resultsUntil ?? now)
+      : timing.deadline ?? now;
+    const remaining = Math.max(0, Math.ceil((deadline - now) / 1000));
     const clock = `${formatGuessrNumber(Math.floor(remaining / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(remaining % 60, { minimumIntegerDigits: 2 })}`;
     const label = game.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) })
       : timing.deadline === null ? tr('Manual timing') : clock;
@@ -778,7 +786,8 @@ export class StreamUI {
     if (count && this.game) {
       const round = this.game.timing?.chatRound ?? this.game.round;
       const total = this.game.participants.filter(p => p.id !== this.game!.session.host.id && p.guesses[round]).length;
-      bindText(count, 'Chat round {{round}}: {{total}} submitted', { round: formatGuessrNumber(round + 1), total: formatGuessrNumber(total) });
+      if (this.game.timing?.chatRound === null) bindText(count, 'All 10 rounds for chatters are over.');
+      else bindText(count, 'Chat round {{round}}: {{total}} submitted', { round: formatGuessrNumber(round + 1), total: formatGuessrNumber(total) });
       count.hidden = this.game.timing?.phase === 'lobby';
     }
     this.updateShareButton();
@@ -945,9 +954,9 @@ export class StreamUI {
     navigation.append(action('Exit game', this.exit, 'btn btn-sm btn-outline theme-secondary'));
     const phase = el('div', '', 'stream-toolbar-round');
     phase.append(el('strong', () => game.timing?.phase === 'lobby' ? tr('Ready to start') : game.timing?.phase === 'warmup'
-      ? tr('Chat round {{round}}', { round: formatGuessrNumber(1) })
-      : tr('Round {{value1}} / {{value2}}', { value1: formatGuessrNumber(index + 1), value2: formatGuessrNumber(game.session.rounds.length) })));
-    if (game.timing) { const timer = el('span', '', 'stream-round-timer'); timer.id = 'stream-round-timer'; phase.append(timer); }
+      ? tr('Chat goes first')
+      : tr('Your round {{round}} / {{total}}', { round: formatGuessrNumber(index + 1), total: formatGuessrNumber(game.session.rounds.length) })));
+    if (game.timing && review === undefined) { const timer = el('span', '', 'stream-round-timer'); timer.id = 'stream-round-timer'; phase.append(timer); }
     const commands = el('div', '', 'stream-toolbar-actions');
     banner.append(navigation, phase, commands);
     const count = el("span", '', 'stream-guess-count');
@@ -988,6 +997,13 @@ export class StreamUI {
       if (game.timing.seconds && review === undefined) { next.id = 'stream-auto-next'; next.disabled = true; }
       actions.append(next);
       this.hooks.cleanupClue(streamRoundResults(main, game, index, actions));
+      const presentation = `${game.session.id}:${index}`;
+      if (review === undefined && game.timing.seconds && this.presentedRound !== presentation) {
+        this.presentedRound = presentation;
+        // Table construction and map setup must not consume the reading time.
+        game.timing.resultsUntil = Math.max(game.timing.resultsUntil ?? 0, streamTime(game) + STREAM_RESULTS_HOLD_MS);
+        this.save();
+      }
       this.updateTimer(); return;
     }
     const host = game.participants.find((p) => p.id === game.session.host.id)!;
@@ -1179,10 +1195,11 @@ export class StreamUI {
     }
     const result = streamResult(this.game),
       main = this.hooks.shell();
-    // Public result data only. A result-page refresh must not restore or pause
-    // a private host session, and should still work if publication is unavailable.
-    try { localStorage.setItem('noitamap-guessr-result:' + result.id, JSON.stringify(result)); } catch { /* Downloads remain available. */ }
-    main.append(streamResultsView(result, undefined, this.exit));
+    const entry: ArchivedStreamResult = { result, published: !!this.game.published,
+      ...(!this.game.published ? { pendingToken: this.game.session.token } : {}) };
+    const view = streamResultsView(result, undefined, this.exit);
+    main.append(view);
+    this.resultPublication(view, entry, this.game);
     const rounds = el("div", "", "stream-round-links");
     result.rounds.forEach((round, i) =>
       rounds.append(
@@ -1195,30 +1212,57 @@ export class StreamUI {
     );
     main.append(rounds);
     this.downloadActions(main, result);
-    const publish = el("div", "", "stream-banner"),
-      message = el("p");
-    message.id = "stream-publish-message";
-    bindText(message, this.game.published
-      ? "Results published."
-      : "Publishing the completed result…");
-    publish.append(
-      message,
-      copyAction("Copy result link", () => {
-        if (!this.game?.published) {
-          throw new Error(tr("Publish the result first, or share the downloaded file."));
-        }
-        return guessRouteUrl("stream-result", location.origin, { result: result.id }).href;
-      }, this.hooks.toast),
-      action("Retry publishing", () => this.publish()),
-    );
-    main.append(publish);
-    main.append(actionRow(
-      action("Start another game", () => this.open(false)),
-    ));
-    if (!this.game.published) void this.publish();
-    else this.finishBroadcast(this.game);
+    main.append(actionRow(action('Start another game', async () => {
+      // Do not replace the singleton host session until its retry credential is
+      // durable, or publication has already been confirmed.
+      const saved = await this.archive.get(result.id).catch(() => undefined);
+      if (!entry.published && !saved?.published && !saved?.pendingToken) {
+        this.hooks.toast(tr('This browser could not save the result. Download a copy before closing this page.'));
+        return;
+      }
+      await this.open(false);
+    })));
+  }
+  private resultPublication(view: HTMLElement, entry: ArchivedStreamResult, game?: StreamGame): void {
+    const panel = el('div', '', 'stream-banner stream-publication'), message = el('p');
+    message.id = 'stream-publish-message'; message.setAttribute('role', 'status');
+    const copy = copyAction('Copy result link', () => guessRouteUrl('stream-result', location.origin, { result: entry.result.id }).href, this.hooks.toast);
+    const retry = action('Retry publishing', () => { void publish(); });
+    const historyLink = el('a', () => tr('{{player}}’s results', { player: entry.result.host.name }), 'secondary');
+    const historyUrl = guessRouteUrl('history', location.origin); historyUrl.searchParams.set('channel', entry.result.host.login); historyLink.href = historyUrl.href;
+    const actions = actionRow(copy, retry, historyLink);
+    panel.append(message, actions);
+    view.querySelector('.finish-hero')!.after(panel);
+    let storageWarning = '';
+    const update = (key?: string) => {
+      copy.disabled = !entry.published;
+      retry.hidden = entry.published || !entry.pendingToken;
+      bindText(message, () => [key ? tr(key) : tr(entry.published
+        ? this.api.local ? 'Result saved to the local test server.' : 'Results published.'
+        : storageWarning ? 'Not published. Retry publishing to make the result available to everyone.' : 'Saved on this device. Not published yet.'), storageWarning && tr(storageWarning)].filter(Boolean).join(' '));
+    };
+    const save = async () => {
+      try { await this.archive.save(entry); storageWarning = ''; }
+      catch (error) { storageWarning = (error as Error).message; }
+    };
+    const publish = async () => {
+      retry.disabled = true; update('Publishing the completed result…');
+      try {
+        await this.publish(entry, game); entry.published = true; delete entry.pendingToken;
+        await save(); update();
+      } catch (error) {
+        bindText(message, () => [tr('Not published. Retry publishing to make the result available to everyone.'),
+          tr((error as Error).message), storageWarning && tr(storageWarning)].filter(Boolean).join(' '));
+      } finally { retry.disabled = false; copy.disabled = !entry.published; retry.hidden = entry.published || !entry.pendingToken; }
+    };
+    update(entry.published ? undefined : game ? 'Publishing the completed result…' : 'Loading results…');
+    void save().then(() => {
+      if (game && !entry.published) return publish();
+      update(); if (game) this.finishBroadcast(game);
+    });
   }
   private finishBroadcast(game: StreamGame): void {
+    if (this.game !== game) return;
     const broadcast = this.broadcast;
     if (!broadcast) return;
     void broadcast.complete().finally(() => {
@@ -1228,38 +1272,28 @@ export class StreamUI {
       this.hostRelease?.(); this.hostRelease = undefined;
     });
   }
-  private async publish(): Promise<void> {
-    if (
-      !this.game ||
-      this.game.stage !== "complete" ||
-      this.busy ||
-      this.game.published
-    )
-      return;
-    const game = this.game;
-    this.busy = true;
-    try {
-      await this.api.publish({
-        token: game.session.token,
-        finishedAt: game.finishedAt!,
-        players: streamResult(game).players,
-      });
-      game.published = true;
-      if (game.timing) game.timing.revision++;
-      this.save();
-      const status = document.getElementById("stream-publish-message");
-      if (status)
-        bindText(status, this.api.local
-          ? "Result saved to the local test server."
-          : "Results published.");
-    } catch (error) {
-      const status = document.getElementById("stream-publish-message");
-      if (status)
-        bindText(status, () => tr('{{error}} Download a complete copy below, or retry later.', { error: tr((error as Error).message) }));
-    } finally {
-      this.busy = false;
-      this.finishBroadcast(game);
-    }
+  private publish(entry: ArchivedStreamResult, game?: StreamGame): Promise<void> {
+    const id = entry.result.id;
+    const active = this.publications.get(id);
+    if (active) return active;
+    if (entry.published) return Promise.resolve();
+    if (!entry.pendingToken) return Promise.reject(new Error('Publish the result first, or share the downloaded file.'));
+    const pending = (async () => {
+      const confirmation = await this.api.publish({ token: entry.pendingToken!, finishedAt: entry.result.finishedAt, players: entry.result.players });
+      if (!confirmation.published || confirmation.id !== id) throw new Error('The result was not saved. Please retry publishing.');
+      entry.published = true; delete entry.pendingToken;
+      if (game) {
+        game.published = true;
+        if (game.timing) game.timing.revision++;
+        // Publishing an older result must never overwrite a newer host session.
+        if (this.game === game) this.save();
+      }
+    })().finally(() => {
+      this.publications.delete(id);
+      if (game) this.finishBroadcast(game);
+    });
+    this.publications.set(id, pending);
+    return pending;
   }
   private downloadActions(main: HTMLElement, result: StreamResult): void {
     const actions = el("div", "", "stream-actions");
@@ -1286,19 +1320,14 @@ export class StreamUI {
     const heading = pageHeading(el('h1', 'Game results'), action('Back', this.exit));
     main.append(heading, loading);
     try {
-      let cached: StreamResult | undefined;
-      try {
-        const raw = localStorage.getItem('noitamap-guessr-result:' + id);
-        const value = raw && raw.length <= 2_000_000 ? JSON.parse(raw) as StreamResult : null;
-        if (value?.schema === 1 && value.id === id && value.rounds?.length === STREAM_ROUNDS && value.players?.length
-          && value.players.every(player => player.rounds?.length === STREAM_ROUNDS)) cached = value;
-      } catch { /* Fall through to the published result. */ }
-      const result = cached ?? await this.api.result(id);
+      let entry = await this.archive.get(id);
+      if (!entry) entry = { result: await this.api.result(id), published: true };
       if (!main.isConnected) return;
-      if (!cached) try { localStorage.setItem('noitamap-guessr-result:' + id, JSON.stringify(result)); } catch { /* Optional immutable result cache. */ }
       loading.remove(); heading.remove();
-      main.append(streamResultsView(result, undefined, this.exit));
-      this.downloadActions(main, result);
+      const view = streamResultsView(entry.result, undefined, this.exit);
+      main.append(view); this.resultPublication(view, entry);
+      this.downloadActions(main, entry.result);
+
     } catch (error) {
       if (main.isConnected) bindText(loading, (error as Error).message);
     }

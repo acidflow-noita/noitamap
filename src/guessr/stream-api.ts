@@ -6,6 +6,7 @@ import type {
   StreamReveal,
   StreamSession,
   StreamPublishedResult,
+  StreamHistoryPage,
 } from "./stream-types";
 import { STREAM_MAX_PLAYERS } from "./stream-types";
 import type { LiveRoomView } from "./live-room-types";
@@ -109,5 +110,15 @@ export class StreamApi {
       void pending.catch(() => this.publicResults.delete(id));
     }
     return pending;
+  }
+  async history(channel: string, before?: string): Promise<StreamHistoryPage> {
+    if (!/^[a-z0-9_]{1,25}$/.test(channel)) throw new Error('Invalid Twitch channel.');
+    const path = '/history/' + channel + (before ? '?before=' + encodeURIComponent(before) : '');
+    if (this.local) return this.localRequest<StreamHistoryPage>(path);
+    if (!this.origin) throw new Error('Result hosting is not configured.');
+    const response = await fetch(this.origin + '/api/streams' + path, { signal: AbortSignal.timeout(15000) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not load game history.');
+    return data;
   }
 }

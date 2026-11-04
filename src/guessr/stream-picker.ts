@@ -17,6 +17,7 @@ import type { LiveRoomView } from './live-room-types';
 import { guessRouteUrl, readGuessRoute } from './routes';
 import { expandStreamResult } from './stream-codec';
 import { streamResultsView } from './stream-results';
+import { rememberPublishedStream } from './stream-history-records';
 import { localizedDistance } from './messages';
 import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, onGuessrLanguageChanged, tr } from './i18n';
 import { pageHeading } from './page-heading';
@@ -245,6 +246,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     } else board.setLocked(false);
     budget.hidden = !progress || revealed;
     if (live?.phase === 'complete' && live.result) {
+      if (live.resultId && channel) rememberPublishedStream(live.resultId, channel);
       const key = `${live.gameId}/${playerId ?? ''}`;
       if (drawnResults !== key) {
         drawnResults = key;
@@ -283,6 +285,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       bindText(previousResult, () => `${tr('Round {{round}}', { round: formatGuessrNumber(latest + 1) })}: ${latestResult.pending ? '…' : formatGuessrNumber(latestResult.score?.score ?? 0)}`);
     }
     if (live.phase === 'complete') {
+      if (live.resultId && channel) rememberPublishedStream(live.resultId, channel);
       const signature = `${viewer.getState().userId ?? viewer.getState().savedUserId}/${viewer.getState().connected}/`
         + Array.from({ length: 10 }, (_, i) => { const r = personal.round(i); return `${r.score?.score}/${r.pending}/${r.received?.key}`; }).join('/');
       if (drawnResults !== signature) {
@@ -397,10 +400,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (twitchUpdates && live?.timing) {
       const timing = live.timing, now = gameNow(), starting = Math.max(0, Math.ceil((timing.startsAt - now) / 1000));
       const remaining = Math.max(0, Math.ceil(((timing.deadline ?? now) - now) / 1000));
-      timer.textContent = live.ended ? tr('Game ended') : live.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) })
-        : live.phase !== 'guess' ? tr('Round closed') : timing.deadline === null ? tr('Manual timing')
+      timer.textContent = live.ended ? tr('Game ended') : live.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started')
+        : live.phase !== 'guess' ? tr('Round closed') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) }) : timing.deadline === null ? tr('Manual timing')
         : `${formatGuessrNumber(Math.floor(remaining / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(remaining % 60, { minimumIntegerDigits: 2 })}`;
-      timer.hidden = timing.phase === 'lobby';
+      timer.hidden = timing.phase === 'lobby' || live.phase !== 'guess';
       timer.dataset.clock = String(!live.ended && !live.paused && !starting && live.phase === 'guess' && timing.deadline !== null);
       board.setLocked(!canGuess() || reviewedRound !== null);
       let countdown = cluePanel.querySelector<HTMLElement>('.stream-countdown');
