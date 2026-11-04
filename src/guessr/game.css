@@ -393,6 +393,12 @@ p {
   color: var(--text-muted);
   font-size: 0.875rem;
 }
+.daily-page-title { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+.daily-page-title h1 { margin: 0; }
+.daily-start { display: grid; justify-items: start; gap: 0.75rem; }
+.daily-start > p { margin: 0; }
+.daily-start-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem var(--game-gutter); }
+.daily-start-date { font-weight: 600; }
 .notice {
   display: flex;
   align-items: center;

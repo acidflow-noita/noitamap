@@ -432,8 +432,9 @@ function gameHud(options: {
   extra?: string;
 }): HTMLElement {
   const group = node("div", "hud-group");
+  if (options.badge === 'pro') group.append(node('span', options.twitch ? 'twitch-mode-label' : '', msg(options.label)));
   group.append(
-    node("span", `badge ${options.badge}${options.badge === 'pro' ? ' animation-pop' : ''}${options.twitch ? ' twitch-mode-label' : ''}`, msg(options.label)),
+    node("span", `badge ${options.badge}${options.badge === 'pro' ? ' animation-pop' : ''}${options.twitch && options.badge !== 'pro' ? ' twitch-mode-label' : ''}`, msg(options.badge === 'pro' ? 'Pro' : options.label)),
     node("span", "round", msg("Round {{value1}} / {{value2}}", () => ({ value1: options.round, value2: options.total }))),
   );
   if (options.extra) group.append(node("span", "hint", options.extra));
@@ -1102,7 +1103,9 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
   }
   const main = shell();
   const dailyTitle = node('h1', '', msg('Daily'));
-  main.append(pageHeading(dailyTitle, button(msg('Back'), home)));
+  const title = node('div', 'daily-page-title');
+  title.append(dailyTitle, node('span', 'badge pro animation-pop', msg('Pro')));
+  main.append(pageHeading(title, button(msg('Back'), home)));
   const version = generation;
   const service = await rankedAccess(main);
   if (!service || version !== generation) return;
@@ -1163,16 +1166,14 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
       return;
     }
     const c = status.challenge,
-      panel = node("section", "panel");
-    bindText(dailyTitle, () => c.title);
+      panel = node("section", "panel daily-start");
+    const details = node('div', 'daily-start-meta');
+    const date = node('time', 'daily-start-date', msg(() => new Date(c.day + 'T00:00:00Z').toLocaleDateString(guessrLocale(), { dateStyle: 'long', timeZone: 'UTC' })));
+    date.dateTime = c.day;
+    details.append(date, node('span', 'muted', msg('{{rounds}} rounds', () => ({ rounds: formatGuessrNumber(c.totalRounds), count: c.totalRounds }))));
     panel.append(
-      node("span", "badge pro animation-pop", msg("Daily, Pro")),
-      node("p", "", msg("{{value1}}, {{value2}} locations, No time limit.", () => ({ value1: c.day, value2: formatGuessrNumber(c.totalRounds) }))),
-      node(
-        "p",
-        "",
-        msg("Your progress is saved. You can finish this daily after the date changes."),
-      ),
+      details,
+      node('p', '', msg('No time limit. Your progress saves automatically.')),
     );
     panel.append(
       button(
@@ -1265,7 +1266,7 @@ function renderRanked(): void {
   }
   main.append(
     gameHud({
-      label: "Daily, Pro",
+      label: "Daily",
       badge: "pro",
       round: ranked.round + 1,
       total: ranked.totalRounds,
@@ -1357,7 +1358,7 @@ function reviewRanked(ordinal: number, continueGame = false): void {
   const main = shell(true);
   main.append(
     gameHud({
-      label: "Daily, Pro",
+      label: "Daily",
       badge: "pro",
       round: ordinal + 1,
       total: ranked!.totalRounds,
