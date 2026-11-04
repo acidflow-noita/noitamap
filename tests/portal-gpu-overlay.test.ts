@@ -92,7 +92,7 @@ describe('worker GPU map overlay', () => {
   it('sends seed/resources/options once and bounds pixels without decoding or simulating on the UI thread', () => {
     history.replaceState(null, '', '/?portalGpuLimit=2');
     const { w } = start();
-    expect(vi.mocked(w.fake.postMessage).mock.calls[0][0]).toMatchObject({ type: 'init', seed: 42, portals: [portal], options: { limit: 2 } });
+    expect(vi.mocked(w.fake.postMessage).mock.calls[0][0]).toMatchObject({ type: 'init', seed: 42, portals: [portal], options: { limit: 2, minPixels: 12 } });
     const camera = w.requests()[0].camera;
     expect(camera.width * camera.height * camera.resolution ** 2).toBeLessThanOrEqual(MAX_CANVAS_PIXELS);
     const frame = w.reply();
@@ -123,6 +123,75 @@ describe('worker GPU map overlay', () => {
     const { w, failure } = start(); w.send({ type: 'error', message: 'GPU context lost' });
     expect(failure).toHaveBeenCalledOnce(); expect(w.fake.terminate).toHaveBeenCalledOnce();
     tick(1000); expect(w.requests()).toHaveLength(1);
+  });
+
+  it('does not create a worker or schedule frames in an overview, including repeated navigation', () => {
+    const v = viewer(), w = worker(), factory = vi.fn(() => w.fake);
+    v.setCamera({ a: .001, b: 0, c: 0, d: .001, e: 400, f: 300 });
+    overlay = new PortalGPUOverlay(v, [portal], 42, new ArrayBuffer(4), factory, vi.fn(), vi.fn());
+    for (let i = 0; i < 120; i++) {
+      v.setCamera({ a: .001, b: 0, c: 0, d: .001, e: 400 + i, f: 300 });
+      v.handlers.get('update-viewport')!(); tick(i * 1000);
+    }
+    expect(factory).not.toHaveBeenCalled(); expect(frames.size).toBe(0);
+    expect(overlay.stats()).toMatchObject({ suspended: true, suspensionReason: 'zoom', active: 0, requests: 0, frames: 0 });
+    v.setCamera({ a: .12, b: 0, c: 0, d: .12, e: 400, f: 300 }); v.handlers.get('update-viewport')!();
+    expect(factory).toHaveBeenCalledOnce();
+    w.send({ type: 'ready' }); tick(121000);
+    expect(w.requests()).toHaveLength(1); expect(w.requests()[0].elapsed).toBe(0);
+  });
+
+  it('retains the displayed frame across the cutoff, uses hysteresis and resumes without elapsed-time debt', () => {
+    const { v, w, showBackgrounds } = start(); w.reply();
+    const transfers = context.transferFromImageBitmap.mock.calls.length;
+    // 11.2px core freezes. 14.4px stays frozen; 19.2px resumes.
+    v.setCamera({ a: .07, b: 0, c: 0, d: .07, e: 400, f: 300 }); v.handlers.get('update-viewport')!();
+    expect(overlay!.canvas.hidden).toBe(false); expect(showBackgrounds).toHaveBeenLastCalledWith(['p']);
+    for (let i = 0; i < 60; i++) {
+      v.setCamera({ a: .09, b: 0, c: 0, d: .09, e: 400 + i, f: 300 }); v.handlers.get('update-viewport')!();
+      tick(1000 + i * 1000);
+    }
+    expect(w.requests()).toHaveLength(1); expect(frames.size).toBe(0);
+    expect(context.transferFromImageBitmap).toHaveBeenCalledTimes(transfers);
+    expect(overlay!.stats()).toMatchObject({ suspended: true, suspensionReason: 'zoom', retainedPortals: 1, frames: 1, requests: 1 });
+    const transform = overlay!.canvas.style.transform.slice(7, -1).split(',').map(Number);
+    expect(transform[0] * 464 + transform[4]).toBeCloseTo(459);
+    expect(transform[3] * 364 + transform[5]).toBeCloseTo(300);
+    v.setCamera({ a: .12, b: 0, c: 0, d: .12, e: 400, f: 300 }); v.handlers.get('update-viewport')!(); tick(61000);
+    expect(w.requests()).toHaveLength(2); expect(w.requests()[1].elapsed).toBe(0);
+    expect(vi.mocked(w.fake.postMessage).mock.calls.filter(([message]) => message.type === 'init')).toHaveLength(1);
+    w.reply();
+    v.setCamera({ a: .09, b: 0, c: 0, d: .09, e: 400, f: 300 }); v.handlers.get('update-viewport')!(); tick(61018);
+    expect(w.requests()).toHaveLength(3); expect(overlay!.stats().suspended).toBe(false);
+  });
+
+  it('allows an in-flight frame to finish after zoom-out without restarting the render loop', () => {
+    const { v, w } = start();
+    v.setCamera({ a: .01, b: 0, c: 0, d: .01, e: 400, f: 300 }); v.handlers.get('update-viewport')!();
+    const frame = w.reply();
+    expect(frame.bitmap.close).toHaveBeenCalledOnce();
+    tick(10000); tick(20000);
+    expect(w.requests()).toHaveLength(1); expect(frames.size).toBe(0);
+    expect(overlay!.canvas.hidden).toBe(false);
+    expect(overlay!.stats().suspensionReason).toBe('zoom');
+  });
+
+  it('defers worker startup when hidden, disabled or off-screen and suspends off-screen navigation', () => {
+    const v = viewer(), w = worker(), factory = vi.fn(() => w.fake);
+    v.setCamera({ a: 1, b: 0, c: 0, d: 1, e: 100000, f: 300 });
+    overlay = new PortalGPUOverlay(v, [portal], 42, new ArrayBuffer(4), factory, vi.fn(), vi.fn(), undefined, false);
+    expect(factory).not.toHaveBeenCalled();
+    overlay.setEnabled(true); expect(factory).not.toHaveBeenCalled();
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+    v.setCamera({ a: 1, b: 0, c: 0, d: 1, e: 400, f: 300 }); v.handlers.get('update-viewport')!();
+    expect(factory).not.toHaveBeenCalled();
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false); document.dispatchEvent(new Event('visibilitychange'));
+    expect(factory).toHaveBeenCalledOnce(); w.send({ type: 'ready' }); tick(); w.reply();
+    for (let i = 0; i < 60; i++) {
+      v.setCamera({ a: 1, b: 0, c: 0, d: 1, e: 100000 + i, f: 300 }); v.handlers.get('update-viewport')!(); tick(1000 + i * 1000);
+    }
+    expect(w.requests()).toHaveLength(1); expect(frames.size).toBe(0); expect(overlay.canvas.hidden).toBe(true);
+    expect(overlay.stats().suspensionReason).toBe('offscreen');
   });
 
   it('shows patches only for the displayed frame and hides them while suspended or destroyed', () => {

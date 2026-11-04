@@ -36,11 +36,10 @@ async function start(){
     backgrounds=new PortalBackgroundPatches(viewer,portals,error=>{if(ticket===revision)fail(error);});
     overlay=new PortalGPUOverlay(viewer,portals,current.seed,resources,
       createGPURuntime,
-      stats=>{if(ticket===revision)publish({status:'running',stats});},
+      stats=>{if(ticket===revision)publish({status:stats.suspended?'waiting':'running',stats});},
       error=>{if(ticket===revision)fail(error);},
-      ids=>{if(ticket===revision)backgrounds?.showForPortals(ids);});
-    overlay.setEnabled(!isSpoilerFree());
-    publish({status:'loading',stats:overlay.stats()});
+      ids=>{if(ticket===revision)backgrounds?.showForPortals(ids);},!isSpoilerFree());
+    publish({status:overlay.stats().suspended?'waiting':'loading',stats:overlay.stats()});
   } catch(error){if(ticket===revision&&!controller.signal.aborted)fail(error);}
   finally {if(request===controller)request=null;}
 }

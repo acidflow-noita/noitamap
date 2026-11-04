@@ -39,6 +39,17 @@ describe('worker-owned portal rendering', () => {
     expect(r.renderer.synchronize).toHaveBeenCalledTimes(2);
     expect(activeIDs(r, 2)).toEqual([portal(100000).id]);
   });
+  it('retains the particle state and performs no catch-up when the presenter resumes with zero elapsed time', async () => {
+    const r = runtime(), renderer = new PortalFrameRenderer([portal(0)], 123, { minPixels: 12, limit: 192 }, r);
+    await renderer.frame(1, camera, FRAME_MS);
+    const first = r.renderer.renderMap.mock.calls[0][0].get(portal(0).id).simulation;
+    const elapsed = first.elapsedFrames, replays = r.renderer.replay.mock.calls.length;
+    await renderer.frame(2, { ...camera, matrix: { ...camera.matrix, a: .12, d: .12 } }, 0);
+    const resumed = r.renderer.renderMap.mock.calls[1][0].get(portal(0).id).simulation;
+    expect(resumed).toBe(first); expect(resumed.elapsedFrames).toBe(elapsed);
+    expect(r.renderer.synchronize).toHaveBeenCalledOnce(); expect(r.renderer.replay).toHaveBeenCalledTimes(replays);
+    renderer.dispose();
+  });
   it('resumes a culled portal at the shared clock instead of restarting it', async () => {
     const late = { ...portal(100000), phase: 7 };
     const r = runtime(), renderer = new PortalFrameRenderer([portal(0), late], 42, { minPixels: 1.5, limit: 192 }, r);

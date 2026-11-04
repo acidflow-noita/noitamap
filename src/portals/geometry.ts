@@ -18,6 +18,16 @@ export function cameraPixelDelta(matrix: CameraMatrix, dx: number, dy: number): 
 export const MAX_CANVAS_PIXELS=2_000_000;
 export const MAX_ACTIVE_PORTALS=192;
 export const MAX_GPU_BYTES=256*1024*1024;
+export const PORTAL_CORE_SIZE = 160;
+export const PORTAL_ENTER_PIXELS = 18;
+export const PORTAL_EXIT_PIXELS = 12;
+/** Hysteresis belongs to the presenter: a paused bitmap and GPU simulation can
+ * be retained without asking the worker to erase/recreate its particle pools. */
+export function portalZoomActive(matrix: CameraMatrix, active: boolean,
+  enter = PORTAL_ENTER_PIXELS, exit = PORTAL_EXIT_PIXELS): boolean {
+  const pixels = PORTAL_CORE_SIZE * Math.hypot(matrix.a, matrix.b);
+  return Number.isFinite(pixels) && pixels > 0 && pixels >= (active ? exit : enter);
+}
 export function canvasResolution(width:number,height:number,dpr:number):number {
   return Math.min(2,Math.max(1,dpr||1),Math.sqrt(MAX_CANVAS_PIXELS/Math.max(1,width*height)));
 }
@@ -25,8 +35,9 @@ export function visiblePortals(portals:PortalPlacement[],m:CameraMatrix,width:nu
   if(![m.a,m.b,m.c,m.d,m.e,m.f,width,height].every(Number.isFinite)||width<=0||height<=0)return [];
   const scale=Math.hypot(m.a,m.b),rx=(Math.abs(m.a)*480+Math.abs(m.c)*320)/2,ry=(Math.abs(m.b)*480+Math.abs(m.d)*320)/2;
   return portals.filter(p=>{
-    // Same visibility policy for every effect; no default zoom activation gate.
-    if(160*scale<minPixels)return false;
+    // Geometry is also used independently of animation. The presenter owns the
+    // default zoom gate and retained-frame transition.
+    if(PORTAL_CORE_SIZE*scale<minPixels)return false;
     const x=m.a*p.x+m.c*p.y+m.e,y=m.b*p.x+m.d*p.y+m.f;
     return x+rx>=0&&y+ry>=0&&x-rx<=width&&y-ry<=height;
   });

@@ -1,7 +1,7 @@
 import type { CameraMatrix } from './geometry';
 import type { PortalPlacement } from './placements';
 
-export const PORTAL_RENDERER_REVISION = '85d0740-eye-collision-v1';
+export const PORTAL_RENDERER_REVISION = '85d0740-eye-collision-zoom-v2';
 export const FRAME_MS = 1000 / 60;
 export interface PortalCamera {
   matrix: CameraMatrix;
@@ -20,6 +20,8 @@ export interface PortalGPUStats {
   steps: number; simFPS: number; deliveryMS: number;
   estimatedGPUBytes: number; canvasPixels: number; device: string;
   suspended: boolean; slow: boolean;
+  suspensionReason?: 'disabled' | 'hidden' | 'zoom' | 'offscreen' | null;
+  frames?: number; requests?: number; retainedPortals?: number;
 }
 export interface PortalWorkerOptions { minPixels: number; limit: number; fence?: boolean }
 export type PortalWorkerRequest = {

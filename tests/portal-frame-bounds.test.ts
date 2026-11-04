@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { portalFrameBounds, visiblePortals } from '../src/portals/geometry';
+import { portalFrameBounds, portalZoomActive, visiblePortals } from '../src/portals/geometry';
 import type { PortalPlacement } from '../src/portals/placements';
 const portal = (x: number, y: number) => ({ x, y } as PortalPlacement);
 describe('GPU bitmap crop bounds', () => {
@@ -22,7 +22,7 @@ describe('GPU bitmap crop bounds', () => {
   });
 });
 
- it('keeps eye and meditation portals active at the same zoom, including subpixel views by default', () => {
+ it('enumerates visible geometry independently of the presenter animation gate', () => {
    const portals = ['eye_room', 'meditation'].map(effect => ({ x: 0, y: 0, effect } as PortalPlacement));
    for (const scale of [.1, .01, .001, .0001]) {
      const m = { a: scale, b: 0, c: 0, d: scale, e: 400, f: 300 };
@@ -31,3 +31,15 @@ describe('GPU bitmap crop bounds', () => {
      expect(visiblePortals(portals, { ...m, e: -1000 }, 800, 600)).toEqual([]);
    }
  });
+
+it('uses consistent 18px/12px animation thresholds, including rotation, flips and explicit comparison overrides', () => {
+  const matrix = (pixels: number) => ({ a: pixels / 160, b: 0, c: 0, d: pixels / 160, e: 0, f: 0 });
+  expect(portalZoomActive(matrix(17), false)).toBe(false);
+  expect(portalZoomActive(matrix(18), false)).toBe(true);
+  expect(portalZoomActive(matrix(12), true)).toBe(true);
+  expect(portalZoomActive(matrix(11), true)).toBe(false);
+  expect(portalZoomActive({ ...matrix(20), a: 0, b: -.125, c: -.125, d: 0 }, false)).toBe(true);
+  expect(portalZoomActive(matrix(.1), false, 0, 0)).toBe(true);
+  expect(portalZoomActive(matrix(0), true, 0, 0)).toBe(false);
+  expect(portalZoomActive(matrix(NaN), true)).toBe(false);
+});

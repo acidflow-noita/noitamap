@@ -35,10 +35,20 @@ are conservative upper bounds, identified by `particleCountsAreUpperBounds`.
   optional GPU timestamp time, CPU-observed GPU-fence wait, worker delivery time, estimated
   GPU memory and actual WebGL renderer string. CPU submission time is NOT GPU
   execution time. A software WebGL driver may identify itself as SwiftShader/Mesa.
-- Visible portals now stay active at every zoom by default (`portalGpuMinPixels=0`).
-  Eye-room and meditation portals use the same visibility policy. An explicit
-  positive cutoff remains available for diagnostics; offscreen and memory/instance
-  limits still apply.
+- Animation starts at an 18-CSS-pixel nominal portal diameter and stops below
+  12 pixels. The different thresholds prevent repeated starts/stops near the
+  boundary. Eye-room, meditation and other portals use the same policy.
+  `frames` and `requests` must stop increasing when `suspensionReason` is `zoom`
+  or `offscreen` (one already in-flight frame may finish). `active` then becomes
+  zero; `retainedPortals` describes the paused GPU state, not ongoing simulation.
+  The last bitmap stays world-anchored during overview pan/zoom. On a cold
+  overview the original map imagery remains until the first animated frame.
+  Worker creation, asset decoding and shader initialization wait for a visible
+  portal large enough to animate. Returning to detail reuses the worker and
+  resumes with zero elapsed-time debt.
+  `portalGpuMinPixels=0` explicitly restores always-on zoom behavior for comparison.
+  A positive override sets the entry threshold, with an exit threshold two-thirds
+  as large. Offscreen and memory/instance limits still apply.
   `portalGpuFence=1` restores the explicit per-frame GL fence wait in the worker
   (off by default; it cost 7-15 ms of idle worker time per frame). `portalGpuLimit` can lower the default/hard limit of 192.
 
@@ -74,16 +84,18 @@ into camera reprojection, including rounded fractional-DPR backing dimensions.
 A 64-CSS-pixel overscan border reduces newly uncovered edges; on very large/fast
 moves newly exposed portals can appear late, but old pixels remain world-anchored.
 All portals share one simulation clock in the worker (fixed 1/60 steps, at
-most two per presented frame, paused while nothing is on screen). Each portal
+most two per presented frame, paused while animation is zoom-culled or nothing
+is on screen). Each portal
 targets `clock + phase`. Off-screen portals keep a particle-free "shadow"
 simulation that dry-steps emission timers and both RNG streams (~1.5 µs per
 step, ~0.5 ms per frame for all 221 placements) while lagging exactly one
 replay window (float32 expiry plus the eye collision lifetime-reset allowance,
 max 1296 steps) behind. When
 a portal enters view the shadow is cloned and that window is replayed with real
-GPU particles under a 400-steps-per-frame budget, so zooming out and back
-resumes the animation exactly where an unculled portal would be, and a heavy
-portal appears a few frames late instead of stalling the others. This is not a
+GPU particles under a 400-steps-per-frame budget. While other portals animate,
+an off-screen portal returns at their shared clock, and a heavy portal appears
+a few frames late instead of stalling the others. A zoom suspension instead
+retains the current simulation and resumes that same phase. This is not a
 replay of a player's save/game clock. Hidden/spoiler views submit no new work
 (an in-flight frame may finish), and toggling off terminates the worker and
 releases its presentation bitmap.
