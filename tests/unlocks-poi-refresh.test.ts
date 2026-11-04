@@ -7,6 +7,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GenerationResult } from '../src/telescope/telescope-adapter';
 import { getUnlocksFromURL } from '../src/unlocks';
+import { getSunUnlocks } from '../src/sun-unlocks';
 
 const { generate } = vi.hoisted(() => ({ generate: vi.fn() }));
 vi.mock('../src/telescope/telescope-adapter', () => ({ generateDynamicMap: generate }));
@@ -42,12 +43,13 @@ async function fixture(unlockParam = '') {
   let seed: number | null = 92;
   const primary = result();
   const rebuildAltLayers = vi.fn();
+  const setSunUnlocks = vi.fn();
   const unifiedSearch = {
     setIndexingState: vi.fn(), setDynamicPOIs: vi.fn(), updateSearchResults: vi.fn(),
   };
   const dependencies = {
     ...variants, getCurrentDynamicSeed: () => seed, getCurrentIsDaily: () => false,
-    getLastGenerationResult: () => primary, getUnlocksFromURL,
+    getLastGenerationResult: () => primary, getUnlocksFromURL, getSunUnlocks, setSunUnlocks,
     getAllPOIsFlat: (value: GenerationResult) => Object.values(value.poisByPW).flat(),
     buildPOIName: () => 'Wand', isSkipCreatures: () => false,
     app: { osd: {} }, rebuildAltLayers, unifiedSearch,
@@ -56,7 +58,7 @@ async function fixture(unlockParam = '') {
     let _allDynamicPOIs = [], _currentDynamicPOIs = [];
     ${refreshJS}
   `)(...Object.values(dependencies));
-  return { ...variants, primary, rebuildAltLayers, unifiedSearch, setSeed: (value: number | null) => { seed = value; } };
+  return { ...variants, primary, rebuildAltLayers, setSunUnlocks, unifiedSearch, setSeed: (value: number | null) => { seed = value; } };
 }
 
 describe('POI refresh after background unlock generation', () => {
@@ -88,6 +90,7 @@ describe('POI refresh after background unlock generation', () => {
   it('applies a selected pending variant once, ignoring the other variant finishing later', async () => {
     const f = await fixture('&u=AQAAAAA');
     f.setActiveDescriptor('all');
+    expect(f.setSunUnlocks).toHaveBeenLastCalledWith(['sun', 'dark_sun']); // immediate, before alternate generation
     expect(f.unifiedSearch.setIndexingState).toHaveBeenLastCalledWith('indexing');
     expect(f.rebuildAltLayers).not.toHaveBeenCalled();
     await f.prewarmAlt(92, false); // completes all, then none
@@ -95,6 +98,16 @@ describe('POI refresh after background unlock generation', () => {
     expect(f.rebuildAltLayers).toHaveBeenCalledExactlyOnceWith(
       expect.anything(), f.getAltResult('all', 92), null, false);
     expect(f.unifiedSearch.setIndexingState).toHaveBeenLastCalledWith('ready');
+  });
+
+  it('resets to the new mod Sun flags even when spell unlocks did not change', async () => {
+    const f = await fixture('&u=AQAAAAA&sun=1');
+    f.setActiveDescriptor('none');
+    expect(f.setSunUnlocks).toHaveBeenLastCalledWith([]);
+    history.replaceState({}, '', '/?m=dy&se=92&u=AQAAAAA&sun=2');
+    f.resetUnlocksForNavigation();
+    expect(f.getActiveDescriptor()).toBe('mod');
+    expect(getSunUnlocks(f.getActiveDescriptor())).toEqual(['dark_sun']);
   });
 
   it('still switches markers for explicit changes to a cached variant and back to primary', async () => {

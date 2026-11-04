@@ -7,9 +7,19 @@ definitions and their three textures are packaged. The game archive and studio
 UI are not included. Existing portal rendering is not replaced by this import.
 Map presentation, culling and worker budgets live outside `runtime/`.
 
-The two figures use the existing Moon and Dark Moon quest landmarks. They show
-potential Sun locations, just as conditional portals show potential portal sites;
-they do not infer a player's current Sun quest progress.
+The two figures use the existing Moon and Dark Moon quest landmarks. The
+all-unlocked view shows both; the locked view shows neither. The mod view uses
+`sun=0..3`: bit 0 is `moon_is_sun`, bit 1 is `darkmoon_is_darksun`, matching
+the game's Moon initializer scripts. Sun-creation achievements are not Moon
+replacement flags. Missing/invalid state in older mod links leaves both Moons.
+
+Both Moon replacements reuse one 1-by-1 opaque black image, scaled to each
+original 512-by-512 scene footprint. Their source positions are in Noita's
+`data/biome_impl/spliced/_moon.bat` (0, -26112) and `_moon_dark.bat` (0, 37512).
+The patch covers captured, generated and baked Moon pixels, below POI markers.
+It becomes visible only with a loaded Sun preview or frame, remains with the
+paused image at overview zoom, and is removed on disable/reseed. It creates no
+new animation loop, terrain bake, shader pass or tile pyramid.
 
 Initial stills are prepared once with `node build_scripts/build-sun-previews.mjs`
 (Node, Mesa GLES, no browser). They use the same lighting and renderer as live
@@ -39,8 +49,11 @@ surface view until the user visits a Sun.
 
 Local inspection:
 
-- Sun: `/?m=dy&se=618&x=259&y=-25847&z=1200`
-- Dark Sun: `/?m=dy&se=618&x=261&y=37764&z=1200`
+- Sun: `/?m=dy&se=618&u=AAAAAAA&sun=1&x=259&y=-25847&z=1200`
+- Dark Sun: `/?m=dy&se=618&u=AAAAAAA&sun=2&x=261&y=37764&z=1200`
+- Change `sun=0` for neither replacement or `sun=3` for both. These mod-view
+  examples intentionally leave the spell-unlock list empty; do not use them
+  as a claim about the player's real save. The updated mod sends actual flags.
 - Add `&sunEffects=0` for a comparison with no Sun overlay.
 - `window.__sunOverlayStats()` reports state, cold startup, delivery time,
   frame count, target cadence, output dimensions, GPU timing when supported,

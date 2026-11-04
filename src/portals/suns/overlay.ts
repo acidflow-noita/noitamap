@@ -1,9 +1,10 @@
 import type OSD from 'openseadragon';
 import { readCameraMatrix } from '../geometry';
-import { SUNS, SUN_FRAME_SIZE, SUN_REVISION, type SunPlacement } from './placements';
+import { SUNS, SUN_FRAME_SIZE, SUN_REVISION, type SunEffect, type SunPlacement } from './placements';
 import { sunVisibility } from './visibility';
 import type { SunFrameStats, SunResponse, SunWorker } from './protocol';
 import { SunFramePacing } from './frame-pacing';
+import { MoonPatches, type MoonPatchViewer } from './moon-patches';
 
 declare const OpenSeadragon: typeof OSD;
 const EVENTS = ['update-viewport', 'resize', 'rotate', 'flip'];
@@ -11,7 +12,7 @@ const PREVIEWS = {
   sun: new URL('./sun-preview.webp', import.meta.url).href,
   dark_sun: new URL('./dark-sun-preview.webp', import.meta.url).href,
 };
-interface Viewer {
+interface Viewer extends MoonPatchViewer {
   canvas: HTMLElement;
   viewport: { pixelFromPoint(point: OSD.Point, current?: boolean): { x: number; y: number }; getFlip?(): boolean };
   addHandler(name: string, callback: () => void): void;
@@ -19,7 +20,7 @@ interface Viewer {
 }
 type Figure = {
   sun: SunPlacement; element: HTMLDivElement; preview: HTMLImageElement; canvas: HTMLCanvasElement;
-  context: ImageBitmapRenderingContext | null; hasFrame: boolean; active: boolean; prepare: boolean;
+  context: ImageBitmapRenderingContext | null; hasFrame: boolean; previewReady: boolean; active: boolean; prepare: boolean;
   pixels: number; lastRequest: number; animations: Animation[];
 };
 function makeWorker(): SunWorker {
@@ -45,12 +46,18 @@ export class SunOverlay {
   private pacing = new SunFramePacing();
   private deliveryMS = 0;
   private submittedAt = 0;
-  constructor(private viewer: Viewer, private seed: number, private factory = makeWorker, enabled = true) {
+  private moons: MoonPatches;
+  constructor(private viewer: Viewer, private seed: number, private factory = makeWorker, enabled = true,
+    effects: readonly SunEffect[] = []) {
     this.enabled = enabled;
     this.layer.className = 'noitamap-suns';
     this.layer.setAttribute('aria-hidden', 'true');
     Object.assign(this.layer.style, { position: 'absolute', inset: '0', overflow: 'hidden', pointerEvents: 'none' });
-    this.figures = SUNS.map(sun => {
+    this.moons = new MoonPatches(viewer, () => {
+      this.setEnabled(false); // Keep the original Moon if its replacement cannot be presented.
+      this.fail('Unable to load the empty Moon tile');
+    });
+    this.figures = SUNS.filter(sun => effects.includes(sun.effect)).map(sun => {
       const element = document.createElement('div'), preview = document.createElement('img'), canvas = document.createElement('canvas');
       element.dataset.effect = sun.effect;
       Object.assign(element.style, { position: 'absolute', width: `${SUN_FRAME_SIZE}px`, height: `${SUN_FRAME_SIZE}px`,
@@ -61,8 +68,14 @@ export class SunOverlay {
       preview.alt = ''; preview.decoding = 'async'; preview.draggable = false;
       canvas.hidden = true;
       element.append(preview, canvas); this.layer.append(element);
-      return { sun, element, preview, canvas, context: null, hasFrame: false, active: false, prepare: false,
+      const figure: Figure = { sun, element, preview, canvas, context: null, hasFrame: false, previewReady: false, active: false, prepare: false,
         pixels: 0, lastRequest: 0, animations: [] };
+      preview.onload = () => {
+        if (this.destroyed) return;
+        figure.previewReady = preview.naturalWidth > 0;
+        this.updateMoonPatches();
+      };
+      return figure;
     });
     viewer.canvas.append(this.layer);
     for (const event of EVENTS) viewer.addHandler(event, this.update);
@@ -86,10 +99,15 @@ export class SunOverlay {
       figure.element.style.transform = `matrix(${matrix.a},${matrix.b},${matrix.c},${matrix.d},${matrix.a * x + matrix.c * y + matrix.e},${matrix.b * x + matrix.d * y + matrix.f})`;
       if (!this.layer.hidden && state.visible && !figure.preview.hasAttribute('src')) figure.preview.src = PREVIEWS[figure.sun.effect];
     }
+    this.updateMoonPatches();
     if (!this.worker && !this.error && this.figures.some(figure => figure.prepare)) this.start();
     if (this.figures.some(figure => figure.active)) this.wake();
     else this.cancel();
   };
+  private updateMoonPatches() {
+    this.moons.show(this.figures.filter(figure => !this.layer.hidden && !figure.element.hidden &&
+      (figure.hasFrame || figure.previewReady)).map(figure => figure.sun.effect));
+  }
   private start() {
     try {
       this.worker = this.factory();
@@ -130,8 +148,11 @@ export class SunOverlay {
       if (figure.canvas.height !== data.bitmap.height) figure.canvas.height = data.bitmap.height;
       figure.context.transferFromImageBitmap(data.bitmap);
       figure.canvas.hidden = false;
-      if (!figure.hasFrame) this.reveal(figure);
-      figure.hasFrame = true;
+      if (!figure.hasFrame) {
+        this.reveal(figure);
+        figure.hasFrame = true;
+        this.updateMoonPatches();
+      }
       this.latest = data.stats; this.frames++;
       this.deliveryMS = performance.now() - this.submittedAt;
       this.pacing.observe(Math.max(this.deliveryMS, data.stats.gpuMS ?? 0), data.stats.warm);
@@ -164,15 +185,18 @@ export class SunOverlay {
     return { revision: SUN_REVISION, status: this.error ? 'error' :
       !this.enabled ? 'disabled' : !this.worker ? 'still' : !this.ready ? 'loading' :
       !this.layer.hidden && this.figures.some(figure => figure.active) ? 'animated' : 'paused',
+    effects: this.figures.map(figure => figure.sun.effect),
     error: this.error, startupMS: this.startupMS, frames: this.frames, transitions: this.transitions, targetFPS: this.pacing.fps,
     inFlight: Boolean(this.inFlight), deliveryMS: this.deliveryMS, ...this.latest };
   }
   destroy() {
     if (this.destroyed) return;
     this.destroyed = true; this.cancel(); this.worker?.terminate(); this.worker = null;
+    this.moons.destroy();
     for (const event of EVENTS) this.viewer.removeHandler(event, this.update);
     document.removeEventListener('visibilitychange', this.update);
     for (const figure of this.figures) {
+      figure.preview.onload = null;
       for (const animation of figure.animations) animation.cancel();
       figure.context?.transferFromImageBitmap(null); figure.canvas.width = figure.canvas.height = 1;
     }

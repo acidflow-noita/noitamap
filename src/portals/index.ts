@@ -4,6 +4,7 @@ import type { PortalSeed } from './placements';
 import type { PortalGPUOverlay, PortalGPUStats } from './overlay';
 import type { PortalBackgroundPatches } from './background-patches';
 import { SunOverlay } from './suns/overlay';
+import type { SunEffect } from './suns/placements';
 export interface PortalGPUState {
   enabled:boolean; status:'off'|'waiting'|'loading'|'running'|'error'; error:string|null; stats:PortalGPUStats|null;
 }
@@ -11,6 +12,7 @@ let state:PortalGPUState={enabled:isPortalAnimations(),status:isPortalAnimations
 const listeners=new Set<(state:PortalGPUState)=>void>();
 let backgrounds:PortalBackgroundPatches|null=null;
 let suns:SunOverlay|null=null;
+let sunUnlocks:readonly SunEffect[]=[];
 let overlay:PortalGPUOverlay|null=null,revision=0,owner:any=null,seed:PortalSeed|null=null,request:AbortController|null=null;
 function publish(next:Partial<PortalGPUState>){state={...state,...next};for(const listener of listeners)listener(state);}
 export function getPortalGPUState():PortalGPUState{return state;}
@@ -52,17 +54,25 @@ export function setPortalGPUEnabled(enabled:boolean):void {
 }
 function startSuns(){
   suns?.destroy();suns=null;
-  if(owner&&seed&&new URLSearchParams(location.search).get('sunEffects')!=='0')
-    suns=new SunOverlay(owner,seed.seed,undefined,!isSpoilerFree());
+  if(owner&&seed&&sunUnlocks.length&&new URLSearchParams(location.search).get('sunEffects')!=='0')
+    suns=new SunOverlay(owner,seed.seed,undefined,!isSpoilerFree(),sunUnlocks);
+}
+/** Unlock changes are presentation-only and must not restart portal workers. */
+export function setSunUnlocks(effects:readonly SunEffect[]):void {
+  if(effects.length===sunUnlocks.length&&effects.every(effect=>sunUnlocks.includes(effect)))return;
+  sunUnlocks=[...effects];
+  if(state.enabled)startSuns();
 }
 export function clearPortalAnimations():void {
   suns?.destroy();suns=null;
+  sunUnlocks=[];
   stop();owner?.removeHandler('destroy',clearPortalAnimations);owner=null;seed=null;
   publish({status:state.enabled?'waiting':'off',stats:null,error:null});
 }
 /** Register metadata only while off: no GPU modules, resources, context or RAF. */
-export function installPortalAnimations(viewer:any,current:PortalSeed):void {
+export function installPortalAnimations(viewer:any,current:PortalSeed,effects:readonly SunEffect[]=[]):void {
   clearPortalAnimations();owner=viewer;seed=current;owner.addHandler('destroy',clearPortalAnimations);
+  sunUnlocks=[...effects];
   if(state.enabled){startSuns();void start();}
 }
 onPortalAnimationsChange(setPortalGPUEnabled);

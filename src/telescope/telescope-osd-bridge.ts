@@ -1,5 +1,6 @@
 import * as bootstrap from "../bootstrap";
 import { clearPortalAnimations, installPortalAnimations } from "../portals";
+import { getSunUnlocks } from "../sun-unlocks";
 import { createDustAttribution, usesDustAnimation } from "../portals/attribution";
 import { canOpenPOIFromCanvas, drawingOwnsMapPointer, onDrawingMapOwnershipChange } from "../drawing/poi-interaction";
 import { onProSidebarIntent } from "../pro-sidebar-intent";
@@ -5387,7 +5388,7 @@ export async function renderGenerationResult(
 
     // A separate, non-interactive animation layer; never baked into terrain or
     // added to loot counts. Scene metadata also works on existing daily bakes.
-    installPortalAnimations(viewer, result);
+    installPortalAnimations(viewer, result, getSunUnlocks(getActiveDescriptor()));
 
     // GPU replacement waits for a complete viewport draw. Other paths retain
     // the empty-result safety net for old items.

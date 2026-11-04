@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import OpenSeadragon from 'openseadragon';
 import { SunOverlay } from '../src/portals/suns/overlay';
-import { SUNS } from '../src/portals/suns/placements';
+import { SUNS, type SunEffect } from '../src/portals/suns/placements';
 import { sunVisibility } from '../src/portals/suns/visibility';
 import { SunFramePacing } from '../src/portals/suns/frame-pacing';
 import { readFileSync } from 'node:fs';
@@ -22,16 +22,24 @@ beforeEach(() => {
 });
 afterEach(() => { overlay?.destroy(); overlay = undefined; queue.clear(); document.body.replaceChildren(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const tick = (now: number) => { const work = [...queue.values()]; queue.clear(); work.forEach(cb => cb(now)); };
-function setup(initialScale = 1, visible = true, enabled = true) {
+function setup(initialScale = 1, visible = true, enabled = true, effects: readonly SunEffect[] = ['sun', 'dark_sun']) {
   const canvas = document.createElement('div'); document.body.append(canvas);
   Object.defineProperties(canvas, { clientWidth: { value: 800 }, clientHeight: { value: 600 } });
   let scale = initialScale, x = SUNS[0].x, y = visible ? SUNS[0].y : 0;
   const handlers = new Map<string, () => void>();
+  const items: any[] = [];
+  const requests: any[] = [];
   const viewer = { canvas, viewport: { pixelFromPoint: (p: { x: number; y: number }) => ({ x: (p.x - x) * scale + 400, y: (p.y - y) * scale + 300 }) },
-    addHandler: (name: string, cb: () => void) => handlers.set(name, cb), removeHandler: (name: string) => handlers.delete(name) };
+    addHandler: (name: string, cb: () => void) => handlers.set(name, cb), removeHandler: (name: string) => handlers.delete(name),
+    addTiledImage: vi.fn(options => { requests.push(options); }),
+    world: { addHandler: vi.fn(), removeHandler: vi.fn(), getItemCount: () => items.length,
+      getItemAt: (index: number) => items[index],
+      setItemIndex: vi.fn((item, index) => { items.splice(items.indexOf(item), 1); items.splice(index, 0, item); }),
+      removeItem: vi.fn(item => { const i = items.indexOf(item); if (i >= 0) items.splice(i, 1); }) },
+  };
   const worker: SunWorker = { postMessage: vi.fn(), terminate: vi.fn(), onmessage: null, onerror: null };
   const factory = vi.fn(() => worker);
-  overlay = new SunOverlay(viewer, 618, factory, enabled);
+  overlay = new SunOverlay(viewer, 618, factory, enabled, effects);
   const send = (data: SunResponse) => worker.onmessage!({ data } as MessageEvent<SunResponse>);
   const frames = () => vi.mocked(worker.postMessage).mock.calls.map(([data]) => data).filter((data): data is Extract<SunRequest, { type: 'frame' }> => data.type === 'frame');
   const reply = () => {
@@ -42,9 +50,50 @@ function setup(initialScale = 1, visible = true, enabled = true) {
     return bitmap;
   };
   const move = (zoom: number, sun = SUNS[0]) => { scale = zoom; x = sun.x; y = sun.y; handlers.get('update-viewport')!(); };
-  return { canvas, handlers, worker, factory, frames, send, reply, move };
+  return { canvas, handlers, worker, factory, frames, send, reply, move, viewer, requests, loadPatch(index = 0) {
+    const item = { setOpacity: vi.fn() }; items.push(item); requests[index].success({ item }); return item;
+  } };
 }
 describe('Sun transitions and resource lifetime', () => {
+  it('does not load previews, a patch or a worker for locked Suns', () => {
+    const test = setup(1, true, true, []);
+    expect(test.factory).not.toHaveBeenCalled(); expect(test.requests).toHaveLength(0);
+    expect(test.canvas.querySelectorAll('img, canvas')).toHaveLength(0);
+  });
+  it('loads only the unlocked Sun, including when the camera visits the other Moon', () => {
+    const test = setup(1, true, true, ['dark_sun']);
+    expect(test.factory).not.toHaveBeenCalled(); expect(test.requests).toHaveLength(0);
+    expect(test.canvas.querySelector('[data-effect="sun"]')).toBeNull();
+    test.move(1, SUNS[1]); test.send({ type: 'ready', startupMS: 20 }); tick(1); test.reply();
+    expect(test.frames().map(frame => frame.effect)).toEqual(['dark_sun']);
+    expect(test.requests).toHaveLength(1);
+    expect(test.requests[0]).toMatchObject({ x: 0, y: 37512, width: 512 });
+  });
+  it('covers a Moon only when a real preview or frame is visible and restores it on disable', () => {
+    const test = setup(.01);
+    expect(test.requests).toHaveLength(0); // pending preview must not erase the Moon
+    const preview = test.canvas.querySelector('img')!;
+    Object.defineProperty(preview, 'naturalWidth', { value: 1536 });
+    preview.dispatchEvent(new Event('load'));
+    expect(test.requests).toHaveLength(1);
+    const patch = test.loadPatch(); expect(patch.setOpacity).toHaveBeenLastCalledWith(1);
+    expect(test.factory).not.toHaveBeenCalled(); // overview still needs no GPU work
+    overlay!.setEnabled(false); expect(patch.setOpacity).toHaveBeenLastCalledWith(0);
+    overlay!.setEnabled(true); expect(patch.setOpacity).toHaveBeenLastCalledWith(1);
+    expect(test.requests).toHaveLength(1);
+    overlay!.destroy(); expect(test.viewer.world.removeItem).toHaveBeenCalledWith(patch);
+    preview.dispatchEvent(new Event('load')); expect(test.requests).toHaveLength(1);
+  });
+  it('retains the Moon if both preview and animation fail, and removes patches when hidden', () => {
+    const test = setup(); vi.spyOn(console, 'warn').mockImplementation(() => {});
+    test.send({ type: 'error', message: 'no GPU' });
+    expect(test.requests).toHaveLength(0);
+    const preview = test.canvas.querySelector('img')!;
+    Object.defineProperty(preview, 'naturalWidth', { value: 1536 }); preview.dispatchEvent(new Event('load'));
+    const patch = test.loadPatch(); expect(patch.setOpacity).toHaveBeenLastCalledWith(1);
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(true); document.dispatchEvent(new Event('visibilitychange'));
+    expect(patch.setOpacity).toHaveBeenLastCalledWith(0);
+  });
   it('overrides the real map pixelation rule for Sun frames without changing terrain filtering', () => {
     const css = readFileSync(resolve('public/css/style.css'), 'utf8');
     const style = document.createElement('style');

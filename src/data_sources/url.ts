@@ -41,7 +41,7 @@ export interface URLState extends Partial<AppState> {
  * Desired URL param order: x, y, z (zoom), m (map), se (seed), ds (daily seed), o (overlays), s (sidebar), c (canvas), poi (targetPoiId), q (search), f (filters), sr (seed report), u (unlocks descriptor / mod payload)
  * Short params used for encoding, decoder accepts both short and long names
  */
-const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c', 'poi', 'spawn', 'q', 'f', 'sr', 'u'];
+const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c', 'poi', 'spawn', 'q', 'f', 'sr', 'u', 'p', 'sun'];
 
 /** Only local creature IDs belong in this parameter, never paths or URLs. */
 export function normalizeSpawnCreatureId(value: string | null | undefined): string | undefined {

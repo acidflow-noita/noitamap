@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../src/spoiler-free',()=>({isSpoilerFree:()=>false,onSpoilerFreeChange:vi.fn()}));
-vi.mock('../src/portals/suns/overlay',()=>({SunOverlay:class{setEnabled(){}destroy(){}stats(){return {};}}}));
-const runtime=vi.hoisted(()=>({load:vi.fn(),create:vi.fn(),construct:vi.fn(),destroy:vi.fn(),enabled:vi.fn()}));
+vi.mock('../src/portals/suns/overlay',()=>({SunOverlay:class{
+  constructor(...args:any[]){runtime.sun(...args);} setEnabled(){}destroy(){runtime.sunDestroy();}stats(){return {};}
+}}));
+const runtime=vi.hoisted(()=>({load:vi.fn(),create:vi.fn(),construct:vi.fn(),destroy:vi.fn(),enabled:vi.fn(),sun:vi.fn(),sunDestroy:vi.fn()}));
 vi.mock('../src/portals/overlay',()=>({
   loadPortalResources:runtime.load,createGPURuntime:runtime.create,
   PortalGPUOverlay:class{
@@ -12,13 +14,28 @@ vi.mock('../src/portals/overlay',()=>({
     stats(){return {mode:'experimental-gpu-particles',total:1,visible:1,active:1,capped:0,particles:0,visibleParticles:0,cpuMS:0,gpuMS:null,fps:0,simFPS:0,deliveryMS:0,gpuWaitMS:0,estimatedGPUBytes:0,canvasPixels:100,device:'test GPU',suspended:false};}
   },
 }));
-import { clearPortalAnimations,getPortalGPUState,installPortalAnimations,setPortalGPUEnabled } from '../src/portals';
+import { clearPortalAnimations,getPortalGPUState,installPortalAnimations,setPortalGPUEnabled,setSunUnlocks } from '../src/portals';
 import { isPortalAnimations,setPortalAnimations } from '../src/portal-animations';
 const viewer=()=>({addHandler:vi.fn(),removeHandler:vi.fn(),addTiledImage:vi.fn(),world:{addHandler:vi.fn(),removeHandler:vi.fn(),removeItem:vi.fn(),getItemCount:vi.fn(()=>0),getItemAt:vi.fn(),setItemIndex:vi.fn()}});
 const seed={seed:42,worldSize:70,worldCenter:35,pixelScenesByPW:{'0,0':[{key:'temple/altar_top',name:'altar_top',x:0,y:984}]}};
 beforeEach(()=>{setPortalGPUEnabled(false);clearPortalAnimations();vi.clearAllMocks();runtime.load.mockResolvedValue({});runtime.construct.mockReset();});
 afterEach(()=>{setPortalGPUEnabled(false);clearPortalAnimations();document.body.replaceChildren();});
 describe('GPU-only portal renderer driven by the performance setting',()=>{
+  it('requires explicit Sun unlocks and updates them without restarting portals',async()=>{
+    installPortalAnimations(viewer(),seed);setPortalGPUEnabled(true);
+    await vi.waitFor(()=>expect(runtime.construct).toHaveBeenCalledOnce());
+    expect(runtime.sun).not.toHaveBeenCalled();
+    setSunUnlocks(['sun']);expect(runtime.sun.mock.calls[0][4]).toEqual(['sun']);
+    setSunUnlocks(['sun']);expect(runtime.sun).toHaveBeenCalledOnce();
+    setSunUnlocks([]);expect(runtime.sunDestroy).toHaveBeenCalledOnce();
+    expect(runtime.destroy).not.toHaveBeenCalled();
+    setSunUnlocks(['dark_sun']);expect(runtime.sun.mock.calls[1][4]).toEqual(['dark_sun']);
+    setPortalGPUEnabled(false);expect(runtime.sunDestroy).toHaveBeenCalledTimes(2);
+    setPortalGPUEnabled(true);
+    expect(runtime.sun.mock.calls[2][4]).toEqual(['dark_sun']);
+    installPortalAnimations(viewer(),{...seed,seed:43});
+    expect(runtime.sun).toHaveBeenCalledTimes(3); // no stale save state on a new owner
+  });
   it('is on by default and persists the setting when switched',()=>{
     const storage=(globalThis as any).localStorage as Storage|undefined;
     expect(isPortalAnimations()).toBe(true);

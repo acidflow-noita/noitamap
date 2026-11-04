@@ -43,6 +43,8 @@ import {
 } from "./unlocks-toggle";
 import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport, openTooltipForPOI, closePOICard, guardPOICardContext, resetPOICardContext, restorePOICardContext, getPOISpriteFirstFrame, applyHighValueOverlays } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
+import { getSunUnlocks } from "./sun-unlocks";
+import { setSunUnlocks } from "./portals";
 import type { GenerationResult } from "./telescope/telescope-adapter";
 import { isRenderer, getStoredRenderer, setStoredRenderer, clearStoredRenderer } from "./renderer_settings";
 
@@ -712,6 +714,8 @@ startWhenReady(async () => {
   };
 
   onActiveDescriptorChange(() => {
+    // Suns do not depend on the alternate loot scan being ready.
+    setSunUnlocks(getSunUnlocks(getActiveDescriptor()));
     refreshActiveVariant();
   });
 

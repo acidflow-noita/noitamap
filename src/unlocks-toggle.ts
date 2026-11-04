@@ -36,6 +36,7 @@ type AltReadyListener = (descriptor: UnlockDescriptor, seed: number) => void;
 
 const VIEW_STORAGE = "noitamap-unlocks-view";
 const URL_KEY_STORAGE = "noitamap-unlocks-url-key";
+const SUN_URL_STORAGE = "noitamap-sun-unlocks-url-key";
 
 // Per-seed, per-descriptor cache. Keys: `${seed}|${descriptor}`.
 const altCache = new Map<string, GenerationResult>();
@@ -101,10 +102,14 @@ export function primaryDescriptor(): UnlockDescriptor {
  *  changes — never reset on those. */
 function resetViewIfModChanged(): void {
   try {
-    const cur = new URLSearchParams(window.location.search).get("u") || "";
+    const params = new URLSearchParams(window.location.search);
+    const cur = params.get("u") || "";
+    const sun = params.get("sun") || "";
     const last = localStorage.getItem(URL_KEY_STORAGE) || "";
-    if (cur === last) return;
+    const lastSun = localStorage.getItem(SUN_URL_STORAGE) || "";
+    if (cur === last && sun === lastSun) return;
     localStorage.setItem(URL_KEY_STORAGE, cur);
+    localStorage.setItem(SUN_URL_STORAGE, sun);
     const curIsMod = cur !== "" && cur !== "all" && cur !== "none";
     if (curIsMod) {
       localStorage.setItem(VIEW_STORAGE, "mod");

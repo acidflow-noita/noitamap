@@ -2,7 +2,7 @@ import { asMapName, type MapName } from './data_sources/tile_data';
 import { parseURL, reorderParams, type URLState } from './data_sources/url';
 import type { ZoomPos } from './app_osd';
 
-const GAME_PARAMS = ['m', 'se', 'ds', 'u', 'p'] as const;
+const GAME_PARAMS = ['m', 'se', 'ds', 'u', 'p', 'sun'] as const;
 const OWNED_PARAMS = [...GAME_PARAMS, 'x', 'y', 'z'] as const;
 
 export function parseModNavigation(href: string, origin: string): { url: URL; state: URLState & { map: MapName } } | null {
@@ -63,8 +63,8 @@ export function createModNavigation(options: ModNavigationOptions) {
       const { url, state } = parsed, next = mergeModNavigation(current, url), request = ++epoch;
       const previousState = parseURL(current.href);
       const gameChanged = state.map !== options.getMap() || state.seed !== previousState.seed
-        || ['u', 'p', 'ds'].some(k => current.searchParams.get(k) !== next.searchParams.get(k));
-      const unlocksChanged = ['u', 'p'].some(k => current.searchParams.get(k) !== next.searchParams.get(k));
+        || ['u', 'p', 'sun', 'ds'].some(k => current.searchParams.get(k) !== next.searchParams.get(k));
+      const unlocksChanged = ['u', 'p', 'sun'].some(k => current.searchParams.get(k) !== next.searchParams.get(k));
       options.closeCard();
       options.replaceURL(next);
       if (unlocksChanged) options.resetUnlocks();

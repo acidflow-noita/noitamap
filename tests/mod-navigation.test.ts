@@ -34,6 +34,18 @@ describe('in-page mod navigation', () => {
     expect(f.accept(url.href)).toBe(true);
     expect(f.resetUnlocks).toHaveBeenCalledOnce(); expect(f.renderDynamic).toHaveBeenCalledOnce();
   });
+  it('updates Moon flags on same-seed mod handoffs and clears stale flags from older links', () => {
+    const f = setup();
+    f.accept(link('&sun=3'));
+    expect(new URL(f.href()).searchParams.get('sun')).toBe('3');
+    expect(f.renderDynamic).toHaveBeenCalledOnce(); expect(f.resetUnlocks).toHaveBeenCalledOnce();
+    f.accept(link('&sun=3')); expect(f.renderDynamic).toHaveBeenCalledOnce(); // position-only
+    f.accept(link('&sun=0'));
+    expect(new URL(f.href()).searchParams.get('sun')).toBe('0');
+    f.accept(link());
+    expect(new URL(f.href()).searchParams.has('sun')).toBe(false);
+    expect(f.renderDynamic).toHaveBeenCalledTimes(3);
+  });
   it.each(['1', 'true'])('preserves resolved Daily mode %s when the mod only changes its position', daily => {
     const f = setup('?m=dy&se=91&u=AQAAAAA&p=1.AA&ds=' + daily);
     f.accept(link()); expect(f.renderDynamic).not.toHaveBeenCalled();
