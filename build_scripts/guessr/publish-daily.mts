@@ -1,16 +1,15 @@
 /** Publish versioned static imagery first; activate the matching private daily last. */
 import { readFile, writeFile, readdir, lstat } from 'node:fs/promises';
 import { createHmac } from 'node:crypto';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { resolve, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateDailyPack } from '../../workers/noitamap-guessr/src/daily-publish';
 import type { DailyImagePack } from '../../src/guessr/daily-pack';
 import { DAILY_ROUNDS } from '../../src/guessr/daily-pack';
+import { deployPagesDirectory, type PagesCommand } from './pages-deploy.mts';
+import { withProgress } from './progress.mts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const exec = promisify(execFile);
 const branch = 'daily-images';
 const json = async (path: string) => JSON.parse(await readFile(path, 'utf8'));
 interface Settings {
@@ -19,22 +18,24 @@ interface Settings {
 }
 
 export async function validatePublicDirectory(directory: string, kind: 'clues' | 'reference', expected: number) {
-  let files = 0;
-  async function walk(path: string, prefix = ''): Promise<void> {
-    for (const entry of await readdir(path, { withFileTypes: true })) {
-      const relative = prefix + entry.name, filename = join(path, entry.name);
-      if (entry.isDirectory()) { await walk(filename, relative + '/'); continue; }
-      const allowed = kind === 'clues' ? /^(?:_headers|dataset\.json|images\/[a-f0-9]{32}\.webp)$/
-        : /^(?:_headers|map\.dzi|map_files\/\d+\/\d+_\d+\.webp)$/;
-      const stat = await lstat(filename);
-      if (!allowed.test(relative) || !stat.isFile() || !stat.size || stat.size > 25 * 1024 ** 2)
-        throw new Error(`Unexpected, private, or oversized file in ${kind} output: ${relative}`);
-      files++;
+  return withProgress(`Validating ${kind} files`, expected, async progress => {
+    let files = 0;
+    async function walk(path: string, prefix = ''): Promise<void> {
+      for (const entry of await readdir(path, { withFileTypes: true })) {
+        const relative = prefix + entry.name, filename = join(path, entry.name);
+        if (entry.isDirectory()) { await walk(filename, relative + '/'); continue; }
+        const allowed = kind === 'clues' ? /^(?:_headers|dataset\.json|images\/[a-f0-9]{32}\.webp)$/
+          : /^(?:_headers|map\.dzi|map_files\/\d+\/\d+_\d+\.webp)$/;
+        const stat = await lstat(filename);
+        if (!allowed.test(relative) || !stat.isFile() || !stat.size || stat.size > 25 * 1024 ** 2)
+          throw new Error(`Unexpected, private, or oversized file in ${kind} output: ${relative}`);
+        files++; progress.advance();
+      }
     }
-  }
-  await walk(directory);
-  if (files !== expected || files > 20000) throw new Error(`Invalid ${kind} file count: ${files}/${expected}.`);
-  return files;
+    await walk(directory);
+    if (files !== expected || files > 20000) throw new Error(`Invalid ${kind} file count: ${files}/${expected}.`);
+    return files;
+  });
 }
 
 function settings(env: NodeJS.ProcessEnv): Settings {
@@ -56,6 +57,7 @@ export async function publishDailyPackage(options: {
   fetch?: typeof fetch;
   deploy?: (directory: string, project: string, settings: Settings) => Promise<string>;
   now?: number;
+  pagesCommand?: PagesCommand;
 }) {
   const directory = resolve(options.directory), env = options.env ?? process.env, fetcher = options.fetch ?? fetch;
   const [manifest, draft] = await Promise.all([json(join(directory, 'manifest.json')), json(join(directory, 'private/daily.json'))]);
@@ -90,19 +92,19 @@ export async function publishDailyPackage(options: {
       throw new Error('The expected Pages project is missing or its production branch conflicts with daily publication.');
     hosts.set(project, info.result.subdomain);
   }
-  const deploy = options.deploy ?? (async (path: string, project: string) => {
-    const wrangler = join(root, 'workers/noitamap-guessr/node_modules/wrangler/bin/wrangler.js');
-    const { stdout } = await exec(process.execPath, [wrangler, 'pages', 'deploy', path, '--project-name', project,
-      '--branch', branch, '--commit-dirty=true'], { cwd: path, maxBuffer: 5 * 1024 ** 2,
-      env: { ...env, CLOUDFLARE_ACCOUNT_ID: cfg.account, CLOUDFLARE_API_TOKEN: cfg.token, WRANGLER_SEND_METRICS: 'false', WRANGLER_LOG: 'info' } });
-    const escaped = hosts.get(project)!.replaceAll('.', '\\.');
-    const urls = stdout.match(new RegExp(`https://[a-f0-9]{8}\\.${escaped}`, 'g'));
-    if (!urls?.length) throw new Error('Wrangler did not return an immutable Pages deployment URL.');
-    return urls.at(-1)!;
-  });
-  const [clueDeployment, referenceDeployment] = await Promise.all([
-    deploy(join(directory, 'clues'), cfg.cluesProject, cfg), deploy(join(directory, 'reference'), cfg.referenceProject, cfg),
+  const deploy = options.deploy ?? ((path: string, project: string) => deployPagesDirectory({
+    directory: path, project, host: hosts.get(project)!, account: cfg.account, token: cfg.token, env,
+    wrangler: join(root, 'workers/noitamap-guessr/node_modules/wrangler/bin/wrangler.js'), run: options.pagesCommand,
+  }));
+  // Let both commands finish so one error does not interrupt the other upload.
+  const deployments = await Promise.allSettled([
+    withProgress('Uploading clue images', null, () => deploy(join(directory, 'clues'), cfg.cluesProject, cfg)),
+    withProgress('Uploading reference images', null, () => deploy(join(directory, 'reference'), cfg.referenceProject, cfg)),
   ]);
+  const [clues, reference] = deployments;
+  if (clues.status === 'rejected' || reference.status === 'rejected')
+    throw new AggregateError(deployments.flatMap(result => result.status === 'rejected' ? [result.reason] : []), 'Daily image deployment failed; the Daily was not activated.');
+  const clueDeployment = clues.value, referenceDeployment = reference.value;
   for (const round of pack.rounds) for (const frame of round.frames) {
     const image = new URL(frame.image);
     if (image.origin !== 'https://images.invalid' || !/^\/images\/[a-f0-9]{32}\.webp$/.test(image.pathname)) throw new Error('Unexpected draft image URL.');
@@ -113,18 +115,28 @@ export async function publishDailyPackage(options: {
   const urls = [...new Set(pack.rounds.flatMap(round => round.frames.map(frame => frame.image)))];
   urls.push(referenceDeployment + '/map.dzi');
   // Verify the images players will need before exposing the new daily.
-  for (const url of urls) {
-    const response = await fetcher(url, { method: 'HEAD', signal: AbortSignal.timeout(15000) });
-    if (!response.ok || url.endsWith('.webp') && !response.headers.get('Content-Type')?.includes('image/webp'))
-      throw new Error('A published daily image is not available yet; the daily was not activated.');
-  }
+  await withProgress('Checking published images', urls.length, async progress => {
+    let next = 0;
+    await Promise.all(Array.from({ length: 4 }, async () => {
+      while (next < urls.length) {
+        const url = urls[next++];
+        const response = await fetcher(url, { method: 'HEAD', signal: AbortSignal.timeout(15000) });
+        if (!response.ok || url.endsWith('.webp') && !response.headers.get('Content-Type')?.includes('image/webp'))
+          throw new Error('A published daily image is not available yet; the daily was not activated.');
+        progress.advance();
+      }
+    }));
+  });
   await checkSeed();
   const body = JSON.stringify(pack), signature = createHmac('sha256', cfg.signingSecret).update(body).digest('hex');
-  const response = await fetcher(cfg.api + '/api/admin/daily', { method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Guessr-Publish-Signature': signature }, body, signal: AbortSignal.timeout(30000) });
-  const receipt: any = await response.json();
-  if (!response.ok || receipt.day !== pack.day || receipt.seed !== pack.seed || receipt.version !== pack.version)
-    throw new Error(`Daily activation failed: ${typeof receipt.error === 'string' ? receipt.error : response.status}. Existing daily data remains active.`);
+  const receipt: any = await withProgress('Activating Daily', null, async () => {
+    const response = await fetcher(cfg.api + '/api/admin/daily', { method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Guessr-Publish-Signature': signature }, body, signal: AbortSignal.timeout(30000) });
+    const receipt: any = await response.json();
+    if (!response.ok || receipt.day !== pack.day || receipt.seed !== pack.seed || receipt.version !== pack.version)
+      throw new Error(`Daily activation failed: ${typeof receipt.error === 'string' ? receipt.error : response.status}. Existing daily data remains active.`);
+    return receipt;
+  });
   const published = { ...manifest, published: true, id: receipt.id, clueDeployment, referenceDeployment };
   await writeFile(join(directory, 'publication.json'), JSON.stringify(published, null, 2) + '\n');
   return published;

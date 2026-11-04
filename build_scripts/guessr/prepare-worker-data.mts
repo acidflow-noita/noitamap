@@ -30,6 +30,7 @@ export async function prepareWorkerData(
     outputDirectory?: string;
     publicConfigPath?: string;
     referenceRoot?: string;
+    onProgress?: () => void;
   } = {},
 ) {
   const [index, inventory] = (await Promise.all([
@@ -84,53 +85,55 @@ export async function prepareWorkerData(
     positions = 0;
   const excluded: string[] = [];
   for (const area of inventory.puzzleAreas) {
-    if (
-      !area.runs?.length ||
-      !area.scoring ||
-      !area.difficultyTier ||
-      area.difficultyRule
-    ) {
-      excluded.push(area.id);
-      continue;
-    }
-    const sampler = prepareAreaStarts(index, area);
-    if (!sampler.pixels) {
-      excluded.push(area.id);
-      continue;
-    }
-    if (sampler.pixels > 0xffffffff)
-      throw new Error(
-        `Area ${area.id} exceeds the sampler's native-pixel limit.`,
-      );
-    const data = Buffer.alloc(8 + sampler.rectangles.length * 20);
-    data.write("NGS1");
-    data.writeUInt32LE(sampler.rectangles.length, 4);
-    let total = 0;
-    sampler.rectangles.forEach((r, n) => {
-      const offset = 8 + n * 20;
-      data.writeInt32LE(r.x, offset);
-      data.writeInt32LE(r.y, offset + 4);
-      data.writeUInt32LE(r.width, offset + 8);
-      data.writeUInt32LE(r.height, offset + 12);
-      total += r.width * r.height;
-      data.writeUInt32LE(total, offset + 16);
-    });
-    const filename =
-      createHash("sha256").update(area.id).digest("hex").slice(0, 32) + ".bin";
-    await write(resolve(output, "game-data/starts", filename), data);
-    const definition: AreaDefinition = {
-      id: area.id,
-      label: area.label,
-      originY: area.originY,
-      runs: area.runs,
-      bounds: area.bounds,
-      cells: area.cells,
-      difficultyTier: area.difficultyTier,
-      scoring: area.scoring,
-    };
-    catalog.areas.push({ definition, starts: filename, positions: total });
-    samplerBytes += data.byteLength;
-    positions += total;
+    try {
+      if (
+        !area.runs?.length ||
+        !area.scoring ||
+        !area.difficultyTier ||
+        area.difficultyRule
+      ) {
+        excluded.push(area.id);
+        continue;
+      }
+      const sampler = prepareAreaStarts(index, area);
+      if (!sampler.pixels) {
+        excluded.push(area.id);
+        continue;
+      }
+      if (sampler.pixels > 0xffffffff)
+        throw new Error(
+          `Area ${area.id} exceeds the sampler's native-pixel limit.`,
+        );
+      const data = Buffer.alloc(8 + sampler.rectangles.length * 20);
+      data.write("NGS1");
+      data.writeUInt32LE(sampler.rectangles.length, 4);
+      let total = 0;
+      sampler.rectangles.forEach((r, n) => {
+        const offset = 8 + n * 20;
+        data.writeInt32LE(r.x, offset);
+        data.writeInt32LE(r.y, offset + 4);
+        data.writeUInt32LE(r.width, offset + 8);
+        data.writeUInt32LE(r.height, offset + 12);
+        total += r.width * r.height;
+        data.writeUInt32LE(total, offset + 16);
+      });
+      const filename =
+        createHash("sha256").update(area.id).digest("hex").slice(0, 32) + ".bin";
+      await write(resolve(output, "game-data/starts", filename), data);
+      const definition: AreaDefinition = {
+        id: area.id,
+        label: area.label,
+        originY: area.originY,
+        runs: area.runs,
+        bounds: area.bounds,
+        cells: area.cells,
+        difficultyTier: area.difficultyTier,
+        scoring: area.scoring,
+      };
+      catalog.areas.push({ definition, starts: filename, positions: total });
+      samplerBytes += data.byteLength;
+      positions += total;
+    } finally { options.onProgress?.(); }
   }
   if (!catalog.areas.length)
     throw new Error("No reviewed playable areas are available.");

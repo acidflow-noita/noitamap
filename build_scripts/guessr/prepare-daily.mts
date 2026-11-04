@@ -10,6 +10,7 @@ import { createPreparedRoundSource } from '../../src/guessr/prepared-rounds';
 import { DAILY_ROUNDS, type DailyImagePack } from '../../src/guessr/daily-pack';
 import type { AreaDefinition } from '../../src/guessr/area-rules';
 import { loadDailyBackground, composeDailyWorld } from './daily-background.mts';
+import { withProgress } from './progress.mts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const pendingImages = 'https://images.invalid/images';
@@ -52,19 +53,21 @@ export async function prepareDaily(options: {
   const maxLevel = Math.ceil(Math.log2(Math.max(width, height)));
   let expectedTiles = 0;
   const reference = join(output, 'reference');
-  for (let level = 0; level <= maxLevel; level++) {
-    const scale = 2 ** (maxLevel - level);
-    const cols = Math.ceil(Math.ceil(width / scale) / tileSize), rows = Math.ceil(Math.ceil(height / scale) / tileSize);
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-      const name = `${x}_${y}.webp`, source = join(bake, 'map_files', String(level), name);
-      const info = await stat(source);
-      if (!info.isFile() || !info.size || info.size > 25 * 1024 ** 2) throw new Error(`Invalid or missing bake tile ${level}/${name}.`);
-      expectedTiles++;
+  await withProgress('Validating bake tiles', manifest.tileCount, async progress => {
+    for (let level = 0; level <= maxLevel; level++) {
+      const scale = 2 ** (maxLevel - level);
+      const cols = Math.ceil(Math.ceil(width / scale) / tileSize), rows = Math.ceil(Math.ceil(height / scale) / tileSize);
+      for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+        const name = `${x}_${y}.webp`, source = join(bake, 'map_files', String(level), name);
+        const info = await stat(source);
+        if (!info.isFile() || !info.size || info.size > 25 * 1024 ** 2) throw new Error(`Invalid or missing bake tile ${level}/${name}.`);
+        expectedTiles++; progress.advance();
+      }
     }
-  }
-  if (expectedTiles !== manifest.tileCount) throw new Error('The completed bake has a mismatched tile count.');
-  const background = await loadDailyBackground({ manifest: options.backgroundManifest,
-    cacheDirectory: options.backgroundCache ?? join(output, 'private/background-cache') });
+    if (expectedTiles !== manifest.tileCount) throw new Error('The completed bake has a mismatched tile count.');
+  }, { unit: 'tiles' });
+  const background = await withProgress('Loading background manifest', null, () => loadDailyBackground({ manifest: options.backgroundManifest,
+    cacheDirectory: options.backgroundCache ?? join(output, 'private/background-cache') }));
   const composed = await composeDailyWorld(bake, { width, height, originX, originY, tileSize, overlap, maxLevel }, reference, background);
   if (composed.tiles + 2 > 20000) throw new Error('Reference images exceed the configured Pages Free file budget.');
   const sha256 = createHash('sha256').update(JSON.stringify({ seed, renderId: manifest.renderId, background: composed.backgroundIdentity, capture: composed.capture })).digest('hex');
@@ -78,18 +81,26 @@ export async function prepareDaily(options: {
   await writeFile(join(reference, 'map.dzi'), dzi);
   await writeFile(join(reference, '_headers'), '/map_files/*\n  Access-Control-Allow-Origin: *\n  Cache-Control: public, max-age=31536000, immutable\n  X-Content-Type-Options: nosniff\n');
   const indexPath = join(privateRoot, 'image-set.json');
-  const images = await exportImageSet({ sourceDirectory: sourceRoot, publicDirectory: join(output, 'clues'), privateIndexPath: indexPath });
+  let exportStats = { assets: 0, bytes: 0, indexedContent: 0 };
+  const images = await withProgress('Exporting clue tiles', composed.tiles, progress => exportImageSet({
+    sourceDirectory: sourceRoot, publicDirectory: join(output, 'clues'), privateIndexPath: indexPath,
+    onProgress: stats => { exportStats = stats; progress.advance(); },
+  }), { unit: 'tiles', details: () => `${exportStats.assets} unique images, ${exportStats.indexedContent} content masks, ${(exportStats.bytes / 1024 ** 2).toFixed(1)} MiB` });
   if (images.stats.assets + 2 > 20000) throw new Error('Clue images exceed the configured Pages Free file budget.');
   if (recipe.schemaVersion !== 1 || !Array.isArray(recipe.areas) || !recipe.areas.length) throw new Error('Reviewed puzzle-area recipe is unavailable.');
   const inventoryPath = join(privateRoot, 'inventory.json');
   await writeFile(inventoryPath, JSON.stringify({ capture, puzzleAreas: recipe.areas as AreaDefinition[] }));
   const workerDirectory = join(privateRoot, 'worker-assets');
-  const prepared = await prepareWorkerData({ indexPath, inventoryPath, outputDirectory: workerDirectory });
+  const prepared = await withProgress('Preparing playable areas', recipe.areas.length, progress => prepareWorkerData({
+    indexPath, inventoryPath, outputDirectory: workerDirectory, onProgress: () => progress.advance(),
+  }), { unit: 'areas' });
   // Choose the shared daily rounds once in CI, never while a player is exploring.
   const entropy = randomBytes(32); let counter = 0;
   const random = () => createHash('sha256').update(entropy).update(String(counter++)).digest().readUInt32LE(0) / 4294967296;
   const source = createPreparedRoundSource(async path => new Response(await readFile(join(workerDirectory, path))), pendingImages, pendingReference, random);
-  const config = await source.config(), rounds = await source.sampleRounds(DAILY_ROUNDS);
+  const config = await source.config(), rounds = await withProgress('Selecting Daily rounds', DAILY_ROUNDS, async progress => {
+    const selected = await source.sampleRounds(DAILY_ROUNDS); progress.advance(selected.length); return selected;
+  }, { unit: 'rounds' });
   const pack: DailyImagePack = {
     schemaVersion: 1, day: options.day, seed, version: config.version, renderId: manifest.renderId,
     generatedAt: manifest.generatedAt, config, rounds,

@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, rename, stat, copyFile, link } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { withProgress } from './progress.mts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 export interface PyramidGeometry {
@@ -51,15 +52,17 @@ export async function loadDailyBackground(options: { manifest?: string; cacheDir
     throw new Error('Use a prepared clean dynamic-map background, not a captured game map.');
   validate(manifest.capture);
   const cache = join(resolve(options.cacheDirectory), manifest.identity);
+  const stats = { cached: 0, downloaded: 0, local: 0, bytesDownloaded: 0 };
   async function tile(level: number, x: number, y: number): Promise<string> {
     const relative = `${level}/${x}_${y}.webp`;
-    if (!/^https:\/\//.test(tileRoot)) return join(tileRoot, relative);
+    if (!/^https:\/\//.test(tileRoot)) { stats.local++; return join(tileRoot, relative); }
     const file = join(cache, 'map_files', relative);
-    try { if ((await stat(file)).size > 0) return file; } catch (error: any) { if (error.code !== 'ENOENT') throw error; }
+    try { if ((await stat(file)).size > 0) { stats.cached++; return file; } } catch (error: any) { if (error.code !== 'ENOENT') throw error; }
     const response = await fetcher(new URL(relative, tileRoot), { signal: AbortSignal.timeout(30000) });
     if (!response.ok || Number(response.headers.get('Content-Length')) > 25 * 1024 ** 2)
       throw new Error(`Static background tile unavailable: ${relative}`);
     let bytes = Buffer.from(await response.arrayBuffer());
+    const downloadedBytes = bytes.length;
     if (bytes.length > 25 * 1024 ** 2 || bytes.toString('ascii', 0, 4) !== 'RIFF' || bytes.toString('ascii', 8, 12) !== 'WEBP')
       throw new Error('Invalid background WebP response.');
     const expected = tileDimensions(manifest.capture, level, x, y);
@@ -78,9 +81,10 @@ export async function loadDailyBackground(options: { manifest?: string; cacheDir
     await mkdir(dirname(file), { recursive: true });
     const temporary = `${file}.${randomUUID()}.tmp`;
     await writeFile(temporary, bytes); await rename(temporary, file);
+    stats.downloaded++; stats.bytesDownloaded += downloadedBytes;
     return file;
   }
-  return { manifest, tile };
+  return { manifest, tile, stats };
 }
 
 async function linkOrCopy(source: string, target: string) {
@@ -109,7 +113,7 @@ export async function composeDailyWorld(bake: string, native: PyramidGeometry, d
     for (let y = 0; y < rows; y++) for (let x = 0; x < columns; x++) jobs.push([level, x, y]);
   }
   let next = 0;
-  await Promise.all(Array.from({ length: 8 }, async () => {
+  await withProgress('Compositing reference tiles', jobs.length, async progress => Promise.all(Array.from({ length: 8 }, async () => {
     while (next < jobs.length) {
       const [level, x, y] = jobs[next++], size = tileDimensions(c, level, x, y), scale = 2 ** (native.maxLevel - level);
       const output = join(destination, 'map_files', String(level), `${x}_${y}.webp`);
@@ -126,9 +130,9 @@ export async function composeDailyWorld(bake: string, native: PyramidGeometry, d
             .webp({ lossless: true, effort: 1 }).toFile(output);
         }
       }
-      tiles++;
+      tiles++; progress.advance();
     }
-  }));
+  })), { unit: 'tiles', details: () => `background: ${background.stats.cached} cached, ${background.stats.local} local, ${background.stats.downloaded} downloaded (${(background.stats.bytesDownloaded / 1024 ** 2).toFixed(1)} MiB)` });
   return { capture: c, tiles, backgroundIdentity: background.manifest.identity };
 }
 

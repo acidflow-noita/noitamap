@@ -134,6 +134,7 @@ export async function exportImageSet({
   sourceDirectory = "task/guessr/site/captured",
   publicDirectory = "task/guessr/opaque-site",
   privateIndexPath = "task/guessr/private/image-set.json",
+  onProgress = (_stats) => {},
 } = {}) {
   const source = await physical(resolve(sourceDirectory));
   const destination = await physical(resolve(publicDirectory));
@@ -314,6 +315,7 @@ export async function exportImageSet({
     }
     levels[tile.level].images[`${tile.x},${tile.y}`] = id;
     fingerprint.update(`${tile.level}/${tile.x}/${tile.y}:${digest}\n`);
+    onProgress(stats);
   }
   const identity = fingerprint.digest("hex");
   const version =

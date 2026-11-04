@@ -58,7 +58,16 @@ it('prepares a reusable whole-world image set and publishes its matching private
     const published = await publishDailyPackage({ directory: input.outputDirectory, publish: true, fetch: network,
       now: Date.UTC(2026, 9, 25, 12), env: { GUESSR_CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32), GUESSR_CLOUDFLARE_API_TOKEN: 'test-token',
         GUESSR_CLUE_PROJECT: 'clue-test', GUESSR_REFERENCE_PROJECT: 'map-test', GUESSR_API_URL: 'https://api.sage-data.xyz', GUESSR_DAILY_PUBLISH_SECRET: secret },
-      deploy: async (_path, project) => `https://a1b2c3d4.${project}.pages.dev`,
+      pagesCommand: async (_command, args, options) => {
+        const project = args[args.indexOf('--project-name') + 1];
+        expect(args).toContain('daily-images');
+        expect(options.env.GUESSR_DAILY_PUBLISH_SECRET).toBeUndefined();
+        // Exercise the actual default deployment adapter, including its structured
+        // URL discovery, rather than bypassing it with a completed URL.
+        options.log('Upload complete. Human-readable output does not contain a URL.');
+        await writeFile(options.env.WRANGLER_OUTPUT_FILE_PATH!, JSON.stringify({ type: 'pages-deploy', version: 1,
+          pages_project: project, deployment_id: 'a1b2c3d4-1111-4111-8111-111111111111', url: `https://a1b2c3d4.${project}.pages.dev` }) + '\n');
+      },
     });
     expect(activated).toBe(true); expect(published.published).toBe(true);
     expect(database.sqlite.prepare('SELECT COUNT(*) n FROM questions').get()).toMatchObject({ n: 10 });
