@@ -43,6 +43,7 @@ import { createLobby, type LobbyOptions } from "./lobby";
 import { instructionSteps } from './stepper';
 import { pageHeading } from './page-heading';
 import { restoreDailyView, saveDailyView } from './daily-progress';
+import { dailyResultsTable } from './daily-results';
 import { loadingPlaceholders, clueLoadingPlaceholder } from './loading-placeholders';
 import { iconLabel, type ControlIcon } from './control-icons';
 import { ACTIVE_MODE_KEY, readDailyResume, rememberDailyResume, forgetDailyResume } from './resume-progress';
@@ -1128,31 +1129,28 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
     if (past.attempts.length) {
       const historyPanel = node("section", "panel");
       historyPanel.append(node("h2", "", msg("Your daily games")));
-      for (const a of past.attempts) {
-        const row = node("div", "board-row");
-        row.append(
-          node(
-            "p",
-            "",
-            msg(() => `${a.day}, ${a.score === undefined ? tr('In progress') : tr('{{points}} points', { count: a.score, points: a.score.toLocaleString(guessrLocale()) })}`),
-          ),
-          button(
-            msg("View"),
-            async () => {
-              try {
-                const result = await service.request<RankedState>(
-                  "/api/attempts/" + a.id,
-                );
-                if (version === generation) openRanked(result);
-              } catch (e) {
-                if (version === generation) toast(msg(() => localizedError(e)));
-              }
-            },
-            "small",
-          ),
-        );
-        historyPanel.append(row);
+      const wrap = node('div', 'table-wrap'), table = node('table', 'table table-hover daily-results-table');
+      const thead = node('thead'), head = node('tr'), body = node('tbody');
+      for (const [index, label] of ['Date', 'Points', 'Review'].entries()) {
+        const cell = node('th', index === 1 ? 'numeric' : '', index === 2 ? undefined : msg(label)); cell.scope = 'col';
+        if (index === 2) cell.append(node('span', 'sr-only', msg(label)));
+        head.append(cell);
       }
+      thead.append(head);
+      for (const a of past.attempts) {
+        const row = node('tr'), date = node('td'), day = node('time', '', msg(() => new Date(a.day + 'T00:00:00Z').toLocaleDateString(guessrLocale(), { dateStyle: 'medium', timeZone: 'UTC' })));
+        day.dateTime = a.day; date.append(day);
+        const points = node('td', 'numeric score', msg(() => a.score === undefined ? '—' : formatGuessrNumber(a.score)));
+        const action = node('td', 'result-action');
+        action.append(button(a.complete ? msg('View results') : msg('Continue daily'), async () => {
+          try {
+            const result = await service.request<RankedState>('/api/attempts/' + a.id);
+            if (version === generation) openRanked(result);
+          } catch (e) { if (version === generation) toast(msg(() => localizedError(e))); }
+        }, 'small secondary'));
+        row.append(date, points, action); body.append(row);
+      }
+      table.append(thead, body); wrap.append(table); historyPanel.append(wrap);
       main.append(historyPanel);
     }
     if (!status.challenge) {
@@ -1260,19 +1258,9 @@ function renderRanked(): void {
       node("p", "", msg("out of {{value1}}", () => ({ value1: (ranked!.totalRounds * 5000).toLocaleString(guessrLocale()) }))),
     );
     main.append(pageHeading(node("h1", "", ranked.title), button(msg("Back to daily"), rankedLobby)), hero);
-    for (const r of ranked.results || []) {
-      const row = node("div", "panel board-row");
-      row.append(
-        node("span", "", msg(() => `${r.ordinal + 1}. ${guessrGameTerm(r.name)}`)),
-        node(
-          "strong",
-          "score",
-          msg("{{value1}} pts", () => ({ value1: (r.guess?.score || 0).toLocaleString(guessrLocale()) })),
-        ),
-        button(msg("Review"), () => reviewRanked(r.ordinal), "small"),
-      );
-      main.append(row);
-    }
+    const results = dailyResultsTable(ranked, reviewRanked);
+    main.append(results.element);
+    clearClue = results.destroy;
     return;
   }
   main.append(

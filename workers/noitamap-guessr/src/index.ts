@@ -532,7 +532,7 @@ async function route(
         complete: r.completed_at !== null,
         totalRounds: DAILY_ROUNDS,
         revealAt: r.reveal_at,
-        ...(now >= Number(r.reveal_at)
+        ...(r.completed_at !== null || now >= Number(r.reveal_at)
           ? { score: r.score, elapsedMs: r.elapsed_ms }
           : {}),
       })),

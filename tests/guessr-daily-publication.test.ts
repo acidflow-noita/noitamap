@@ -59,7 +59,12 @@ describe('prepared Daily publication and gameplay', () => {
     expect(state.results).toHaveLength(10);
     expect((await call(`/api/attempts/${state.id}/image/9`)).status).toBe(200);
     expect((await call(`/api/attempts/${state.id}/image/10`)).status).toBe(404);
-    expect(await (await call('/api/history')).json()).toMatchObject({ attempts: [{ complete: true, totalRounds: 10 }] });
+    expect(await (await call('/api/history')).json()).toMatchObject({ attempts: [{ complete: true, totalRounds: 10, score: 50000 }] });
+    // A fresh read restores the saved scores, before the public reveal time.
+    const reopened = await (await call(`/api/attempts/${state.id}`)).json() as any;
+    expect(reopened).toMatchObject({ status: 'complete', score: 50000 });
+    expect(reopened.results).toHaveLength(10);
+    expect(f.sqlite.prepare('SELECT COUNT(*) AS saved FROM guesses WHERE attempt_id=?').get(state.id)).toEqual({ saved: 10 });
   });
   it('authenticates before database work and refuses untrusted asset hosts', async () => {
     const f = fixture(); expect((await f.publish(pack(), false)).status).toBe(401); expect(f.calls()).toBe(0);

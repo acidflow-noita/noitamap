@@ -837,6 +837,34 @@ tbody tr:last-child td {
   color: var(--text);
   font-variant-numeric: tabular-nums slashed-zero;
 }
+.daily-results-table {
+  --bs-table-bg: var(--surface-1);
+  --bs-table-color: var(--text);
+  --bs-table-border-color: var(--border);
+  --bs-table-cell-padding-y: 0.625rem;
+  --bs-table-cell-padding-x: 0.75rem;
+  margin: 0;
+}
+.daily-results-table :is(th, td) {
+  padding: var(--bs-table-cell-padding-y) var(--bs-table-cell-padding-x);
+  vertical-align: middle;
+}
+.daily-results-table .numeric {
+  text-align: end;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+.daily-results-table .result-distance { text-align: start; white-space: nowrap; }
+.daily-results-table .result-action { inline-size: 1%; white-space: nowrap; }
+.daily-results-table .score, .daily-results-table tfoot { font-weight: 600; }
+.daily-results-table tfoot { --bs-table-bg: var(--surface-2); }
+.result-location { display: flex; align-items: center; gap: 0.75rem; min-inline-size: 14rem; }
+.result-preview { position: relative; inline-size: 6.75rem; flex: none; border-radius: var(--control-radius); overflow: hidden; }
+.result-preview .clue::before { width: 10px; height: 12px; }
+.result-preview-open.btn { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; padding: 0; border: 1px solid var(--border-strong); border-radius: inherit; background: transparent; }
+.result-preview-open.btn:is(:hover, :focus-visible) { background: transparent; border-color: var(--accent-fg); }
+.result-preview-open.btn:focus-visible { outline-offset: -3px; }
+.result-preview-fallback { display: grid; place-items: center; block-size: 100%; color: var(--text-muted); font-size: 0.75rem; }
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

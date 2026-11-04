@@ -138,6 +138,13 @@
   text-underline-offset: 0.15em;
 }
 .pro-gift-link > i { flex-shrink: 0; }
+.pro-gift-link:not(.pro-gift-featured) {
+  color: var(--accent-fg, var(--bs-link-color, currentColor));
+  text-decoration: underline;
+}
+.pro-gift-link:not(.pro-gift-featured):is(:hover, :focus-visible) {
+  color: var(--accent-strong, var(--bs-link-hover-color, currentColor));
+}
 .pro-gift-hint {
   margin: 0;
   opacity: 0.8;
