@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { portalFrameBounds, portalZoomActive, visiblePortals } from '../src/portals/geometry';
 import type { PortalPlacement } from '../src/portals/placements';
+import { zoomFromLogZoom } from '../src/data_sources/url';
 const portal = (x: number, y: number) => ({ x, y } as PortalPlacement);
 describe('GPU bitmap crop bounds', () => {
   it('unions full render windows, clips at viewport edges and keeps a 1px blank frame', () => {
@@ -42,4 +43,19 @@ it('uses consistent 18px/12px animation thresholds, including rotation, flips an
   expect(portalZoomActive(matrix(.1), false, 0, 0)).toBe(true);
   expect(portalZoomActive(matrix(0), true, 0, 0)).toBe(false);
   expect(portalZoomActive(matrix(NaN), true)).toBe(false);
+});
+
+it.each([1280, 1920, 3440])('cuts off at URL zoom 1334 independently of a %ipx viewport width', width => {
+  const active = (z: number, running: boolean, override?: number) => {
+    const zoom = zoomFromLogZoom(z), scale = zoom * width;
+    return portalZoomActive({ a: scale, b: 0, c: 0, d: scale, e: 0, f: 0 }, running,
+      override, override === 0 ? 0 : undefined, zoom);
+  };
+  expect(active(1333, true)).toBe(true);
+  expect(active(1334, true)).toBe(false);
+  expect(active(1400, true)).toBe(false);
+  expect(active(1334, false)).toBe(false);
+  expect(active(1295, false)).toBe(false);
+  expect(active(1294, false)).toBe(true);
+  expect(active(1500, false, 0)).toBe(true);
 });

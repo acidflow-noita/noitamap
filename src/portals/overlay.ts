@@ -13,7 +13,7 @@ const events = ['update-viewport', 'resize', 'rotate', 'flip'];
 const OVERSCAN = 64;
 interface Viewer {
   canvas: HTMLElement;
-  viewport: { pixelFromPoint(point: OSD.Point, current?: boolean): { x: number; y: number }; getFlip?(): boolean };
+  viewport: { pixelFromPoint(point: OSD.Point, current?: boolean): { x: number; y: number }; getFlip?(): boolean; getZoom?(current?: boolean): number };
   addHandler(name: string, callback: () => void): void;
   removeHandler(name: string, callback: () => void): void;
 }
@@ -128,7 +128,8 @@ export class PortalGPUOverlay {
     if (!this.camera || width !== this.camera.width || height !== this.camera.height ||
       (Object.keys(matrix) as (keyof CameraMatrix)[]).some(key => matrix[key] !== this.camera!.matrix[key])) this.cameraRevision++;
     this.camera = { matrix, width, height, resolution: 1 };
-    this.detailed = portalZoomActive(matrix, this.detailed, this.enterPixels, this.exitPixels);
+    const zoom = this.viewer.viewport.getZoom?.(true) ?? Math.hypot(matrix.a, matrix.b) / width;
+    this.detailed = portalZoomActive(matrix, this.detailed, this.enterPixels, this.exitPixels, zoom);
     this.visible = visiblePortals(this.portals, matrix, width, height).length;
     const running = this.enabled && !document.hidden && this.detailed && this.visible > 0;
     if (running !== this.running) this.lastRequest = this.lastPresented = 0;

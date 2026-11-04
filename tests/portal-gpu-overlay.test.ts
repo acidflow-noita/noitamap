@@ -26,13 +26,14 @@ function tick(now = 1) {
   vi.advanceTimersByTime(Math.max(0, now - performance.now()));
   const callbacks = [...frames.values()]; frames.clear(); callbacks.forEach(fn => fn(now));
 }
-function viewer() {
+function viewer(width = 800, height = 600) {
   const canvas = document.createElement('div'); document.body.append(canvas);
-  Object.defineProperties(canvas, { clientWidth: { value: 800 }, clientHeight: { value: 600 } });
+  Object.defineProperties(canvas, { clientWidth: { value: width }, clientHeight: { value: height } });
   let matrix: CameraMatrix = { a: 1, b: 0, c: 0, d: 1, e: 400, f: 300 };
   const handlers = new Map<string, () => void>();
   return { canvas, handlers, setCamera: (next: CameraMatrix) => { matrix = next; },
-    viewport: { pixelFromPoint: (p: { x: number; y: number }) => ({ x: matrix.a * p.x + matrix.c * p.y + matrix.e, y: matrix.b * p.x + matrix.d * p.y + matrix.f }) },
+    viewport: { pixelFromPoint: (p: { x: number; y: number }) => ({ x: matrix.a * p.x + matrix.c * p.y + matrix.e, y: matrix.b * p.x + matrix.d * p.y + matrix.f }),
+      getZoom: () => Math.hypot(matrix.a, matrix.b) / width },
     addHandler: (name: string, fn: () => void) => handlers.set(name, fn), removeHandler: (name: string) => handlers.delete(name) };
 }
 const portal = { id: 'p', effect: 'teleportation', x: 0, y: 0 } as PortalPlacement;
@@ -174,6 +175,26 @@ describe('worker GPU map overlay', () => {
     expect(w.requests()).toHaveLength(1); expect(frames.size).toBe(0);
     expect(overlay!.canvas.hidden).toBe(false);
     expect(overlay!.stats().suspensionReason).toBe('zoom');
+  });
+
+  it('stops at the supplied z=1334 view on a wide screen even with the 36px override', () => {
+    history.replaceState(null, '', '/?portalGpuMinPixels=36&x=-22&y=12200&z=1334&m=dy&se=1769035479&ds=1');
+    const width = 2400, v = viewer(width, 1000), w = worker();
+    const zoom = (z: number) => {
+      const scale = width * 2 ** (-z / 100);
+      v.setCamera({ a: scale, b: 0, c: 0, d: scale, e: 400, f: 300 });
+      v.handlers.get('update-viewport')?.();
+    };
+    zoom(1290);
+    overlay = new PortalGPUOverlay(v, [portal], 42, new ArrayBuffer(4), () => w.fake, vi.fn(), vi.fn());
+    w.send({ type: 'ready' }); tick(); w.reply();
+    zoom(1333); expect(overlay.stats().suspended).toBe(false);
+    zoom(1334); tick(10000);
+    expect(overlay.stats()).toMatchObject({ suspended: true, suspensionReason: 'zoom', requests: 1 });
+    expect(overlay.canvas.hidden).toBe(false);
+    zoom(1320); tick(20000); expect(w.requests()).toHaveLength(1);
+    zoom(1294); tick(21000);
+    expect(w.requests()).toHaveLength(2); expect(w.requests()[1].elapsed).toBe(0);
   });
 
   it('defers worker startup when hidden, disabled or off-screen and suspends off-screen navigation', () => {

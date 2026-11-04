@@ -21,12 +21,20 @@ export const MAX_GPU_BYTES=256*1024*1024;
 export const PORTAL_CORE_SIZE = 160;
 export const PORTAL_ENTER_PIXELS = 18;
 export const PORTAL_EXIT_PIXELS = 12;
+// Match the map URL scale selected for the cutoff. Larger z means farther out.
+export const PORTAL_STOP_LOG_ZOOM = 1334;
+export const PORTAL_RESUME_LOG_ZOOM = 1294;
 /** Hysteresis belongs to the presenter: a paused bitmap and GPU simulation can
  * be retained without asking the worker to erase/recreate its particle pools. */
 export function portalZoomActive(matrix: CameraMatrix, active: boolean,
-  enter = PORTAL_ENTER_PIXELS, exit = PORTAL_EXIT_PIXELS): boolean {
+  enter = PORTAL_ENTER_PIXELS, exit = PORTAL_EXIT_PIXELS, mapZoom?: number): boolean {
   const pixels = PORTAL_CORE_SIZE * Math.hypot(matrix.a, matrix.b);
-  return Number.isFinite(pixels) && pixels > 0 && pixels >= (active ? exit : enter);
+  if (!Number.isFinite(pixels) || pixels <= 0 || pixels < (active ? exit : enter)) return false;
+  if (mapZoom === undefined || enter === 0 && exit === 0) return true;
+  if (!Number.isFinite(mapZoom) || mapZoom <= 0) return false;
+  // Use the same rounding as the URL, so a displayed z=1334 is already paused.
+  const logZoom = Math.round(-100 * Math.log2(mapZoom));
+  return active ? logZoom < PORTAL_STOP_LOG_ZOOM : logZoom <= PORTAL_RESUME_LOG_ZOOM;
 }
 export function canvasResolution(width:number,height:number,dpr:number):number {
   return Math.min(2,Math.max(1,dpr||1),Math.sqrt(MAX_CANVAS_PIXELS/Math.max(1,width*height)));

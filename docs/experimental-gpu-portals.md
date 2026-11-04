@@ -35,9 +35,12 @@ are conservative upper bounds, identified by `particleCountsAreUpperBounds`.
   optional GPU timestamp time, CPU-observed GPU-fence wait, worker delivery time, estimated
   GPU memory and actual WebGL renderer string. CPU submission time is NOT GPU
   execution time. A software WebGL driver may identify itself as SwiftShader/Mesa.
-- Animation starts at an 18-CSS-pixel nominal portal diameter and stops below
-  12 pixels. The different thresholds prevent repeated starts/stops near the
-  boundary. Eye-room, meditation and other portals use the same policy.
+- Animation stops at map URL zoom `z=1334` and farther out. It resumes at `z=1294`
+  or closer, about 32% farther in, to avoid repeated starts/stops at the boundary.
+  This matches the selected map view on wide displays as well as narrow ones.
+  The additional screen-size limits remain: 18 CSS pixels to start, 12 to stop.
+  Whichever limit is reached first pauses animation. Eye-room, meditation and
+  other portals use the same policy.
   `frames` and `requests` must stop increasing when `suspensionReason` is `zoom`
   or `offscreen` (one already in-flight frame may finish). `active` then becomes
   zero; `retainedPortals` describes the paused GPU state, not ongoing simulation.
@@ -47,8 +50,9 @@ are conservative upper bounds, identified by `particleCountsAreUpperBounds`.
   portal large enough to animate. Returning to detail reuses the worker and
   resumes with zero elapsed-time debt.
   `portalGpuMinPixels=0` explicitly restores always-on zoom behavior for comparison.
-  A positive override sets the entry threshold, with an exit threshold two-thirds
-  as large. Offscreen and memory/instance limits still apply.
+  A positive override sets the pixel entry threshold, with an exit threshold
+  two-thirds as large; it does not bypass the `z=1334` map cutoff. Offscreen and
+  memory/instance limits still apply.
   `portalGpuFence=1` restores the explicit per-frame GL fence wait in the worker
   (off by default; it cost 7-15 ms of idle worker time per frame). `portalGpuLimit` can lower the default/hard limit of 192.
 
