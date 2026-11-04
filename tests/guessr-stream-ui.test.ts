@@ -487,6 +487,7 @@ it('groups result navigation and shows green punctuation-free copy feedback besi
 
 it('recovers a failed publication from its result URL after a new game and F5, then retries exactly once', async () => {
   const { game, hooks, service } = await fixture();
+  game.session.localChat = true;
   for (const round of game.session.rounds) {
     closeStreamRound(game, streamAnswer, streamNow + 1);
     revealStreamRound(game, await service.reveal(round.token, streamHost, streamNow + 2));
@@ -507,6 +508,7 @@ it('recovers a failed publication from its result URL after a new game and F5, t
   [...document.querySelectorAll('button')].find(button => button.textContent === 'Retry publishing')!.click();
   await vi.waitFor(() => expect(document.getElementById('stream-publish-message')?.textContent).toContain('Result saved to the local test server.'));
   expect(mocks.publish).toHaveBeenCalledTimes(2);
+  expect(mocks.channel).toHaveBeenLastCalledWith(game.session.host.login);
   expect(mocks.publish.mock.calls[1][0]).toEqual({ token: game.session.token, finishedAt: game.finishedAt, players: streamResult(game).players });
   expect(JSON.parse(localStorage.getItem(STREAM_SESSION_KEY)!).session.id).not.toBe(game.session.id);
   expect([...document.querySelectorAll('button')].find(button => button.textContent === 'Copy result link')!.disabled).toBe(false);

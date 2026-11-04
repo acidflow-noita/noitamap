@@ -7,6 +7,7 @@ export interface ArchivedStreamResult {
   result: StreamResult;
   published: boolean;
   pendingToken?: string;
+  localChannel?: string;
 }
 export interface ResultArchiveStore {
   get(id: string): Promise<ArchivedStreamResult | undefined>;
@@ -86,7 +87,8 @@ export class StreamResultArchive {
       if (game?.stage === 'complete' && game.session?.rounds?.length === STREAM_ROUNDS) {
         let result: StreamResult;
         try { result = streamResult(game); } catch { return; }
-        await this.save({ result, published: !!game.published, ...(!game.published ? { pendingToken: game.session.token } : {}) });
+        await this.save({ result, published: !!game.published, ...(!game.published ? { pendingToken: game.session.token } : {}),
+          ...(game.session.localChat ? { localChannel: game.session.host.login } : {}) });
       }
     })();
   }

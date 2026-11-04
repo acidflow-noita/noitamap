@@ -1196,7 +1196,8 @@ export class StreamUI {
     const result = streamResult(this.game),
       main = this.hooks.shell();
     const entry: ArchivedStreamResult = { result, published: !!this.game.published,
-      ...(!this.game.published ? { pendingToken: this.game.session.token } : {}) };
+      ...(!this.game.published ? { pendingToken: this.game.session.token } : {}),
+      ...(this.game.session.localChat ? { localChannel: this.game.session.host.login } : {}) };
     const view = streamResultsView(result, undefined, this.exit);
     main.append(view);
     this.resultPublication(view, entry, this.game);
@@ -1279,7 +1280,9 @@ export class StreamUI {
     if (entry.published) return Promise.resolve();
     if (!entry.pendingToken) return Promise.reject(new Error('Publish the result first, or share the downloaded file.'));
     const pending = (async () => {
-      const confirmation = await this.api.publish({ token: entry.pendingToken!, finishedAt: entry.result.finishedAt, players: entry.result.players });
+      const api = this.api.local ? new StreamApi() : this.api;
+      if (api.local) api.setLocalChannel(entry.localChannel);
+      const confirmation = await api.publish({ token: entry.pendingToken!, finishedAt: entry.result.finishedAt, players: entry.result.players });
       if (!confirmation.published || confirmation.id !== id) throw new Error('The result was not saved. Please retry publishing.');
       entry.published = true; delete entry.pendingToken;
       if (game) {
