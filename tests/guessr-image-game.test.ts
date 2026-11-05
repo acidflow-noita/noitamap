@@ -134,6 +134,7 @@ describe("reusable-image rounds", () => {
     expect(first.totalRounds).toBe(3);
     expect(first.results).toEqual([]);
     expect(first.current?.clue.frames?.length).toBeGreaterThan(1);
+    expect(first.current?.difficultyTier).toBe('normal');
     const text = JSON.stringify(first);
     for (const forbidden of [
       "private-biome-id",

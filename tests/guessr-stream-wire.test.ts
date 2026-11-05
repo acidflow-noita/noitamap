@@ -25,6 +25,16 @@ it('round-trips bounded packets only from the requested actual Twitch sender and
   for (const text of messages) expect(await other.receive(chat(text))).toBeNull();
 });
 
+it.each(['easy', 'normal', 'hard'] as const)('carries only the public %s difficulty without another broadcast packet', async difficultyTier => {
+  if (packet.type !== 'state') throw Error();
+  const expected: StreamWirePayload = { type: 'state', state: { ...packet.state, difficultyTier } };
+  const messages = await encodeStreamPacket(id, expected), reader = new StreamPacketReader('streamer', id);
+  expect(messages).toHaveLength((await encodeStreamPacket(id, packet)).length);
+  let result;
+  for (const message of messages) result = await reader.receive(chat(message));
+  expect(result?.payload).toEqual(expected);
+});
+
 it('strips private fields and reconstructs a released scoring area', async () => {
   const reveal = { roundId: id, answer: streamAnswer, area: { ...streamArea, starts: 'PRIVATE.bin' }, token: 'PRIVATE_TOKEN' };
   const messages = await encodeStreamPacket(id, { type: 'reveal', round: 0, reveal });

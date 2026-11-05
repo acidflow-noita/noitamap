@@ -211,6 +211,7 @@ export class ImageGameService {
           ? null
           : {
               id: current.id,
+              difficultyTier: this.areas.find(area => area.id === current.areaId)?.difficultyTier ?? undefined,
               clue: {
                 frames: framesForPoint(
                   this.index,

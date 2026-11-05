@@ -168,6 +168,7 @@ export class StreamService {
       selected.map(async (r, index) => ({
         id: reveals[index].roundId,
         clue: { frames: r.frames },
+        difficultyTier: r.area.difficultyTier ?? undefined,
         token: await this.seal({
           ...envelope,
           kind: "round",

@@ -2,6 +2,7 @@
  * have no representation in an active clue. Answers appear only in results. */
 import type { Bounds, Pack, Point } from "./rules";
 import type { ClueSource } from "./clue-camera";
+import type { AreaDifficulty } from './area-rules';
 import { gameApiOrigin } from './api-origin';
 
 export interface ImageGameConfig {
@@ -30,7 +31,7 @@ export interface ImageGameState {
   round: number;
   totalRounds: number;
   stage: "guess" | "reveal" | "complete";
-  current: { id: string; clue: ClueSource } | null;
+  current: { id: string; clue: ClueSource; difficultyTier?: AreaDifficulty } | null;
   results: ImageRoundResult[];
 }
 

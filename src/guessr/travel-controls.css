@@ -3,7 +3,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--game-gutter);
-  --camera-key: 4rem;
+  --camera-key: 2.5rem;
   --camera-button-gap: 0.25rem;
 }
 
@@ -26,27 +26,24 @@
 }
 .camera-controls .clue-control,
 .clue-retry {
-  display: flex;
-  flex-direction: column;
-  gap: var(--bs-spacer-1, 0.125rem);
-  inline-size: var(--camera-key, 4rem);
-  padding: 0.25rem;
-  white-space: normal;
+  display: inline-flex;
+  flex-direction: row;
+  gap: 0.375rem;
+  min-block-size: 2.5rem;
+  padding: 0.375rem 0.5rem;
+  white-space: nowrap;
 }
 .clue-retry { display: inline-flex; vertical-align: middle; inline-size: auto; min-inline-size: 6rem; }
-.clue-control-cost {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 100%;
-  block-size: 2.4em;
-  font-size: 0.6875rem;
-  line-height: 1.2;
+.clue-control-price { display: inline-grid; }
+.clue-control-price > * { grid-area: 1 / 1; }
+.clue-control-cost-sizer { visibility: hidden; pointer-events: none; }
+.clue-control-cost, .clue-control-cost-sizer {
+  font-size: 0.8125rem;
+  line-height: 1.25;
   font-weight: 500;
   font-variant-numeric: tabular-nums slashed-zero;
-  overflow-wrap: anywhere;
   text-align: center;
-  white-space: normal;
+  white-space: nowrap;
 }
 .icon-button svg {
   display: block;
@@ -57,7 +54,7 @@
 
 .travel-pad {
   display: grid;
-  grid-template-columns: repeat(3, var(--camera-key, 2.75rem));
+  grid-template-columns: repeat(3, max-content);
   grid-template-areas:
     ". north ."
     "west south east";
@@ -87,7 +84,7 @@
 
 @media (max-width: 380px) {
   .camera-controls {
-    --camera-key: 4rem;
+    --camera-key: 2.5rem;
     gap: var(--game-gutter);
   }
 }

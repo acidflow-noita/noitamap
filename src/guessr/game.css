@@ -519,7 +519,7 @@ header.page-heading {
   align-items: center;
   justify-content: space-between;
   gap: var(--game-gutter);
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 1rem;
   color: var(--text-muted);
   font-size: 0.8125rem;
   border-bottom: 1px solid var(--border);
@@ -530,6 +530,14 @@ header.page-heading {
   font-size: 0.9375rem;
   font-weight: 600;
 }
+.clue-heading { min-inline-size: 0; }
+.clue-difficulty { display: block; margin-block-start: .125rem; color: var(--text-muted); font-size: .75rem; line-height: 1.2; }
+.round-points.round-maximum { font-size: 1rem; }
+.map-bar--budget { justify-content: center; }
+.map-bar--budget > :is(.map-heading, .buttons):empty { display: none; }
+.stream-budget-bar { justify-content: center; }
+.guessr-map-pin { cursor: default; }
+.guessr-map-pin[data-player] { cursor: pointer; }
 .map-heading {
   flex: 1;
   min-width: 0;
@@ -652,8 +660,8 @@ header.page-heading {
   z-index: 1;
   left: var(--target-x, 50%);
   top: var(--target-y, 50%);
-  width: 26px;
-  height: 32px;
+  width: 36px;
+  height: 44px;
   background: url("/assets/noitaguessr-pin.svg") center / contain no-repeat;
   filter:
     drop-shadow(1px 0 0 #fff)

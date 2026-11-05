@@ -60,6 +60,7 @@ export class StreamBroadcastHost {
       gameId: game.session.id, revision: timing.revision, phase: timing.phase === 'lobby' ? 'waiting' : game.stage === 'complete' ? 'complete' : window?.closed ? 'reveal' : 'guess',
       online: !game.paused, paused: game.paused, round: round + 1, roundId: game.session.rounds[round].id,
       clue: timing.phase === 'lobby' ? null : this.clue(round), expiresAt: game.session.expiresAt,
+      ...(game.session.rounds[round].difficultyTier ? { difficultyTier: game.session.rounds[round].difficultyTier } : {}),
       ...(game.published ? { resultId: game.session.id } : {}),
       timing: { phase: timing.phase, startsAt: window?.opensAt ?? timing.startsAt,
         deadline: timing.chatRound === null ? null : window?.closesAt ?? timing.deadline,

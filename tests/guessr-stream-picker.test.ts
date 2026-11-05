@@ -321,9 +321,13 @@ describe('shared channel guess picker', () => {
       schema: 1, channel: 'wuote', hostId: '456', gameId: '11111111-1111-4111-8111-111111111111',
       roundId: '22222222-2222-4222-8222-222222222222', revision: 1,
       phase: 'guess', online: true, paused: false, round: 1,
+      difficultyTier: 'normal',
       clue: new URL(roundLink('/guess/?channel=wuote', 1, true)).hash.slice(6), expiresAt: Date.now() + 99999,
     };
     handlers.state(state); handlers.status('connected', ''); await flush();
+    expect(f.main.querySelector('[data-clue-difficulty]')!.textContent).toBe('Normal difficulty');
+    expect(f.main.querySelector('[data-clue-maximum]')!.textContent).toBe('Up to 5,000 points');
+    expect(f.main.querySelector<HTMLElement>('.stream-budget-bar')!.hidden).toBe(false);
     f.button('Sign in with Twitch').click(); await flush(); ui.pick({ x: 10, y: 20 });
     f.button('Send guess').click(); await flush();
     expect(f.main.querySelector<HTMLElement>('.stream-round-outcome')!.hidden).toBe(true);
@@ -332,7 +336,8 @@ describe('shared channel guess picker', () => {
       players: [{ id: '123', guess: { x: 10, y: 20 }, score: 4500, areaScore: 1000, positionScore: 3500, distance: 703 }] };
     handlers.state({ ...state, phase: 'reveal', revision: 2, outcome }); await flush();
     expect(f.main.querySelector<HTMLElement>('.stream-round-outcome')!.hidden).toBe(false);
-    expect(f.main.querySelector('.round-points')!.textContent).toBe('4,500 points');
+    expect(f.main.querySelector('.stream-round-outcome .round-points')!.textContent).toBe('4,500 points');
+    expect(f.main.querySelector<HTMLElement>('.stream-budget-bar')!.hidden).toBe(true);
     expect(f.main.querySelector('.stream-reveal-distance')!.textContent).toBe('1.4 chunks away');
     expect(ui.markers).toHaveBeenLastCalledWith({ x: 10, y: 20 }, outcome.answer);
     const chat = f.main.querySelector('.stream-chat');

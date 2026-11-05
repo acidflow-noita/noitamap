@@ -87,6 +87,7 @@ describe("stateless demo continuations", () => {
       results: [],
     });
     expect(game.current?.clue.frames).toEqual(selected[0].frames);
+    expect(game.current?.difficultyTier).toBe(selected[0].area.difficultyTier);
     const serialized = JSON.stringify(game);
     for (const hidden of [
       "Private area name",

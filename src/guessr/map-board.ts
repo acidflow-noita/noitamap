@@ -5,6 +5,8 @@ import { PIXEL_MAP_DRAW_OPTIONS } from "../osd-pixel-rendering";
 import { frameMap, frameMarkers } from "./map-framing";
 import { bindAttribute, bindText } from "./i18n";
 import { twitchColor } from './player-color';
+import { MAP_PIN_PATH, MAP_PIN_TIP, GUESS_PIN_COLOR, ANSWER_PIN_COLOR,
+  GUESS_PIN_HEIGHT, ANSWER_PIN_HEIGHT, PLAYER_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT } from './map-pin';
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 export class MapBoard {
@@ -23,9 +25,8 @@ export class MapBoard {
   // Retain the result after manual pan/zoom so reset can fit those points again.
   private resultMarkers: Point[] | null = null;
   private atHome = true;
-  private playerMarks = new Map<string, SVGCircleElement>();
+  private playerMarks = new Map<string, SVGGElement>();
   private highlightedPlayer?: string;
-  private markerUnit = 1;
   constructor(
     readonly element: HTMLElement,
     readonly bounds: Bounds,
@@ -192,13 +193,9 @@ export class MapBoard {
     const unit = matrix
       ? 1 / Math.max(0.00001, Math.hypot(matrix.a, matrix.b))
       : this.view.width / Math.max(300, this.element.clientWidth);
-    this.markerUnit = unit;
-    this.marks.querySelectorAll("circle").forEach((circle) => {
-      circle.setAttribute(
-        "r",
-        String(unit * Number(circle.getAttribute("data-radius") || 7)),
-      );
-      circle.setAttribute("stroke-width", String(unit * 2));
+    this.marks.querySelectorAll<SVGGElement>('[data-pin-height]').forEach((pin) => {
+      const scale = unit * Number(pin.dataset.pinHeight) / 64;
+      pin.setAttribute('transform', `translate(${pin.dataset.x} ${pin.dataset.y}) scale(${scale}) translate(${-MAP_PIN_TIP.x} ${-MAP_PIN_TIP.y})`);
     });
     this.marks.querySelectorAll("line").forEach((line) => {
       line.setAttribute("stroke-width", String(unit * 2));
@@ -377,21 +374,6 @@ export class MapBoard {
     this.resultMarkers = answer ? (guess ? [guess, answer] : [answer]) : null;
     this.fittedMarkers = this.resultMarkers;
     this.marks.replaceChildren();
-    const circle = (p: Point, color: string, label: string, radius = 7) => {
-      const g = document.createElementNS(SVG_NS, "g");
-      const c = document.createElementNS(SVG_NS, "circle");
-      c.setAttribute("cx", String(p.x));
-      c.setAttribute("cy", String(p.y));
-      c.setAttribute("r", "220");
-      c.setAttribute("data-radius", String(radius));
-      c.setAttribute("fill", color);
-      c.setAttribute("stroke", "var(--bg)");
-      c.setAttribute("stroke-width", "80");
-      const title = document.createElementNS(SVG_NS, "title");
-      bindText(title, label);
-      g.append(title, c);
-      this.marks.append(g);
-    };
     if (guess && answer) {
       const line = document.createElementNS(SVG_NS, "line");
       for (const [key, value] of Object.entries({
@@ -407,35 +389,49 @@ export class MapBoard {
       this.marks.append(line);
     }
     if (answer)
-      circle(answer, "var(--daily-fg)", "Actual location", guess ? 10 : 7);
-    if (guess) circle(guess, "var(--guessr-pin-color, var(--accent-fg))", "Your guess");
+      this.addPin(answer, ANSWER_PIN_COLOR, 'Actual location', ANSWER_PIN_HEIGHT, 'answer');
+    if (guess) this.addPin(guess, GUESS_PIN_COLOR, 'Your guess', GUESS_PIN_HEIGHT, 'guess');
     if (answer) {
       this.atHome = false;
       this.updateView();
     } else this.updateMarkers();
   }
+  private addPin(point: Point, color: string, label: string | (() => string), height: number, kind: string): SVGGElement {
+    const group = document.createElementNS(SVG_NS, 'g');
+    group.classList.add('guessr-map-pin'); group.dataset.pinKind = kind;
+    group.setAttribute('fill', color);
+    group.dataset.x = String(point.x); group.dataset.y = String(point.y); group.dataset.pinHeight = String(height);
+    const title = document.createElementNS(SVG_NS, 'title'); bindText(title, label); group.append(title);
+    for (const [stroke, width] of [['#020618', '6'], ['#ffffff', '2']] as const) {
+      const path = document.createElementNS(SVG_NS, 'path');
+      path.setAttribute('d', MAP_PIN_PATH); path.setAttribute('fill-rule', 'evenodd');
+      path.setAttribute('fill', color); path.setAttribute('stroke', stroke);
+      path.setAttribute('stroke-width', width); path.setAttribute('stroke-linejoin', 'round');
+      group.append(path);
+    }
+    this.marks.append(group); return group;
+  }
   setPlayers(players: { id: string; name: string; color?: string; guess: Point | null }[], answer: Point, highlight: (id: string) => void): void {
     this.setMarkers(null, answer);
-    const answerMark = this.marks.lastElementChild!;
     const points = [answer];
     for (const player of players) {
       if (!player.guess || !within(player.guess, this.bounds)) continue;
-      const mark = document.createElementNS(SVG_NS, 'circle');
-      mark.setAttribute('cx', String(player.guess.x)); mark.setAttribute('cy', String(player.guess.y));
-      mark.setAttribute('fill', twitchColor(player.color) ?? 'var(--accent-fg)'); mark.setAttribute('stroke', 'var(--bg)'); mark.setAttribute('data-radius', '5');
+      const mark = this.addPin(player.guess, twitchColor(player.color) ?? GUESS_PIN_COLOR, () => player.name, PLAYER_PIN_HEIGHT, 'player');
       mark.dataset.player = player.id; mark.style.pointerEvents = 'auto';
       mark.addEventListener('pointerenter', () => highlight(player.id));
       mark.addEventListener('click', () => highlight(player.id));
       this.playerMarks.set(player.id, mark); this.marks.append(mark); points.push(player.guess);
     }
-    this.marks.append(answerMark);
+    // The larger green answer remains behind smaller player pins, so a perfect
+    // guess shows both colors at the same accurately anchored location.
     this.resultMarkers = points; this.fittedMarkers = this.resultMarkers; this.atHome = false; this.updateView();
   }
   highlightPlayer(id: string): void {
     const previous = this.highlightedPlayer && this.playerMarks.get(this.highlightedPlayer);
-    if (previous) { previous.setAttribute('data-radius', '5'); previous.setAttribute('r', String(this.markerUnit * 5)); previous.setAttribute('stroke', 'var(--bg)'); }
+    if (previous) { previous.dataset.pinHeight = String(PLAYER_PIN_HEIGHT); previous.classList.remove('selected'); }
     const mark = this.playerMarks.get(id); this.highlightedPlayer = id;
-    if (mark) { mark.setAttribute('data-radius', '11'); mark.setAttribute('r', String(this.markerUnit * 11)); mark.setAttribute('stroke', 'white'); }
+    if (mark) { mark.dataset.pinHeight = String(HIGHLIGHT_PIN_HEIGHT); mark.classList.add('selected'); this.marks.append(mark); }
+    this.updateMarkers();
   }
   setLocked(value: boolean): void {
     this.locked = value;

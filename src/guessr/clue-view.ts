@@ -8,6 +8,8 @@ import {
 import { ClueViewport } from "./clue-viewport";
 import { setControlIcon } from "./control-icons";
 import { bindAttribute, bindText, formatGuessrNumber, tr } from "./i18n";
+import type { AreaDifficulty } from './area-rules';
+import { updateRoundIndicators } from './round-status';
 
 let controlId = 0;
 
@@ -18,7 +20,7 @@ export function attachClueControls(
   progress: ClueProgress,
   travelStep: number,
   onChange: () => void,
-  options: { compact?: boolean } = {},
+  options: { compact?: boolean; difficultyTier?: AreaDifficulty | null | (() => AreaDifficulty | null | undefined) } = {},
 ): () => void {
   const viewport = new ClueViewport(clue, place, travelStep);
   const controls = document.createElement("div");
@@ -62,7 +64,7 @@ export function attachClueControls(
     const button = document.createElement("button");
     button.id = `guessr-clue-control-${++controlId}`;
     button.type = "button";
-    button.className = "btn btn-sm btn-outline theme-primary clue-control";
+    button.className = "btn btn-sm btn-outline theme-secondary rounded-3 clue-control";
     setControlIcon(button, icon, label, false);
     button.addEventListener("click", () => void load(...target()));
     // Keep disabled actions keyboard-readable without an interactive popover.
@@ -72,7 +74,13 @@ export function attachClueControls(
     anchor.append(button); parent.append(anchor);
     const costLabel = document.createElement('small');
     costLabel.className = 'clue-control-cost';
-    button.append(costLabel);
+    const price = document.createElement('span'); price.className = 'clue-control-price';
+    price.append(costLabel);
+    for (const source of [() => tr('Free'), () => formatGuessrNumber(-5000)]) {
+      const sizer = document.createElement('small'); sizer.className = 'clue-control-cost-sizer';
+      sizer.setAttribute('aria-hidden', 'true'); bindText(sizer, source); price.append(sizer);
+    }
+    button.append(price);
     buttons.push({ button, anchor, costLabel, target, label });
     return button;
   };
@@ -122,10 +130,12 @@ export function attachClueControls(
     return { available, same, cost: available ? maximumScore(progress) - maximumScore(next) : 0 };
   }
   function costText(cost: number) {
-    return cost ? tr('{{points}} points', { count: cost, points: formatGuessrNumber(-cost) }) : tr('Free');
+    return cost ? formatGuessrNumber(-cost) : tr('Free');
   }
 
   function update(): void {
+    updateRoundIndicators(clue.closest('.game-grid, .stream-viewer-layout') ?? clue.parentElement!, progress,
+      typeof options.difficultyTier === 'function' ? options.difficultyTier() : options.difficultyTier);
     for (const { button, anchor, costLabel, target, label } of buttons) {
       const { available, same } = preview(target);
       button.disabled = pending || !available || same;
@@ -186,7 +196,7 @@ export function attachClueControls(
           `${tr("Image could not load. No points were charged.")} `);
         const retry = document.createElement("button");
         retry.type = "button";
-        retry.className = "btn btn-sm btn-outline theme-primary clue-retry";
+        retry.className = "btn btn-sm btn-outline theme-secondary rounded-3 clue-retry";
         const retryLabel = document.createElement('span'); bindText(retryLabel, 'Retry image');
         const retryCost = document.createElement('small'); retryCost.className = 'clue-control-cost';
         const target = (): [number, number, number] => [dx, dy, level];

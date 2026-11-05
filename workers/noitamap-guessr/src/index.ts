@@ -248,7 +248,7 @@ async function state(env: Env, a: Attempt, c: Challenge, now: number) {
     }));
   }
   const current = !finished && c.image_config_json
-    ? await env.DB.prepare('SELECT clue_json FROM questions WHERE challenge_id=? AND ordinal=?').bind(c.id, a.next_round).first<{ clue_json: string }>() : null;
+    ? await env.DB.prepare('SELECT clue_json, area_json FROM questions WHERE challenge_id=? AND ordinal=?').bind(c.id, a.next_round).first<{ clue_json: string; area_json: string | null }>() : null;
   if (!finished && c.image_config_json && !current?.clue_json) fail(503, 'Daily clue data is unavailable. Your attempt is saved.');
   return {
     id: a.id,
@@ -266,6 +266,7 @@ async function state(env: Env, a: Attempt, c: Challenge, now: number) {
     deadline: null,
     image: !finished && !c.image_config_json ? `/api/attempts/${a.id}/image/${a.next_round}` : null,
     ...(c.image_config_json ? { config: JSON.parse(c.image_config_json), clue: current?.clue_json ? JSON.parse(current.clue_json) : null } : {}),
+    ...(current?.area_json ? { difficultyTier: JSON.parse(current.area_json).difficultyTier } : {}),
     // Solo results are available immediately. Daily rotation is not a timer.
     submitted: guesses.map((g) => g.ordinal),
     ...(revealed ? { score: a.score, elapsedMs: a.elapsed_ms, results } : {}),

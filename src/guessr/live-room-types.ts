@@ -1,4 +1,5 @@
 import type { StreamPublishedResult, StreamRoundOutcome } from './stream-types.ts';
+import type { AreaDifficulty } from './area-rules.ts';
 
 /** Public room messages never contain future answers or private reveal tokens. */
 export interface LiveRoomView {
@@ -16,6 +17,7 @@ export interface LiveRoomView {
   round: number;
   roundId: string | null;
   clue: string | null;
+  difficultyTier?: AreaDifficulty;
   expiresAt: number | null;
   resultId?: string;
   outcome?: StreamRoundOutcome;
@@ -28,7 +30,7 @@ export interface LiveRoomGame {
   hostProVerifiedUntil?: number;
   gameId: string;
   expiresAt: number;
-  rounds: { id: string; clue: string }[];
+  rounds: { id: string; clue: string; difficultyTier?: AreaDifficulty }[];
 }
 export type LiveRoomMessage = { type: 'state'; state: LiveRoomView } | { type: 'heartbeat'; at: number };
 export interface LiveRoomMethods {

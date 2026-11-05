@@ -303,6 +303,7 @@ export class SoloGameService {
           ? null
           : {
               id: current.id,
+              difficultyTier: current.area.difficultyTier ?? undefined,
               clue: { frames: current.frames },
             },
       results: game.rounds.flatMap((round, ordinal) =>

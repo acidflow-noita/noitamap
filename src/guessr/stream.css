@@ -50,7 +50,6 @@
   font-variant-numeric: tabular-nums;
 }
 .stream-host-row { background: color-mix(in oklab, #9146ff 12%, transparent); }
-.stream-host-shell { --guessr-pin-color: #9146ff; }
 .stream-host-identity strong { color: #9146ff; }
 .shell.stream-setup-shell { max-width: 48rem; margin-inline: auto; }
 .stream-setup-card { --bs-card-border-radius: var(--bs-rounded-size); --bs-card-bg: var(--surface-1); --bs-card-color: var(--text); --bs-card-border-color: var(--border); --bs-card-spacer-x: var(--game-gutter); --bs-card-spacer-y: var(--game-gutter); }

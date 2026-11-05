@@ -6,6 +6,7 @@ import { attachClueControls } from '../src/guessr/clue-view';
 import { ClueViewport } from '../src/guessr/clue-viewport';
 import { initializeGuessrTranslations } from '../src/guessr/i18n';
 import { maximumScore, newClueProgress, type ClueProgress } from '../src/guessr/rules';
+import { difficultyIndicator, maximumIndicator, updateRoundIndicators } from '../src/guessr/round-status';
 
 let dispose: (() => void) | undefined;
 beforeEach(async () => {
@@ -18,6 +19,9 @@ beforeEach(async () => {
     'Zoom in': 'Vergrößern',
     'Free action': 'Kostenlose Aktion',
     'Free': 'Kostenlos',
+    'Normal difficulty': 'Normale Schwierigkeit',
+    'Up to {{points}} points_one': 'Bis zu {{points}} Punkt',
+    'Up to {{points}} points_other': 'Bis zu {{points}} Punkte',
     '{{points}} points_one': '{{points}} Punkt',
     '{{points}} points_other': '{{points}} Punkte',
     'Zoom in to move': 'Zum Bewegen vergrößern',
@@ -47,9 +51,10 @@ afterEach(async () => {
 });
 async function flush() { for (let i = 0; i < 6; i++) await Promise.resolve(); }
 async function fixture(progress: ClueProgress = newClueProgress()) {
-  const clue = document.createElement('div'); document.body.append(clue);
+  const root = document.createElement('div'); root.className = 'game-grid'; document.body.append(root);
+  const clue = document.createElement('div'); root.append(difficultyIndicator(), maximumIndicator(), clue);
   const changed = vi.fn();
-  dispose = attachClueControls(clue, { frames: [{ image: '/fixture.webp', x: -864, y: -384, width: 1728, height: 768 }] }, progress, 256, changed);
+  dispose = attachClueControls(clue, { frames: [{ image: '/fixture.webp', x: -864, y: -384, width: 1728, height: 768 }] }, progress, 256, changed, { difficultyTier: 'normal' });
   await flush();
   const button = (label: string) => document.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!;
   return { clue, changed, progress, button };
@@ -70,8 +75,10 @@ it('changes live labels and formatted costs without replacing icons, moving the 
   expect(svg?.getAttribute('aria-hidden')).toBe('true');
   expect(document.activeElement).toBe(out);
   expect(out.getAttribute('aria-label')).toBe('Verkleinern');
+  expect(document.querySelector('[data-clue-difficulty]')?.textContent).toBe('Normale Schwierigkeit');
+  expect(document.querySelector('[data-clue-maximum]')?.textContent).toBe('Bis zu 2.000 Punkte');
   expect(out.getAttribute('aria-description')).toBe('Verkleinern — Kostet 1.000 Punkte');
-  expect(out.querySelector('.clue-control-cost')?.textContent).toBe('-1.000 Punkte');
+  expect(out.querySelector('.clue-control-cost')?.textContent).toBe('-1.000');
   expect(document.querySelector('[data-bs-toggle="popover"], .popover')).toBeNull();
   expect(canvas?.getAttribute('aria-label')).toBe('Gesuchter Ort');
   expect(f.clue.dataset.loadingLabel).toBe('Karte wird geladen…');
@@ -108,12 +115,28 @@ it('keeps return and backtracking free and translates the position without chang
   expect(east.querySelector('.clue-control-cost')?.textContent).toBe('Kostenlos');
 });
 
+it('shows the remaining maximum before a guess and updates it only after successful exploration', async () => {
+  const f = await fixture(), budget = document.querySelector('[data-clue-maximum]')!;
+  expect(document.querySelector('[data-clue-difficulty]')?.textContent).toBe('Normal difficulty');
+  expect(budget.textContent).toBe('Up to 5,000 points');
+  const text = budget.firstChild;
+  updateRoundIndicators(document, f.progress, 'normal');
+  expect(budget.firstChild).toBe(text);
+  f.button('Travel east').click(); await flush(); expect(budget.textContent).toBe('Up to 4,900 points');
+  f.button('Travel west').click(); await flush(); expect(budget.textContent).toBe('Up to 4,900 points');
+  f.button('Zoom out').click(); await flush(); expect(budget.textContent).toBe('Up to 4,500 points');
+  vi.mocked(ClueViewport.prototype.show).mockRejectedValueOnce(Error('Image failure'));
+  f.button('Zoom out').click(); await flush(); expect(budget.textContent).toBe('Up to 4,500 points');
+  expect(document.querySelector('.clue-control')?.classList.contains('theme-primary')).toBe(false);
+  expect(document.querySelector('.clue-control')?.classList.contains('theme-secondary')).toBe(true);
+});
+
 it('uses singular remaining point costs and keeps the retry action alive when the error language changes', async () => {
   const f = await fixture({ ...newClueProgress(), widest: 6, travelSpent: 999 });
   const east = f.button('Travel east');
   await i18next.changeLanguage('de');
   expect(east.getAttribute('aria-description')).toBe('Nach Osten bewegen — Kostet 1 Punkt');
-  expect(east.querySelector('.clue-control-cost')?.textContent).toBe('-1 Punkt');
+  expect(east.querySelector('.clue-control-cost')?.textContent).toBe('-1');
   vi.mocked(ClueViewport.prototype.show).mockRejectedValueOnce(Error('Image failure'));
   east.click(); await flush();
   expect(f.progress.dx).toBe(0);
@@ -125,7 +148,7 @@ it('uses singular remaining point costs and keeps the retry action alive when th
   expect(error.querySelector('button')).toBe(retry);
   expect(error.textContent).toContain('Image could not load. No points were charged.');
   expect(retry.firstElementChild?.textContent).toBe('Retry image');
-  expect(retry.querySelector('.clue-control-cost')?.textContent).toBe('-1 point');
+  expect(retry.querySelector('.clue-control-cost')?.textContent).toBe('-1');
   retry.click(); await flush();
   expect(f.progress.dx).toBe(24);
   expect(maximumScore(f.progress)).toBe(0);
@@ -136,7 +159,7 @@ it('updates visible costs through zoom levels, return trips, and the edge of the
   const f = await fixture(), out = f.button('Zoom out'), inside = f.button('Zoom in');
   const cost = (button: HTMLButtonElement) => button.querySelector('.clue-control-cost')!.textContent;
   for (const expected of [400, 500, 600, 700, 800, 1000]) {
-    expect(cost(out)).toBe(`-${expected.toLocaleString('en-US')} points`);
+    expect(cost(out)).toBe(`-${expected.toLocaleString('en-US')}`);
     const before = maximumScore(f.progress);
     out.click(); await flush();
     expect(before - maximumScore(f.progress)).toBe(expected);

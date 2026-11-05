@@ -15,6 +15,7 @@ export function liveRoomGame(session: StreamSession, imageRoot: string): LiveRoo
     expiresAt: session.expiresAt,
     rounds: session.rounds.map((round, index) => ({
       id: round.id,
+      ...(round.difficultyTier ? { difficultyTier: round.difficultyTier } : {}),
       clue: encodeViewerClue({
         source: round.clue,
         camera: { dx: 0, dy: 0, level: 0 },

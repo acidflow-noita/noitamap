@@ -82,6 +82,21 @@ async function fixture() {
   return { ...database, env, call, start, ticket };
 }
 describe("ranked game authority", () => {
+  it('includes the current puzzle difficulty while keeping its area and answer private', async () => {
+    const f = await fixture();
+    f.sqlite.prepare('UPDATE challenges SET image_config_json=? WHERE id=?')
+      .run(JSON.stringify({ version: 'prepared-test' }), 'daily-test');
+    f.sqlite.prepare('UPDATE questions SET clue_json=?, area_json=? WHERE challenge_id=?')
+      .run(JSON.stringify({ frames: [{ image: '/opaque.webp', x: -10, y: -10, width: 20, height: 20 }] }),
+        JSON.stringify({ id: 'private-area-id', label: 'Private area label', difficultyTier: 'hard', runs: [[99, 12, 14]] }), 'daily-test');
+    const state = await f.start();
+    expect(state.difficultyTier).toBe('hard');
+    expect(state.results).toEqual([]);
+    expect(JSON.stringify(state)).not.toContain('private-area-id');
+    expect(JSON.stringify(state)).not.toContain('Private area label');
+    expect(state).not.toHaveProperty('answer');
+    expect(state).not.toHaveProperty('runs');
+  });
   it("requires a valid Pro game ticket before any database work", async () => {
     const f = await fixture();
     expect((await f.call("/api/daily", undefined, now, null)).status).toBe(401);

@@ -2,6 +2,7 @@ import "./game.css";
 import Dialog from "bootstrap/js/dist/dialog.js";
 import { bindText, bindAttribute, tr, initializeGuessrTranslations, guessrLocale, guessrGameTerm, formatGuessrNumber } from './i18n';
 import { createGuessrLanguagePicker, disposeGuessrLanguagePickers } from './language-picker';
+import { difficultyIndicator, difficultyLabel, maximumIndicator, updateRoundIndicators } from './round-status';
 import { msg, setText, localizedDistance, localizedError, type LocalizedText } from './messages';
 import {
   GUESSR_CANONICAL_URL,
@@ -340,17 +341,18 @@ function makePlayPanels(
     left = node("section", "game-panel"),
     right = node("section", "game-panel game-panel--map");
   const bar = node("div", "panel-bar");
-  bar.append(node("span", "panel-title", msg('Where are you?')));
+  const clueHeading = node('div', 'clue-heading');
+  clueHeading.append(node("span", "panel-title", msg('Where are you?')), difficultyIndicator());
+  bar.append(clueHeading);
   left.append(bar);
   const clue = node("div", "clue loading");
   clue.append(clueLoadingPlaceholder());
   bindAttribute(clue, 'data-loading-label', 'Loading clue map…');
   bindAttribute(clue, 'data-paused-label', 'Paused');
   left.append(clue);
-  const mapBar = node("div", "panel-bar map-bar");
+  const mapBar = node("div", "panel-bar map-bar map-bar--budget");
   const mapHeading = node("div", "map-heading");
-  mapHeading.append(node("span", "panel-title", msg("Your guess")));
-  mapBar.append(mapHeading);
+  mapBar.append(mapHeading, maximumIndicator());
   const mapActions = node("div", "buttons");
   mapBar.append(mapActions);
   const map = node("div", "map-board");
@@ -466,6 +468,8 @@ function showMapResult(
 ): void {
   const clueTitle = main.querySelector('.game-grid > .game-panel:first-child .panel-title');
   if (clueTitle) bindText(clueTitle, 'Revealed area');
+  const difficultyText = main.querySelector('[data-clue-difficulty]');
+  if (difficultyText) bindText(difficultyText, () => difficultyLabel(difficulty));
   const heading = main.querySelector(".map-heading")!;
   const explore = link(msg(() => guessrGameTerm(name)), url, "panel-title result-link");
   explore.target = "_blank";
@@ -487,6 +491,7 @@ function showMapResult(
   bindAttribute(points, 'aria-label', '{{points}} points earned this round', () => ({ count: score, points: score.toLocaleString(guessrLocale()) }));
   bindAttribute(points, 'title', 'Points earned this round');
   const mapBar = heading.parentElement!;
+  mapBar.classList.remove('map-bar--budget');
   mapBar.classList.add("map-bar--result");
   mapBar.querySelector(".round-points")?.remove();
   heading.replaceChildren(explore, detail);
@@ -531,6 +536,7 @@ function renderPractice(): void {
     session.guess,
     !!result || session.pausedAt !== null,
   );
+  updateRoundIndicators(main, session.clue, place.hard ? 'hard' : undefined);
   if (!result && session.pausedAt === null && place.views) {
     clearClue = attachClueControls(
       clue,
@@ -538,6 +544,7 @@ function renderPractice(): void {
       session.clue,
       pack.travelStep ?? 256,
       save,
+      { difficultyTier: place.hard ? 'hard' : undefined },
     );
   } else if (result) {
     putClue(clue, place.views?.["0,0,6"]?.image ?? place.image, 1);
@@ -733,6 +740,7 @@ function renderImageGame(review?: {
     result ? result.guess : imageGuess,
     !!result || imagePaused,
   );
+  updateRoundIndicators(main, imageClue, result?.difficultyTier ?? imageSession.current?.difficultyTier);
   if (result) {
     const viewport = new ClueViewport(clue, source);
     clearClue = () => viewport.destroy();
@@ -742,7 +750,7 @@ function renderImageGame(review?: {
         toast(msg("This view could not load. Reopen the round to retry.")),
       );
   } else if (!imagePaused) {
-    clearClue = attachClueControls(clue, source, imageClue, 256, save);
+    clearClue = attachClueControls(clue, source, imageClue, 256, save, { difficultyTier: imageSession.current?.difficultyTier });
   }
   clue.classList.toggle("paused", imagePaused && !result);
   if (!result)
@@ -1278,7 +1286,8 @@ function renderRanked(): void {
     }),
   );
   const { clue } = makePlayPanels(main, rankedGuess, false);
-  if (ranked.clue) clearClue = attachClueControls(clue, ranked.clue, rankedClue, 256, saveRankedView);
+  updateRoundIndicators(main, rankedClue, ranked.difficultyTier);
+  if (ranked.clue) clearClue = attachClueControls(clue, ranked.clue, rankedClue, 256, saveRankedView, { difficultyTier: ranked.difficultyTier });
   else if (ranked.image) void rankedImage(clue, ranked.image);
   const actions = node("div", "game-actions"),
     submit = button(msg("Submit guess"), () => submitRanked(false), "primary");

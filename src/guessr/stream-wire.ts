@@ -52,6 +52,7 @@ function pack(payload: StreamWirePayload): unknown[] | Uint8Array<ArrayBuffer> {
       t ? { phase: t.phase, startsAt: t.startsAt, deadline: t.deadline, hostRound: t.hostRound, seconds: t.seconds, revealed: t.revealed,
         ...(t.chatRound !== undefined ? { chatRound: t.chatRound } : {}),
         ...(t.early ? { early: true } : {}),
+        ...(['easy', 'normal', 'hard'].includes(s.difficultyTier ?? '') ? { d: ['easy', 'normal', 'hard'].indexOf(s.difficultyTier!) } : {}),
         ...(s.ended ? { ended: true } : {}) } : undefined];
   }
   if (payload.type === 'receipts') {
@@ -146,8 +147,12 @@ export class StreamPacketReader {
           || !Number.isInteger(timing.hostRound) || timing.hostRound < 1 || timing.hostRound > 10
           || timing.chatRound !== undefined && timing.chatRound !== null && (!Number.isInteger(timing.chatRound) || timing.chatRound < 1 || timing.chatRound > 10)
           || !Number.isInteger(timing.seconds) || timing.seconds < 0 || timing.seconds > 600) return null;
+        if (timing.d !== undefined && (!Number.isInteger(timing.d) || timing.d < 0 || timing.d > 2)) return null;
+        const difficultyTier = (['easy', 'normal', 'hard'] as const)[timing.d as number];
+        delete timing.d;
         payload = { type: 'state', state: { schema: 1, channel: this.channel, gameId, revision, hostId, hostPro: 'active', phase,
-          online, paused, round, roundId, clue, expiresAt, ...(resultId ? { resultId } : {}), ...(timing.ended ? { ended: true } : {}), timing } };
+          online, paused, round, roundId, clue, expiresAt, ...(resultId ? { resultId } : {}), ...(timing.ended ? { ended: true } : {}),
+          ...(difficultyTier ? { difficultyTier } : {}), timing } };
       } else if (row[0] === 1 && row.length === 5 && Number.isInteger(row[1]) && row[1] >= 0 && row[1] < 10) {
         const [, round, roundId, point, area] = row;
         if (typeof roundId !== 'string' || !/^[a-f0-9-]{36}$/.test(roundId) || !Array.isArray(point) || point.length !== 2

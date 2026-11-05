@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { frameMap, frameMarkers } from "../src/guessr/map-framing";
+import { ANSWER_PIN_HEIGHT } from '../src/guessr/map-pin';
 
 describe("starting map framing", () => {
   const bounds = { x: -17920, y: -31744, width: 36352, height: 73728 };
@@ -54,6 +55,7 @@ describe("revealed result framing", () => {
         expect(x).toBeLessThan(0.9);
         expect(y).toBeGreaterThan(0.1);
         expect(y).toBeLessThan(0.9);
+        expect(y * height).toBeGreaterThanOrEqual(ANSWER_PIN_HEIGHT + 5);
       }
     },
   );

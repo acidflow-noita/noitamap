@@ -1,6 +1,7 @@
 import { ClueViewport } from './clue-viewport';
 import { fitClueToPanel } from './clue-stage';
 import { attachClueControls } from './clue-view';
+import { difficultyIndicator, maximumIndicator, updateRoundIndicators } from './round-status';
 import type { ImageGameConfig } from './image-game';
 import { MapBoard } from './map-board';
 import { maximumScore, newClueProgress, within, type Point, type ClueProgress } from './rules';
@@ -22,7 +23,6 @@ import { localizedDistance } from './messages';
 import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, onGuessrLanguageChanged, tr } from './i18n';
 import { pageHeading } from './page-heading';
 import { hoverHelp } from './hover-help';
-import { twitchColor } from './player-color';
 
 const ROUND_STORAGE_KEY = 'noitamap-guessr-viewer-round-v1';
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text: string | (() => string) = '') {
@@ -122,7 +122,9 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const signIn = node('div', 'stream-signin');
   const signInError = node('p', 'stream-signin-error'); signInError.setAttribute('role', 'status');
   signIn.append(connect, signInError);
-  const budget = node('span', 'stream-maximum'); budget.hidden = true;
+  const budget = maximumIndicator(); budget.classList.add('stream-maximum'); budget.hidden = true;
+  const budgetBar = node('div', 'panel-bar stream-budget-bar'); budgetBar.hidden = true;
+  budgetBar.append(budget); mapPanel.prepend(budgetBar);
   const roomStatus = node('span', 'stream-room-status'); roomStatus.setAttribute('role', 'status');
   const retry = button('Reconnect', () => room?.retry(), 'small secondary'); retry.hidden = true;
   const delivery = node('span', 'stream-delivery'); delivery.setAttribute('role', 'status');
@@ -171,7 +173,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const sendControl = node('span', 'stream-send-control'); sendControl.append(send);
   const sendHelp = hoverHelp(sendControl, () => tr(sendReason), send);
   const secondaryActions = node('div', 'stream-secondary-actions');
-  secondaryActions.append(budget, previousResult, result, retry);
+  secondaryActions.append(previousResult, result, retry);
   actions.append(delivery, sendControl, secondaryActions); mapPanel.append(revealBar, signIn, map, actions); layout.append(mapPanel);
   const resultsPanel = node('section', 'game-panel stream-viewer-results'); resultsPanel.hidden = true;
   layout.append(resultsPanel);
@@ -206,8 +208,11 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         visited: [...new Set(['0,0', `${snapshot.camera.dx},${snapshot.camera.dy}`])] };
       restoreProgress();
       bindAttribute(cluePanel, 'aria-label', () => tr('Round {{round}} clue', { round: formatGuessrNumber(snapshot!.round) }));
-      const clue = node('div', 'clue loading'); cluePanel.replaceChildren(clue);
-      if (progress) clearControls = attachClueControls(clue, snapshot.source, progress, 256, () => { saveProgress(); refresh(); }, { compact: true });
+      const clueBar = node('div', 'panel-bar'), heading = node('div', 'clue-heading');
+      heading.append(node('span', 'panel-title', 'Where are you?'), difficultyIndicator()); clueBar.append(heading);
+      const clue = node('div', 'clue loading'); cluePanel.replaceChildren(clueBar, clue);
+      if (progress) clearControls = attachClueControls(clue, snapshot.source, progress, 256, () => { saveProgress(); refresh(); },
+        { compact: true, difficultyTier: () => live?.difficultyTier });
       else {
         viewport = new ClueViewport(clue, snapshot.source);
         void viewport.show(snapshot.camera).then(ready => { if (ready) clue.classList.remove('loading'); }).catch(() => {
@@ -369,7 +374,6 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   };
   refresh = () => {
     const state = viewer.getState();
-    main.style.setProperty('--guessr-pin-color', twitchColor(state.color) ?? 'var(--accent-fg)');
     personal.identify(live?.gameId ?? requestedGame, state.userId ?? state.savedUserId ?? null);
     if (twitchUpdates && live?.phase === 'complete' && !state.connected) connection.insertBefore(connect, disconnect);
     else if (connect.parentElement !== signIn) signIn.prepend(connect);
@@ -379,7 +383,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     signInError.hidden = !signInError.textContent;
     if (snapshot) round.textContent = tr('Round {{value1}} / {{value2}}', { value1: formatGuessrNumber(snapshot.round), value2: formatGuessrNumber(STREAM_ROUNDS) });
     if (twitchUpdates) showPersonalOutcome(); else showOutcome();
-    if (progress) budget.textContent = tr('Up to {{points}} points', { points: formatGuessrNumber(maximumScore(progress)), count: maximumScore(progress) });
+    if (progress) updateRoundIndicators(layout, progress,
+      reviewedRound === null ? live?.difficultyTier : personal.round(reviewedRound).reveal?.area.difficultyTier);
+    budgetBar.hidden = !progress || reviewedRound !== null || !revealBar.hidden;
+    budget.hidden = budgetBar.hidden;
     account.textContent = state.connected ? tr('Playing as {{player}}', { player: state.login! }) : '';
     connect.hidden = state.connected; connect.disabled = state.connecting;
     bindText(connect, state.restoring ? 'Restoring Twitch…' : state.connecting ? 'Signing in…' : 'Sign in with Twitch');

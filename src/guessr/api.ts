@@ -1,6 +1,7 @@
 import type { Bounds, Point } from "./rules";
 import type { ImageGameConfig } from './image-game';
 import type { ClueSource } from './clue-camera';
+import type { AreaDifficulty } from './area-rules';
 export { gameApiOrigin } from './api-origin';
 
 export interface RankedState {
@@ -20,6 +21,7 @@ export interface RankedState {
   image: string | null;
   config?: ImageGameConfig;
   clue?: ClueSource | null;
+  difficultyTier?: AreaDifficulty;
   submitted: number[];
   score?: number;
   elapsedMs?: number;

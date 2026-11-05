@@ -141,6 +141,7 @@ function validateGame(game: LiveRoomGame, now: number): void {
     || game.rounds.length !== STREAM_ROUNDS
     || new Set(game.rounds.map((round) => round.id)).size !== game.rounds.length
     || game.rounds.some((round) => !round || !idPattern.test(round.id)
+      || round.difficultyTier !== undefined && !difficulty(round.difficultyTier)
       || typeof round.clue !== 'string' || !/^[a-zA-Z0-9_-]{1,2048}$/.test(round.clue))) {
     fail(400, 'Invalid live game.');
   }
@@ -166,6 +167,7 @@ export function liveRoomView(state: LiveRoomState | null, channel: string, now: 
     online: state.online && now < state.lastSeen + LIVE_ROOM_HOST_TIMEOUT_MS,
     paused: state.paused, round: state.index + 1,
     roundId: current.id, clue: current.clue, expiresAt: state.game.expiresAt,
+    ...(current.difficultyTier ? { difficultyTier: current.difficultyTier } : {}),
     ...(state.resultId ? { resultId: state.resultId } : {}),
     ...(state.phase !== 'guess' && state.outcome ? { outcome: state.outcome } : {}),
     ...(state.phase === 'complete' && state.result ? { result: state.result } : {}),
@@ -188,7 +190,7 @@ export function startLiveRoom(state: LiveRoomState | null, ownerId: string, game
   return {
     schema: 1, ownerId,
     // Copy caller-owned arrays to keep the pure core safe for the local adapter.
-    game: { ...game, rounds: game.rounds.map(({ id, clue }) => ({ id, clue })) },
+    game: { ...game, rounds: game.rounds.map(({ id, clue, difficultyTier }) => ({ id, clue, ...(difficultyTier ? { difficultyTier } : {}) })) },
     revision: (state?.revision ?? 0) + 1,
     index: 0, phase: 'guess', online: true, paused: false, lastSeen: now,
     ...(game.hostProVerifiedUntil === undefined ? {} : { hostProVerifiedUntil: game.hostProVerifiedUntil }),

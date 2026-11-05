@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MapBoard } from "../src/guessr/map-board";
+import { MAP_PIN_PATH, MAP_PIN_TIP, GUESS_PIN_COLOR, ANSWER_PIN_COLOR, GUESS_PIN_HEIGHT, ANSWER_PIN_HEIGHT, PLAYER_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT } from '../src/guessr/map-pin';
 
 const harness = vi.hoisted(() => ({
   viewer: null as any,
@@ -130,6 +131,26 @@ function click(mount: HTMLElement, x: number, y: number) {
 }
 
 describe("guess-map camera", () => {
+  it('uses larger logo pins with fixed screen sizes, exact tip anchors, and distinct overlapping colors', async () => {
+    const { board } = await fixture(), point = { x: 1000, y: 2000 };
+    board.setMarkers(point, point);
+    const guess = board.svg.querySelector<SVGGElement>('[data-pin-kind="guess"]')!;
+    const answer = board.svg.querySelector<SVGGElement>('[data-pin-kind="answer"]')!;
+    expect(guess.getAttribute('fill')).toBe(GUESS_PIN_COLOR); expect(answer.getAttribute('fill')).toBe(ANSWER_PIN_COLOR);
+    expect(guess.querySelector('path')?.getAttribute('d')).toBe(MAP_PIN_PATH);
+    expect(guess.previousElementSibling).toBe(answer);
+    expect(ANSWER_PIN_HEIGHT).toBeGreaterThan(GUESS_PIN_HEIGHT);
+    for (const zoom of [1, 3, .25]) {
+      board.zoom(zoom);
+      for (const [pin, expectedHeight] of [[guess, GUESS_PIN_HEIGHT], [answer, ANSWER_PIN_HEIGHT]] as const) {
+        const values = pin.getAttribute('transform')!.match(/-?[\d.]+(?:e[+-]?\d+)?/gi)!.map(Number);
+        const [x, y, scale, tipX, tipY] = values;
+        expect([x, y]).toEqual([point.x, point.y]);
+        expect([tipX, tipY]).toEqual([-MAP_PIN_TIP.x, -MAP_PIN_TIP.y]);
+        expect(64 * scale * width / camera().width).toBeCloseTo(expectedHeight, 8);
+      }
+    }
+  });
   it('returns to the streamer and target after exploring results when no chatter guessed', async () => {
     const { board, viewer } = await fixture();
     const host = { x: 14000, y: -22000 }, target = { x: 14600, y: -21500 };
@@ -164,13 +185,13 @@ describe("guess-map camera", () => {
       expect(point.x).toBeGreaterThanOrEqual(before.x); expect(point.x).toBeLessThanOrEqual(before.x + before.width);
       expect(point.y).toBeGreaterThanOrEqual(before.y); expect(point.y).toBeLessThanOrEqual(before.y + before.height);
     }
-    const first = board.svg.querySelector<SVGCircleElement>('[data-player="1"]')!;
-    const second = board.svg.querySelector<SVGCircleElement>('[data-player="2"]')!;
+    const first = board.svg.querySelector<SVGGElement>('[data-player="1"]')!;
+    const second = board.svg.querySelector<SVGGElement>('[data-player="2"]')!;
     expect(first.getAttribute('fill')).toBe('#9146FF'); expect(second.getAttribute('fill')).toBe('#FF4500');
     first.dispatchEvent(new Event('pointerenter'));
     expect(highlighted).toHaveBeenCalledWith('1');
-    board.highlightPlayer('1'); expect(first.getAttribute('data-radius')).toBe('11');
-    board.highlightPlayer('2'); expect(first.getAttribute('data-radius')).toBe('5'); expect(second.getAttribute('data-radius')).toBe('11');
+    board.highlightPlayer('1'); expect(first.dataset.pinHeight).toBe(String(HIGHLIGHT_PIN_HEIGHT));
+    board.highlightPlayer('2'); expect(first.dataset.pinHeight).toBe(String(PLAYER_PIN_HEIGHT)); expect(second.dataset.pinHeight).toBe(String(HIGHLIGHT_PIN_HEIGHT));
     expect(camera()).toEqual(before); aligned(viewer.viewport);
     expect(board.svg.querySelectorAll('[data-player]')).toHaveLength(2);
   });

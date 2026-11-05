@@ -33,6 +33,7 @@ async function fixture() {
   const service = new StreamService(streamSource(), streamSecret);
   const session = await service.start(streamHost, streamNow);
   expect(session.rounds).toHaveLength(10);
+  expect(session.rounds.every(round => round.difficultyTier === streamArea.difficultyTier)).toBe(true);
   session.serverNow = streamNow;
   const game = newStreamGame(session, streamNow);
   const chat = (

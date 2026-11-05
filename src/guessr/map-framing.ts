@@ -1,4 +1,5 @@
 import type { Bounds, Point } from "./rules";
+import { ANSWER_PIN_HEIGHT } from './map-pin';
 
 /** Fill the panel on entry instead of shrinking the tall world into a strip.
  * Panning still reaches the portions above and below the initial view. */
@@ -44,6 +45,14 @@ export function frameMarkers(
     h = Math.max(1024, (bottom - top) * 1.4);
   if (w / h < aspect) w = h * aspect;
   else h = w / aspect;
+  // A pin extends above its coordinate. Keep the whole larger solution pin
+  // inside the result view, including when points span a short/wide panel.
+  const verticalPadding = ANSWER_PIN_HEIGHT + 6, sidePadding = 30;
+  if (width > sidePadding * 2 && height > verticalPadding * 2) {
+    const unit = Math.max(w / width, h / height,
+      (right - left) / (width - sidePadding * 2), (bottom - top) / (height - verticalPadding * 2));
+    w = unit * width; h = unit * height;
+  }
   return {
     x: (left + right - w) / 2,
     y: (top + bottom - h) / 2,

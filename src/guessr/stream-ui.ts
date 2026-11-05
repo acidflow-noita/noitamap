@@ -3,6 +3,7 @@ import { gameAuth } from "./api";
 import { attachClueControls } from "./clue-view";
 import { ClueViewport } from "./clue-viewport";
 import { fitClueToPanel } from './clue-stage';
+import { updateRoundIndicators } from './round-status';
 import { supportedCamera } from "./clue-camera";
 import type { ImageGameConfig } from "./image-game";
 import type { Point } from "./rules";
@@ -1019,6 +1020,7 @@ export class StreamUI {
         }
       },
     );
+    updateRoundIndicators(main, game.clue, reveal?.area.difficultyTier ?? game.session.rounds[index].difficultyTier);
     if (reveal || game.stage === "closing") {
       const viewport = new ClueViewport(clue, game.session.rounds[index].clue);
       this.hooks.cleanupClue(() => viewport.destroy());
@@ -1037,7 +1039,7 @@ export class StreamUI {
           game.clue,
           256,
           this.save,
-          { compact: true },
+          { compact: true, difficultyTier: game.session.rounds[index].difficultyTier },
         ),
       );
     clue.classList.toggle("paused", game.paused && !reveal);

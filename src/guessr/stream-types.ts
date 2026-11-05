@@ -18,6 +18,7 @@ export interface StreamPlayer {
 export interface StreamRound {
   id: string;
   clue: ClueSource;
+  difficultyTier?: AreaDifficulty;
   token: string;
 }
 export interface StreamSession {
