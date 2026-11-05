@@ -18,6 +18,18 @@ describe('liquid refraction on real software GLES, without a browser', () => {
     expect(renderer.render(time, strength)).toBe(true);
     return native.read(source.width, source.height);
   };
+  it('publishes a resized replacement with its first draw and a single fence, without a blank intermediate frame', () => {
+    for (const [width, height] of [[48, 32], [96, 64], [32, 24]]) {
+      const source = liquidFixture(width, height), before = native.counts();
+      expect(renderer.setSource(source, { timeSeconds: 0.2, strength: 1 })).toBe(true);
+      const after = native.counts();
+      expect(after.draws - before.draws).toBe(1);
+      expect(after.uploads - before.uploads).toBe(2);
+      expect(after.syncsCreated - before.syncsCreated).toBe(1);
+      expect(after.liveSyncs).toBe(1);
+      expect(maximumError(native.read(width, height), referenceLiquid(source, 0.2))).toBeLessThanOrEqual(1);
+    }
+  });
 
   it('moves both water and lava using the native phase while leaving opaque solids unchanged', () => {
     const maskAt = (x: number, y: number) => x >= 3 && x < 61 && y >= 3 && y < 45 && (x < 30 || x >= 34) ? (x < 30 ? 255 : 1) : 0;

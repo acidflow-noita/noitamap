@@ -64,7 +64,7 @@ function setup(options: { scale?: number; ratio?: number; ratioY?: number; mask?
   const provider = { prepare: vi.fn(async (_bounds: MaskBounds, _signal: AbortSignal): Promise<ViewLiquidMask | null> => options.mask === undefined ? sampleMask() : options.mask),
     stats: vi.fn(() => ({ preparations: provider.prepare.mock.calls.length, cachedBlocks: 0, cachedBytes: 0,
       capturedMask: false, missingBakedWorlds: [] as number[], liveReady: true, generatedPending: false })), destroy: vi.fn() };
-  const renderer = { setSource: vi.fn((_source: any): boolean | null => true), render: vi.fn((_time: number, _strength: number): boolean | null => true),
+  const renderer = { setSource: vi.fn((_source: any, _firstFrame?: { timeSeconds: number; strength: number }): boolean | null => true), render: vi.fn((_time: number, _strength: number): boolean | null => true),
     stats: vi.fn(() => ({ uploads: renderer.setSource.mock.calls.length * 2 })), dispose: vi.fn() };
   const factory = vi.fn((_canvas: HTMLCanvasElement) => renderer);
   const bitmap = vi.fn(async (_source: ImageBitmapSource, _x: number, _y: number, w: number, h: number, options?: ImageBitmapOptions): Promise<ImageBitmap> =>
@@ -94,6 +94,50 @@ function stop(test: ReturnType<typeof setup>, reason: string) {
 }
 
 describe('liquid overlay scheduling and lifecycle', () => {
+  it('keeps rendering through a long drag with no navigation uploads or terrain queries', async () => {
+    const test = setup(); await start(test); tick(performance.now() + 34);
+    const oldFrames = test.renderer.render.mock.calls.length;
+    test.setAnimating(true);
+    for (let i = 1; i <= 60; i++) {
+      test.setCamera({ a: 1 + i / 120, b: 0, c: 0, d: 1 + i / 120, e: -i, f: i / 2 });
+      test.emit('pan'); test.drawScene(); tick(performance.now() + 34);
+      expect(test.layer.hidden).toBe(false);
+    }
+    expect(test.renderer.render.mock.calls.length - oldFrames).toBe(60);
+    expect(test.provider.prepare).toHaveBeenCalledOnce(); expect(test.bitmap).toHaveBeenCalledOnce();
+    expect(test.renderer.setSource).toHaveBeenCalledOnce(); expect(test.viewer.forceRedraw).toHaveBeenCalledOnce();
+
+    const snapshot = deferred<ImageBitmap>(); test.bitmap.mockReturnValueOnce(snapshot.promise);
+    test.setAnimating(false); test.emit('animation-finish'); await flush(); test.drawScene(2);
+    expect(test.provider.prepare).toHaveBeenCalledTimes(2); expect(test.bitmap).toHaveBeenCalledTimes(2);
+    const frames = test.renderer.render.mock.calls.length;
+    for (let i = 0; i < 20; i++) tick(performance.now() + 34);
+    expect(test.layer.hidden).toBe(false); expect(test.renderer.render.mock.calls.length - frames).toBe(20);
+    const [, , , width, height, options] = test.bitmap.mock.calls[1];
+    snapshot.resolve(image(options?.resizeWidth ?? width, options?.resizeHeight ?? height, 2)); await flush();
+    expect(test.layer.hidden).toBe(false); expect(test.renderer.setSource).toHaveBeenCalledTimes(2);
+    expect(test.layer.style.transform).toBe('matrix(1,0,0,1,0,0)');
+  });
+  it('does not run the old crop offscreen and can reproject it back without rebuilding', async () => {
+    const test = setup(); await start(test); test.setAnimating(true);
+    test.setCamera({ a: 1, b: 0, c: 0, d: 1, e: -10000, f: 0 }); test.drawScene();
+    expect(test.layer.hidden).toBe(true); expect(queue.size).toBe(0);
+    test.setCamera({ a: 1, b: 0, c: 0, d: 1, e: -5, f: 0 }); test.drawScene();
+    expect(test.layer.hidden).toBe(false); expect(queue.size).toBe(1);
+    expect(test.bitmap).toHaveBeenCalledOnce(); expect(test.provider.prepare).toHaveBeenCalledOnce();
+  });
+  it('keeps the previous frame visible while an upload waits, without feeding new draws into its GPU fence', async () => {
+    const test = setup(); await start(test);
+    test.renderer.setSource.mockReturnValueOnce(null);
+    test.emit('tile-loaded'); await vi.advanceTimersByTimeAsync(160); test.drawScene(2); await flush();
+    expect(test.layer.hidden).toBe(false);
+    const calls = test.renderer.render.mock.calls.length;
+    tick(performance.now() + 16);
+    expect(test.renderer.render).toHaveBeenCalledTimes(calls);
+    await vi.advanceTimersByTimeAsync(18); await flush();
+    expect(test.layer.hidden).toBe(false); expect(test.renderer.setSource).toHaveBeenCalledTimes(3);
+    expect(test.bitmap).toHaveBeenCalledTimes(2);
+  });
   it('keeps a high-DPI full-pool view animated with bounded uploads and the original display size', async () => {
     const test = setup({ scale: 4, mask: { x: 0, y: 0, width: 960, height: 540, pixels: new Uint8Array(960 * 540).fill(255) } });
     test.resize(3840, 2160, 7680, 4320); test.emit('resize');
@@ -130,9 +174,11 @@ describe('liquid overlay scheduling and lifecycle', () => {
     expect(bitmap.close).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(34); await flush();
     expect(test.renderer.setSource).toHaveBeenCalledTimes(2); expect(bitmap.close).toHaveBeenCalledOnce();
+    // setSource publishes the first frame atomically with its upload.
+    expect(test.layer.hidden).toBe(false); expect(test.overlay.stats().frames).toBe(1);
     test.renderer.render.mockReturnValueOnce(null);
-    tick(); expect(test.layer.hidden).toBe(true); expect(test.overlay.stats().frames).toBe(0);
     tick(performance.now() + 34); expect(test.layer.hidden).toBe(false); expect(test.overlay.stats().frames).toBe(1);
+    tick(performance.now() + 34); expect(test.layer.hidden).toBe(false); expect(test.overlay.stats().frames).toBe(2);
     expect(test.bitmap).toHaveBeenCalledOnce(); expect(test.viewer.forceRedraw).toHaveBeenCalledOnce();
   });
   it('refreshes opacity/background changes that redraw OSD without loading a tile', async () => {
@@ -141,7 +187,7 @@ describe('liquid overlay scheduling and lifecycle', () => {
     test.drawScene(9);
     expect(test.layer.hidden).toBe(true); expect(queue.size).toBe(0);
     await vi.advanceTimersByTimeAsync(80); test.drawScene(10); await flush();
-    expect(test.provider.prepare).toHaveBeenCalledOnce();
+    expect(test.provider.prepare).toHaveBeenCalledTimes(2);
     expect(test.renderer.setSource).toHaveBeenCalledTimes(2);
     expect(test.renderer.setSource.mock.calls[1][0].color.scene).toBe(10);
     await vi.advanceTimersByTimeAsync(500);
@@ -175,8 +221,9 @@ describe('liquid overlay scheduling and lifecycle', () => {
 
   it('captures a finished cold terrain frame before creating or animating the GPU layer', async () => {
     const test = setup(), pending = deferred<ImageBitmap>(); test.bitmap.mockReturnValueOnce(pending.promise);
-    expect(test.canvas.children[0]).toBe(test.terrain); expect(test.canvas.children[1]).toBe(test.layer); expect(test.canvas.children[2]).toBe(test.particles);
-    await vi.advanceTimersByTimeAsync(159); expect(test.provider.prepare).not.toHaveBeenCalled();
+    expect(test.canvas.children[0]).toBe(test.terrain); expect(test.canvas.children[1]).toBe(test.layer.parentElement); expect(test.canvas.children[2]).toBe(test.particles);
+    expect(test.layer.parentElement!.style.overflow).toBe('hidden');
+    await vi.advanceTimersByTimeAsync(79); expect(test.provider.prepare).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
     expect(test.provider.prepare).toHaveBeenCalledOnce(); expect(test.viewer.forceRedraw).toHaveBeenCalledOnce();
     expect(test.bitmap).not.toHaveBeenCalled(); expect(test.factory).not.toHaveBeenCalled();
@@ -186,23 +233,25 @@ describe('liquid overlay scheduling and lifecycle', () => {
     const captured = image(46, 36, 7); pending.resolve(captured); await flush();
     expect(test.renderer.setSource).toHaveBeenCalledOnce(); expect(test.renderer.setSource.mock.calls[0][0].color).toBe(captured);
     expect(captured.close).toHaveBeenCalledOnce(); expect(test.renderer.render).not.toHaveBeenCalled();
-    tick(); expect(test.renderer.render).toHaveBeenCalledOnce();
+    expect(test.layer.hidden).toBe(false);
+    expect(test.renderer.setSource.mock.calls[0][1]).toEqual({ timeSeconds: 0, strength: 0 });
+    tick(performance.now() + 34); expect(test.renderer.render).toHaveBeenCalledOnce();
     expect(test.renderer.setSource.mock.invocationCallOrder[0]).toBeLessThan(test.renderer.render.mock.invocationCallOrder[0]);
     expect(test.viewer.viewport.pixelFromPoint.mock.calls.every(([, current]) => current === true)).toBe(true);
   });
 
-  it('debounces navigation, aborts superseded masks, and waits for animation to finish', async () => {
+  it('coalesces navigation work and starts the replacement immediately when movement finishes', async () => {
     const test = setup(), pending = deferred<ViewLiquidMask | null>(); test.provider.prepare.mockReturnValueOnce(pending.promise);
-    await vi.advanceTimersByTimeAsync(100); test.emit('pan');
-    await vi.advanceTimersByTimeAsync(100); test.emit('zoom');
-    await vi.advanceTimersByTimeAsync(159); expect(test.provider.prepare).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(50); test.setCamera({ a: 1, b: 0, c: 0, d: 1, e: 5, f: 0 }); test.emit('pan');
+    await vi.advanceTimersByTimeAsync(50); test.setCamera({ a: 2, b: 0, c: 0, d: 2, e: 5, f: 0 }); test.emit('zoom');
+    await vi.advanceTimersByTimeAsync(79); expect(test.provider.prepare).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1); expect(test.provider.prepare).toHaveBeenCalledOnce();
     const signal = test.provider.prepare.mock.calls[0][1];
-    test.setAnimating(true); test.emit('pan'); expect(signal.aborted).toBe(true);
+    test.setAnimating(true); test.setCamera({ a: 2, b: 0, c: 0, d: 2, e: 10, f: 5 }); test.emit('pan'); expect(signal.aborted).toBe(true);
     pending.resolve(sampleMask()); await flush(); expect(test.viewer.forceRedraw).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(160); expect(test.provider.prepare).toHaveBeenCalledOnce();
     test.setAnimating(false); test.emit('animation-finish');
-    await vi.advanceTimersByTimeAsync(160); expect(test.provider.prepare).toHaveBeenCalledTimes(2);
+    await flush(); expect(test.provider.prepare).toHaveBeenCalledTimes(2);
     test.drawScene(2); await flush(); expect(test.factory).toHaveBeenCalledOnce();
   });
 
@@ -218,26 +267,29 @@ describe('liquid overlay scheduling and lifecycle', () => {
     expect(queue.size).toBe(1);
   });
 
-  it('hides stale frames at camera changes and uploads only a crop captured for the new camera', async () => {
+  it('keeps an animated frame aligned during movement and replaces it without hiding it', async () => {
     const test = setup(); await start(test); tick();
     const previousFrames = test.renderer.render.mock.calls.length;
     test.setCamera({ a: 2, b: 0, c: 0, d: 2, e: -30, f: 10 }); test.drawScene(2);
-    expect(test.layer.hidden).toBe(true); expect(queue.size).toBe(0);
-    tick(); expect(test.renderer.render).toHaveBeenCalledTimes(previousFrames);
+    expect(test.layer.hidden).toBe(false); expect(queue.size).toBe(1);
+    expect(test.layer.style.transform).toBe('matrix(2,0,0,2,67,107)');
+    tick(performance.now() + 34); expect(test.renderer.render).toHaveBeenCalledTimes(previousFrames + 1);
     await vi.advanceTimersByTimeAsync(160); test.drawScene(3); await flush();
     expect(test.renderer.setSource).toHaveBeenCalledTimes(2);
     const second = test.renderer.setSource.mock.calls[1][0];
     expect(second.color.scene).toBe(3);
     expect(second.screenToWorld[0]).toBe(0.5); expect(second.screenToWorld[3]).toBe(0.5);
+    expect(test.layer.hidden).toBe(false); expect(test.layer.style.transform).toBe('matrix(1,0,0,1,0,0)');
+    expect(test.renderer.setSource.mock.calls[1][1]!.strength).toBeGreaterThan(0);
     expect(test.factory).toHaveBeenCalledOnce();
   });
 
-  it('refreshes changed map content once after a quiet interval without regenerating masks', async () => {
+  it('refreshes after the first tile update without waiting for a quiet interval or regenerating masks', async () => {
     const test = setup(); await start(test); tick();
     test.emit('tile-loaded');
     await vi.advanceTimersByTimeAsync(50); test.emit('terrain-cache-ready');
-    expect(test.layer.hidden).toBe(true); expect(queue.size).toBe(0);
-    await vi.advanceTimersByTimeAsync(79); expect(test.viewer.forceRedraw).toHaveBeenCalledOnce();
+    expect(test.layer.hidden).toBe(false); expect(queue.size).toBe(1);
+    await vi.advanceTimersByTimeAsync(109); expect(test.viewer.forceRedraw).toHaveBeenCalledOnce();
     await vi.advanceTimersByTimeAsync(1); expect(test.viewer.forceRedraw).toHaveBeenCalledTimes(2);
     test.drawScene(9); await flush();
     expect(test.provider.prepare).toHaveBeenCalledOnce(); expect(test.renderer.setSource).toHaveBeenCalledTimes(2);
@@ -245,15 +297,15 @@ describe('liquid overlay scheduling and lifecycle', () => {
     expect(test.factory).toHaveBeenCalledOnce();
   });
 
-  it('discards a pending snapshot when new terrain invalidates its captured content', async () => {
+  it('publishes a completed snapshot despite arriving tiles, then coalesces one more refresh', async () => {
     const test = setup(), pending = deferred<ImageBitmap>(); test.bitmap.mockReturnValueOnce(pending.promise);
     await vi.advanceTimersByTimeAsync(160); test.drawScene(1);
     test.emit('terrain-cache-ready');
     const stale = image(46, 36, 1); pending.resolve(stale); await flush();
     expect(stale.close).toHaveBeenCalledOnce();
-    expect(test.renderer.setSource).not.toHaveBeenCalled(); expect(test.layer.hidden).toBe(true); expect(queue.size).toBe(0);
-    await vi.advanceTimersByTimeAsync(80); test.drawScene(2); await flush();
-    expect(test.renderer.setSource).toHaveBeenCalledOnce(); expect(test.renderer.setSource.mock.calls[0][0].color.scene).toBe(2);
+    expect(test.renderer.setSource).toHaveBeenCalledOnce(); expect(test.layer.hidden).toBe(false); expect(queue.size).toBe(1);
+    await vi.advanceTimersByTimeAsync(160); test.drawScene(2); await flush();
+    expect(test.renderer.setSource).toHaveBeenCalledTimes(2); expect(test.renderer.setSource.mock.calls[1][0].color.scene).toBe(2);
     expect(test.provider.prepare).toHaveBeenCalledOnce();
   });
 
@@ -318,7 +370,7 @@ describe('liquid overlay scheduling and lifecycle', () => {
     else if (stage === 'bitmap') test.bitmap.mockRejectedValueOnce(error);
     else if (stage === 'GPU') test.factory.mockImplementationOnce(() => { throw error; });
     else test.renderer.render.mockImplementationOnce(() => { throw error; });
-    await start(test); tick();
+    await start(test); tick(performance.now() + 34);
     expect(test.layer.hidden).toBe(true); expect(queue.size).toBe(0);
     expect(test.overlay.stats()).toMatchObject({ status: 'error', error: `${stage} unavailable` });
     const calls = test.viewer.forceRedraw.mock.calls.length;

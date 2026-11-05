@@ -1,4 +1,4 @@
-import type { CameraMatrix } from '../portals/geometry';
+import { reprojectCamera, type CameraMatrix } from '../portals/geometry';
 import { MAX_MASK_PIXELS, type MaskBounds } from './mask-index';
 export const LIQUID_ENTER_SCALE = 0.75;
 export const LIQUID_EXIT_SCALE = 0.5;
@@ -21,6 +21,19 @@ function boundsOf(m: CameraMatrix, rect: MaskBounds) {
   const ys = points.map(([x, y]) => m.b * x + m.d * y + m.f);
   const x = Math.floor(Math.min(...xs)), y = Math.floor(Math.min(...ys));
   return { x, y, width: Math.ceil(Math.max(...xs)) - x, height: Math.ceil(Math.max(...ys)) - y };
+}
+/** Keep a completed crop attached to its world pixels as OSD moves. The
+ * element keeps its original CSS left/top, so compensate for that offset. */
+export function liquidReprojection(current: CameraMatrix, rendered: CameraMatrix, crop: MaskBounds,
+  width: number, height: number) {
+  const m = reprojectCamera(current, rendered);
+  if (!m) return null;
+  const rect = boundsOf(m, crop);
+  return {
+    matrix: { ...m, e: m.e + m.a * crop.x + m.c * crop.y - crop.x,
+      f: m.f + m.b * crop.x + m.d * crop.y - crop.y },
+    visible: rect.x < width && rect.y < height && rect.x + rect.width > 0 && rect.y + rect.height > 0,
+  };
 }
 export function liquidViewBounds(m: CameraMatrix, width: number, height: number, active: boolean): MaskBounds | null {
   const inverse = inverseCamera(m);

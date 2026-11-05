@@ -28,13 +28,27 @@ on a cropped bitmap's possibly larger backing surface. The copy happens only
 when the map snapshot changes, not during animation; it retains at most one
 additional color-crop-sized scratch surface.
 
-The effect pauses during navigation, at distant zoom, when no liquid is visible,
+The completed crop keeps animating during navigation. It uses the portal
+presenter's camera reprojection to follow pan, zoom, rotation and flipping
+without regenerating masks, capturing terrain or uploading textures on each
+movement. A clipped presentation layer prevents the transformed crop from
+spilling outside the map. Newly exposed areas use the original map until the
+replacement crop is ready. Mask preparation starts as soon as OSD reports that
+movement finished, with an 80 ms fallback for immediate camera changes.
+
+Tile arrivals coalesce into a refresh 160 ms after the first update. Later
+arrivals neither restart that delay nor discard an already completed snapshot.
+The preceding crop stays visible and animated while a replacement is prepared.
+Its upload and first draw share one GPU fence, so a resized canvas is never
+published as an empty intermediate frame. Further animation draws yield while
+that upload is waiting for the existing fence. No queue of snapshots builds up.
+
+The effect still stops at distant zoom, when its retained crop is offscreen,
 in hidden tabs, or when reduced motion is requested. It starts at 0.75 CSS
-pixels per world pixel and stops below 0.5, with hysteresis. Camera movement
-immediately restores the original map. Once the new view is ready, displacement
-fades in over 140 ms. Obsolete mask and image responses cannot restore an old
-view. Layer/content changes invalidate the frozen image even without a new
-tile download.
+pixels per world pixel and stops below 0.5, with hysteresis. First activation
+fades in over 140 ms; ordinary refreshes preserve the phase and strength.
+Layer removal/reordering, opacity, clipping, reseeding and context loss discard
+obsolete imagery. Late responses cannot restore it.
 
 Color surfaces are limited to 4,194,304 pixels and 2,048 pixels per dimension,
 native masks to 16,777,216 pixels, and cached generated blocks to 8 MiB. Large

@@ -1,11 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { inverseCamera, liquidScreenCrop, liquidViewBounds, LIQUID_ENTER_SCALE, LIQUID_EXIT_SCALE, LIQUID_MAX_FRAME_PIXELS } from '../src/liquids/geometry';
+import { inverseCamera, liquidReprojection, liquidScreenCrop, liquidViewBounds, LIQUID_ENTER_SCALE, LIQUID_EXIT_SCALE, LIQUID_MAX_FRAME_PIXELS } from '../src/liquids/geometry';
 import type { CameraMatrix } from '../src/portals/geometry';
 
 const identity: CameraMatrix = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
 const transform = (m: CameraMatrix, x: number, y: number) => [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f];
 
 describe('liquid camera and physical crop geometry', () => {
+  it.each([
+    { a: 2, b: 0, c: 0, d: 2, e: -30, f: 10 },
+    { a: 0, b: 1.5, c: -1.5, d: 0, e: 700, f: -10 },
+    { a: -1, b: 0, c: 0, d: 1, e: 800, f: 0 },
+  ])('reprojects a cropped frame to the same world position through pan/zoom/rotation/flip %#', current => {
+    const rendered = { a: 1.3, b: 0.2, c: -0.2, d: 1.3, e: 50, f: 70 };
+    const crop = { x: 97.5, y: 83.25, width: 61, height: 43 };
+    const p = liquidReprojection(current, rendered, crop, 800, 600)!;
+    const inverse = inverseCamera(rendered)!;
+    for (const [x, y] of [[0, 0], [61, 43], [30.5, 21.5]]) {
+      const [wx, wy] = transform(inverse, crop.x + x, crop.y + y);
+      const expected = transform(current, wx, wy);
+      const actual = transform(p.matrix, x, y);
+      expect(actual[0] + crop.x).toBeCloseTo(expected[0], 8);
+      expect(actual[1] + crop.y).toBeCloseTo(expected[1], 8);
+    }
+  });
+  it('marks a retained crop invisible only when its transformed bounds leave the viewport', () => {
+    const crop = { x: 97, y: 97, width: 46, height: 36 };
+    expect(liquidReprojection({ ...identity, e: -140 }, identity, crop, 800, 600)?.visible).toBe(true);
+    expect(liquidReprojection({ ...identity, e: -144 }, identity, crop, 800, 600)?.visible).toBe(false);
+    expect(liquidReprojection({ ...identity, e: NaN }, identity, crop, 800, 600)).toBeNull();
+  });
   it.each([
     identity,
     { a: 2, b: 0, c: 0, d: 2, e: -200, f: 100 },

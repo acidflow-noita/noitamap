@@ -208,7 +208,13 @@ export class LiquidRenderer {
     }
   }
 
-  setSource({ color, width, height, mask, maskWidth, maskHeight, maskX = 0, maskY = 0, screenToWorld, reduced = false }) {
+  /**
+   * @param {{color: any, width: number, height: number, mask: Uint8Array,
+   * maskWidth: number, maskHeight: number, maskX?: number, maskY?: number,
+   * screenToWorld: readonly number[], reduced?: boolean}} source
+   * @param {{timeSeconds: number, strength: number} | null} [firstFrame]
+   */
+  setSource({ color, width, height, mask, maskWidth, maskHeight, maskX = 0, maskY = 0, screenToWorld, reduced = false }, firstFrame = null) {
     if (this.disposed || this.lost || this.syncFailed || this.gl.isContextLost()) return false;
     dimensions(width, height, this.maxWidth, this.maxHeight, LIQUID_MAX_COLOR_PIXELS, 'Color');
     dimensions(maskWidth, maskHeight, this.maxMaskDimension, this.maxMaskDimension, LIQUID_MAX_MASK_PIXELS, 'Mask');
@@ -216,6 +222,8 @@ export class LiquidRenderer {
       throw new TypeError('Liquid mask must be a tightly packed R8 Uint8Array');
     if (!Number.isSafeInteger(maskX) || !Number.isSafeInteger(maskY)) throw new TypeError('Mask origin must use integer world pixels');
     const transform = affine(screenToWorld);
+    if (firstFrame && (!Number.isFinite(firstFrame.timeSeconds) || !Number.isFinite(firstFrame.strength)))
+      throw new TypeError('Liquid first frame must have finite time and strength');
     if (!color) throw new TypeError('Liquid color source is required');
     const data = color.data;
     if (data !== undefined && (!(data instanceof Uint8Array || data instanceof Uint8ClampedArray) || data.length !== width * height * 4))
@@ -273,6 +281,10 @@ export class LiquidRenderer {
     this.reduced = reduced;
     this.ready = true;
     this.lastError = null;
+    // Upload and the replacement's first draw share one queue admission/fence.
+    // Resizing the visible canvas must not leave a blank frame waiting for a
+    // second RAF or an upload fence. Normal animation uploads nothing.
+    if (firstFrame) return this.render(firstFrame.timeSeconds, firstFrame.strength);
     // Repeated source refreshes must not queue uploads behind a stalled GPU,
     // even if the owner has paused animation between those refreshes.
     return this._placeFence('source');
