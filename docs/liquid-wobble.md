@@ -22,6 +22,12 @@ no terrain regeneration, texture upload, canvas readback or network request
 per frame. A nonblocking GPU fence admits at most one upload/frame at a time;
 slow devices retain the preceding image instead of accumulating draw commands.
 
+The crop is first copied into one reusable, bounded 2D surface. A whole-surface
+bitmap is then uploaded with explicit WebGL2 dimensions. This avoids relying
+on a cropped bitmap's possibly larger backing surface. The copy happens only
+when the map snapshot changes, not during animation; it retains at most one
+additional color-crop-sized scratch surface.
+
 The effect pauses during navigation, at distant zoom, when no liquid is visible,
 in hidden tabs, or when reduced motion is requested. It starts at 0.75 CSS
 pixels per world pixel and stops below 0.5, with hysteresis. Camera movement

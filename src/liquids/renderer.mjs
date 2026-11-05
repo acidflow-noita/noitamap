@@ -227,8 +227,10 @@ export class LiquidRenderer {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       this.allocations++;
     }
-    if (data !== undefined) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, data);
-    else gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, color);
+    // WebGL2 accepts explicit dimensions for DOM sources too. Never let the
+    // legacy overload infer a larger ImageBitmap backing-surface size.
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, data ?? color);
+    this._checkUpload('color', width, height);
     gl.activeTexture(gl.TEXTURE0 + 1);
     gl.bindTexture(gl.TEXTURE_2D, this.maskTexture);
     if (maskWidth !== this.maskWidth || maskHeight !== this.maskHeight) {
@@ -236,12 +238,7 @@ export class LiquidRenderer {
       this.allocations++;
     }
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, maskWidth, maskHeight, gl.RED, gl.UNSIGNED_BYTE, mask);
-    const error = gl.getError();
-    if (error) {
-      this.lastError = `Liquid source upload failed (WebGL ${error})`;
-      this._delete();
-      throw new Error(this.lastError);
-    }
+    this._checkUpload('mask', maskWidth, maskHeight);
     this.width = width; this.height = height;
     this.maskWidth = maskWidth; this.maskHeight = maskHeight;
     this.uploads += 2;
@@ -261,6 +258,14 @@ export class LiquidRenderer {
     // Repeated source refreshes must not queue uploads behind a stalled GPU,
     // even if the owner has paused animation between those refreshes.
     return this._placeFence('source');
+  }
+
+  _checkUpload(kind, width, height) {
+    const error = this.gl.getError();
+    if (!error) return;
+    this.lastError = `Liquid ${kind} upload failed (${width}x${height}, WebGL ${error})`;
+    this._delete();
+    throw new Error(this.lastError);
   }
 
   render(timeSeconds, strength = 1) {

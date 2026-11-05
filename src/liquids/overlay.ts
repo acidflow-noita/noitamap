@@ -3,6 +3,7 @@ import { liquidScreenCrop, liquidViewBounds } from './geometry';
 import { LiquidMaskProvider, type LiquidMaskInputs } from './mask-provider';
 import type { ViewLiquidMask } from './mask-worker-client';
 import type { LiquidRenderer } from './renderer.mjs';
+import { LiquidSnapshot } from './snapshot';
 
 declare const OpenSeadragon: any;
 const MOVEMENT = ['pan', 'zoom', 'resize', 'rotate', 'flip'];
@@ -25,7 +26,8 @@ export class LiquidOverlay {
   private provider: LiquidOverlayDeps['provider'];
   private renderer?: ReturnType<LiquidOverlayDeps['renderer']>;
   private rendererFactory?: LiquidOverlayDeps['renderer'];
-  private bitmap: LiquidOverlayDeps['bitmap'];
+  private bitmap: (source: HTMLCanvasElement, x: number, y: number, width: number, height: number) => Promise<ImageBitmap>;
+  private snapshot?: LiquidSnapshot;
   private controller = new AbortController();
   private ready?: ReadyFrame;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -50,7 +52,8 @@ export class LiquidOverlay {
     this.osd = viewer.viewer ?? viewer;
     this.provider = deps?.provider ?? new LiquidMaskProvider(inputs);
     this.rendererFactory = deps?.renderer;
-    this.bitmap = deps?.bitmap ?? globalThis.createImageBitmap.bind(globalThis);
+    this.bitmap = deps?.bitmap ?? ((source, x, y, width, height) =>
+      (this.snapshot ??= new LiquidSnapshot()).capture(source, x, y, width, height));
     this.canvas.className = 'noitamap-liquid-wobble'; this.canvas.setAttribute('aria-hidden', 'true');
     Object.assign(this.canvas.style, { position: 'absolute', pointerEvents: 'none', imageRendering: 'auto' });
     this.canvas.hidden = true;
@@ -254,6 +257,6 @@ export class LiquidOverlay {
     this.media?.removeEventListener('change', this.invalidate);
     this.canvas.removeEventListener('webglcontextlost', this.pause);
     this.canvas.removeEventListener('webglcontextrestored', this.invalidateColor);
-    this.provider.destroy(); this.renderer?.dispose(); this.canvas.remove(); this.ready = undefined;
+    this.provider.destroy(); this.snapshot?.destroy(); this.renderer?.dispose(); this.canvas.remove(); this.ready = undefined;
   };
 }

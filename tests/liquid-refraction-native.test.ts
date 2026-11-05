@@ -115,6 +115,23 @@ describe('liquid refraction on real software GLES, without a browser', () => {
     expect(maximumError(native.read(24, 16), referenceLiquid(source, 0.123))).toBeLessThanOrEqual(1);
   });
 
+  it('uses explicit DOM upload extents through cold, growing, shrinking and same-size refreshes', () => {
+    const upload = vi.spyOn(native.gl, 'texSubImage2D');
+    for (const [width, height, maskWidth, maskHeight] of [[73, 41, 75, 43], [211, 127, 213, 129],
+      [19, 13, 25, 17], [19, 13, 25, 17], [87, 55, 89, 57]]) {
+      const source = liquidFixture(width, height, { maskWidth, maskHeight });
+      const image = createCanvas(width, height);
+      image.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(source.color.data), width, height), 0, 0);
+      const browserImage = { width, height, getContext: () => image.getContext('2d') };
+      expect(renderer.setSource({ ...source, color: browserImage })).toBe(true);
+      const call = [...upload.mock.calls].reverse().find(args => args[8] === browserImage)!;
+      expect(call).toHaveLength(9); expect(call.slice(4, 6)).toEqual([width, height]);
+      native.gl.finish(); expect(renderer.render(0, 0)).toBe(true);
+      expect(maximumError(native.read(width, height), referenceLiquid(source, 0, 0))).toBeLessThanOrEqual(1);
+      expect(native.gl.getError()).toBe(0);
+    }
+  });
+
   it('uses absolute world phase across adjacent crops with a two-pixel sampling guard', () => {
     const shared = { maskX: 100, maskY: 220, maskWidth: 128, maskHeight: 48 };
     const time = 0.278, whole = liquidFixture(128, 48, { ...shared, screenToWorld: [1, 0, 0, 1, 100, 220] });

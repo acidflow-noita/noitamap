@@ -62,6 +62,9 @@ export function nativeLiquidGL() {
       const [target, level, x, y, format, type, canvas] = args;
       const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
       args = [target, level, x, y, canvas.width, canvas.height, format, type, data];
+    } else if (args.length === 9 && typeof args[8]?.getContext === 'function') {
+      const canvas = args[8];
+      args[8] = canvas.getContext('2d').getImageData(0, 0, args[4], args[5]).data;
     }
     counts.uploadBytes += args[8].byteLength;
     return upload(...args);
