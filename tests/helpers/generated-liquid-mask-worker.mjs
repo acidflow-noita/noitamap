@@ -9,7 +9,7 @@ try {
   const create = document.createElement.bind(document);
   document.createElement = name => name === "canvas" ? gpu.createCanvas() : create(name);
   const api = await import(pathToFileURL(workerData.entry).href);
-  result = { ...await api.verifyMasks(), renderer: gpu.info };
+  result = { samples: [await api.verifyMasks(), await api.verifyMasks(2100611341)], renderer: gpu.info };
 } catch (error) { result = { error: error.stack }; }
 finally { gpu?.dispose(); environment?.close(); }
 parentPort.postMessage(result);

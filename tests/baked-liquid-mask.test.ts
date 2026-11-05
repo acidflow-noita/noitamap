@@ -25,7 +25,7 @@ it("packages actual sparse masks only after complete, versioned leaf coverage an
     await expect(readFile(join(root, "middle/liquid-mask.bin"))).rejects.toThrow();
     await writeFile(liquidMaskCheckpointPath(b.path), encodeLiquidMaskCheckpoint(b, second));
     const descriptor = await writeBakedWorldLiquidMask(root, "middle", seed, renderId, region, [b, a]);
-    expect(descriptor).toMatchObject({ version: 1, path: "liquid-mask.bin", seed, renderId });
+    expect(descriptor).toMatchObject({ version: 1, capturedVersion: 1, path: "liquid-mask.bin", seed, renderId });
     expect(descriptor.bytes).toBeLessThan(first.length + second.length);
     expect(descriptor.sha256).toMatch(/^[a-f0-9]{64}$/);
     const blocks = await readBakedWorldLiquidMask(root, "middle", seed, renderId, descriptor);

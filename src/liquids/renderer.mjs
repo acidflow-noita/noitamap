@@ -23,6 +23,7 @@ uniform vec2 u_screenX;
 uniform vec2 u_screenY;
 uniform float u_phase;
 uniform float u_strength;
+uniform bool u_reduced;
 out vec4 outColor;
 
 vec2 worldAt(vec2 p) {
@@ -32,6 +33,21 @@ bool liquidAt(vec2 world) {
   vec2 cell = floor(world - u_maskOrigin);
   if (any(lessThan(cell, vec2(0.0))) || any(greaterThanEqual(cell, u_maskSize))) return false;
   return texelFetch(u_mask, ivec2(cell), 0).r > 0.0;
+}
+bool liquidFootprint(vec2 world) {
+  if (!liquidAt(world)) return false;
+  if (!u_reduced) return true;
+  // A resized presentation pixel covers more than its center. Require every
+  // native cell in that footprint to be fluid, including small air holes and
+  // rotated edges. The original map remains visible around those boundaries.
+  vec2 extent = vec2(abs(u_worldX.x) + abs(u_worldX.y), abs(u_worldY.x) + abs(u_worldY.y)) * 0.5;
+  ivec2 lo = ivec2(floor(world - extent - u_maskOrigin));
+  ivec2 hi = ivec2(ceil(world + extent - u_maskOrigin)) - 1;
+  if (any(lessThan(lo, ivec2(0))) || any(greaterThanEqual(hi, ivec2(u_maskSize))) ||
+      any(greaterThan(hi - lo, ivec2(32)))) return false;
+  for (int y = lo.y; y <= hi.y; y++) for (int x = lo.x; x <= hi.x; x++)
+    if (texelFetch(u_mask, ivec2(x, y), 0).r == 0.0) return false;
+  return true;
 }
 bool inColor(vec2 p) {
   return all(greaterThanEqual(p, vec2(0.0))) && all(lessThan(p, u_size));
@@ -48,7 +64,7 @@ void main() {
   vec2 screen = vec2(gl_FragCoord.x, u_size.y - gl_FragCoord.y);
   vec2 world = worldAt(screen);
   outColor = vec4(0.0);
-  if (!liquidAt(world)) return;
+  if (!liquidFootprint(world)) return;
   vec4 original = premultiplied(texelFetch(u_color, ivec2(screen), 0));
   outColor = original;
   if (u_strength == 0.0) return;
@@ -169,7 +185,7 @@ export class LiquidRenderer {
       }
       gl.linkProgram(this.program);
       if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(this.program) || 'Liquid shader linking failed');
-      this.uniforms = Object.fromEntries(['color', 'mask', 'size', 'maskSize', 'maskOrigin', 'worldX', 'worldY', 'screenX', 'screenY', 'phase', 'strength']
+      this.uniforms = Object.fromEntries(['color', 'mask', 'size', 'maskSize', 'maskOrigin', 'worldX', 'worldY', 'screenX', 'screenY', 'phase', 'strength', 'reduced']
         .map(name => [name, gl.getUniformLocation(this.program, `u_${name}`)]));
       this.vao = gl.createVertexArray();
       this.colorTexture = gl.createTexture();
@@ -192,7 +208,7 @@ export class LiquidRenderer {
     }
   }
 
-  setSource({ color, width, height, mask, maskWidth, maskHeight, maskX = 0, maskY = 0, screenToWorld }) {
+  setSource({ color, width, height, mask, maskWidth, maskHeight, maskX = 0, maskY = 0, screenToWorld, reduced = false }) {
     if (this.disposed || this.lost || this.syncFailed || this.gl.isContextLost()) return false;
     dimensions(width, height, this.maxWidth, this.maxHeight, LIQUID_MAX_COLOR_PIXELS, 'Color');
     dimensions(maskWidth, maskHeight, this.maxMaskDimension, this.maxMaskDimension, LIQUID_MAX_MASK_PIXELS, 'Mask');
@@ -253,6 +269,8 @@ export class LiquidRenderer {
     gl.uniform3f(u.worldY, ...transform.worldY);
     gl.uniform2f(u.screenX, transform.inverse[0], transform.inverse[1]);
     gl.uniform2f(u.screenY, transform.inverse[2], transform.inverse[3]);
+    gl.uniform1i(u.reduced, Number(reduced));
+    this.reduced = reduced;
     this.ready = true;
     this.lastError = null;
     // Repeated source refreshes must not queue uploads behind a stalled GPU,
@@ -325,6 +343,7 @@ export class LiquidRenderer {
     return {
       ready: this.ready, contextLost: this.lost || (!this.disposed && this.gl.isContextLost()), disposed: this.disposed,
       width: this.width, height: this.height, maskWidth: this.maskWidth, maskHeight: this.maskHeight,
+      reduced: !!this.reduced,
       textureBytes, estimatedGPUBytes: textureBytes + this.width * this.height * 8, // Two presentation buffers assumed.
       textures: Number(!!this.colorTexture) + Number(!!this.maskTexture),
       busy: !!this.fence, pendingGPU: this.pendingGPU, pendingSyncs: Number(!!this.fence), syncFailed: this.syncFailed,

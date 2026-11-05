@@ -15,12 +15,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("baked DZI rendering", () => {
-  it.each(['valid', 'absent', 'stale', 'missing-file-name', 'oversized'])(
+  it.each(['valid', 'preserved', 'absent', 'stale', 'missing-file-name', 'oversized'])(
     'keeps Daily usable with a %s optional liquid mask, without fetching masks on startup', async mode => {
       const sha256 = 'a'.repeat(64), renderId = 'seed-render-liquid1';
       const fetcher = vi.fn(async () => ({ ok: true, json: async () => ({
         seed: 901, complete: true, baked: true, terrainVersion: TERRAIN_VERSION, renderId,
         liquidMask: mode === 'absent' ? undefined : { version: 1, seed: mode === 'stale' ? 900 : 901,
+          capturedVersion: mode === 'preserved' ? 1 : undefined,
           renderId, path: mode === 'missing-file-name' ? '../secret.bin' : 'liquid-mask.bin',
           bytes: mode === 'oversized' ? 26 * 1024 * 1024 : 512, sha256 },
         regions: [{ pw: 0, dzi: 'map.dzi', minX: -17920, minY: -31744, fullW: 35840 }],
@@ -29,8 +30,9 @@ describe("baked DZI rendering", () => {
       const result = await probeBakedDZIs('daily', 901);
       expect(result.baked).toBe(true); expect(fetcher).toHaveBeenCalledTimes(3);
       if (result.baked) for (const placement of result.placements) {
-        if (mode === 'valid') expect(placement.liquidMask).toMatchObject({
+        if (mode === 'valid' || mode === 'preserved') expect(placement.liquidMask).toMatchObject({
           url: expect.stringContaining(`/liquid-mask.bin?v=${sha256}`), bytes: 512, sha256,
+          preservesCapturedFluids: mode === 'preserved',
         });
         else expect(placement.liquidMask).toBeUndefined();
       }

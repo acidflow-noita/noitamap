@@ -53,6 +53,26 @@ describe('liquid refraction on real software GLES, without a browser', () => {
     expect(invalidPixels).toBe(0);
   });
 
+  it.each([[2, 0, 0, 2, 0, 0], [0, 2, -2, 0, 48, 0]])('guards the entire resized footprint, including isolated air holes (%j)', (...screenToWorld) => {
+    const source = { ...liquidFixture(24, 24, { screenToWorld, maskWidth: 48, maskHeight: 48,
+      maskAt: (x: number, y: number) => x === 10 && y === 10 ? 0 : 255,
+      colorAt: () => [30, 80, 140, 255] }), reduced: true };
+    const actual = render(source, 0.2);
+    let excluded = 0;
+    for (let y = 0; y < 24; y++) for (let x = 0; x < 24; x++) {
+      const corners = [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]]
+        .map(([px, py]) => [screenToWorld[0] * px + screenToWorld[2] * py + screenToWorld[4],
+          screenToWorld[1] * px + screenToWorld[3] * py + screenToWorld[5]]);
+      const left = Math.min(...corners.map(p => p[0])), right = Math.max(...corners.map(p => p[0]));
+      const top = Math.min(...corners.map(p => p[1])), bottom = Math.max(...corners.map(p => p[1]));
+      const containsAir = left <= 10 && right > 10 && top <= 10 && bottom > 10;
+      expect(pixel(actual, 24, x, y)[3]).toBe(containsAir ? 0 : 255);
+      if (containsAir) excluded++;
+    }
+    expect(excluded).toBe(1);
+    expect(renderer.stats().reduced).toBe(true);
+  });
+
   it('never imports black, white, magenta, or transparent solid texels across a mask boundary', () => {
     const eligible = (x: number, y: number) => x >= 8 && x < 40 && y >= 8 && y < 34 && !(x >= 21 && x < 25 && y >= 18 && y < 22);
     const solidColors = [[0, 0, 0, 255], [255, 255, 255, 255], [255, 0, 255, 255], [255, 255, 255, 0]];

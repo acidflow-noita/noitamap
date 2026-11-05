@@ -36,15 +36,19 @@ fades in over 140 ms. Obsolete mask and image responses cannot restore an old
 view. Layer/content changes invalidate the frozen image even without a new
 tile download.
 
-Color crops are limited to 4,194,304 physical pixels, native masks to
-16,777,216 pixels, and cached generated blocks to 8 MiB. GPU texture dimension
-limits also apply. Oversized views retain the normal map. Only one captured
+Color surfaces are limited to 4,194,304 pixels and 2,048 pixels per dimension,
+native masks to 16,777,216 pixels, and cached generated blocks to 8 MiB. Large
+or high-DPI color crops are resized during the single snapshot copy, keeping
+their original screen placement and world coordinates. The shader checks
+every native cell covered by a resized pixel and leaves boundary pixels to
+the original map. Nearest presentation avoids expanding the effect into air.
+Oversized native masks retain the normal map. Only one captured
 bitmap may wait for the GPU. A hidden effect retains bounded caches until
 reseed/teardown, and schedules no animation frames. Shader code and GPU resources
 load only when a valid visible mask and image are ready.
 
 Active animation has a real GPU cost. Native software-GLES measurements are
-available through `node build_scripts/benchmark-liquid-refraction.mjs`; they do
+available through `node --import tsx build_scripts/benchmark-liquid-refraction.mjs`; they do
 not establish browser FPS or hardware performance. The benchmark separates
 source upload from drawing and distinguishes transient sync objects from
 texture/buffer reallocations. Actual local browser appearance and performance
@@ -57,6 +61,36 @@ size. Each submitted frame used one transient sync and zero texture uploads
 or texture/buffer reallocations. These timings exclude the separately measured
 source capture/upload and are software-renderer results.
 
+The expanded repair benchmark includes the actual captured Holy Mountain oil
+basin mask, sparse views, high-DPI resizing and the maximum output budget.
+Its measurements are in [liquid-performance.json](liquid-performance.json).
+With no concurrent builds/tests, the measured median/p95 draw costs were:
+
+| Scenario | Median | p95 | Estimated GPU storage | Scratch canvas |
+| --- | ---: | ---: | ---: | ---: |
+| Holy Mountain basin at 2x | 0.75 ms | 0.98 ms | 1.6 MiB | 0.5 MiB |
+| 1024 by 768, all liquid | 2.76 ms | 3.73 ms | 9.8 MiB | 3.0 MiB |
+| 1920 by 1080, all liquid | 6.37 ms | 8.20 ms | 25.7 MiB | 7.9 MiB |
+| 1920 by 1080, scattered liquid | 2.21 ms | 2.75 ms | 25.7 MiB | 7.9 MiB |
+| 4K high-DPI view, resized to 2048 by 1152 | 8.41 ms | 10.57 ms | 27.6 MiB | 9.0 MiB |
+| Maximum 2048 by 2048 output, all liquid | 14.59 ms | 16.77 ms | 49.0 MiB | 16.0 MiB |
+
+These are 90 synchronized draws per case on Mesa llvmpipe, excluding capture,
+not a percentage loss in application FPS. The CPU submission medians were
+0.06 to 0.21 ms; completion waits are benchmark-only. Software-driver threads
+also consume CPU while rendering. The maximum full-liquid case is material
+work even with the 30 fps cap and cannot be described as zero impact.
+
+After navigation, native-fixture snapshot copying, readback and upload together
+took 0.20 ms median for the basin, 3.39 ms for 1080p, and 38.79 ms at the maximum
+output. Native canvas may defer copying until readback. These timings therefore
+do not establish browser `createImageBitmap` latency. Static mask decoding,
+indexing and a basin query took 18.36 ms outside the frame loop; its decoded
+artifact is 4.54 MiB and belongs to the mask worker in production.
+Steady draws performed zero texture uploads or texture reallocations. GPU
+resource accounting returned to zero after every renderer teardown. The memory
+columns exclude driver overhead, pending bitmaps, mask-worker data and caches.
+
 ## Daily assets and deployment
 
 Push the map commit to `dynamic-map`. The existing biome-baker pipeline builds
@@ -67,6 +101,21 @@ Cloudflare setting or separate Guessr deployment is needed.
 
 Old daily bakes remain usable. They animate captured fixed-area liquids using
 the bundled mask; their generated pools gain refraction after a new bake.
+The published Daily for seed 2100611341 has no generated-liquid sidecar. Its
+pool near 626,2043 therefore requires a new bake; changing the zoom cannot
+supply that missing material information. Debug stats list missing sidecars
+as `missingBakedWorlds`, separately from an empty viewport.
+
+Captured Holy Mountain basins extend above their biome chunks. Sixteen filled
+basins have 85,136 fluid pixels exposed to procedural painting. Their compact
+reservations preserve those exact pixels in live terrain, native backgrounds
+and new bakes. The mask descriptor's `capturedVersion: 1` confirms that the
+bake preserves them. Older baked imagery covers that strip, so the client
+excludes it from the captured mask rather than animating the covering backdrop.
+The rest of each basin and the lower teleportation cups remain unchanged.
+
+Live masks retry on terrain readiness events when the first query inputs were
+not ready yet. There is no polling or cold renderer initialization.
 The client only requests advertised, seed-matched mask files and verifies their
 length and digest. It does not fall back to live generation to reconstruct an
 old Daily mask. Image tile counts and the Guessr Daily preparation format stay
@@ -78,6 +127,14 @@ are fetched once per visited horizontal world and reused for subsequent views.
 Rendering and animation make no calls to Pro or Guessr Workers.
 
 ## Local inspection
+
+For the reported seed, append `&nb=1` to bypass its older public bake without
+changing the seed. The generated pool can then be checked immediately:
+
+- Basin: `/?x=759&y=1072&z=819&m=dy&se=2100611341&ds=1&nb=1`
+- Generated pool: `/?x=626&y=2043&z=793&m=dy&se=2100611341&ds=1&nb=1`
+- Remove `&nb=1` to check the legacy-bake mask exclusion. Its generated pools
+  still need a new bake before they can animate.
 
 - Captured Holy Mountain pools: `/?m=dy&se=195331&x=-770&y=1110&z=900`
 - Generated pool: `/?m=dy&se=195331&x=-3130&y=870&z=900`

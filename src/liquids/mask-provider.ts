@@ -20,6 +20,9 @@ export class LiquidMaskProvider {
   private cache = new Map<string, Uint8Array>();
   private destroyed = false;
   private preparations = 0;
+  private missingBakedWorlds: number[] = [];
+  private liveReady: boolean | null = null;
+  private pendingLiveBlocks = 0;
   constructor(private inputs: LiquidMaskInputs) {}
   async prepare(view: MaskBounds, signal: AbortSignal): Promise<ViewLiquidMask | null> {
     signal.throwIfAborted(); if (this.destroyed) return null;
@@ -27,18 +30,29 @@ export class LiquidMaskProvider {
     const bounds = { x, y, width: Math.ceil((view.x + view.width - x) / BLOCK) * BLOCK,
       height: Math.ceil((view.y + view.height - y) / BLOCK) * BLOCK };
     assertMaskBounds(bounds); this.preparations++;
-    const assets: MaskAsset[] = this.inputs.staticBackground ? [{ url: STATIC_MASK }] : [];
-    for (const world of this.inputs.baked ?? []) {
-      if (world.x + world.width <= bounds.x || world.x >= bounds.x + bounds.width || !world.liquidMask) continue;
+    const visibleWorlds = (this.inputs.baked ?? []).filter(world => world.x + world.width > bounds.x && world.x < bounds.x + bounds.width);
+    this.missingBakedWorlds = visibleWorlds.filter(world => !world.liquidMask).map(world => world.pw);
+    const legacyWorlds = visibleWorlds.filter(world => !world.liquidMask?.preservesCapturedFluids)
+      .map(({ x, width }) => ({ x, width }));
+    const assets: MaskAsset[] = this.inputs.staticBackground ? [{ url: STATIC_MASK, excludeCapturedFluidsIn: legacyWorlds }] : [];
+    for (const world of visibleWorlds) {
+      if (!world.liquidMask) continue;
       if (!assets.some(asset => asset.url === world.liquidMask!.url)) assets.push(world.liquidMask);
     }
     const worker = this.worker ??= new LiquidMaskWorkerClient();
     const pixels = await worker.paint(bounds, assets, signal);
     signal.throwIfAborted();
+    this.pendingLiveBlocks = 0;
     if (this.inputs.live) {
       const input = this.inputs.live;
-      this.live ??= import('./live-source').then(module => module.createLiveLiquidSource(input));
+      this.live ??= import('./live-source').then(module => module.createLiveLiquidSource(input))
+        .catch(error => { this.live = undefined; throw error; });
       const live = await this.live;
+      signal.throwIfAborted();
+      this.liveReady = !!live;
+      // A map can finish its first paint before its GPU query inputs become
+      // available. Do not permanently cache that initial absence.
+      if (!live) this.live = undefined;
       if (live) for (let by = 0; by < bounds.height; by += BLOCK) for (let bx = 0; bx < bounds.width; bx += BLOCK) {
         signal.throwIfAborted();
         const block = { x: bounds.x + bx, y: bounds.y + by, width: BLOCK, height: BLOCK };
@@ -51,7 +65,7 @@ export class LiquidMaskProvider {
           if (await live.paint(block, tile, signal)) {
             this.cache.set(key, tile);
             while (this.cache.size > 128) this.cache.delete(this.cache.keys().next().value!);
-          }
+          } else this.pendingLiveBlocks++;
           // Yield between blocks, so the next navigation can cancel immediately.
           await new Promise(resolve => setTimeout(resolve, 0));
         }
@@ -62,6 +76,8 @@ export class LiquidMaskProvider {
     signal.throwIfAborted();
     return worker.crop(bounds, pixels, this.inputs.exclusions(bounds), signal);
   }
-  stats() { return { preparations: this.preparations, cachedBlocks: this.cache.size, cachedBytes: this.cache.size * BLOCK * BLOCK }; }
+  stats() { return { preparations: this.preparations, cachedBlocks: this.cache.size, cachedBytes: this.cache.size * BLOCK * BLOCK,
+    capturedMask: this.inputs.staticBackground, missingBakedWorlds: [...this.missingBakedWorlds],
+    liveReady: this.liveReady, generatedPending: this.liveReady === false || this.pendingLiveBlocks > 0 }; }
   destroy() { this.destroyed = true; this.worker?.destroy(); this.cache.clear(); }
 }

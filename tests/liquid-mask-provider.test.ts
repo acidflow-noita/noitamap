@@ -32,7 +32,27 @@ describe('mask source selection and bounded live queries', () => {
   it('does not probe old bakes for missing files or import generation just to animate captured pools', async () => {
     const provider = new LiquidMaskProvider({ baked: [world(0, false)], staticBackground: true, exclusions: () => [] });
     await provider.prepare({ x: 0, y: 0, width: 256, height: 256 }, new AbortController().signal);
-    expect(io.paint.mock.calls[0][1]).toHaveLength(1); expect(io.init).not.toHaveBeenCalled(); provider.destroy();
+    expect(io.paint.mock.calls[0][1]).toHaveLength(1);
+    expect(io.paint.mock.calls[0][1][0].excludeCapturedFluidsIn).toEqual([{ x: -17920, width: 35840 }]);
+    expect(provider.stats().missingBakedWorlds).toEqual([0]);
+    expect(io.init).not.toHaveBeenCalled(); provider.destroy();
+  });
+  it('reserves the complete captured pool only when that world advertises corrected bake pixels', async () => {
+    const corrected = world(0); Object.assign(corrected.liquidMask!, { preservesCapturedFluids: true });
+    const provider = new LiquidMaskProvider({ baked: [world(-1), corrected], staticBackground: true, exclusions: () => [] });
+    await provider.prepare({ x: -18000, y: 1000, width: 500, height: 80 }, new AbortController().signal);
+    expect(io.paint.mock.calls[0][1][0].excludeCapturedFluidsIn).toEqual([{ x: -53760, width: 35840 }]);
+    expect(provider.stats().missingBakedWorlds).toEqual([]); provider.destroy();
+  });
+  it('retries after an initially unavailable live renderer rather than caching absence', async () => {
+    io.init.mockResolvedValueOnce(null);
+    const provider = new LiquidMaskProvider({ staticBackground: false, live: { seed: 42, scenes: [], loadScene: vi.fn() }, exclusions: () => [] });
+    const bounds = { x: 0, y: 0, width: 256, height: 256 }, signal = new AbortController().signal;
+    expect(await provider.prepare(bounds, signal)).toBeNull();
+    expect(provider.stats().generatedPending).toBe(true);
+    expect(await provider.prepare(bounds, signal)).not.toBeNull();
+    expect(provider.stats().generatedPending).toBe(false);
+    expect(io.init).toHaveBeenCalledTimes(2); provider.destroy();
   });
   it('caches successful aligned live blocks, reapplies fresh marker exclusions, and releases them', async () => {
     const exclusion = { x: 0, y: 0, width: 1, height: 1 }, exclusions = vi.fn(() => [] as any[]);

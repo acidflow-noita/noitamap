@@ -62,11 +62,13 @@ function setup(options: { scale?: number; ratio?: number; ratioY?: number; mask?
     drawer: { canvas: terrain }, forceRedraw: vi.fn(), isAnimating: () => animating,
   };
   const provider = { prepare: vi.fn(async (_bounds: MaskBounds, _signal: AbortSignal): Promise<ViewLiquidMask | null> => options.mask === undefined ? sampleMask() : options.mask),
-    stats: vi.fn(() => ({ preparations: provider.prepare.mock.calls.length, cachedBlocks: 0, cachedBytes: 0 })), destroy: vi.fn() };
+    stats: vi.fn(() => ({ preparations: provider.prepare.mock.calls.length, cachedBlocks: 0, cachedBytes: 0,
+      capturedMask: false, missingBakedWorlds: [] as number[], liveReady: true, generatedPending: false })), destroy: vi.fn() };
   const renderer = { setSource: vi.fn((_source: any): boolean | null => true), render: vi.fn((_time: number, _strength: number): boolean | null => true),
     stats: vi.fn(() => ({ uploads: renderer.setSource.mock.calls.length * 2 })), dispose: vi.fn() };
   const factory = vi.fn((_canvas: HTMLCanvasElement) => renderer);
-  const bitmap = vi.fn(async (_source: ImageBitmapSource, _x: number, _y: number, w: number, h: number): Promise<ImageBitmap> => image(w, h, scene));
+  const bitmap = vi.fn(async (_source: ImageBitmapSource, _x: number, _y: number, w: number, h: number, options?: ImageBitmapOptions): Promise<ImageBitmap> =>
+    image(options?.resizeWidth ?? w, options?.resizeHeight ?? h, scene));
   const overlay = new LiquidOverlay(viewer, { staticBackground: false, exclusions: () => [] }, {
     provider, renderer: factory as unknown as LiquidOverlayDeps['renderer'], bitmap: bitmap as unknown as typeof createImageBitmap,
   });
@@ -92,6 +94,33 @@ function stop(test: ReturnType<typeof setup>, reason: string) {
 }
 
 describe('liquid overlay scheduling and lifecycle', () => {
+  it('keeps a high-DPI full-pool view animated with bounded uploads and the original display size', async () => {
+    const test = setup({ scale: 4, mask: { x: 0, y: 0, width: 960, height: 540, pixels: new Uint8Array(960 * 540).fill(255) } });
+    test.resize(3840, 2160, 7680, 4320); test.emit('resize');
+    await start(test); tick();
+    const source = test.renderer.setSource.mock.calls[0][0];
+    expect([source.width, source.height]).toEqual([2048, 1152]);
+    expect([source.color.width, source.color.height]).toEqual([2048, 1152]);
+    expect(source.reduced).toBe(true);
+    expect(source.screenToWorld[0]).toBeCloseTo(960 / 2048);
+    expect(source.screenToWorld[3]).toBeCloseTo(540 / 1152);
+    expect(test.layer.style.width).toBe('3840px'); expect(test.layer.style.height).toBe('2160px');
+    expect(test.layer.style.imageRendering).toBe('pixelated');
+    expect(test.layer.hidden).toBe(false); expect(test.overlay.stats().status).toBe('running');
+    for (let i = 1; i <= 20; i++) tick(performance.now() + 34);
+    expect(test.bitmap).toHaveBeenCalledOnce(); expect(test.renderer.setSource).toHaveBeenCalledOnce();
+  });
+  it('rechecks missing live inputs when terrain finishes, without polling or requiring another pan', async () => {
+    const test = setup(); test.provider.prepare.mockResolvedValueOnce(null);
+    const stats = test.provider.stats();
+    test.provider.stats.mockReturnValue({ ...stats, generatedPending: true, liveReady: false });
+    await start(test); expect(test.overlay.stats().status).toBe('no-visible-liquids');
+    await vi.advanceTimersByTimeAsync(5000); expect(test.provider.prepare).toHaveBeenCalledOnce();
+    test.emit('terrain-frame-ready');
+    test.provider.stats.mockReturnValue(stats);
+    await start(test); tick();
+    expect(test.provider.prepare).toHaveBeenCalledTimes(2); expect(test.layer.hidden).toBe(false);
+  });
   it('retains one snapshot while the GPU is busy without repeated map draws or captures', async () => {
     const test = setup(); test.renderer.setSource.mockReturnValueOnce(null);
     await start(test);
@@ -152,7 +181,7 @@ describe('liquid overlay scheduling and lifecycle', () => {
     expect(test.provider.prepare).toHaveBeenCalledOnce(); expect(test.viewer.forceRedraw).toHaveBeenCalledOnce();
     expect(test.bitmap).not.toHaveBeenCalled(); expect(test.factory).not.toHaveBeenCalled();
     test.drawScene(7);
-    expect(test.bitmap).toHaveBeenCalledWith(test.terrain, 97, 97, 46, 36);
+    expect(test.bitmap).toHaveBeenCalledWith(test.terrain, 97, 97, 46, 36, { resizeWidth: 46, resizeHeight: 36, resizeQuality: 'pixelated' });
     expect(test.factory).not.toHaveBeenCalled(); expect(test.layer.hidden).toBe(true); expect(queue.size).toBe(0);
     const captured = image(46, 36, 7); pending.resolve(captured); await flush();
     expect(test.renderer.setSource).toHaveBeenCalledOnce(); expect(test.renderer.setSource.mock.calls[0][0].color).toBe(captured);

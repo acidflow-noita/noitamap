@@ -3,6 +3,9 @@ import { MAX_MASK_PIXELS, type MaskBounds } from './mask-index';
 export const LIQUID_ENTER_SCALE = 0.75;
 export const LIQUID_EXIT_SCALE = 0.5;
 export const LIQUID_MAX_FRAME_PIXELS = 4 * 1024 * 1024;
+// Guaranteed WebGL2 texture dimension. Large/high-DPI views use a bounded
+// presentation surface instead of disabling animation as a pool fills it.
+export const LIQUID_MAX_FRAME_DIMENSION = 2048;
 
 export function inverseCamera(m: CameraMatrix): CameraMatrix | null {
   const det = m.a * m.d - m.b * m.c;
@@ -38,11 +41,16 @@ export function liquidScreenCrop(m: CameraMatrix, mask: MaskBounds, width: numbe
   const x = Math.max(0, Math.floor((rect.x - 3) * ratio)), y = Math.max(0, Math.floor((rect.y - 3) * ratioY));
   const right = Math.min(Math.round(width * ratio), Math.ceil((rect.x + rect.width + 3) * ratio));
   const bottom = Math.min(Math.round(height * ratioY), Math.ceil((rect.y + rect.height + 3) * ratioY));
-  if (![x, y, right, bottom].every(Number.isSafeInteger) || right <= x || bottom <= y ||
-    (right - x) * (bottom - y) > LIQUID_MAX_FRAME_PIXELS) return null;
-  const screenToWorld = [inverse.a / ratio, inverse.b / ratio, inverse.c / ratioY, inverse.d / ratioY,
+  if (![x, y, right, bottom].every(Number.isSafeInteger) || right <= x || bottom <= y) return null;
+  const sourceWidth = right - x, sourceHeight = bottom - y;
+  const scale = Math.min(1, Math.sqrt(LIQUID_MAX_FRAME_PIXELS / (sourceWidth * sourceHeight)),
+    LIQUID_MAX_FRAME_DIMENSION / sourceWidth, LIQUID_MAX_FRAME_DIMENSION / sourceHeight);
+  const renderWidth = Math.max(1, Math.floor(sourceWidth * scale)), renderHeight = Math.max(1, Math.floor(sourceHeight * scale));
+  const scaleX = sourceWidth / renderWidth, scaleY = sourceHeight / renderHeight;
+  const screenToWorld = [inverse.a * scaleX / ratio, inverse.b * scaleX / ratio,
+      inverse.c * scaleY / ratioY, inverse.d * scaleY / ratioY,
       inverse.a * x / ratio + inverse.c * y / ratioY + inverse.e,
       inverse.b * x / ratio + inverse.d * y / ratioY + inverse.f];
   return screenToWorld.every(n => Number.isFinite(n) && Number.isFinite(Math.fround(n)))
-    ? { x, y, width: right - x, height: bottom - y, screenToWorld } : null;
+    ? { x, y, width: sourceWidth, height: sourceHeight, renderWidth, renderHeight, screenToWorld } : null;
 }

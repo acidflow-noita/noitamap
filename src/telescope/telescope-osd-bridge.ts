@@ -4,6 +4,7 @@ import { getSunUnlocks } from "../sun-unlocks";
 import { clearLiquidWobble, installLiquidWobble } from "../liquids";
 import { liquidMarkerExclusions } from "../liquids/marker-exclusions";
 import { supportsCapturedLiquidMask } from "../liquids/capture-identity";
+import { capturedFluidMasks } from "../liquids/captured-reservations";
 import { createDustAttribution, usesDustAnimation } from "../portals/attribution";
 import { canOpenPOIFromCanvas, drawingOwnsMapPointer, onDrawingMapOwnershipChange } from "../drawing/poi-interaction";
 import { onProSidebarIntent } from "../pro-sidebar-intent";
@@ -605,7 +606,7 @@ export function addBiomeBgToOSD(viewer: any, isCurrent = () => true): void {
   attachBiomeBackgroundLayer(viewer, _bgLayer,
     (isLightMode() ? [0] : [-1, 0, 1]).map(pw => pw * 70 * 512),
     () => epoch === _bgEpoch && isCurrent(),
-    item => dynamicTiledImages.add(item), index);
+    item => dynamicTiledImages.add(item), index, !isSimplisticBackground() && supportsCapturedLiquidMask());
 }
 
 /**
@@ -2423,7 +2424,8 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
       backgroundArt,
     };
   }
-  const staticMasks: StaticTerrainMask[] = [];
+  const staticMasks: StaticTerrainMask[] = !result.isNGP && result.worldSize === 70 &&
+    !isSimplisticBackground() && supportsCapturedLiquidMask() ? capturedFluidMasks(result.parallelWorlds) : [];
   const maskByKey = new Map<string, Uint8Array>(), placed = new Set<string>();
   for (const scene of Object.values(result.pixelScenesByPW).flat()) {
     // The static scene skip/no-op list still owns the same pixels. Skipping the
@@ -2448,7 +2450,10 @@ async function instantSceneMasks(result: GenerationResult): Promise<StaticTerrai
   const scenes = Object.values(result.pixelScenesByPW).flat().filter(scene =>
     rendered.has(scene) || (isCapturedGoldRoom(scene, result.worldSize) && !isSimplisticBackground()) || pixelSceneConfig.skipNames.has(scene.name) ||
     pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]));
-  return loadInstantSceneMasks(scenes, key => ensurePixelSceneData(key, { art: false }));
+  const masks = await loadInstantSceneMasks(scenes, key => ensurePixelSceneData(key, { art: false }));
+  if (!result.isNGP && result.worldSize === 70 && !isSimplisticBackground() && supportsCapturedLiquidMask())
+    masks.push(...capturedFluidMasks(result.parallelWorlds));
+  return masks;
 }
 
 async function buildSceneBitmaps(

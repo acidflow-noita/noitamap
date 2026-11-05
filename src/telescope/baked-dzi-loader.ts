@@ -1,6 +1,7 @@
 import { isGLTerrainEnabled } from "../renderer_settings";
 import { TERRAIN_VERSION } from "./terrain-policy";
 import { beginDailyBakeCheck } from './daily-bake-status';
+import { CAPTURED_FLUID_VERSION } from '../liquids/mask-codec';
 /**
  * baked-dzi-loader.ts
  *
@@ -47,7 +48,7 @@ export interface BakedDziPlacement {
    *  ?v= so a new daily bake on the same worker origin isn't served stale. */
   bust: string;
   /** Optional material-derived refraction mask; absent on older bakes. */
-  liquidMask?: { url: string; bytes: number; sha256: string };
+  liquidMask?: { url: string; bytes: number; sha256: string; preservesCapturedFluids?: boolean };
 }
 
 export interface BakedDziProbeOk {
@@ -93,7 +94,7 @@ interface PerWorldManifest {
   complete?: boolean;
   terrainVersion?: string;
   renderId?: string;
-  liquidMask?: { version: number; path: string; bytes: number; sha256: string; seed: number; renderId: string };
+  liquidMask?: { version: number; capturedVersion?: number; path: string; bytes: number; sha256: string; seed: number; renderId: string };
   regions: PerWorldManifestRegion[];
 }
 
@@ -179,7 +180,8 @@ export async function probeBakedDZIs(
       typeof m.renderId === 'string' && mask.renderId === m.renderId &&
       Number.isSafeInteger(mask.bytes) && mask.bytes >= 12 && mask.bytes <= 25 * 1024 * 1024 &&
       /^[a-f0-9]{64}$/.test(mask.sha256)
-      ? { url: `${origin}/${mask.path}?v=${mask.sha256}`, bytes: mask.bytes, sha256: mask.sha256 }
+      ? { url: `${origin}/${mask.path}?v=${mask.sha256}`, bytes: mask.bytes, sha256: mask.sha256,
+        preservesCapturedFluids: mask.capturedVersion === CAPTURED_FLUID_VERSION }
       : undefined;
     for (const r of m.regions) {
       placements.push({

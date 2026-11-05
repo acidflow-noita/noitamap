@@ -6,13 +6,17 @@ import JSZip from 'jszip';
 import { decodeLiquidMask, paintMaskBlock, type LiquidMaskBlock } from '../src/liquids/mask-codec';
 import { liquidMaterialIds } from '../src/liquids/materials';
 import { decodePngToRgba } from '../src/telescope/png-decode';
-import { StaticMaskBuilder, sceneMaterialAt, fixedScenePlacements, rectangularPolygonMask, capturedSpawnedScenePlacements } from '../build_scripts/build-static-liquid-masks.mts';
+import { StaticMaskBuilder, sceneMaterialAt, fixedScenePlacements, rectangularPolygonMask, capturedSpawnedScenePlacements,
+  capturedFluidReservations, capturedFluidReservationPolicyFingerprint, type CapturedFluidReservation } from '../build_scripts/build-static-liquid-masks.mts';
 import { WANG_COLOR_TO_ID, MATERIAL_NAMES_BY_ID } from '../lib/noita-telescope-vm/js/engine_resolve/engine_data.js';
 
 const manifest = JSON.parse(readFileSync(new URL('../src/liquids/static-sources.json', import.meta.url), 'utf8'));
 const compressed = new Uint8Array(readFileSync(new URL('../src/liquids/assets/static-mask.bin.gz', import.meta.url)));
 const bytes = new Uint8Array(gunzipSync(compressed));
 const blocks = decodeLiquidMask(bytes);
+const reservationBytes = readFileSync(new URL('../src/liquids/assets/captured-fluid-reservations.json', import.meta.url));
+const reservations = JSON.parse(reservationBytes.toString()) as CapturedFluidReservation[];
+const reservationBlocks = reservations.map(block => ({ ...block, runs: new Uint16Array(block.runs) }));
 const wang = new Map<number, number>(WANG_COLOR_TO_ID as [number, number][]);
 let eligible: Set<number>;
 let zip: JSZip;
@@ -38,6 +42,13 @@ function authoredMask(key: string) {
     pixels[p] = raw.data[i + 3] && eligible.has(wang.get(rgb) ?? -1) ? 1 : 0;
   }
   return { ...raw, pixels };
+}
+function staticPlacements() {
+  const bytes = readFileSync(new URL('../lib/noita-telescope-vm/data/biome_maps/biome_map.png', import.meta.url));
+  const map = decodePngToRgba(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+  const pixels = new Uint32Array(map.width * map.height);
+  for (let p = 0; p < pixels.length; p++) pixels[p] = (map.data[p * 4] << 16) | (map.data[p * 4 + 1] << 8) | map.data[p * 4 + 2];
+  return fixedScenePlacements(manifest, pixels, map.width);
 }
 
 describe('captured liquid mask provenance and boundaries', () => {
@@ -76,17 +87,92 @@ describe('captured liquid mask provenance and boundaries', () => {
   });
 
   it('places the Holy Mountain lower rooms at the Lua offset, not the scanner offset', () => {
-    const bytes = readFileSync(new URL('../lib/noita-telescope-vm/data/biome_maps/biome_map.png', import.meta.url));
-    const map = decodePngToRgba(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
-    const pixels = new Uint32Array(map.width * map.height);
-    for (let p = 0; p < pixels.length; p++) pixels[p] = (map.data[p * 4] << 16) | (map.data[p * 4 + 1] << 8) | map.data[p * 4 + 2];
-    const placements = fixedScenePlacements(manifest, pixels, map.width);
+    const placements = staticPlacements();
     expect(placements).toContainEqual(expect.objectContaining({ key: 'temple/altar_left', x: -1024, y: 1284 }));
     expect(placements).not.toContainEqual(expect.objectContaining({ key: 'temple/altar_left', x: -1024, y: 1280 }));
     for (const check of manifest.capture.verification) {
       const suffix = check.material === 'air' ? '' : check.material === 'radioactive_liquid' ? '_radioactive' : `_${check.material}`;
       expect(placements).toContainEqual(expect.objectContaining({ key: `temple/altar_top${suffix}`, x: check.sceneX, y: check.sceneY }));
     }
+  });
+
+  it('never marks the air above any captured Holy Mountain basin and retains its separate teleportation cup', () => {
+    const scenes = staticPlacements().filter(scene => scene.key.startsWith('temple/altar_top'));
+    expect(scenes).toHaveLength(183);
+    let filled = 0;
+    for (const scene of scenes) {
+      const mask = rect(scene.x, scene.y, 512, 300);
+      const label = `${scene.key} at ${scene.x},${scene.y}`;
+      expect(mask.subarray(0, 25 * 512).some(Boolean), label).toBe(false);
+      const basinCount = mask.subarray(25 * 512, 120 * 512).reduce((sum, value) => sum + value, 0);
+      const hasBasin = /altar_top_(water|blood|oil|radioactive|lava)$/.test(scene.key);
+      expect(basinCount, label).toBe(hasBasin ? 21156 : 0);
+      if (hasBasin) filled++;
+      expect(mask.subarray(120 * 512, 215 * 512).some(Boolean), label).toBe(false);
+      expect(mask.subarray(215 * 512).reduce((sum, value) => sum + value, 0), label).toBe(355);
+    }
+    expect(filled).toBe(16);
+  });
+
+  it('keeps the reported oil-basin air outside the mask in absolute world coordinates', () => {
+    // Capture tile 36_63 has origin (510,510), including its 2px DZI overlap.
+    // Its partial surface row 499 is world 1009, full row 500 is world 1010.
+    expect(rect(759, 1008, 1, 1)[0]).toBe(0);
+    expect(rect(759, 1010, 1, 1)[0]).toBe(1);
+    expect(rect(759, 1072, 1, 1)[0]).toBe(1);
+    expect(rect(776, 1198, 1, 1)[0]).toBe(0);
+    expect(rect(776, 1199, 1, 1)[0]).toBe(1);
+    // An empty upper basin still has actual fluid in its independent lower cup.
+    expect(rect(-1272, 1072, 1, 1)[0]).toBe(0);
+    expect(rect(-1272, 1199, 1, 1)[0]).toBe(1);
+  });
+
+  it('cannot lower the authored basin surface below row 25 while preserving its source volume', () => {
+    const raw = authoredMask('temple/altar_top_oil');
+    const volume = raw.pixels.subarray(0, 120 * 512).reduce((sum, value) => sum + value, 0);
+    const brick = [...wang].find(([_, id]) => MATERIAL_NAMES_BY_ID[id] === 'templebrick_static')![0];
+    let capacityBelow = 0;
+    for (let y = 26; y < 120; y++) for (let x = 0; x < 512; x++) {
+      const i = (y * 512 + x) * 4;
+      const rgb = (raw.data[i] << 16) | (raw.data[i + 1] << 8) | raw.data[i + 2];
+      // Count even the non-material portal marker as available space. This is
+      // the maximum capacity, so it cannot falsely rule out a lower surface.
+      if (rgb !== brick) capacityBelow++;
+    }
+    expect(volume).toBe(21156);
+    expect(capacityBelow).toBe(20974);
+    expect(volume - capacityBelow).toBe(182);
+  });
+
+  it('reserves only the small captured-fluid overlaps exposed to native painting', async () => {
+    const { generate } = await import('../lib/noita-telescope-vm/test/helpers/generate.mjs');
+    const world = await generate({ seed: manifest.capture.materialSeed });
+    expect(capturedFluidReservations(blocks, world)).toEqual(reservations);
+    expect(reservations).toHaveLength(16);
+    expect(reservationBytes.byteLength).toBeLessThan(10_000);
+    expect(reservations.every(block => block.width === 367 && block.height === 15)).toBe(true);
+    expect(reservations.reduce((n, block) => n + Math.ceil(block.width * block.height / 8), 0)).toBe(11024);
+    expect(reservations.reduce((n, block) => n + block.runs.length / 3, 0)).toBe(240);
+    expect(reservations.reduce((n, block) => n + block.runs.filter((_v, p) => p % 3 === 2).reduce((a, b) => a + b, 0), 0)).toBe(85136);
+    expect(createHash('sha256').update(reservationBytes).digest('hex')).toBe(manifest.capturedFluidReservations.sha256);
+    expect(manifest.capturedFluidReservations.sourceMaskSha256).toBe(manifest.artifact.sha256);
+    expect(manifest.capturedFluidReservations.policySha256).toBe(capturedFluidReservationPolicyFingerprint());
+  });
+
+  it('reserves every upper basin overlap while leaving protected lower basins and cups alone', () => {
+    const filled = staticPlacements().filter(scene => /altar_top_(water|blood|oil|radioactive|lava)$/.test(scene.key));
+    for (const scene of filled) {
+      const overlap = rect(scene.x, scene.y + 25, 512, 15, reservationBlocks);
+      expect(overlap).toEqual(rect(scene.x, scene.y + 25, 512, 15));
+      expect(overlap.reduce((sum, value) => sum + value, 0)).toBe(5321);
+      expect(rect(scene.x, scene.y, 512, 25, reservationBlocks).some(Boolean)).toBe(false);
+      expect(rect(scene.x, scene.y + 40, 512, 260, reservationBlocks).some(Boolean)).toBe(false);
+    }
+    expect(reservations).toContainEqual(expect.objectContaining({ x: 585, y: 1009, width: 367, height: 15 }));
+    expect(rect(759, 1010, 1, 1, reservationBlocks)[0]).toBe(1);
+    expect(rect(759, 1023, 1, 1, reservationBlocks)[0]).toBe(1);
+    expect(rect(759, 1024, 1, 1, reservationBlocks)[0]).toBe(0);
+    expect(rect(776, 1199, 1, 1, reservationBlocks)[0]).toBe(0);
   });
 
   it.each(manifest.capture.verification.filter((v: any) => v.world).map((v: any) =>

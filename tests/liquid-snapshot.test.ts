@@ -19,6 +19,21 @@ function fixture() {
 }
 
 describe('standalone liquid snapshot crops', () => {
+  it('resizes a frozen crop without rotating its axes or retaining a large scratch surface', async () => {
+    const f = fixture();
+    const result = await f.capture.capture(f.source, 40, 20, 80, 60, 40, 20);
+    expect([result.width, result.height]).toEqual([40, 20]);
+    const pixels = (result as any).pixels;
+    for (let y = 0; y < 20; y++) for (let x = 0; x < 40; x++) {
+      const at = (y * 40 + x) * 4;
+      expect(pixels[at]).toBeGreaterThanOrEqual(40 + x * 2);
+      expect(pixels[at]).toBeLessThan(42 + x * 2);
+      expect(pixels[at + 1]).toBeGreaterThanOrEqual(20 + y * 3);
+      expect(pixels[at + 1]).toBeLessThan(23 + y * 3);
+    }
+    expect(f.canvases[0].width * f.canvases[0].height).toBe(800);
+    result.close(); f.capture.destroy();
+  });
   it('materializes nonzero source offsets and captures the entire correctly sized surface', async () => {
     const f = fixture();
     for (const [x, y, width, height] of [[37, 21, 43, 29], [0, 3, 160, 117], [139, 97, 21, 23], [2, 4, 43, 29]]) {

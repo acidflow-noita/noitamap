@@ -27,14 +27,19 @@ it("exports matching actual CPU/GPU bake masks without changing pixels, across v
         worker.once("exit", () => { clearTimeout(shutdown); done(message); });
       });
     });
-    expect(result.results).toHaveLength(4);
-    for (const region of result.results) {
-      expect(region.pixelDifferences).toBe(0);
-      expect(region.maskDifferences).toBe(0);
-      expect(region.invalid).toBe(false);
+    expect(result.samples.map((sample: any) => sample.seed)).toEqual([195331, 2100611341]);
+    for (const sample of result.samples) {
+      expect(sample.results).toHaveLength(5);
+      for (const region of sample.results) {
+        expect(region.pixelDifferences).toBe(0);
+        expect(region.maskDifferences).toBe(0);
+        expect(region.invalid).toBe(false);
+      }
+      expect(sample.results[0].liquidPixels).toBeGreaterThan(0);
+      expect(sample.results[0].liquidPixels).toBeLessThan(200 * 120);
+      expect(sample.results[4].opaquePixels).toBeLessThanOrEqual(184); // unfilled half of first surface row only
+      expect(sample.results[4].liquidPixels).toBe(0); // static mask owns these pixels
     }
-    expect(result.results[0].liquidPixels).toBeGreaterThan(0);
-    expect(result.results[0].liquidPixels).toBeLessThan(200 * 120);
     console.log("[liquid mask native]", JSON.stringify(result));
   } finally { await rm(bundle, { recursive: true, force: true }); }
 }, 240000);

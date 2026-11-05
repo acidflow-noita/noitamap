@@ -26,7 +26,8 @@ export class LiquidOverlay {
   private provider: LiquidOverlayDeps['provider'];
   private renderer?: ReturnType<LiquidOverlayDeps['renderer']>;
   private rendererFactory?: LiquidOverlayDeps['renderer'];
-  private bitmap: (source: HTMLCanvasElement, x: number, y: number, width: number, height: number) => Promise<ImageBitmap>;
+  private bitmap: (source: HTMLCanvasElement, x: number, y: number, width: number, height: number,
+    renderWidth: number, renderHeight: number) => Promise<ImageBitmap>;
   private snapshot?: LiquidSnapshot;
   private controller = new AbortController();
   private ready?: ReadyFrame;
@@ -52,8 +53,10 @@ export class LiquidOverlay {
     this.osd = viewer.viewer ?? viewer;
     this.provider = deps?.provider ?? new LiquidMaskProvider(inputs);
     this.rendererFactory = deps?.renderer;
-    this.bitmap = deps?.bitmap ?? ((source, x, y, width, height) =>
-      (this.snapshot ??= new LiquidSnapshot()).capture(source, x, y, width, height));
+    this.bitmap = deps?.bitmap ? ((source, x, y, width, height, renderWidth, renderHeight) =>
+      deps.bitmap!(source, x, y, width, height, { resizeWidth: renderWidth, resizeHeight: renderHeight, resizeQuality: 'pixelated' }))
+      : ((source, x, y, width, height, renderWidth, renderHeight) =>
+        (this.snapshot ??= new LiquidSnapshot()).capture(source, x, y, width, height, renderWidth, renderHeight));
     this.canvas.className = 'noitamap-liquid-wobble'; this.canvas.setAttribute('aria-hidden', 'true');
     Object.assign(this.canvas.style, { position: 'absolute', pointerEvents: 'none', imageRendering: 'auto' });
     this.canvas.hidden = true;
@@ -118,7 +121,9 @@ export class LiquidOverlay {
     } catch (error) { if (!signal.aborted && !this.destroyed) this.fail(error); }
   }
   private invalidateColor = () => {
-    if (this.destroyed || !this.ready || this.ready.signal.aborted) return;
+    if (this.destroyed) return;
+    if (this.provider.stats().generatedPending) { this.invalidate(); return; }
+    if (!this.ready || this.ready.signal.aborted) return;
     this.contentRevision++;
     this.pause(); clearTimeout(this.captureTimer);
     this.captureTimer = setTimeout(() => { this.captureTimer = undefined; this.requestCapture(); }, 80);
@@ -168,7 +173,7 @@ export class LiquidOverlay {
     this.capturing = true;
     let bitmap: ImageBitmap | undefined;
     try {
-      bitmap = await this.bitmap(source, crop.x, crop.y, crop.width, crop.height);
+      bitmap = await this.bitmap(source, crop.x, crop.y, crop.width, crop.height, crop.renderWidth, crop.renderHeight);
       if (this.destroyed || frame.signal.aborted || revision !== this.contentRevision ||
         frame !== this.ready || frame.key !== this.camera().key) return;
       if (!this.renderer) {
@@ -181,7 +186,8 @@ export class LiquidOverlay {
         this.renderer = factory(this.canvas);
       }
       const mask = frame.mask;
-      const input = { color: bitmap, width: crop.width, height: crop.height,
+      const reduced = crop.width !== crop.renderWidth || crop.height !== crop.renderHeight;
+      const input = { color: bitmap, width: crop.renderWidth, height: crop.renderHeight, reduced,
         mask: mask.pixels, maskWidth: mask.width, maskHeight: mask.height, maskX: mask.x, maskY: mask.y,
         screenToWorld: crop.screenToWorld };
       let uploaded = this.renderer.setSource(input);
@@ -201,7 +207,7 @@ export class LiquidOverlay {
       }
       if (!uploaded) { this.pause(); this.state = 'paused'; return; }
       Object.assign(this.canvas.style, { left: `${crop.x / ratio}px`, top: `${crop.y / ratioY}px`,
-        width: `${crop.width / ratio}px`, height: `${crop.height / ratioY}px` });
+        width: `${crop.width / ratio}px`, height: `${crop.height / ratioY}px`, imageRendering: reduced ? 'pixelated' : 'auto' });
       this.captures++; this.error = null; this.state = 'running';
       this.fadeStart = performance.now(); this.lastFrame = 0;
       this.wake();

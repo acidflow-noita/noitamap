@@ -437,12 +437,233 @@
       "temple/altar_top_radioactive",
       "temple/altar_top_lava",
       "temple/altar_top_ending"
-    ]
+    ],
+    "surfaceAudit": {
+      "inspectedAt": "2026-11-05",
+      "artifactSha256": "9293616bc50757e6280c73bf6574e11c4fa7e114d7d2bc243de1c6b8fc0a1c1e",
+      "method": "Direct inspection of captured upper-basin tiles, comparison with authored material geometry and independent sparse-mask decoding. Captured display colors are not used to generate material IDs or masks.",
+      "placementsChecked": 183,
+      "filledBasinsChecked": 16,
+      "sourceVolume": 21156,
+      "sourcePartialSurface": {
+        "localY": 25,
+        "startX": 257,
+        "endX": 439,
+        "pixels": 183
+      },
+      "sourceFirstFullRow": 26,
+      "maximumFreeCapacityBelowPartialRow": 20974,
+      "volumeThatMustRemainInPartialRow": 182,
+      "capacityNote": "The upper basin portal spawn marker is counted as free space to give settling the maximum possible capacity. This permits a one-pixel redistribution, not a lower full surface.",
+      "lowerCup": {
+        "material": "magic_liquid_teleportation",
+        "pixels": 355,
+        "surfaceLocalY": 215,
+        "bottomLocalY": 231,
+        "captureTile": "middle/17/32_64.webp",
+        "captureSha256": "83649c603c97546fe603e06664971c66bfc8f8c1c69a41a4a281f706319a7a44"
+      },
+      "finding": "The original capture and source mask surfaces agree. The encoded mask contains no pixels in local rows 0 through 24 for any of the 183 altar-top placements. The current Daily overlay instead paints native biome backdrop over local rows 25 through 39, so captured-fluid reservation is required; moving or shrinking the source pool is not supported.",
+      "captures": [
+        {
+          "world": "left",
+          "key": "temple/altar_top_oil",
+          "sceneX": -37888,
+          "sceneY": 2520,
+          "tile": "17/31_66.webp",
+          "url": "https://dynamic-main-branch-left.acidflow.stream/maps/dynamic-main-branch-left/dynamic-main-branch-left-2025-01-25-78633191_files/17/31_66.webp",
+          "sha256": "11ec8e630d5fcde1c4ccd3d76535a4a9fce9339fec29f57cad6209eab167ce43",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "left",
+          "key": "temple/altar_top_blood",
+          "sceneX": -34816,
+          "sceneY": 6104,
+          "tile": "17/37_73.webp",
+          "url": "https://dynamic-main-branch-left.acidflow.stream/maps/dynamic-main-branch-left/dynamic-main-branch-left-2025-01-25-78633191_files/17/37_73.webp",
+          "sha256": "7de00d222ce013f7f28e5bb6512d1c0de0690e5e30f2e25f2810d597b2242c1a",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "left",
+          "key": "temple/altar_top_lava",
+          "sceneX": -37376,
+          "sceneY": 8152,
+          "tile": "17/32_77.webp",
+          "url": "https://dynamic-main-branch-left.acidflow.stream/maps/dynamic-main-branch-left/dynamic-main-branch-left-2025-01-25-78633191_files/17/32_77.webp",
+          "sha256": "a87b61b122a5c6b866d0a8f9d7f0284e01348b008debe9b60ffdb365c40493ba",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "left",
+          "key": "temple/altar_top_water",
+          "sceneX": -33792,
+          "sceneY": 10200,
+          "tile": "17/39_81.webp",
+          "url": "https://dynamic-main-branch-left.acidflow.stream/maps/dynamic-main-branch-left/dynamic-main-branch-left-2025-01-25-78633191_files/17/39_81.webp",
+          "sha256": "43c214716e8442e5f5349d1c725e30562f275c519ff07f755a8148d8aa8e3901",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "middle",
+          "key": "temple/altar_top_blood",
+          "sceneX": -1024,
+          "sceneY": 984,
+          "tile": "17/33_63.webp",
+          "url": "https://dynamic-main-branch-middle.acidflow.stream/maps/dynamic-main-branch-middle/dynamic-main-branch-middle-2025-01-25-78633191_files/17/33_63.webp",
+          "sha256": "a0fd579af5c21bc66d47512bdd9a032db026380abf56c8a19a6ffdfb8a5bc8fb",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "middle",
+          "key": "temple/altar_top_oil",
+          "sceneX": 512,
+          "sceneY": 984,
+          "tile": "17/36_63.webp",
+          "url": "https://dynamic-main-branch-middle.acidflow.stream/maps/dynamic-main-branch-middle/dynamic-main-branch-middle-2025-01-25-78633191_files/17/36_63.webp",
+          "sha256": "b26be1060550800e1b9f20aa0165b47cf361adcca46f72daa9154345ba16761b",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "middle",
+          "key": "temple/altar_top_radioactive",
+          "sceneX": -1024,
+          "sceneY": 2520,
+          "tile": "17/33_66.webp",
+          "url": "https://dynamic-main-branch-middle.acidflow.stream/maps/dynamic-main-branch-middle/dynamic-main-branch-middle-2025-01-25-78633191_files/17/33_66.webp",
+          "sha256": "d67529a1861a9a849fc7e1a4a525294134e979900bde67899d0c17c31577191a",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "middle",
+          "key": "temple/altar_top_radioactive",
+          "sceneX": 0,
+          "sceneY": 4568,
+          "tile": "17/35_70.webp",
+          "url": "https://dynamic-main-branch-middle.acidflow.stream/maps/dynamic-main-branch-middle/dynamic-main-branch-middle-2025-01-25-78633191_files/17/35_70.webp",
+          "sha256": "bd3373d2e2866abea0f3da3c4010120e5389ef39af1f96c6bc92600bec899308",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "middle",
+          "key": "temple/altar_top_oil",
+          "sceneX": 0,
+          "sceneY": 8152,
+          "tile": "17/35_77.webp",
+          "url": "https://dynamic-main-branch-middle.acidflow.stream/maps/dynamic-main-branch-middle/dynamic-main-branch-middle-2025-01-25-78633191_files/17/35_77.webp",
+          "sha256": "86adaf9d9c584544fef4b92762a532b9da0732580e4f835c28e5d92b567e257f",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "right",
+          "key": "temple/altar_top_oil",
+          "sceneX": 33792,
+          "sceneY": 2520,
+          "tile": "17/31_66.webp",
+          "url": "https://dynamic-main-branch-right.acidflow.stream/maps/dynamic-main-branch-right/dynamic-main-branch-right-2025-01-25-78633191_files/17/31_66.webp",
+          "sha256": "6ecd4c728ba50605a0de891d5a7ddf97b70e92479423719f00ab1e309b0faf41",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "right",
+          "key": "temple/altar_top_oil",
+          "sceneX": 34304,
+          "sceneY": 4568,
+          "tile": "17/32_70.webp",
+          "url": "https://dynamic-main-branch-right.acidflow.stream/maps/dynamic-main-branch-right/dynamic-main-branch-right-2025-01-25-78633191_files/17/32_70.webp",
+          "sha256": "e7026040df9a3825a7dae570d9214920ae95683d1fcf55f7450d94733a4a240b",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "right",
+          "key": "temple/altar_top_lava",
+          "sceneX": 35840,
+          "sceneY": 4568,
+          "tile": "17/35_70.webp",
+          "url": "https://dynamic-main-branch-right.acidflow.stream/maps/dynamic-main-branch-right/dynamic-main-branch-right-2025-01-25-78633191_files/17/35_70.webp",
+          "sha256": "910655a8cd9a47e9305e66998ed5128ce00a572ca7088d67d872fe51af8e76d6",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "right",
+          "key": "temple/altar_top_lava",
+          "sceneX": 35840,
+          "sceneY": 6104,
+          "tile": "17/35_73.webp",
+          "url": "https://dynamic-main-branch-right.acidflow.stream/maps/dynamic-main-branch-right/dynamic-main-branch-right-2025-01-25-78633191_files/17/35_73.webp",
+          "sha256": "052c69b2e7ca7c2a90ba4b2e6a9bcb6e5089990077407801cf892055c84b2eb1",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "right",
+          "key": "temple/altar_top_water",
+          "sceneX": 36352,
+          "sceneY": 6104,
+          "tile": "17/36_73.webp",
+          "url": "https://dynamic-main-branch-right.acidflow.stream/maps/dynamic-main-branch-right/dynamic-main-branch-right-2025-01-25-78633191_files/17/36_73.webp",
+          "sha256": "e48949bdeb3891956ebfc673c332ed1b6e77737da0642e086a196fe2c61c5b6a",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "right",
+          "key": "temple/altar_top_blood",
+          "sceneX": 37376,
+          "sceneY": 8152,
+          "tile": "17/38_77.webp",
+          "url": "https://dynamic-main-branch-right.acidflow.stream/maps/dynamic-main-branch-right/dynamic-main-branch-right-2025-01-25-78633191_files/17/38_77.webp",
+          "sha256": "4b29f0b896b3afc7446d19a3744a430eecf9d618f72c9951c08ab7c287bf08b3",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        },
+        {
+          "world": "right",
+          "key": "temple/altar_top_water",
+          "sceneX": 36864,
+          "sceneY": 10200,
+          "tile": "17/37_81.webp",
+          "url": "https://dynamic-main-branch-right.acidflow.stream/maps/dynamic-main-branch-right/dynamic-main-branch-right-2025-01-25-78633191_files/17/37_81.webp",
+          "sha256": "62e4244a391a484926b194344b825dab1bbc7221754cdd8724a1f92d93c360a0",
+          "observedBulkSurfaceLocalY": 26,
+          "observedPartialSurfaceLocalY": 25
+        }
+      ],
+      "displayConflict": {
+        "reportedView": "/?x=759&y=1072&z=819&m=dy&se=2100611341&ds=1",
+        "visibleSurfaceLocalY": 40,
+        "coveredSourceLocalRows": [
+          25,
+          39
+        ],
+        "coveredWorldRows": [
+          1009,
+          1023
+        ],
+        "dailyTileUpperSha256": "82d0d0df9cfbfdead2cde265711a15a3ebc1847bbeaff2d39e82569e0d98db58",
+        "dailyTileLowerSha256": "c6b493f32a0f76dc1d4e48626e652167b8fd062bef7bab09052113e7f25cb41f",
+        "nativeOverlaySha256": "f6d69cca3608b03e3a305cff898f8a127c89a3eb419bed3dea377d1cd37bdd21",
+        "displayCompositeSha256": "99b92a993d2da5d269949f26317af842a78c3786d201ce619d3b15e228712cb7"
+      }
+    }
   },
   "sourceChecks": [
     {
       "path": "build_scripts/build-static-liquid-masks.mts",
-      "sha256": "ee15fa9964abe3d27392bb30df21685004db4f0ce6d4df2d6bbc4f405f0ab6f0"
+      "sha256": "a7e2b6b2cf59bcee476f117bf526714aeb2e412f258b5d888350bfbd650bf847"
     },
     {
       "path": "lib/noita-telescope-vm/data/biome_maps/biome_map.png",
@@ -913,5 +1134,17 @@
     "pyramid/pit": "crypt/pit",
     "pyramid/symbolroom": "crypt/symbolroom",
     "pyramid/stairs_left": "crypt/stairs_left"
+  },
+  "capturedFluidReservations": {
+    "path": "src/liquids/assets/captured-fluid-reservations.json",
+    "sha256": "e070f685354137f8389c549b01685270b167a7eec86b452bb761e780b956b3ce",
+    "sourceMaskSha256": "9293616bc50757e6280c73bf6574e11c4fa7e114d7d2bc243de1c6b8fc0a1c1e",
+    "policySha256": "57cd502690e919ea9953dc0afee37cce4dadadc447981966a57f18b7bfe0e27a",
+    "bytes": 2894,
+    "blocks": 16,
+    "runs": 240,
+    "liquidPixels": 85136,
+    "bitsetBytes": 11024,
+    "purpose": "Reserve captured source-fluid pixels wherever normal native terrain or a non-static biome background can cover the base."
   }
 }

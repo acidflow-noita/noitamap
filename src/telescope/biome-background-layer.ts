@@ -80,6 +80,7 @@ type BackgroundAttachment = {
   item?: any;
   isCurrent: () => boolean;
   onAttach: (item: any) => void;
+  preserveCapturedFluids: boolean;
 };
 const attachedLayers = new WeakMap<object, Map<number, BackgroundAttachment>>();
 
@@ -105,13 +106,14 @@ export function attachBiomeBackgroundLayer(
   isCurrent: () => boolean,
   onAttach: (item: any) => void,
   index = viewer.world.getItemCount(),
+  preserveCapturedFluids = false,
 ) {
   if (!isCurrent()) return;
   const owner = viewer.viewer || viewer;
   let entries = attachedLayers.get(owner);
   if (!entries) attachedLayers.set(owner, entries = new Map());
   for (const [offset, entry] of [...entries])
-    if (entry.layer !== layer || !offsets.includes(offset)) removeBackground(viewer, entry);
+    if (entry.layer !== layer || !offsets.includes(offset) || entry.preserveCapturedFluids !== preserveCapturedFluids) removeBackground(viewer, entry);
   for (const offset of offsets) {
     if (!isCurrent()) return;
     const existing = entries.get(offset);
@@ -121,8 +123,8 @@ export function attachBiomeBackgroundLayer(
       if (existing.item) onAttach(existing.item);
       continue;
     }
-    const source = layer.tiles.createSource(offset);
-    const entry: BackgroundAttachment = { layer, source, isCurrent, onAttach };
+    const source = layer.tiles.createSource(offset, preserveCapturedFluids);
+    const entry: BackgroundAttachment = { layer, source, isCurrent, onAttach, preserveCapturedFluids };
     entries.set(offset, entry);
     const originalDestroy = source.destroy;
     let destroyed = false;

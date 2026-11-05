@@ -1,0 +1,357 @@
+{
+  "measuredAt": "2026-11-05T15:05:08.682Z",
+  "renderer": {
+    "renderer": "llvmpipe (LLVM 19.1.7, 256 bits)",
+    "vendor": "Mesa",
+    "version": "OpenGL ES 3.2 Mesa 25.0.7-2+deb13u1",
+    "hardware": false,
+    "platform": "device"
+  },
+  "note": "Native GLES with glFinish and frozen inputs, not browser FPS. Only the first scenario uses captured material geometry; colors are a synthetic opaque pattern. Process CPU includes driver threads and can exceed elapsed time. Native canvas can defer copy execution until bitmap readback; copy submission alone is not its completed cost. Combined native preparation includes copy, native bitmap readback and upload, and is not a browser ImageBitmap measurement. Memory is tracked texture storage plus estimated double-buffered presentation and a separate scratch surface, not total driver/process memory. No bitmap/canvas copy or uploads occur during steady animation.",
+  "staticMaskSetupMS": 18.361437999999993,
+  "staticMaskDecodedBytes": 4757234,
+  "results": [
+    {
+      "name": "Captured Holy Mountain oil basin, 2x zoom",
+      "width": 734,
+      "height": 190,
+      "physicalWidth": 734,
+      "physicalHeight": 190,
+      "reduced": false,
+      "pixels": 139460,
+      "maskPixels": 34865,
+      "liquidCoverage": 0.6067976480711315,
+      "initializeMS": 11.065226999999993,
+      "firstUpload": {
+        "submitMS": 0.7642569999999864,
+        "completeMS": 0.7694609999999784,
+        "processCpuMS": 0.794
+      },
+      "reusedTextureUpload": {
+        "medianMS": 0.029664999999965858,
+        "p95MS": 0.09162500000002183
+      },
+      "render": {
+        "medianMS": 0.7529089999999883,
+        "p95MS": 0.9799679999999853
+      },
+      "submit": {
+        "medianMS": 0.0608930000000214,
+        "p95MS": 0.12234499999999571
+      },
+      "processCpu": {
+        "medianMS": 4.037,
+        "p95MS": 4.551
+      },
+      "renderSamples": 90,
+      "nativeBitmapReadback": {
+        "medianMS": 0.08639199999998937,
+        "p95MS": 0.3589929999999981
+      },
+      "snapshotUpload": {
+        "medianMS": 0.026694000000020424,
+        "p95MS": 0.04666000000003123
+      },
+      "combinedNativePreparation": {
+        "medianMS": 0.1998360000000048,
+        "p95MS": 0.4651810000000296
+      },
+      "perFrameTextureUploads": 0,
+      "perFrameTextureAllocations": 0,
+      "syncObjectsCreatedPerFrame": 1,
+      "maximumOutstandingSyncs": 1,
+      "textureBytes": 592705,
+      "estimatedGPUBytes": 1708385,
+      "scratchBytes": 557840,
+      "snapshotCopySubmission": {
+        "medianMS": 0.006280000000003838,
+        "p95MS": 0.019956000000036056
+      }
+    },
+    {
+      "name": "Medium full-liquid view",
+      "width": 1024,
+      "height": 768,
+      "physicalWidth": 1024,
+      "physicalHeight": 768,
+      "reduced": false,
+      "pixels": 786432,
+      "maskPixels": 786432,
+      "liquidCoverage": 1,
+      "initializeMS": 4.486714000000006,
+      "firstUpload": {
+        "submitMS": 1.2845409999999902,
+        "completeMS": 1.2864150000000336,
+        "processCpuMS": 1.308
+      },
+      "reusedTextureUpload": {
+        "medianMS": 0.07967300000007072,
+        "p95MS": 0.1620580000000018
+      },
+      "render": {
+        "medianMS": 2.756422999999927,
+        "p95MS": 3.725689999999986
+      },
+      "submit": {
+        "medianMS": 0.10716400000001158,
+        "p95MS": 0.2016600000000608
+      },
+      "processCpu": {
+        "medianMS": 30.569,
+        "p95MS": 33
+      },
+      "renderSamples": 90,
+      "nativeBitmapReadback": {
+        "medianMS": 0.616602999999941,
+        "p95MS": 2.409695000000056
+      },
+      "snapshotUpload": {
+        "medianMS": 0.14777400000002672,
+        "p95MS": 0.2343949999999495
+      },
+      "combinedNativePreparation": {
+        "medianMS": 0.8060530000000199,
+        "p95MS": 2.7151810000000296
+      },
+      "perFrameTextureUploads": 0,
+      "perFrameTextureAllocations": 0,
+      "syncObjectsCreatedPerFrame": 1,
+      "maximumOutstandingSyncs": 1,
+      "textureBytes": 3932160,
+      "estimatedGPUBytes": 10223616,
+      "scratchBytes": 3145728,
+      "snapshotCopySubmission": {
+        "medianMS": 0.010536000000001877,
+        "p95MS": 0.019815999999991618
+      }
+    },
+    {
+      "name": "1080p full-liquid view",
+      "width": 1920,
+      "height": 1080,
+      "physicalWidth": 1920,
+      "physicalHeight": 1080,
+      "reduced": false,
+      "pixels": 2073600,
+      "maskPixels": 2073600,
+      "liquidCoverage": 1,
+      "initializeMS": 4.484600999999884,
+      "firstUpload": {
+        "submitMS": 3.4696400000000267,
+        "completeMS": 3.471902999999884,
+        "processCpuMS": 3.502
+      },
+      "reusedTextureUpload": {
+        "medianMS": 0.25121999999987565,
+        "p95MS": 0.45453599999996186
+      },
+      "render": {
+        "medianMS": 6.374208000000181,
+        "p95MS": 8.197446000000127
+      },
+      "submit": {
+        "medianMS": 0.18367899999998372,
+        "p95MS": 0.2668029999999817
+      },
+      "processCpu": {
+        "medianMS": 80.798,
+        "p95MS": 86.799
+      },
+      "renderSamples": 90,
+      "nativeBitmapReadback": {
+        "medianMS": 2.5701309999999467,
+        "p95MS": 7.239880000000085
+      },
+      "snapshotUpload": {
+        "medianMS": 0.5709180000001197,
+        "p95MS": 0.9337960000000294
+      },
+      "combinedNativePreparation": {
+        "medianMS": 3.3860270000000128,
+        "p95MS": 7.9223799999999756
+      },
+      "perFrameTextureUploads": 0,
+      "perFrameTextureAllocations": 0,
+      "syncObjectsCreatedPerFrame": 1,
+      "maximumOutstandingSyncs": 1,
+      "textureBytes": 10368000,
+      "estimatedGPUBytes": 26956800,
+      "scratchBytes": 8294400,
+      "snapshotCopySubmission": {
+        "medianMS": 0.026434000000108426,
+        "p95MS": 0.06277599999998529
+      }
+    },
+    {
+      "name": "1080p sparse liquid across the full view",
+      "width": 1920,
+      "height": 1080,
+      "physicalWidth": 1920,
+      "physicalHeight": 1080,
+      "reduced": false,
+      "pixels": 2073600,
+      "maskPixels": 2073600,
+      "liquidCoverage": 0.10609567901234568,
+      "initializeMS": 4.461970999999721,
+      "firstUpload": {
+        "submitMS": 2.370683999999983,
+        "completeMS": 2.372780000000148,
+        "processCpuMS": 2.396
+      },
+      "reusedTextureUpload": {
+        "medianMS": 0.2837670000003527,
+        "p95MS": 0.5531159999995907
+      },
+      "render": {
+        "medianMS": 2.2068679999997585,
+        "p95MS": 2.749869999999646
+      },
+      "submit": {
+        "medianMS": 0.13087700000005498,
+        "p95MS": 0.21813599999995859
+      },
+      "processCpu": {
+        "medianMS": 22.77,
+        "p95MS": 25.759
+      },
+      "renderSamples": 90,
+      "nativeBitmapReadback": {
+        "medianMS": 2.5221950000000106,
+        "p95MS": 4.046045000000049
+      },
+      "snapshotUpload": {
+        "medianMS": 0.5353559999998652,
+        "p95MS": 0.8291430000003857
+      },
+      "combinedNativePreparation": {
+        "medianMS": 3.2713269999999284,
+        "p95MS": 4.973603000000367
+      },
+      "perFrameTextureUploads": 0,
+      "perFrameTextureAllocations": 0,
+      "syncObjectsCreatedPerFrame": 1,
+      "maximumOutstandingSyncs": 1,
+      "textureBytes": 10368000,
+      "estimatedGPUBytes": 26956800,
+      "scratchBytes": 8294400,
+      "snapshotCopySubmission": {
+        "medianMS": 0.02722799999992276,
+        "p95MS": 0.03327199999966979
+      }
+    },
+    {
+      "name": "4K high-DPI view, bounded output",
+      "width": 2048,
+      "height": 1152,
+      "physicalWidth": 7680,
+      "physicalHeight": 4320,
+      "reduced": true,
+      "pixels": 2359296,
+      "maskPixels": 589824,
+      "liquidCoverage": 1,
+      "initializeMS": 4.935836999999992,
+      "firstUpload": {
+        "submitMS": 2.1546989999997095,
+        "completeMS": 2.157065999999759,
+        "processCpuMS": 2.178
+      },
+      "reusedTextureUpload": {
+        "medianMS": 0.17640399999982037,
+        "p95MS": 0.4020709999999781
+      },
+      "render": {
+        "medianMS": 8.40945899999997,
+        "p95MS": 10.567614000000049
+      },
+      "submit": {
+        "medianMS": 0.1951520000002347,
+        "p95MS": 0.23897200000010344
+      },
+      "processCpu": {
+        "medianMS": 110.78,
+        "p95MS": 119.383
+      },
+      "renderSamples": 90,
+      "nativeBitmapReadback": {
+        "medianMS": 18.641042000000198,
+        "p95MS": 25.49064399999952
+      },
+      "snapshotUpload": {
+        "medianMS": 0.7410190000000512,
+        "p95MS": 0.9179189999995288
+      },
+      "combinedNativePreparation": {
+        "medianMS": 19.626459000000068,
+        "p95MS": 26.165345999999772
+      },
+      "perFrameTextureUploads": 0,
+      "perFrameTextureAllocations": 0,
+      "syncObjectsCreatedPerFrame": 1,
+      "maximumOutstandingSyncs": 1,
+      "textureBytes": 10027008,
+      "estimatedGPUBytes": 28901376,
+      "scratchBytes": 9437184,
+      "snapshotCopySubmission": {
+        "medianMS": 0.02800100000058592,
+        "p95MS": 0.777074000000539
+      }
+    },
+    {
+      "name": "Maximum permitted output, full liquid",
+      "width": 2048,
+      "height": 2048,
+      "physicalWidth": 4096,
+      "physicalHeight": 4096,
+      "reduced": true,
+      "pixels": 4194304,
+      "maskPixels": 1048576,
+      "liquidCoverage": 1,
+      "initializeMS": 4.474625000000742,
+      "firstUpload": {
+        "submitMS": 25.34109400000034,
+        "completeMS": 25.342945000000327,
+        "processCpuMS": 25.351
+      },
+      "reusedTextureUpload": {
+        "medianMS": 0.8900290000001405,
+        "p95MS": 1.632908999999927
+      },
+      "render": {
+        "medianMS": 14.590240999999878,
+        "p95MS": 16.773149999999987
+      },
+      "submit": {
+        "medianMS": 0.21224100000017643,
+        "p95MS": 0.30854200000067067
+      },
+      "processCpu": {
+        "medianMS": 200.411,
+        "p95MS": 214.61
+      },
+      "renderSamples": 90,
+      "nativeBitmapReadback": {
+        "medianMS": 37.55331600000045,
+        "p95MS": 41.604733000000124
+      },
+      "snapshotUpload": {
+        "medianMS": 1.128827999999885,
+        "p95MS": 1.5262740000007398
+      },
+      "combinedNativePreparation": {
+        "medianMS": 38.78899399999955,
+        "p95MS": 42.87342399999943
+      },
+      "perFrameTextureUploads": 0,
+      "perFrameTextureAllocations": 0,
+      "syncObjectsCreatedPerFrame": 1,
+      "maximumOutstandingSyncs": 1,
+      "textureBytes": 17825792,
+      "estimatedGPUBytes": 51380224,
+      "scratchBytes": 16777216,
+      "snapshotCopySubmission": {
+        "medianMS": 0.029297000000042317,
+        "p95MS": 0.04953899999964051
+      }
+    }
+  ]
+}

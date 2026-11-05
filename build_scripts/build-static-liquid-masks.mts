@@ -16,10 +16,15 @@ import { computeMaterialNoiseDensity, selectComponentForCell } from '../lib/noit
 import { createMaterialField } from '../lib/noita-telescope-vm/js/engine_resolve/material_field.js';
 import { resolveCellFull } from '../lib/noita-telescope-vm/js/engine_resolve/chunk_wobble.js';
 import { NollaPrng } from '../lib/noita-telescope-vm/js/nolla_prng.js';
+import {
+  BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES, WORLD_HEIGHT, WORLD_TOP,
+  createPlaneOwnership, createBackgroundOwnership,
+} from '../src/telescope/terrain-policy.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST = resolve(ROOT, 'src/liquids/static-sources.json');
 const OUTPUT = resolve(ROOT, 'src/liquids/assets/static-mask.bin.gz');
+const RESERVATIONS = resolve(ROOT, 'src/liquids/assets/captured-fluid-reservations.json');
 const BLOCK = 512;
 const hash = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).digest('hex');
 const engineByColor = new Map(BIOME_ENGINE.map((b: any) => [b.color & 0xffffff, b]));
@@ -28,6 +33,92 @@ const wangIds = new Map<number, number>(WANG_COLOR_TO_ID as [number, number][]);
 type Pixels = ReturnType<typeof decodePngToRgba>;
 type Placement = { key: string; x: number; y: number; biomeColor?: number; substitutions?: Record<string, string> };
 type SourceCheck = { path: string; archive?: string; sha256: string };
+
+export interface CapturedFluidReservation {
+  x: number; y: number; width: number; height: number; runs: number[];
+}
+
+export function capturedFluidReservationPolicyFingerprint() {
+  return hash(JSON.stringify({ backgrounds: BIOME_BACKGROUND_MAP,
+    staticBiomes: [...STATIC_TERRAIN_BIOMES].sort(), width: 70,
+    worldTop: WORLD_TOP, worldHeight: WORLD_HEIGHT }));
+}
+
+/** Retain only fixed fluid pixels that native terrain or biome backgrounds
+ * can cover. Native ownership uses actual generated layer claims; the separate
+ * biome-background path also uses its documented non-static background map.
+ * Vertical planes use the normal map's repeated first/last row, exactly as the
+ * generator does. Large captured Lake/lava regions have neither claim.
+ *
+ * Work on sparse runs, splitting at biome-chunk boundaries. Crop each result to
+ * nonzero bounds so consumers allocate bits for the narrow overlaps only. */
+export function capturedFluidReservations(blocks: readonly LiquidMaskBlock[], world: any): CapturedFluidReservation[] {
+  const { layers, biomeData, GENERATOR_CONFIG: config, W: width } = world;
+  if (width !== 70 || biomeData.pixels.length !== width * 48)
+    throw new Error('Captured fluid reservations require the normal 70-column biome map');
+  const nameByColor = new Map<number, string>(Object.entries(config).map(([name, value]: [string, any]) =>
+    [value.color & 0xffffff, name] as [number, string]));
+  const repeatedRow = (row: number) => {
+    const pixels = new Uint32Array(biomeData.pixels.length);
+    for (let y = 0; y < 48; y++) pixels.set(biomeData.pixels.subarray(row * width, (row + 1) * width), y * width);
+    return pixels;
+  };
+  const planes = new Map([-1, 0, 1].map(plane => {
+    const pixels = plane < 0 ? biomeData.heavenPixels ?? repeatedRow(0)
+      : plane > 0 ? biomeData.hellPixels ?? repeatedRow(47) : biomeData.pixels;
+    const terrain = createPlaneOwnership(layers, biomeData.pixels, pixels, config, width);
+    const background = createBackgroundOwnership(terrain, pixels, config, plane as -1 | 0 | 1);
+    return [plane, { pixels, terrain, background }] as const;
+  }));
+  const claimCache = new Map<string, boolean>();
+  const canPaint = (x: number, y: number) => {
+    const key = `${Math.floor(x / BLOCK)},${Math.floor(y / BLOCK)}`;
+    if (claimCache.has(key)) return claimCache.get(key)!;
+    const plane = Math.floor((y - WORLD_TOP) / WORLD_HEIGHT), state = planes.get(plane);
+    if (!state) return false;
+    const localY = y - plane * WORLD_HEIGHT;
+    const cx = ((Math.floor((x + width * 256) / BLOCK) % width) + width) % width;
+    const cy = Math.floor((localY - WORLD_TOP) / BLOCK);
+    const name = nameByColor.get(state.pixels[cy * width + cx] & 0xffffff);
+    const backgroundOwner = state.background.at(x, localY);
+    const claims = state.terrain.at(x, localY) >= 0 ||
+      (backgroundOwner >= 0 && !!BIOME_BACKGROUND_MAP[state.background.names[backgroundOwner]]) ||
+      (!!name && !!BIOME_BACKGROUND_MAP[name] && !STATIC_TERRAIN_BIOMES.has(name));
+    claimCache.set(key, claims);
+    return claims;
+  };
+  const chunks = new Map<string, { x: number; y: number; runs: number[][] }>();
+  for (const block of blocks) for (let p = 0; p < block.runs.length; p += 3) {
+    const y = block.y + block.runs[p], end = block.x + block.runs[p + 1] + block.runs[p + 2];
+    for (let x = block.x + block.runs[p + 1]; x < end;) {
+      const cx = Math.floor(x / BLOCK) * BLOCK, cy = Math.floor(y / BLOCK) * BLOCK;
+      const next = Math.min(end, cx + BLOCK);
+      if (canPaint(x, y)) {
+        const key = `${cx},${cy}`;
+        let chunk = chunks.get(key);
+        if (!chunk) { chunk = { x: cx, y: cy, runs: [] }; chunks.set(key, chunk); }
+        chunk.runs.push([y - cy, x - cx, next - x]);
+      }
+      x = next;
+    }
+  }
+  const out: CapturedFluidReservation[] = [];
+  for (const chunk of chunks.values()) {
+    const merged: number[][] = [];
+    for (const run of chunk.runs.sort((a, b) => a[0] - b[0] || a[1] - b[1])) {
+      const last = merged.at(-1);
+      if (last && last[0] === run[0] && last[1] + last[2] >= run[1])
+        last[2] = Math.max(last[1] + last[2], run[1] + run[2]) - last[1];
+      else merged.push([...run]);
+    }
+    let x0 = BLOCK, x1 = 0;
+    for (const run of merged) { x0 = Math.min(x0, run[1]); x1 = Math.max(x1, run[1] + run[2]); }
+    const y0 = merged[0][0], y1 = merged.at(-1)![0] + 1;
+    out.push({ x: chunk.x + x0, y: chunk.y + y0, width: x1 - x0, height: y1 - y0,
+      runs: merged.flatMap(([row, start, length]) => [row - y0, start - x0, length]) });
+  }
+  return out.sort((a, b) => a.y - b.y || a.x - b.x);
+}
 
 /** The volcanic-lake surface's authored polygon is an axis-aligned rectangle
  * in chunk-normalized coordinates. Reject other shapes rather than silently
@@ -278,11 +369,26 @@ export async function buildStaticLiquidMasks(refreshProvenance = false) {
     bytes: compressed.byteLength, rawBytes: bytes.byteLength, rawSha256: hash(bytes), blocks: blocks.length,
     liquidPixels: blocks.reduce((sum, block) => sum + [...block.runs].filter((_v, i) => i % 3 === 2).reduce((a, b) => a + b, 0), 0),
     placements: placements.length };
+  const reservations = capturedFluidReservations(blocks, world);
+  const reservationBytes = Buffer.from(JSON.stringify(reservations) + '\n');
+  if (reservationBytes.byteLength > 100_000)
+    throw new Error(`Captured fluid reservations unexpectedly exceed 100KB: ${reservationBytes.byteLength}`);
+  manifest.capturedFluidReservations = {
+    path: 'src/liquids/assets/captured-fluid-reservations.json', sha256: hash(reservationBytes),
+    sourceMaskSha256: manifest.artifact.sha256, policySha256: capturedFluidReservationPolicyFingerprint(),
+    bytes: reservationBytes.byteLength, blocks: reservations.length,
+    runs: reservations.reduce((n, block) => n + block.runs.length / 3, 0),
+    liquidPixels: reservations.reduce((n, block) => n + block.runs.filter((_v, p) => p % 3 === 2).reduce((a, b) => a + b, 0), 0),
+    bitsetBytes: reservations.reduce((n, block) => n + Math.ceil(block.width * block.height / 8), 0),
+    purpose: 'Reserve captured source-fluid pixels wherever normal native terrain or a non-static biome background can cover the base.',
+  };
   await mkdir(dirname(OUTPUT), { recursive: true });
   await writeFile(OUTPUT, compressed);
+  await writeFile(RESERVATIONS, reservationBytes);
   await rm(OUTPUT.slice(0, -3), { force: true });
   await writeFile(MANIFEST, JSON.stringify(manifest, null, 2) + '\n');
   console.log(`[static liquids] ${blocks.length} blocks, ${compressed.byteLength} compressed bytes (${bytes.byteLength} decoded), ${manifest.artifact.liquidPixels} material pixels`);
+  console.log(`[static liquids] reservations: ${reservations.length} cropped blocks, ${reservationBytes.byteLength} bytes, ${manifest.capturedFluidReservations.bitsetBytes} material-bit bytes`);
   return { blocks, manifest };
 }
 

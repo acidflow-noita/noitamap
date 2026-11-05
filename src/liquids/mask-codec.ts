@@ -4,6 +4,8 @@ export interface LiquidMaskBlock {
 }
 const MAGIC = 0x534d514c; // LQMS, little endian
 export const LIQUID_MASK_VERSION = 1;
+/** Bake compositor preserves captured basin pixels above biome boundaries. */
+export const CAPTURED_FLUID_VERSION = 1;
 const MAX_BYTES = 64 * 1024 * 1024;
 const MAX_BLOCKS = 131072;
 

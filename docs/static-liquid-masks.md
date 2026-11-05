@@ -23,6 +23,40 @@ coordinates. Their URLs and SHA-256 hashes are recorded beside the main-world
 checks. The source Lua places lower Holy Mountain rooms at chunk y + 260. The
 scanner's older +256 approximation must not be used for these masks.
 
+The 2026-11-05 basin-air report was checked against all 16 filled captured
+basins and the decoded masks for all 183 altar-top placements. In the reported
+oil basin at (512,984), captured tile 36_63 has a partial surface at image row
+499 (world y = 1009, scene row 25), then a full surface at image row 500
+(world y = 1010, scene row 26). The source has the same partial and full rows.
+The other filled basins have matching bulk surface levels across all five
+materials and all three parallel worlds. Capture URLs and hashes are recorded
+under `holyMountains.surfaceAudit`.
+
+The 21,156 authored basin cells already fill the available space beneath that
+surface. Even counting the portal spawn marker as free space leaves capacity
+for only 20,974 cells below row 25, so a volume-preserving settling pass must
+retain at least 182 cells in row 25. It cannot lower the entire surface or
+remove a broad upper band. No mask pixels occur above row 25 in any of the
+183 placements. The independent lower cup remains eligible teleportation
+liquid: its 355 cells run from scene rows 215 through 231, and its captured
+surface matches the source. These checks support preserving the source masks
+and do not support removing the lower cups or shrinking the basins. Inspection
+of the current Daily composite identified the actual conflict: native biome
+backdrop painting covers scene rows 25 through 39, making the displayed oil
+surface appear to start at row 40 even though the captured pool starts at 25.
+
+`src/liquids/assets/captured-fluid-reservations.json` supplies exact captured
+fluid pixels that overlap a native terrain or biome-background claim. The
+builder imports the existing plane ownership functions, `BIOME_BACKGROUND_MAP`,
+and `STATIC_TERRAIN_BIOMES`, including the normal map's repeated first/last rows
+for vertical planes. Large Lake and volcanic-lava fills have no relevant paint
+claim and are excluded. The result is only 16 cropped rectangles, 240 runs, and
+85,136 fluid pixels. Its 2,894-byte JSON requires 11,024 bytes when expanded to
+reservation bitsets. The reported oil overlap is (585,1009), width 367 and
+height 15; no fluid pixels move. These reservations let live composition,
+native baking, and biome-background painting preserve the captured pool.
+Previously baked overlays need separate compatibility handling until rebuilt.
+
 | Source family | Material geometry and placement |
 | --- | --- |
 | Holy Mountains | Original altar and basin PNGs, fixed biome cells, capture-seeded basin selection, top y - 40 and lower y + 260 |

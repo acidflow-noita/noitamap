@@ -40,7 +40,9 @@ const createBridge = new Function('exports', 'attachBiomeBackgroundLayer', '_bgL
   const dynamicTiledImages = new Set();
   let dynamicOverlayElements = [], dynamicBlobUrls = [], activeOrbTargets = [];
   const isGLTerrainEnabled = () => false, isInstantTerrainEnabled = () => false, isLightMode = () => false;
+  const isSimplisticBackground = () => false, supportsCapturedLiquidMask = () => false;
   const clearPortalAnimations = () => {}, clearInstantTerrain = () => {}, clearTerrainPngEncoders = () => {};
+  const clearLiquidWobble = () => {};
   let finish;
   const addBiomeLayersProgressively = (_viewer, _result, _generation, firstPaint) => new Promise(resolve => {
     finish = () => {
@@ -132,6 +134,36 @@ function pixelCheck(ctx: any, left: number, top: number, offset = 0, owns = (_x:
 }
 
 describe("native biome backgrounds through installed OSD and native canvas", () => {
+  it('preserves captured basin pixels in both cached tiles and immediate viewport drawing', async () => {
+    const left = 512, top = 984, width = 512, height = 64;
+    const pack = createBiomeBackgroundTiles({ originX: left, originY: top, width, height, phaseX, phaseY,
+      regions: [{ rings: [rect(left, top, width, height)], textureKey: 'wandcave' }], textures: new Map([['wandcave', texture]]) });
+    const load = (source: any, x: number) => new Promise<any>((resolve, reject) => source.downloadTileStart({
+      tile: { level: source.maxLevel, x, y: 0 }, finish: resolve, fail: reject,
+    }));
+    const canvas = createCanvas(width, height), ctx = canvas.getContext('2d');
+    const check = () => {
+      const data = ctx.getImageData(0, 0, width, height).data;
+      let missing = 0;
+      for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+        const reserved = y === 25 ? x >= 257 && x < 440 : y >= 26 && y < 40 && x >= 73 && x < 440;
+        if (data[(y * width + x) * 4 + 3] !== (reserved ? 0 : 255)) missing++;
+      }
+      expect(missing).toBe(0);
+    };
+    try {
+      const captured = pack.createSource(0, true), ordinary = pack.createSource(0, false);
+      for (let x = 0; x < 2; x++) ctx.drawImage((await load(captured, x)).canvas, x * 256, 0);
+      check();
+      // Sharing decoded textures must not share clipped/unclipped tile caches.
+      const unchanged = await load(ordinary, 0);
+      expect(unchanged.getImageData(80, 30, 1, 1).data[3]).toBe(255);
+      ctx.clearRect(0, 0, width, height);
+      expect(captured.__drawViewport(ctx, { imageToViewportCoordinates: (x: number, y: number) => ({ x, y }) },
+        { pixelFromPoint: (point: any) => point })).toBe(true);
+      check();
+    } finally { pack.destroy(); }
+  });
   it.each([-35840, 0, 35840])("keeps native PW %s backgrounds through startup and seed handoffs without tile requests", async offset => {
     const f = fixture();
     const canvas = createCanvas(256, 192), items: any[] = [];

@@ -181,6 +181,8 @@ for (const file of [
   "src/report-inventory.ts",
   "src/liquids/mask-codec.ts",
   "src/liquids/materials.ts",
+  "src/liquids/captured-reservations.ts",
+  "src/liquids/assets/captured-fluid-reservations.json",
   "package-lock.json",
   "public/data.zip",
   "public/wang_tiles.zip",

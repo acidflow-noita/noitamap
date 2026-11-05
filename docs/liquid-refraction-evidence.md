@@ -100,6 +100,17 @@ validate before deployable directories or the daily seed pointer are replaced.
 
 ## Validation and measured cost
 
+The reported apparent 90-degree rotation was checked against the current
+executable's `RenderWorldFrame` quad construction at `0x88ee1c..0x88ef8e`.
+Screen TL, BL, TR and BR have texture0.xy `(0,1), (0,0), (1,1), (1,0)` and
+texture0.zw `(0,0), (0,1), (1,0), (1,1)` before subpixel offsets. The vertex
+interleaver at `0x44b830` and OpenGL binder at `0xdd9860` retain those component
+orders (stride 36, texture0 offset 8). `0xdd73b0` selects top-left screen
+coordinates. The cell buffer is row-major at `0x724720..0x724733`; its upload
+keeps the dimensions and row order. This supports the existing X/Y assignments
+and Y sign correction, not an axis transpose. Camera rotation, flipping and
+resized snapshots are independently covered by renderer tests.
+
 Material-composition tests use actual Noita material IDs and scene material
 grids. They cover water/blood/lava/rainbow, air, rock, sand, ownership, FORCE
 AIR, visual art, leveling, scene precedence, and protected static bits. Sparse
@@ -113,6 +124,13 @@ matched exactly and requesting a mask changed no CPU output bytes. The three
 200 by 120 pool samples contained 3,559, 3,569, and 3,605 liquid pixels; their
 individual sparse files were 472, 400, and 472 bytes. The empty boundary sample
 encoded to 12 bytes.
+
+The repair regression also checks the reported seed 2100611341. Its 200 by
+120 region around 626,2043 contains 3,875 generated fluid pixels. The CPU and
+GPU masks agree. The 367 by 15 captured-basin overlap at 585,1009 clears all
+5,321 reserved pixels, leaving only the 184 unfilled pixels of its first row
+available to procedural painting. Those captured pixels remain outside the
+generated mask and use the independent static liquid mask.
 
 Eight alternating warmed 24,000-pixel CPU renders took 35.39 ms without masks
 and 36.83 ms with masks: about 0.18 ms extra per render (4.1% in this sample).

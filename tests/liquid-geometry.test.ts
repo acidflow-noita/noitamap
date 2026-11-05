@@ -74,14 +74,21 @@ describe('liquid camera and physical crop geometry', () => {
     expect(crop.y + crop.height).toBeLessThanOrEqual(Math.round(600 * ratioY));
   });
 
-  it('clips the physical crop to the source and rejects offscreen or oversized crops', () => {
+  it('clips to the source and reduces oversized crops without disabling the effect', () => {
     expect(liquidScreenCrop(identity, { x: -10, y: -10, width: 20, height: 20 }, 100, 100, 1.5))
       .toMatchObject({ x: 0, y: 0, width: 20, height: 20 });
     expect(liquidScreenCrop(identity, { x: -100, y: 10, width: 10, height: 10 }, 100, 100, 1)).toBeNull();
     expect(liquidScreenCrop(identity, { x: 110, y: 10, width: 10, height: 10 }, 100, 100, 1)).toBeNull();
     const limit = liquidScreenCrop(identity, { x: 0, y: 0, width: 2048, height: 2048 }, 2048, 2048, 1)!;
     expect(limit.width * limit.height).toBe(LIQUID_MAX_FRAME_PIXELS);
-    expect(liquidScreenCrop(identity, { x: 0, y: 0, width: 2048, height: 2049 }, 2048, 2049, 1)).toBeNull();
+    const large = liquidScreenCrop(identity, { x: 0, y: 0, width: 3840, height: 2160 }, 3840, 2160, 2)!;
+    expect(large).toMatchObject({ x: 0, y: 0, width: 7680, height: 4320, renderWidth: 2048, renderHeight: 1152 });
+    expect(large.renderWidth * large.renderHeight).toBeLessThanOrEqual(LIQUID_MAX_FRAME_PIXELS);
+    const [a, b, c, d, e, f] = large.screenToWorld;
+    for (const [px, py] of [[0.5, 0.5], [2047.5, 1151.5]]) {
+      expect(a * px + c * py + e).toBeCloseTo(px * 3840 / 2048);
+      expect(b * px + d * py + f).toBeCloseTo(py * 2160 / 1152);
+    }
   });
 
   it.each([

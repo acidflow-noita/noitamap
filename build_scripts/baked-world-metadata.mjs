@@ -4,7 +4,7 @@
 import { mkdir, readFile, rename, writeFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
-import { LIQUID_MASK_VERSION, maskBlock, encodeLiquidMask, decodeLiquidMask } from "../src/liquids/mask-codec.ts";
+import { LIQUID_MASK_VERSION, CAPTURED_FLUID_VERSION, maskBlock, encodeLiquidMask, decodeLiquidMask } from "../src/liquids/mask-codec.ts";
 
 export { LIQUID_MASK_VERSION };
 
@@ -146,6 +146,7 @@ export async function writeBakedWorldLiquidMask(directory, world, seed, renderId
   await rename(temporary, path);
   return {
     version: LIQUID_MASK_VERSION, path: "liquid-mask.bin", bytes: bytes.byteLength,
+    capturedVersion: CAPTURED_FLUID_VERSION,
     sha256: createHash("sha256").update(bytes).digest("hex"), seed, renderId,
   };
 }
