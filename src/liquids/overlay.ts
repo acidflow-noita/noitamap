@@ -1,5 +1,5 @@
 import { readCameraMatrix, type CameraMatrix } from '../portals/geometry';
-import { liquidReprojection, liquidScreenCrop, liquidViewBounds } from './geometry';
+import { liquidBoundsContain, liquidBoundsOverlap, liquidCropContains, liquidReprojection, liquidScreenCrop, liquidViewBounds, visibleLiquidBounds } from './geometry';
 import type { MaskBounds } from './mask-index';
 import { LiquidMaskProvider, type LiquidMaskInputs } from './mask-provider';
 import type { ViewLiquidMask } from './mask-worker-client';
@@ -11,10 +11,10 @@ const MOVEMENT = ['pan', 'zoom', 'resize', 'rotate', 'flip'];
 const CONTENT = ['terrain-cache-ready', 'terrain-frame-ready'];
 const IMAGE_CHANGES = ['opacity-change', 'bounds-change', 'clip-change', 'composite-operation-change'];
 const FRAME_INTERVAL = 1000 / 30;
-const REFRESH_DELAY = 80;
+const REFRESH_DELAY = 16;
 const CONTENT_REFRESH_DELAY = 160;
 interface ReadyFrame { key: string; camera: CameraMatrix; mask: ViewLiquidMask; signal: AbortSignal }
-interface PresentedFrame { camera: CameraMatrix; crop: MaskBounds }
+interface PresentedFrame { key: string; camera: CameraMatrix; crop: MaskBounds }
 export interface LiquidOverlayDeps {
   provider: Pick<LiquidMaskProvider, 'prepare' | 'stats' | 'destroy'>;
   renderer(canvas: HTMLCanvasElement): Pick<LiquidRenderer, 'setSource' | 'render' | 'stats' | 'dispose'>;
@@ -39,6 +39,11 @@ export class LiquidOverlay {
   private presented?: PresentedFrame;
   private cameraKey = '';
   private preparing?: AbortSignal;
+  private preparingBounds?: MaskBounds;
+  private knownMask?: ViewLiquidMask;
+  private reusedMasks = 0;
+  private phase = 'waiting';
+  private lastCaptureMs = 0;
   private uploadPending = false;
   private contextLost = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -108,11 +113,12 @@ export class LiquidOverlay {
   };
   private invalidate = () => {
     if (this.destroyed) return;
-    this.pause(); this.cameraKey = '';
+    this.pause(); this.cameraKey = ''; this.knownMask = undefined;
     this.resetPending(); this.cameraChanged();
   };
   private resetPending() {
     this.ready = undefined; this.captureRequested = false;
+    this.preparing = undefined; this.preparingBounds = undefined;
     clearTimeout(this.timer); clearTimeout(this.captureTimer);
     this.timer = this.captureTimer = undefined;
     this.controller.abort(); this.controller = new AbortController();
@@ -128,20 +134,55 @@ export class LiquidOverlay {
     if (!bounds) {
       this.pause(); this.resetPending(); this.cameraKey = ''; this.state = 'zoomed-out'; return;
     }
-    this.reproject(camera);
     if (key === this.cameraKey) return;
-    this.cameraKey = key; this.resetPending();
+    this.reproject(camera);
+    this.cameraKey = key;
+    // World-space masks survive camera changes. Cancel only work for a view
+    // that has actually left the screen, not every spring-animation frame.
+    const pendingRegion = this.preparingBounds ?? this.ready?.mask.coverage ?? this.ready?.mask;
+    if (pendingRegion && !liquidBoundsOverlap(pendingRegion, bounds)) this.resetPending();
+    if (this.knownMask?.coverage && liquidBoundsContain(this.knownMask.coverage, bounds)) {
+      this.reusedMasks++;
+      this.ready = { key, camera: matrix, mask: this.knownMask, signal: this.controller.signal };
+      this.requestExposedPixels(camera);
+      if (!this.osd.isAnimating?.() && this.presented?.key !== key) this.scheduleCapture();
+      return;
+    }
+    this.requestExposedPixels(camera);
     if (!this.presented) this.state = 'waiting';
-    this.timer = setTimeout(() => { this.timer = undefined; void this.prepare(); }, REFRESH_DELAY);
+    this.schedulePreparation();
   };
   private finishMovement = () => {
     if (this.destroyed || !this.enabled || document.hidden || this.media?.matches || this.contextLost) return;
     this.cameraChanged();
     if (!this.zoomActive) return;
     clearTimeout(this.timer); this.timer = undefined;
-    if (!this.ready || this.provider.stats().generatedPending) void this.prepare();
+    const camera = this.camera(), bounds = liquidViewBounds(camera.matrix, camera.width, camera.height, this.zoomActive)!;
+    if (this.ready && this.presented?.key !== camera.key) this.requestCapture();
+    if (!this.knownMask?.coverage || !liquidBoundsContain(this.knownMask.coverage, bounds) || this.provider.stats().generatedPending)
+      void this.prepare();
     else if (this.captureRequested) this.osd.forceRedraw();
   };
+  private schedulePreparation() {
+    if (this.timer !== undefined || this.preparing === this.controller.signal) return;
+    this.timer = setTimeout(() => { this.timer = undefined; void this.prepare(); }, REFRESH_DELAY);
+  }
+  private requestExposedPixels(camera: ReturnType<LiquidOverlay['camera']>) {
+    if (!this.ready || this.ready.signal.aborted) return;
+    const wanted = visibleLiquidBounds(camera.matrix, this.ready.mask, camera.width, camera.height);
+    if (!wanted) return;
+    if (!this.presented || this.canvas.hidden) { this.requestCapture(); return; }
+    if (!liquidCropContains(camera.matrix, this.presented.camera, this.presented.crop, wanted)) this.scheduleCapture();
+  }
+  private acceptMask(mask: ViewLiquidMask, signal: AbortSignal) {
+    if (signal.aborted || this.destroyed) return;
+    if (mask.complete && mask.coverage) this.knownMask = mask;
+    const { key, matrix, width, height } = this.camera();
+    const view = liquidViewBounds(matrix, width, height, this.zoomActive);
+    if (!view || !liquidBoundsOverlap(mask, view)) return;
+    this.ready = { key, camera: matrix, mask, signal };
+    this.requestCapture();
+  }
   private reproject(camera = this.camera()) {
     if (!this.presented) return;
     const projection = liquidReprojection(camera.matrix, this.presented.camera, this.presented.crop, camera.width, camera.height);
@@ -161,34 +202,50 @@ export class LiquidOverlay {
     this.invalidate();
   };
   private async prepare() {
-    if (this.destroyed || !this.enabled || document.hidden || this.osd.isAnimating?.()) return;
+    if (this.destroyed || !this.enabled || document.hidden || this.contextLost || this.media?.matches) return;
     const { key, matrix, width, height } = this.camera();
     const bounds = liquidViewBounds(matrix, width, height, this.zoomActive); if (!bounds) return;
     const signal = this.controller.signal;
     if (this.preparing === signal) return;
-    this.preparing = signal;
+    if (this.knownMask?.coverage && liquidBoundsContain(this.knownMask.coverage, bounds)) {
+      this.reusedMasks++; this.acceptMask(this.knownMask, signal); return;
+    }
+    this.preparing = signal; this.preparingBounds = bounds; this.phase = 'preparing-mask';
     if (!this.presented) this.state = 'preparing';
     try {
-      const mask = await this.provider.prepare(bounds, signal);
-      if (signal.aborted || this.destroyed || key !== this.camera().key) return;
-      if (!mask) { this.pause(); this.state = 'no-visible-liquids'; return; }
-      this.ready = { key, camera: matrix, mask, signal };
-      this.requestCapture();
+      const mask = await this.provider.prepare(bounds, signal, partial => this.acceptMask(partial, signal));
+      if (signal.aborted || this.destroyed) return;
+      if (!mask) {
+        if (key === this.camera().key) { this.pause(); this.state = 'no-visible-liquids'; }
+        return;
+      }
+      this.acceptMask(mask, signal);
     } catch (error) { if (!signal.aborted && !this.destroyed) this.fail(error); }
-    finally { if (this.preparing === signal) this.preparing = undefined; }
+    finally {
+      if (this.preparing === signal) {
+        this.preparing = undefined; this.preparingBounds = undefined;
+        if (!signal.aborted && !this.destroyed && key !== this.camera().key) {
+          const now = this.camera(), view = liquidViewBounds(now.matrix, now.width, now.height, this.zoomActive);
+          if (view && (!this.knownMask?.coverage || !liquidBoundsContain(this.knownMask.coverage, view))) this.schedulePreparation();
+        }
+      }
+    }
   }
   private invalidateColor = () => {
     if (this.destroyed) return;
     if (this.provider.stats().generatedPending && this.timer === undefined && !this.preparing) {
-      this.timer = setTimeout(() => { this.timer = undefined; void this.prepare(); }, REFRESH_DELAY);
+      this.knownMask = undefined; this.schedulePreparation();
     }
     if (!this.ready || this.ready.signal.aborted) return;
     this.contentRevision++;
     // Coalesce from the first update, not the last. A stream of tile arrivals
     // must not postpone capture indefinitely or hide the completed animation.
+    this.scheduleCapture();
+  };
+  private scheduleCapture() {
     if (this.captureTimer === undefined && !this.captureRequested)
       this.captureTimer = setTimeout(() => { this.captureTimer = undefined; this.requestCapture(); }, CONTENT_REFRESH_DELAY);
-  };
+  }
   private invalidateTile = (event?: any) => {
     this.invalidateColor();
     // Do not return an event's own processing promise to OSD's event barrier.
@@ -209,6 +266,8 @@ export class LiquidOverlay {
   private worldChanged = () => { this.watchImages(); this.invalidate(); };
   private requestCapture() {
     if (this.destroyed || !this.ready || this.ready.signal.aborted) return;
+    clearTimeout(this.captureTimer); this.captureTimer = undefined;
+    if (this.captureRequested) return;
     this.captureRequested = true;
     // Capture inside update-viewport, while a WebGL drawer's backing buffer is
     // still valid. Only one extra map redraw is requested after masks are ready.
@@ -218,14 +277,15 @@ export class LiquidOverlay {
     if (this.destroyed) return;
     this.cameraChanged();
     if (!this.ready) return;
-    if (this.osd.isAnimating?.()) return;
     // Some OSD drawers redraw even when their pixels did not change. Actual
     // image/frame events above invalidate content, not the act of drawing.
     if (!this.captureRequested) return;
     if (this.capturing) return;
-    this.captureRequested = false; void this.capture(this.ready);
+    const { key, matrix } = this.camera();
+    this.captureRequested = false; void this.capture({ ...this.ready, key, camera: matrix });
   };
   private async capture(frame: ReadyFrame) {
+    const started = performance.now();
     const revision = this.contentRevision;
     const source = this.osd.drawer?.canvas;
     if (!source?.width || !source?.height) return;
@@ -233,18 +293,18 @@ export class LiquidOverlay {
     const crop = liquidScreenCrop(frame.camera, frame.mask, width, height, ratio, ratioY);
     if (!crop) { this.state = 'pixel-budget'; return; }
     this.capturing = true;
+    this.phase = 'capturing-image';
     let bitmap: ImageBitmap | undefined;
     try {
       bitmap = await this.bitmap(source, crop.x, crop.y, crop.width, crop.height, crop.renderWidth, crop.renderHeight);
-      if (this.destroyed || frame.signal.aborted ||
-        frame !== this.ready || frame.key !== this.camera().key) return;
+      if (this.destroyed || frame.signal.aborted) return;
       if (!this.renderer) {
         let factory = this.rendererFactory;
         if (!factory) {
           const module = await import('./renderer.mjs');
           factory = (canvas: HTMLCanvasElement) => new module.LiquidRenderer(canvas);
         }
-        if (this.destroyed || frame.signal.aborted || frame !== this.ready) return;
+        if (this.destroyed || frame.signal.aborted) return;
         this.renderer = factory(this.canvas);
       }
       const mask = frame.mask;
@@ -255,6 +315,7 @@ export class LiquidOverlay {
       const hadFrame = !!this.presented;
       const firstFrame = () => ({ timeSeconds: this.elapsed, strength: hadFrame ? Math.min(1, (performance.now() - this.fadeStart) / 140) : 0 });
       this.uploadPending = true;
+      this.phase = 'uploading-image';
       let uploaded = this.renderer.setSource(input, firstFrame());
       const waitingSince = performance.now();
       while (uploaded === null) {
@@ -266,15 +327,16 @@ export class LiquidOverlay {
           const timer = setTimeout(() => { frame.signal.removeEventListener('abort', abort); resolve(); }, FRAME_INTERVAL);
           frame.signal.addEventListener('abort', abort, { once: true });
         });
-        if (this.destroyed || frame.signal.aborted || frame !== this.ready) return;
+        if (this.destroyed || frame.signal.aborted) return;
         if (performance.now() - waitingSince > 5000) throw new Error('Liquid GPU did not become ready');
         uploaded = this.renderer.setSource(input, firstFrame());
       }
       if (!uploaded) { this.pause(); this.state = 'paused'; return; }
       Object.assign(this.canvas.style, { left: `${crop.x / ratio}px`, top: `${crop.y / ratioY}px`,
         width: `${crop.width / ratio}px`, height: `${crop.height / ratioY}px`, imageRendering: reduced ? 'pixelated' : 'auto' });
-      this.presented = { camera: frame.camera, crop: { x: crop.x / ratio, y: crop.y / ratioY, width: crop.width / ratio, height: crop.height / ratioY } };
+      this.presented = { key: frame.key, camera: frame.camera, crop: { x: crop.x / ratio, y: crop.y / ratioY, width: crop.width / ratio, height: crop.height / ratioY } };
       this.captures++; this.error = null; this.state = 'running';
+      this.phase = 'ready'; this.lastCaptureMs = performance.now() - started;
       if (!hadFrame) this.fadeStart = performance.now();
       this.lastFrame = performance.now(); this.frames++;
       this.reproject();
@@ -310,7 +372,8 @@ export class LiquidOverlay {
     console.warn('[Liquid wobble] Keeping the original map:', this.error);
   }
   stats() { return { status: this.state, error: this.error, frames: this.frames, captures: this.captures,
-    targetFPS: 30, ...this.provider.stats(), renderer: this.renderer?.stats() ?? null }; }
+    targetFPS: 30, phase: this.phase, reusedMasks: this.reusedMasks, lastCaptureMs: this.lastCaptureMs,
+    visible: !this.canvas.hidden, ...this.provider.stats(), renderer: this.renderer?.stats() ?? null }; }
   destroy = () => {
     if (this.destroyed) return;
     this.destroyed = true; this.controller.abort(); this.pause();
@@ -332,6 +395,6 @@ export class LiquidOverlay {
     this.media?.removeEventListener('change', this.invalidate);
     this.canvas.removeEventListener('webglcontextlost', this.onContextLost);
     this.canvas.removeEventListener('webglcontextrestored', this.onContextRestored);
-    this.provider.destroy(); this.snapshot?.destroy(); this.renderer?.dispose(); this.layer.remove(); this.ready = undefined; this.presented = undefined;
+    this.provider.destroy(); this.snapshot?.destroy(); this.renderer?.dispose(); this.layer.remove(); this.ready = undefined; this.presented = undefined; this.knownMask = undefined;
   };
 }

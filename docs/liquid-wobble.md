@@ -9,8 +9,12 @@ native evidence and static-map adaptation are documented in
 
 ## Rendering and resource limits
 
-The existing map draws first. After navigation settles, a small worker reads
-the sparse material masks and prepares the visible area. Non-daily maps query
+The existing map draws first. A small worker reads the sparse material masks
+and prepares the visible area while camera movement is still running. Known
+liquids publish before slower missing data: captured pools before a Daily mask
+download, and captured/cached blocks before live GPU queries. New live blocks
+resolve nearest the visible center first and publish partial results at most
+once per 160 ms, followed by the complete result. Non-daily maps query
 256-pixel blocks through the already-warm terrain shader, with asynchronous
 readback and background queue priority. Scene material replacements and terrain
 ownership are applied before rendering. These queries never start another
@@ -33,8 +37,18 @@ presenter's camera reprojection to follow pan, zoom, rotation and flipping
 without regenerating masks, capturing terrain or uploading textures on each
 movement. A clipped presentation layer prevents the transformed crop from
 spilling outside the map. Newly exposed areas use the original map until the
-replacement crop is ready. Mask preparation starts as soon as OSD reports that
-movement finished, with an 80 ms fallback for immediate camera changes.
+replacement crop is ready. Preparation starts after one 16 ms coalescing
+interval, without waiting for OSD's animation-finish. Nearby camera changes
+retain useful pending work; requests are cancelled when their region leaves
+the view, on structural layer changes, or on teardown.
+
+Completed masks retain their full queried coverage, including known-empty
+pixels. Pan/zoom inside that coverage reuses the mask without worker round trips
+or more material queries. The existing image continues animating while it
+covers the visible liquid. Newly exposed cached liquid receives a coalesced
+snapshot during the drag, and animation-finish requests an immediate final
+snapshot at the settled resolution. Captures taken during a zoom remain valid
+in world coordinates and reproject instead of being discarded.
 
 Tile arrivals coalesce into a refresh 160 ms after the first update. Later
 arrivals neither restart that delay nor discard an already completed snapshot.
@@ -170,6 +184,11 @@ The setter returns false if the optional overlay has not been installed. Add
 `&liquidWobble=0` to disable it before initialization. During an unchanged view,
 `renderer.frames` may advance while `captures`, `renderer.uploads` and mask
 `preparations` remain stable. `renderer.pendingSyncs` must never exceed one.
+The diagnostics also expose `phase`, `lastCaptureMs`, `lastPrepareMs`,
+`reusedMasks`, `progressUpdates`, and `pendingBlocks` to distinguish image/GPU
+work from missing material data. Synthetic delay tests hold later data replies
+for seconds while the first pool continues animating. This is a scheduling
+regression check, not a measured browser latency guarantee.
 
 Native checks cover fluid eligibility, authored geometry, mask packaging and
 resume, CPU/GPU agreement, source/displaced boundaries, camera transforms,

@@ -1,6 +1,11 @@
 import type { MaskAsset } from './mask-worker';
 import type { MaskBounds } from './mask-index';
-export interface ViewLiquidMask extends MaskBounds { pixels: Uint8Array }
+export interface ViewLiquidMask extends MaskBounds {
+  pixels: Uint8Array;
+  /** Queried area, including empty pixels. Reuse only when complete is true. */
+  coverage?: MaskBounds;
+  complete?: boolean;
+}
 
 export class LiquidMaskWorkerClient {
   private worker: Worker;

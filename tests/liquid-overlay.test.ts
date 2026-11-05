@@ -61,9 +61,15 @@ function setup(options: { scale?: number; ratio?: number; ratioY?: number; mask?
     },
     drawer: { canvas: terrain }, forceRedraw: vi.fn(), isAnimating: () => animating,
   };
-  const provider = { prepare: vi.fn(async (_bounds: MaskBounds, _signal: AbortSignal): Promise<ViewLiquidMask | null> => options.mask === undefined ? sampleMask() : options.mask),
+  const provider = { prepare: vi.fn(async (bounds: MaskBounds, _signal: AbortSignal, _progress?: (mask: ViewLiquidMask) => void): Promise<ViewLiquidMask | null> => {
+      const mask = options.mask === undefined ? sampleMask() : options.mask;
+      const x = Math.floor(bounds.x / 256) * 256, y = Math.floor(bounds.y / 256) * 256;
+      return mask ? { ...mask, complete: true, coverage: { x, y, width: Math.ceil((bounds.x + bounds.width - x) / 256) * 256,
+        height: Math.ceil((bounds.y + bounds.height - y) / 256) * 256 } } : null;
+    }),
     stats: vi.fn(() => ({ preparations: provider.prepare.mock.calls.length, cachedBlocks: 0, cachedBytes: 0,
-      capturedMask: false, missingBakedWorlds: [] as number[], liveReady: true, generatedPending: false })), destroy: vi.fn() };
+      capturedMask: false, missingBakedWorlds: [] as number[], liveReady: true, generatedPending: false,
+      pendingBlocks: 0, progressUpdates: 0, lastPrepareMs: 0 })), destroy: vi.fn() };
   const renderer = { setSource: vi.fn((_source: any, _firstFrame?: { timeSeconds: number; strength: number }): boolean | null => true), render: vi.fn((_time: number, _strength: number): boolean | null => true),
     stats: vi.fn(() => ({ uploads: renderer.setSource.mock.calls.length * 2 })), dispose: vi.fn() };
   const factory = vi.fn((_canvas: HTMLCanvasElement) => renderer);
@@ -90,10 +96,48 @@ function stop(test: ReturnType<typeof setup>, reason: string) {
   else if (reason === 'reduced-motion') { media.matches = true; media.dispatchEvent(new Event('change')); }
   else if (reason === 'reseed') { test.viewer.world.emit('remove-item'); test.viewer.world.emit('add-item'); }
   else if (reason === 'destroy') test.overlay.destroy();
+  else if (reason === 'far-pan') { test.setCamera({ a: 1, b: 0, c: 0, d: 1, e: -10000, f: 0 }); test.emit('pan'); }
   else { test.setCamera({ a: 2, b: 0, c: 0, d: 2, e: -10, f: 20 }); test.emit('zoom'); }
 }
 
 describe('liquid overlay scheduling and lifecycle', () => {
+  it('shows a partial pool during a multi-second mask preparation and keeps it animated', async () => {
+    const test = setup(), full = deferred<ViewLiquidMask | null>();
+    test.provider.prepare.mockImplementationOnce(async (_bounds, _signal, progress) => {
+      progress?.({ ...sampleMask(), complete: false }); return full.promise;
+    });
+    test.setAnimating(true);
+    await vi.advanceTimersByTimeAsync(16); test.drawScene(); await flush();
+    expect(test.layer.hidden).toBe(false); expect(test.renderer.setSource).toHaveBeenCalledOnce();
+    for (let i = 0; i < 60; i++) tick(performance.now() + 34);
+    expect(test.renderer.render.mock.calls.length).toBeGreaterThanOrEqual(59);
+    expect(test.provider.prepare).toHaveBeenCalledOnce();
+    full.resolve({ ...sampleMask(), complete: true, coverage: { x: -256, y: -256, width: 1280, height: 1024 } });
+    await flush(); test.drawScene(); await flush();
+    expect(test.layer.hidden).toBe(false); expect(test.renderer.setSource).toHaveBeenCalledTimes(2);
+  });
+  it('resumes a known area on the next map draw after movement without another worker round trip', async () => {
+    const test = setup(); await start(test); test.setAnimating(true);
+    test.setCamera({ a: 1, b: 0, c: 0, d: 1, e: -15, f: 10 }); test.drawScene();
+    const uploads = test.renderer.setSource.mock.calls.length;
+    test.setAnimating(false); test.emit('animation-finish'); test.drawScene(9); await flush();
+    expect(test.provider.prepare).toHaveBeenCalledOnce();
+    expect(test.renderer.setSource.mock.calls.length).toBe(uploads + 1);
+    expect(test.renderer.setSource.mock.calls.at(-1)![0].color.scene).toBe(9);
+    expect(test.layer.hidden).toBe(false); expect(test.overlay.stats().reusedMasks).toBeGreaterThan(0);
+  });
+  it('refreshes newly exposed cached liquid during a drag with bounded captures', async () => {
+    const test = setup({ mask: { x: 0, y: 0, width: 1024, height: 768, pixels: new Uint8Array(1024 * 768).fill(255) } });
+    await start(test); test.setAnimating(true);
+    for (let i = 0; i < 20; i++) {
+      test.setCamera({ a: 1, b: 0, c: 0, d: 1, e: -i * 4, f: 0 }); test.drawScene(i);
+      await vi.advanceTimersByTimeAsync(20); await flush();
+    }
+    expect(test.provider.prepare).toHaveBeenCalledOnce();
+    expect(test.renderer.setSource.mock.calls.length).toBeGreaterThan(1);
+    expect(test.renderer.setSource.mock.calls.length).toBeLessThanOrEqual(4);
+    expect(test.layer.hidden).toBe(false);
+  });
   it('keeps rendering through a long drag with no navigation uploads or terrain queries', async () => {
     const test = setup(); await start(test); tick(performance.now() + 34);
     const oldFrames = test.renderer.render.mock.calls.length;
@@ -109,7 +153,7 @@ describe('liquid overlay scheduling and lifecycle', () => {
 
     const snapshot = deferred<ImageBitmap>(); test.bitmap.mockReturnValueOnce(snapshot.promise);
     test.setAnimating(false); test.emit('animation-finish'); await flush(); test.drawScene(2);
-    expect(test.provider.prepare).toHaveBeenCalledTimes(2); expect(test.bitmap).toHaveBeenCalledTimes(2);
+    expect(test.provider.prepare).toHaveBeenCalledOnce(); expect(test.bitmap).toHaveBeenCalledTimes(2);
     const frames = test.renderer.render.mock.calls.length;
     for (let i = 0; i < 20; i++) tick(performance.now() + 34);
     expect(test.layer.hidden).toBe(false); expect(test.renderer.render.mock.calls.length - frames).toBe(20);
@@ -223,7 +267,7 @@ describe('liquid overlay scheduling and lifecycle', () => {
     const test = setup(), pending = deferred<ImageBitmap>(); test.bitmap.mockReturnValueOnce(pending.promise);
     expect(test.canvas.children[0]).toBe(test.terrain); expect(test.canvas.children[1]).toBe(test.layer.parentElement); expect(test.canvas.children[2]).toBe(test.particles);
     expect(test.layer.parentElement!.style.overflow).toBe('hidden');
-    await vi.advanceTimersByTimeAsync(79); expect(test.provider.prepare).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(15); expect(test.provider.prepare).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
     expect(test.provider.prepare).toHaveBeenCalledOnce(); expect(test.viewer.forceRedraw).toHaveBeenCalledOnce();
     expect(test.bitmap).not.toHaveBeenCalled(); expect(test.factory).not.toHaveBeenCalled();
@@ -240,19 +284,19 @@ describe('liquid overlay scheduling and lifecycle', () => {
     expect(test.viewer.viewport.pixelFromPoint.mock.calls.every(([, current]) => current === true)).toBe(true);
   });
 
-  it('coalesces navigation work and starts the replacement immediately when movement finishes', async () => {
+  it('starts preparing during movement and accepts useful replies without waiting for animation-finish', async () => {
     const test = setup(), pending = deferred<ViewLiquidMask | null>(); test.provider.prepare.mockReturnValueOnce(pending.promise);
-    await vi.advanceTimersByTimeAsync(50); test.setCamera({ a: 1, b: 0, c: 0, d: 1, e: 5, f: 0 }); test.emit('pan');
-    await vi.advanceTimersByTimeAsync(50); test.setCamera({ a: 2, b: 0, c: 0, d: 2, e: 5, f: 0 }); test.emit('zoom');
-    await vi.advanceTimersByTimeAsync(79); expect(test.provider.prepare).not.toHaveBeenCalled();
+    test.setAnimating(true);
+    await vi.advanceTimersByTimeAsync(5); test.setCamera({ a: 1, b: 0, c: 0, d: 1, e: 5, f: 0 }); test.emit('pan');
+    await vi.advanceTimersByTimeAsync(5); test.setCamera({ a: 2, b: 0, c: 0, d: 2, e: 5, f: 0 }); test.emit('zoom');
+    await vi.advanceTimersByTimeAsync(5); expect(test.provider.prepare).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1); expect(test.provider.prepare).toHaveBeenCalledOnce();
     const signal = test.provider.prepare.mock.calls[0][1];
-    test.setAnimating(true); test.setCamera({ a: 2, b: 0, c: 0, d: 2, e: 10, f: 5 }); test.emit('pan'); expect(signal.aborted).toBe(true);
-    pending.resolve(sampleMask()); await flush(); expect(test.viewer.forceRedraw).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(160); expect(test.provider.prepare).toHaveBeenCalledOnce();
-    test.setAnimating(false); test.emit('animation-finish');
-    await flush(); expect(test.provider.prepare).toHaveBeenCalledTimes(2);
-    test.drawScene(2); await flush(); expect(test.factory).toHaveBeenCalledOnce();
+    test.setCamera({ a: 2, b: 0, c: 0, d: 2, e: 10, f: 5 }); test.emit('pan'); expect(signal.aborted).toBe(false);
+    pending.resolve({ ...sampleMask(), complete: true, coverage: { x: -256, y: -256, width: 1024, height: 1024 } });
+    await flush(); test.drawScene(2); await flush();
+    expect(test.factory).toHaveBeenCalledOnce(); expect(test.layer.hidden).toBe(false);
+    expect(test.provider.prepare).toHaveBeenCalledOnce();
   });
 
   it('caps animation at thirty frames per second without recapturing, preparing, or redrawing terrain', async () => {
@@ -309,7 +353,7 @@ describe('liquid overlay scheduling and lifecycle', () => {
     expect(test.provider.prepare).toHaveBeenCalledOnce();
   });
 
-  it.each(['disable', 'hidden', 'reduced-motion', 'zoom', 'reseed', 'destroy'])('ignores mask completion after %s', async reason => {
+  it.each(['disable', 'hidden', 'reduced-motion', 'far-pan', 'reseed', 'destroy'])('ignores mask completion after %s', async reason => {
     const test = setup(), pending = deferred<ViewLiquidMask | null>(); test.provider.prepare.mockReturnValueOnce(pending.promise);
     await vi.advanceTimersByTimeAsync(160); const signal = test.provider.prepare.mock.calls[0][1];
     stop(test, reason); expect(signal.aborted).toBe(true);
@@ -318,7 +362,7 @@ describe('liquid overlay scheduling and lifecycle', () => {
     expect(test.viewer.forceRedraw).not.toHaveBeenCalled(); expect(queue.size).toBe(0); expect(test.layer.hidden).toBe(true);
   });
 
-  it.each(['disable', 'hidden', 'reduced-motion', 'zoom', 'reseed', 'destroy'])('closes and discards bitmap completion after %s', async reason => {
+  it.each(['disable', 'hidden', 'reduced-motion', 'far-pan', 'reseed', 'destroy'])('closes and discards bitmap completion after %s', async reason => {
     const test = setup(), pending = deferred<ImageBitmap>(); test.bitmap.mockReturnValueOnce(pending.promise);
     await vi.advanceTimersByTimeAsync(160); test.drawScene(); expect(test.bitmap).toHaveBeenCalledOnce();
     stop(test, reason);
@@ -334,19 +378,19 @@ describe('liquid overlay scheduling and lifecycle', () => {
     expect(queue.size).toBe(0); expect(test.overlay.stats().captures).toBe(0);
   });
 
-  it('drains an old capture before capturing a newer camera without reviving the old layer', async () => {
+  it('reprojects a completed capture across a zoom instead of discarding it, then refines the latest view', async () => {
     const test = setup(), pending = deferred<ImageBitmap>(); test.bitmap.mockReturnValueOnce(pending.promise);
     await vi.advanceTimersByTimeAsync(160); test.drawScene(1);
     test.setCamera({ a: 2, b: 0, c: 0, d: 2, e: 0, f: 0 }); test.emit('zoom');
     await vi.advanceTimersByTimeAsync(160); test.drawScene(2);
     expect(test.bitmap).toHaveBeenCalledOnce();
     const stale = image(46, 36, 1); pending.resolve(stale); await flush();
-    expect(stale.close).toHaveBeenCalledOnce(); expect(test.renderer.setSource).not.toHaveBeenCalled();
-    expect(test.viewer.forceRedraw).toHaveBeenCalledTimes(3);
+    expect(stale.close).toHaveBeenCalledOnce(); expect(test.renderer.setSource).toHaveBeenCalledOnce();
+    expect(test.layer.hidden).toBe(false); expect(test.layer.style.transform).toBe('matrix(2,0,0,2,97,97)');
     test.drawScene(3); await flush();
-    expect(test.bitmap).toHaveBeenCalledTimes(2); expect(test.renderer.setSource).toHaveBeenCalledOnce();
-    expect(test.renderer.setSource.mock.calls[0][0].color.scene).toBe(3);
-    expect(test.renderer.setSource.mock.calls[0][0].screenToWorld[0]).toBe(0.5);
+    expect(test.bitmap).toHaveBeenCalledTimes(2); expect(test.renderer.setSource).toHaveBeenCalledTimes(2);
+    expect(test.renderer.setSource.mock.calls[1][0].color.scene).toBe(3);
+    expect(test.renderer.setSource.mock.calls[1][0].screenToWorld[0]).toBe(0.5);
   });
 
   it('applies zoom hysteresis when an already running view drops back to overview', async () => {
@@ -360,7 +404,8 @@ describe('liquid overlay scheduling and lifecycle', () => {
     test.setCamera({ a: 0.6, b: 0, c: 0, d: 0.6, e: 0, f: 0 }); test.emit('zoom');
     await vi.advanceTimersByTimeAsync(1000); expect(test.provider.prepare).toHaveBeenCalledTimes(2);
     test.setCamera({ a: 0.75, b: 0, c: 0, d: 0.75, e: 0, f: 0 }); test.emit('zoom');
-    await vi.advanceTimersByTimeAsync(160); expect(test.provider.prepare).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(160); expect(test.provider.prepare).toHaveBeenCalledTimes(2);
+    test.drawScene(); await flush(); expect(test.layer.hidden).toBe(false);
   });
 
   it.each(['mask', 'bitmap', 'GPU', 'render'])('keeps the original map visible and stops scheduled work after a %s failure', async stage => {

@@ -22,6 +22,24 @@ function boundsOf(m: CameraMatrix, rect: MaskBounds) {
   const x = Math.floor(Math.min(...xs)), y = Math.floor(Math.min(...ys));
   return { x, y, width: Math.ceil(Math.max(...xs)) - x, height: Math.ceil(Math.max(...ys)) - y };
 }
+export function liquidBoundsContain(outer: MaskBounds, inner: MaskBounds) {
+  return outer.x <= inner.x && outer.y <= inner.y && outer.x + outer.width >= inner.x + inner.width &&
+    outer.y + outer.height >= inner.y + inner.height;
+}
+export function liquidBoundsOverlap(a: MaskBounds, b: MaskBounds) {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+}
+export function visibleLiquidBounds(camera: CameraMatrix, mask: MaskBounds, width: number, height: number): MaskBounds | null {
+  const r = boundsOf(camera, mask), x = Math.max(0, r.x), y = Math.max(0, r.y);
+  const w = Math.min(width, r.x + r.width) - x, h = Math.min(height, r.y + r.height) - y;
+  return w > 0 && h > 0 ? { x, y, width: w, height: h } : null;
+}
+/** Test whether the old snapshot already contains every needed screen pixel.
+ * This avoids taking another snapshot on every drag through the same pool. */
+export function liquidCropContains(current: CameraMatrix, rendered: CameraMatrix, crop: MaskBounds, wanted: MaskBounds) {
+  const m = reprojectCamera(rendered, current);
+  return !!m && liquidBoundsContain(crop, boundsOf(m, wanted));
+}
 /** Keep a completed crop attached to its world pixels as OSD moves. The
  * element keeps its original CSS left/top, so compensate for that offset. */
 export function liquidReprojection(current: CameraMatrix, rendered: CameraMatrix, crop: MaskBounds,

@@ -20,11 +20,52 @@ const world = (pw: number, hasMask = true) => ({ pw, x: pw * 35840 - 17920, y: -
   liquidMask: hasMask ? { url: `https://world${pw}.test/liquid-mask.bin?v=a`, bytes: 12, sha256: 'a'.repeat(64) } : undefined });
 
 describe('mask source selection and bounded live queries', () => {
+  it('publishes captured fluid before a delayed Daily mask download finishes', async () => {
+    let release!: (pixels: Uint8Array) => void;
+    io.paint.mockImplementationOnce(async (bounds: any) => {
+      const pixels = new Uint8Array(bounds.width * bounds.height); pixels[0] = 255; return pixels;
+    }).mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+    const provider = new LiquidMaskProvider({ baked: [world(0)], staticBackground: true, exclusions: () => [] });
+    const progress = vi.fn(), finished = vi.fn();
+    const pending = provider.prepare({ x: 0, y: 0, width: 256, height: 256 }, new AbortController().signal, progress).then(finished);
+    await vi.waitFor(() => expect(progress).toHaveBeenCalledOnce());
+    expect(finished).not.toHaveBeenCalled(); expect(progress.mock.calls[0][0].pixels[0]).toBe(255);
+    expect(progress.mock.calls[0][0].complete).toBe(false);
+    release(new Uint8Array(256 * 256)); await pending;
+    expect(finished.mock.calls[0][0]).toMatchObject({ complete: true, coverage: { x: 0, y: 0, width: 256, height: 256 } });
+    provider.destroy();
+  });
+  it('shows the first generated pool while later blocks are still pending, starting near the center', async () => {
+    let release!: () => void;
+    io.live.mockImplementationOnce(async (_bounds: any, pixels: Uint8Array) => { pixels[0] = 255; return true; })
+      .mockImplementationOnce(async () => { await new Promise<void>(resolve => { release = resolve; }); return true; });
+    const provider = new LiquidMaskProvider({ staticBackground: false, live: { seed: 42, scenes: [], loadScene: vi.fn() }, exclusions: () => [] });
+    const progress = vi.fn(), finished = vi.fn();
+    const pending = provider.prepare({ x: 0, y: 0, width: 1024, height: 256 }, new AbortController().signal, progress).then(finished);
+    await vi.waitFor(() => expect(io.live).toHaveBeenCalledTimes(2));
+    expect(progress).toHaveBeenCalledOnce(); expect(finished).not.toHaveBeenCalled();
+    expect(io.live.mock.calls[0][0].x).toBe(256); expect(io.live.mock.calls[1][0].x).toBe(512);
+    expect(progress.mock.calls[0][0]).toMatchObject({ x: 256, y: 0, complete: false });
+    release(); await pending;
+    expect(finished.mock.calls[0][0].complete).toBe(true); provider.destroy();
+  });
+  it('does not publish a cancelled partial crop or mutate a previously published mask', async () => {
+    let release!: (mask: any) => void;
+    io.paint.mockResolvedValue(new Uint8Array(256 * 256).fill(255));
+    io.crop.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+    const provider = new LiquidMaskProvider({ staticBackground: true, live: { seed: 42, scenes: [], loadScene: vi.fn() }, exclusions: () => [] });
+    const controller = new AbortController(), progress = vi.fn();
+    const pending = provider.prepare({ x: 0, y: 0, width: 256, height: 256 }, controller.signal, progress);
+    const rejected = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    await vi.waitFor(() => expect(io.crop).toHaveBeenCalledOnce());
+    controller.abort(); release({ x: 0, y: 0, width: 1, height: 1, pixels: new Uint8Array([255]) }); await rejected;
+    expect(progress).not.toHaveBeenCalled(); expect(io.live).not.toHaveBeenCalled(); provider.destroy();
+  });
   it('loads only visible baked worlds and never initializes live terrain for a Daily', async () => {
     const provider = new LiquidMaskProvider({ baked: [-1, 0, 1].map(pw => world(pw)), staticBackground: true, exclusions: () => [] });
     expect(io.paint).not.toHaveBeenCalled();
     await provider.prepare({ x: 100, y: 100, width: 256, height: 256 }, new AbortController().signal);
-    const sources = io.paint.mock.calls[0][1];
+    const sources = io.paint.mock.calls.flatMap(call => call[1]);
     expect(sources).toHaveLength(2);
     expect(sources[0].url).toContain('static-mask.bin.gz'); expect(sources[1].url).toContain('world0.test');
     expect(io.init).not.toHaveBeenCalled(); provider.destroy();
