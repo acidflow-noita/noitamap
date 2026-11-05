@@ -11,7 +11,7 @@ function barrier() {
 
 /** Run the bridge's actual orchestration without booting its browser UI imports. */
 function bridgeLifecycle(dependencies: Record<string, unknown>) {
-  dependencies = { buildSceneBitmaps: async () => null, ...dependencies };
+  dependencies = { buildSceneBitmaps: async () => null, clearLiquidWobble: vi.fn(), ...dependencies };
   const source = createSourceFile('bridge.ts', readFileSync('src/telescope/telescope-osd-bridge.ts', 'utf8'), ScriptTarget.Latest);
   const names = ['clearInstantTerrain', 'beginMarkerRequest', 'cancelPendingDynamicTerrain', 'clearDynamicOverlays', 'renderGenerationResult', 'rebuildAltLayers'];
   if (!dependencies.addOrbOverlays) names.push('addOrbOverlays');
@@ -116,6 +116,10 @@ function presentationFixture(instant = true) {
     buildMarkerData: vi.fn(async () => ({ originX: 0, originY: 0, bboxWidth: 100 })),
     addOrbOverlays: vi.fn(), installClickHandler: vi.fn(), rebuildHighValueOverlays: vi.fn(),
     createMarkerTileSource: vi.fn(() => ({})), installPortalAnimations: vi.fn(),
+    clearLiquidWobble: vi.fn(), installLiquidWobble: vi.fn(),
+    getSunUnlocks: vi.fn(() => ['sun', 'dark_sun']), getActiveDescriptor: () => 'all',
+    isSimplisticBackground: () => false, supportsCapturedLiquidMask: () => true,
+    renderableScenes: () => [], ensurePixelSceneData: vi.fn(), liquidMarkerExclusions: vi.fn(() => []),
     resetPOICardContext: vi.fn(), liveSceneBitmaps: { clear: vi.fn() },
     resetPersistentBiomeBackgrounds: vi.fn(), clearBiomeBackgroundLayers: vi.fn(),
     clearGLTerrain: vi.fn(), clearHighValueOverlays: vi.fn(),
@@ -487,7 +491,8 @@ describe('same-seed marker request ownership', () => {
     expect(f.window.dispatchEvent).not.toHaveBeenCalled();
     expect(f.installClickHandler).toHaveBeenCalledOnce();
     expect(f.bridge.markers().result).toBe(f.result);
-    expect(f.installPortalAnimations).toHaveBeenCalledExactlyOnceWith(f.viewer, initial);
+    expect(f.installPortalAnimations).toHaveBeenCalledExactlyOnceWith(f.viewer, initial, ['sun', 'dark_sun'], false);
+    expect(f.installLiquidWobble).toHaveBeenCalledOnce();
     expect(f.viewer.world.removeItem).toHaveBeenCalledWith(f.oldImage);
   });
 
