@@ -6,6 +6,7 @@ import { liquidMarkerExclusions } from "../liquids/marker-exclusions";
 import { supportsCapturedLiquidMask } from "../liquids/capture-identity";
 import { capturedFluidMasks } from "../liquids/captured-reservations";
 import { createDustAttribution, usesDustAnimation } from "../portals/attribution";
+import { particleIcon, type ParticleIconPOI } from '../portals/icons';
 import { canOpenPOIFromCanvas, drawingOwnsMapPointer, onDrawingMapOwnershipChange } from "../drawing/poi-interaction";
 import { onProSidebarIntent } from "../pro-sidebar-intent";
 import { isDropOverlayActive } from '../drop-overlay';
@@ -4271,7 +4272,16 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const label = poi.type || 'Unknown';
       title.textContent = gameTranslator.translateItem(label).replace(/_/g, ' ');
     }
-    tooltipEl.appendChild(wrapWithWikiLink(title, poi));
+    const placeIcon = particleIcon(poi as ParticleIconPOI, getSunUnlocks(getActiveDescriptor()));
+    if (placeIcon) {
+      const header = document.createElement('div');
+      header.style.cssText = 'display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em';
+      const image = document.createElement('img'); image.src = placeIcon; image.alt = '';
+      image.width = image.height = 38;
+      image.style.cssText = 'object-fit:contain;flex:none';
+      title.style.marginBottom = '0';
+      header.append(image, wrapWithWikiLink(title, poi)); tooltipEl.append(header);
+    } else tooltipEl.appendChild(wrapWithWikiLink(title, poi));
     if (poi.item) {
       const itemDiv = document.createElement('div');
       itemDiv.style.cssText = 'color:var(--text-muted);font-size:var(--panel-heading-size)';
@@ -5504,10 +5514,11 @@ export { getAllPOIsFlat } from "./poi-inventory";
 const spriteFirstFrameCache = new Map<string, string | null>();
 
 /**
- * Get a blob URL for a POI's sprite (first frame for animated sprites).
- * Uses the static spritesheet + atlas if available, falls back to data.zip.
+ * Get a display-thumbnail URL (first frame for animated sprites). Particle
+ * figures use Dust's bundled thumbnails; ordinary sprites use the atlas and
+ * data.zip fallback. Shared by card headers and search results.
  */
-export async function getPOISpriteFirstFrame(poi: {
+export async function getPOISpriteFirstFrame(poi: ParticleIconPOI & {
   type: string;
   item?: string;
   sprite?: string;
@@ -5515,6 +5526,10 @@ export async function getPOISpriteFirstFrame(poi: {
   enemy?: string;
   entity?: string;
 }): Promise<string | null> {
+  if (!isSpoilerFree()) {
+    const thumbnail = particleIcon(poi, getSunUnlocks(getActiveDescriptor()));
+    if (thumbnail) return thumbnail;
+  }
   // Eagerly load atlas+spritesheet if not already cached
   let atlas = getAtlas();
   let spritesheet = getSpritesheet();

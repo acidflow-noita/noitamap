@@ -1,0 +1,35 @@
+{
+  "source": "WUOTE/noita_particle_animations",
+  "commit": "f31b24ad02ecb179b8ae1c063c58d8be0f7b8533",
+  "directory": "dist/assets/shapes",
+  "images": [
+    {
+      "file": "holy_mountain.png",
+      "sha256": "153bd9355675c70ac7be6babbb803e45b2c104e39f9e2df1c9f5c65dad9c9df4"
+    },
+    {
+      "file": "meditation.png",
+      "sha256": "9ed10f9ac3d1738e3c67453fdb36eba953e5c471e11edb20a3dc16ffdb929cf8"
+    },
+    {
+      "file": "eye_room.png",
+      "sha256": "aba7363dd3b38626ab72b5dbc750d94cb93f1aa03cce06edcb85bcbbc5a0ba63"
+    },
+    {
+      "file": "red_portal.png",
+      "sha256": "2b246709c4bbc1647b366d8116f11d17dfa3eef8ce66b97ce4eaea2a6461a956"
+    },
+    {
+      "file": "sun.png",
+      "sha256": "41ff1a721d868949e3843c259d552060f78a2b6e081bb76d09d05444c7592a52"
+    },
+    {
+      "file": "dark_sun.png",
+      "sha256": "6c3f925797272eb5182fb1d66b435b79f366eb1a4855a14491dc42d7bf2be552"
+    },
+    {
+      "file": "moon.png",
+      "sha256": "546c41b906ed4dc7afb610403cb388720fa473b1cd528f7ce896c90f69081b2c"
+    }
+  ]
+}

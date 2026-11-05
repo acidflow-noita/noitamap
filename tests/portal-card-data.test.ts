@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createPortalCardMarkers, usesDustAnimation } from '../src/portals/card-data';
+import { particleIcon } from '../src/portals/icons';
 import type { PortalSeed } from '../src/portals/placements';
 import type { MarkerItem } from '../src/telescope/poi-spatial-index';
 import english from '../src/locales/en/translation.json';
@@ -30,6 +31,7 @@ describe('portal cards from rendered placements', () => {
         poi: { item: 'portal', clickOnly: true, nameKey: 'teleport_generic', wiki: 'https://noita.wiki.gg/wiki/Portal' },
       });
       expect(usesDustAnimation(marker.poi)).toBe(true);
+      expect(particleIcon(marker.poi)).toContain('/holy_mountain.png');
     }
     expect(input).toEqual(before);
     expect(english.gameContent.ui.teleport_generic).toBe('Portal');
@@ -47,8 +49,26 @@ describe('portal cards from rendered placements', () => {
       { key: 'snowcastle/hourglass_chamber', x: -4096, y: 5120 },
     ] } });
     expect(usesDustAnimation(eye.poi)).toBe(true);
+    expect(particleIcon(eye.poi)).toContain('/eye_room.png');
     expect(createPortalCardMarkers(input, [eye])).toEqual([]);
     expect(eye).toEqual(before);
+  });
+
+  it('uses the matching Dust portraits for portal shapes and Sun unlock states without changing loot icons', () => {
+    const portal = (entity: string) => particleIcon({ type: 'item', item: 'portal', portalEntity: entity });
+    expect(portal('teleport_meditation_cube_return')).toContain('/meditation.png');
+    expect(portal('teleport_hourglass_return')).toContain('/eye_room.png');
+    expect(portal('teleport_ending')).toContain('/red_portal.png');
+    expect(portal('mystery_teleport')).toContain('/red_portal.png');
+    expect(particleIcon({ type: 'pillar_place', name: 'Meditation Chamber' })).toContain('/meditation.png');
+    expect(particleIcon({ type: 'pillar_place', name: 'Eye Spell Room' })).toContain('/eye_room.png');
+    expect(particleIcon({ type: 'pillar_place', name: 'Sun/Moon' }, [])).toContain('/moon.png');
+    expect(particleIcon({ type: 'pillar_place', name: 'Sun/Moon' }, ['sun'])).toContain('/sun.png');
+    expect(particleIcon({ type: 'pillar_place', name: 'Dark Sun/Dark Moon' }, ['dark_sun'])).toContain('/dark_sun.png');
+    expect(particleIcon({ type: 'spell', item: 'SUN' })).toBeNull();
+    expect(particleIcon({ type: 'item', item: 'spell', effect: 'sun' })).toBeNull();
+    expect(particleIcon({ type: 'item', item: 'potion' })).toBeNull();
+    expect(particleIcon({ type: 'item', item: 'paha_silma' })).toBeNull();
   });
 
   it('creates targets from old baked biome metadata when scenes were omitted', () => {
