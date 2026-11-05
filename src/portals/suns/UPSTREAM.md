@@ -13,13 +13,23 @@ all-unlocked view shows both; the locked view shows neither. The mod view uses
 the game's Moon initializer scripts. Sun-creation achievements are not Moon
 replacement flags. Missing/invalid state in older mod links leaves both Moons.
 
-Both Moon replacements reuse one 1-by-1 opaque black image, scaled to each
-original 512-by-512 scene footprint. Their source positions are in Noita's
+The Sun uses a 1-by-1 opaque black image. The Dark Sun uses the original Hell
+background texture, repeated at native scale and aligned to the surrounding
+biome background. Each covers its original 512-by-512 scene footprint.
+Their source positions are in Noita's
 `data/biome_impl/spliced/_moon.bat` (0, -26112) and `_moon_dark.bat` (0, 37512).
 The patch covers captured, generated and baked Moon pixels, below POI markers.
 It becomes visible only with a loaded Sun preview or frame, remains with the
 paused image at overview zoom, and is removed on disable/reseed. It creates no
 new animation loop, terrain bake, shader pass or tile pyramid.
+
+Regenerate the Dark Sun patch with
+`node --import tsx build_scripts/build-dark-sun-background.mts`. It repeats
+`public/biome_bg/background_the_end.png` over opaque black, with the same
+texture phase (-17920, -7168) as the biome background layer. Live maps use
+the original PNG color metadata; baked maps use raw RGB values, matching
+their existing background pipelines. Only the relevant patch is loaded.
+Each prepared PNG is one static image, with no per-frame canvas generation.
 
 Initial stills are prepared once with `node build_scripts/build-sun-previews.mjs`
 (Node, Mesa GLES, no browser). They use the same lighting and renderer as live

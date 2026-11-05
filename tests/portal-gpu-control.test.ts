@@ -21,6 +21,15 @@ const seed={seed:42,worldSize:70,worldCenter:35,pixelScenesByPW:{'0,0':[{key:'te
 beforeEach(()=>{setPortalGPUEnabled(false);clearPortalAnimations();vi.clearAllMocks();runtime.load.mockResolvedValue({});runtime.construct.mockReset();});
 afterEach(()=>{setPortalGPUEnabled(false);clearPortalAnimations();document.body.replaceChildren();});
 describe('GPU-only portal renderer driven by the performance setting',()=>{
+  it('retains the baked background choice across particle and unlock toggles',()=>{
+    installPortalAnimations(viewer(),seed,['sun','dark_sun'],true);
+    setPortalGPUEnabled(true);expect(runtime.sun.mock.calls.at(-1)?.[5]).toBe(true);
+    setSunUnlocks(['dark_sun']);expect(runtime.sun.mock.calls.at(-1)?.[5]).toBe(true);
+    setPortalGPUEnabled(false);setPortalGPUEnabled(true);
+    expect(runtime.sun.mock.calls.at(-1)?.[5]).toBe(true);
+    installPortalAnimations(viewer(),{...seed,seed:43},['dark_sun']);
+    expect(runtime.sun.mock.calls.at(-1)?.[5]).toBe(false);
+  });
   it('requires explicit Sun unlocks and updates them without restarting portals',async()=>{
     installPortalAnimations(viewer(),seed);setPortalGPUEnabled(true);
     await vi.waitFor(()=>expect(runtime.construct).toHaveBeenCalledOnce());

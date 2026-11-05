@@ -1,6 +1,10 @@
 import type { SunEffect } from './placements';
 
-const EMPTY_TILE = new URL('../assets/empty.svg', import.meta.url).href;
+const BACKGROUNDS = {
+  sun: new URL('../assets/empty.svg', import.meta.url).href,
+  dark_sun: new URL('../assets/backgrounds/dark-sun-hell.png', import.meta.url).href,
+  dark_sun_baked: new URL('../assets/backgrounds/dark-sun-hell-baked.png', import.meta.url).href,
+};
 // Full scene origins from Noita's spliced/_moon.bat and _moon_dark.bat.
 // These are terrain footprints, not the much larger particle/glow bounds.
 export const MOON_BOUNDS = {
@@ -28,14 +32,15 @@ export interface MoonPatchViewer {
 }
 type Patch = { item?: PatchItem; opacity: number };
 
-/** Two uses of one solid tile. Covers Moon art in live and baked rasters,
+/** Black sky for the Sun, world-aligned Hell texture for the Dark Sun.
+ * Covers Moon art in live and baked rasters,
  * below POI markers. No animation, pixel copies, shader or tile pyramid. */
 export class MoonPatches {
   private patches = new Map<SunEffect, Patch>();
   private visible = new Set<SunEffect>();
   private destroyed = false;
   private orderPending = false;
-  constructor(private viewer: MoonPatchViewer, private failure: () => void) {
+  constructor(private viewer: MoonPatchViewer, private failure: () => void, private baked = false) {
     viewer.world.addHandler('add-item', this.scheduleOrder);
   }
   show(effects: readonly SunEffect[]) {
@@ -47,7 +52,7 @@ export class MoonPatches {
       const patch: Patch = { opacity: 0 };
       this.patches.set(effect, patch);
       this.viewer.addTiledImage({
-        tileSource: { type: 'image', url: EMPTY_TILE, buildPyramid: false },
+        tileSource: { type: 'image', url: BACKGROUNDS[effect === 'dark_sun' && this.baked ? 'dark_sun_baked' : effect], buildPyramid: false },
         ...MOON_BOUNDS[effect], opacity: 0, blendTime: 0,
         success: ({ item }) => {
           if (this.destroyed) { this.viewer.world.removeItem(item); return; }

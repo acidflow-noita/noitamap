@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MoonPatches } from '../src/portals/suns/moon-patches';
 
-function fixture() {
+function fixture(baked = false) {
   const base = { source: 'captured background' };
   const live = { source: 'live Moon scene' };
   const marker = { _isMarkerLayer: true };
@@ -14,7 +14,7 @@ function fixture() {
     addHandler: vi.fn((_name: string, callback: () => void) => handlers.add(callback)),
     removeHandler: vi.fn((_name: string, callback: () => void) => handlers.delete(callback)),
   } }, failure = vi.fn();
-  const patches = new MoonPatches(viewer, failure);
+  const patches = new MoonPatches(viewer, failure, baked);
   const add = (item: any) => { items.push(item); handlers.forEach(callback => callback()); };
   return { viewer, failure, patches, items, base, live, marker, handlers, add, loaded(index = 0) {
     const item = { setOpacity: vi.fn() }; add(item);
@@ -22,13 +22,14 @@ function fixture() {
   } };
 }
 describe('Moon replacement patches', () => {
-  it('reuses one empty image at the two Moon footprints and keeps markers above it', () => {
+  it('uses black sky for the Sun and Hell artwork for the Dark Sun, below markers', () => {
     const f = fixture(); expect(f.viewer.addTiledImage).not.toHaveBeenCalled();
     f.patches.show(['sun', 'dark_sun']); const sun = f.loaded(), dark = f.loaded(1);
     const [first, second] = f.viewer.addTiledImage.mock.calls.map(call => call[0]);
     expect(first).toMatchObject({ x: 0, y: -26112, width: 512, opacity: 0, blendTime: 0 });
     expect(second).toMatchObject({ x: 0, y: 37512, width: 512, opacity: 0 });
-    expect(first.tileSource).toEqual(second.tileSource);
+    expect(first.tileSource.url).toContain('empty.svg');
+    expect(second.tileSource.url).toContain('dark-sun-hell.png');
     expect(first.tileSource).toMatchObject({ type: 'image', buildPyramid: false });
     expect(f.items).toEqual([f.base, f.live, sun, dark, f.marker]);
     expect(sun.setOpacity).toHaveBeenLastCalledWith(1);
@@ -40,6 +41,12 @@ describe('Moon replacement patches', () => {
     expect(f.viewer.world.setItemIndex).toHaveBeenCalledTimes(orders);
     f.patches.destroy(); expect(f.items).toEqual([f.base, f.live, f.marker]);
     expect(f.handlers.size).toBe(0);
+  });
+  it('matches baked background colors while retaining the same native texture geometry', () => {
+    const f = fixture(true); f.patches.show(['dark_sun']);
+    expect(f.viewer.addTiledImage.mock.calls[0][0]).toMatchObject({ x: 0, y: 37512, width: 512,
+      tileSource: { url: expect.stringContaining('dark-sun-hell-baked.png'), buildPyramid: false } });
+    f.patches.destroy();
   });
   it('covers late baked terrain but never hides a newly rebuilt POI layer', async () => {
     const f = fixture(); f.patches.show(['sun', 'dark_sun']); const sun = f.loaded(), dark = f.loaded(1);

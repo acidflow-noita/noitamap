@@ -5388,7 +5388,7 @@ export async function renderGenerationResult(
 
     // A separate, non-interactive animation layer; never baked into terrain or
     // added to loot counts. Scene metadata also works on existing daily bakes.
-    installPortalAnimations(viewer, result, getSunUnlocks(getActiveDescriptor()));
+    installPortalAnimations(viewer, result, getSunUnlocks(getActiveDescriptor()), !!bakedDZIs?.length);
 
     // GPU replacement waits for a complete viewport draw. Other paths retain
     // the empty-result safety net for old items.

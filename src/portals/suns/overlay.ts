@@ -48,15 +48,15 @@ export class SunOverlay {
   private submittedAt = 0;
   private moons: MoonPatches;
   constructor(private viewer: Viewer, private seed: number, private factory = makeWorker, enabled = true,
-    effects: readonly SunEffect[] = []) {
+    effects: readonly SunEffect[] = [], baked = false) {
     this.enabled = enabled;
     this.layer.className = 'noitamap-suns';
     this.layer.setAttribute('aria-hidden', 'true');
     Object.assign(this.layer.style, { position: 'absolute', inset: '0', overflow: 'hidden', pointerEvents: 'none' });
     this.moons = new MoonPatches(viewer, () => {
       this.setEnabled(false); // Keep the original Moon if its replacement cannot be presented.
-      this.fail('Unable to load the empty Moon tile');
-    });
+      this.fail('Unable to load the Moon replacement background');
+    }, baked);
     this.figures = SUNS.filter(sun => effects.includes(sun.effect)).map(sun => {
       const element = document.createElement('div'), preview = document.createElement('img'), canvas = document.createElement('canvas');
       element.dataset.effect = sun.effect;
