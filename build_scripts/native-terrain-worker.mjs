@@ -1,7 +1,8 @@
 import { parentPort, workerData } from "node:worker_threads";
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { saveCore, makeParent, writeOverlap } from "./terrain-pyramid.mjs";
+import { saveCore, makeParent, writeOverlap, atomicWrite } from "./terrain-pyramid.mjs";
+import { liquidMaskCheckpointPath, encodeLiquidMaskCheckpoint } from "./baked-world-metadata.mjs";
 import { pathToFileURL } from "node:url";
 import { deserialize, serialize } from "node:v8";
 import sharp from "sharp";
@@ -129,11 +130,13 @@ try {
             return;
           }
           if (job.kind === "render") {
+            const mask = new Uint8Array(job.width * job.height);
             const pixels = await decorate(
-              renderer.render(job.x, job.y, job.width, job.height),
+              renderer.render(job.x, job.y, job.width, job.height, mask),
               job,
             );
             await saveCore(job.path, pixels, job.width, job.height);
+            await atomicWrite(liquidMaskCheckpointPath(job.path), encodeLiquidMaskCheckpoint(job, mask));
           } else if (job.kind === "parent") await makeParent(job);
           else if (job.kind === "overlap") await writeOverlap(job);
           else throw new Error(`Unknown bake task ${job.kind}`);

@@ -1,6 +1,9 @@
 import * as bootstrap from "../bootstrap";
 import { clearPortalAnimations, installPortalAnimations } from "../portals";
 import { getSunUnlocks } from "../sun-unlocks";
+import { clearLiquidWobble, installLiquidWobble } from "../liquids";
+import { liquidMarkerExclusions } from "../liquids/marker-exclusions";
+import { supportsCapturedLiquidMask } from "../liquids/capture-identity";
 import { createDustAttribution, usesDustAnimation } from "../portals/attribution";
 import { canOpenPOIFromCanvas, drawingOwnsMapPointer, onDrawingMapOwnershipChange } from "../drawing/poi-interaction";
 import { onProSidebarIntent } from "../pro-sidebar-intent";
@@ -507,6 +510,7 @@ export function cancelPendingDynamicTerrain(): void {
 export function clearDynamicOverlays(viewer: any): void {
   resetPOICardContext(viewer);
   suspendedMarkerContext = null;
+  clearLiquidWobble();
   clearPortalAnimations();
   // Invalidate any in-flight async generation so it won't render on top of the new map
   currentGenerationId++;
@@ -5089,6 +5093,7 @@ export async function renderGenerationResult(
   const terrainDrawn = new Promise<boolean>(resolve => { completeTerrainDraw = resolve; });
   let terrainPainted = false;
   let fallbackRender: Promise<void> | undefined;
+  clearLiquidWobble();
   clearPortalAnimations();
   clearInstantTerrain();
   clearTerrainPngEncoders();
@@ -5389,6 +5394,16 @@ export async function renderGenerationResult(
     // A separate, non-interactive animation layer; never baked into terrain or
     // added to loot counts. Scene metadata also works on existing daily bakes.
     installPortalAnimations(viewer, result, getSunUnlocks(getActiveDescriptor()), !!bakedDZIs?.length);
+    installLiquidWobble(viewer, {
+      baked: bakedDZIs ?? undefined,
+      staticBackground: !result.isNGP && result.worldSize === 70 && !isSimplisticBackground() && supportsCapturedLiquidMask(),
+      live: bakedDZIs?.length ? undefined : {
+        seed: result.seed,
+        scenes: renderableScenes(result).filter(scene => !isRepeatedTempleTemplate(scene)),
+        loadScene: key => ensurePixelSceneData(key, { art: false }),
+      },
+      exclusions: bounds => liquidMarkerExclusions(activeMarkerData, bounds),
+    });
 
     // GPU replacement waits for a complete viewport draw. Other paths retain
     // the empty-result safety net for old items.

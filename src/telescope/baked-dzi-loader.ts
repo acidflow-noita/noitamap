@@ -46,6 +46,8 @@ export interface BakedDziPlacement {
   /** Per-bake cache-bust token (manifest generatedAt, else seed). Appended as
    *  ?v= so a new daily bake on the same worker origin isn't served stale. */
   bust: string;
+  /** Optional material-derived refraction mask; absent on older bakes. */
+  liquidMask?: { url: string; bytes: number; sha256: string };
 }
 
 export interface BakedDziProbeOk {
@@ -90,6 +92,8 @@ interface PerWorldManifest {
   baked?: boolean;
   complete?: boolean;
   terrainVersion?: string;
+  renderId?: string;
+  liquidMask?: { version: number; path: string; bytes: number; sha256: string; seed: number; renderId: string };
   regions: PerWorldManifestRegion[];
 }
 
@@ -170,6 +174,13 @@ export async function probeBakedDZIs(
     // Stable within a bake (tiles stay browser-cached all day) but changes on
     // every re-bake, so a new daily isn't served stale from the HTTP cache.
     const bust = (m.generatedAt && String(m.generatedAt)) || String(m.seed);
+    const mask = m.liquidMask;
+    const liquidMask = mask?.version === 1 && mask.path === 'liquid-mask.bin' && mask.seed === seed &&
+      typeof m.renderId === 'string' && mask.renderId === m.renderId &&
+      Number.isSafeInteger(mask.bytes) && mask.bytes >= 12 && mask.bytes <= 25 * 1024 * 1024 &&
+      /^[a-f0-9]{64}$/.test(mask.sha256)
+      ? { url: `${origin}/${mask.path}?v=${mask.sha256}`, bytes: mask.bytes, sha256: mask.sha256 }
+      : undefined;
     for (const r of m.regions) {
       placements.push({
         pw: r.pw,
@@ -179,6 +190,7 @@ export async function probeBakedDZIs(
         y: r.minY,
         width: r.fullW,
         bust,
+        ...(liquidMask ? { liquidMask } : {}),
       });
     }
   }

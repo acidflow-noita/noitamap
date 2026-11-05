@@ -339,6 +339,7 @@ export function createInstantTerrainViewport(options: {
       stats.frames++;
       stats.renderMs += performance.now() - began;
       stats.shadedPixels += request.plan.pixelWidth * request.plan.pixelHeight;
+      osd.raiseEvent?.('terrain-frame-ready');
       osd.forceRedraw?.();
     }).catch(error => {
       if (!drawController.signal.aborted) fail(error);
@@ -377,11 +378,13 @@ export function createInstantTerrainViewport(options: {
       try {
         const start = performance.now();
         const image = options.renderFrameNow(plan);
+        const changed = frame?.key !== desiredKey;
         if (frame && !frame.borrowed) releaseImage(frame.image);
         retained.forEach(entry => releaseImage(entry.image)); retained = [];
         frame = { plan, image, key: desiredKey!, revision: revision(), borrowed: true };
         stats.frames++; stats.renderMs += performance.now() - start;
         stats.shadedPixels += plan.pixelWidth * plan.pixelHeight;
+        if (changed) osd.raiseEvent?.('terrain-frame-ready');
       } catch (error) { fail(error); return true; }
     }
     if (!frame) return true;

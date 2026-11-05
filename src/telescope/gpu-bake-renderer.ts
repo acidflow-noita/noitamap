@@ -45,7 +45,9 @@ export async function openGpuBakeRenderer(snapshot: any) {
       const p=(canvas as any).__nativeGlesPixels;
       return {x,y,gpuMaterial:p[0]+(p[1]<<8)-1,cpuMaterial:finishers.get(plane)!.materialAt(x,y)};
     },
-    render(x: number, y: number, w: number, h: number) {
+    render(x: number, y: number, w: number, h: number, mask?: Uint8Array) {
+      if (mask && mask.length !== w * h) throw new Error("Invalid bake liquid mask dimensions");
+      mask?.fill(0);
       const out = new Uint8ClampedArray(w * h * 4);
       for (const [plane, finisher] of finishers) {
         const top = Math.max(y, WORLD_TOP + plane * WORLD_HEIGHT);
@@ -67,7 +69,8 @@ export async function openGpuBakeRenderer(snapshot: any) {
           throw new Error("Missing native GPU readback; refusing to publish an empty tile");
         gpuMs += performance.now() - start;
         const finishStart = performance.now();
-        finisher.finish(pixels, x, top, w, bottom - top);
+        finisher.finish(pixels, x, top, w, bottom - top,
+          mask?.subarray((top - y) * w, (bottom - y) * w));
         finishingMs += performance.now() - finishStart;
         renderedPixels += w * (bottom - top);
         out.set(pixels, (top - y) * w * 4);

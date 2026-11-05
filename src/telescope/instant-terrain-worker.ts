@@ -168,6 +168,13 @@ self.onmessage = ({ data }) => {
           resourceMs: performance.now() - started,
           shaderWarmupMs: renderer.shaderWarmupMs,
         });
+      } else if (type === 'liquid-materials') {
+        if (token !== activeToken || token !== latestToken)
+          throw new DOMException('Obsolete liquid mask', 'AbortError');
+        const { queryLiquidMaterials } = await import('./liquid-material-query');
+        const tiles = await queryLiquidMaterials(renderer, resources, data.rects, data.plane);
+        if (token !== latestToken) throw new DOMException('Obsolete liquid mask', 'AbortError');
+        self.postMessage({ id, tiles }, (tiles ?? []).map(tile => tile.buffer as ArrayBuffer));
       } else if (type === 'presentation') {
         if (token !== activeToken || token !== latestToken)
           throw new DOMException('Obsolete terrain generation', 'AbortError');

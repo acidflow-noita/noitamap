@@ -79,7 +79,7 @@ export function levelTerrainLiquids(source: string): string {
     if (source.split(before).length !== 2) throw new Error('Review changed terrain liquid integration');
     source = source.replace(before, after);
   };
-  replaceOnce('uniform bool u_engineTerrain;', 'uniform bool u_engineTerrain;\nuniform int u_liquidRow;');
+  replaceOnce('uniform bool u_engineTerrain;', 'uniform bool u_engineTerrain;\nuniform int u_liquidRow;\nuniform bool u_liquidMaskOut;');
   replaceOnce('void main() {\n    // Screen pixel center', `
 vec4 nmLiquidRecord(int index) {
     int width = textureSize(u_engTableTex, 0).x;
@@ -95,7 +95,7 @@ bool nmLiquidOwned(ivec2 w) {
     return (int(nmLiquidChunk(w).z) & (1 << (u_verticalPlane + 1))) != 0;
 }
 ivec3 nmLiquidSurface(ivec2 w) {
-    if (u_liquidRow == 0 || u_materialIdOut) return ivec3(0);
+    if (u_liquidRow == 0 || (u_materialIdOut && !u_liquidMaskOut)) return ivec3(0);
     vec4 chunk = nmLiquidChunk(w);
     if ((int(chunk.z) & (1 << (u_verticalPlane + 1))) == 0) return ivec3(0);
     if ((int(chunk.w) & (1 << (pmod(w.y + u_baseY, CHUNK) / 32))) == 0) return ivec3(0);

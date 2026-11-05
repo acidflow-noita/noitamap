@@ -151,6 +151,22 @@ it('passes the already loaded liquid classification to the CPU preparation worke
   releaseInstantTerrainBackend();
 });
 
+it('registers liquid clipping for tiled drawers without preparing a direct viewport', async () => {
+  const d = deps();
+  const { prepareInstantTerrain, getInstantLiquidClipping, releaseInstantTerrainBackend } =
+    await import('../src/telescope/instant-terrain-backend');
+  expect(await getInstantLiquidClipping(1)).toBeNull();
+  expect(TestWorker.instances).toHaveLength(0);
+  const renderer = await prepareInstantTerrain(generation(), d);
+  const inputs = { center: 35, owners: [0, 1, 2].map(() => ({ width: 70, owners: new Int16Array(70 * 48) })), masks: [] };
+  renderer.registerLiquidClipping(inputs);
+  expect(await getInstantLiquidClipping(1)).toEqual(inputs);
+  expect(await getInstantLiquidClipping(2)).toBeNull();
+  expect(TestWorker.instances[0].sent.some(message => message.type === 'presentation')).toBe(false);
+  releaseInstantTerrainBackend();
+  expect(await getInstantLiquidClipping(1)).toBeNull();
+});
+
 it('cancels a direct preparation while liquid classification is still loading', async () => {
   const d = deps(); directContext(d);
   let release!: (ids: Set<number>) => void;

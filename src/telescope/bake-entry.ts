@@ -93,7 +93,9 @@ export async function openBakeRenderer(snapshot: any, backend: "cpu" | "gpu" = "
     );
   }
   return {
-    render(x: number, y: number, width: number, height: number) {
+    render(x: number, y: number, width: number, height: number, mask?: Uint8Array) {
+      if (mask && mask.length !== width * height) throw new Error("Invalid bake liquid mask dimensions");
+      mask?.fill(0);
       const pixels = new Uint8ClampedArray(width * height * 4);
       for (const [plane, renderer] of renderers) {
         const top = Math.max(y, WORLD_TOP + plane * WORLD_HEIGHT);
@@ -112,6 +114,7 @@ export async function openBakeRenderer(snapshot: any, backend: "cpu" | "gpu" = "
           top,
           width,
           to - from,
+          mask?.subarray(from * width, to * width),
         );
       }
       return pixels;

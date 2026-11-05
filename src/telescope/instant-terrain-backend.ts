@@ -136,6 +136,36 @@ const fallbackSignal = new AbortController().signal;
 
 export function usesDirectTerrainGPU(): boolean { return sharedSlot?.direct === true; }
 
+export async function getInstantLiquidClipping(seed: number): Promise<import('./terrain-viewport-compositor').TerrainViewportInputs | null> {
+  const slot = sharedSlot;
+  if (!slot?.prepared || slot.seed !== seed || slot.released) return null;
+  const token = slot.token, base = await slot.prepared;
+  return !slot.released && slot.token === token ? base.liquidClipInputs ?? null : null;
+}
+
+/** Optional visual effect: never creates or warms a terrain backend itself. */
+export async function resolveInstantLiquidMaterials(seed: number,
+  rects: readonly import('./liquid-material-query').LiquidMaterialRect[], plane: VerticalPlane,
+  signal: AbortSignal): Promise<Uint8Array[] | null> {
+  const slot = sharedSlot;
+  if (!slot?.prepared || slot.seed !== seed || slot.released) return null;
+  const token = slot.token, base = await slot.prepared;
+  const current = () => {
+    signal.throwIfAborted();
+    if (slot.released || slot.token !== token) throw new DOMException('Obsolete liquid mask', 'AbortError');
+  };
+  current();
+  const { queryLiquidMaterials } = await import('./liquid-material-query');
+  current();
+  const result = await scheduleTerrainWork(() => {
+    current();
+    return base.worker
+      ? base.worker.request('liquid-materials', { token, rects, plane }, signal).then((data: any) => data.tiles)
+      : queryLiquidMaterials(base.renderer, base.resources, rects, plane);
+  }, signal, () => 10000, { background: true });
+  current(); return result;
+}
+
 function getSlot(): Slot {
   return (sharedSlot ??= { token: 0, handles: new Map() });
 }
@@ -448,6 +478,10 @@ export async function prepareInstantTerrain(
             throw new Error("Invalid terrain plane");
           selectedPlane = value;
         },
+        registerLiquidClipping(inputs: import('./terrain-viewport-compositor').TerrainViewportInputs) {
+          current();
+          base.liquidClipInputs = { ...inputs, owners: inputs.owners.map(({ width, owners }) => ({ width, owners })) };
+        },
         render(view: any, renderSignal?: AbortSignal) {
           const drawPlane = selectedPlane;
           if (base.worker)
@@ -475,6 +509,7 @@ export async function prepareInstantTerrain(
           // TerrainOwnership also exposes an at() helper. Only its compact
           // typed arrays cross the worker boundary, never executable methods.
           inputs = { ...inputs, owners: inputs.owners.map(({ width, owners }) => ({ width, owners })) };
+          base.liquidClipInputs = inputs;
           if (base.worker) {
             await base.worker.request('presentation', { token, inputs });
           } else {

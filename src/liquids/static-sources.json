@@ -1,0 +1,917 @@
+{
+  "version": 1,
+  "capture": {
+    "mapKey": "dynamic-main-branch",
+    "sourceDate": "2025-01-25",
+    "filenameSeed": 78633191,
+    "materialSeed": 786433191,
+    "gameMode": "normal",
+    "ngPlus": 0,
+    "parallelWorlds": [
+      -1,
+      0,
+      1
+    ],
+    "worldWidth": 35840,
+    "bounds": {
+      "x": -53760,
+      "y": -31744,
+      "width": 107520,
+      "height": 73728
+    },
+    "verification": [
+      {
+        "tile": "17/32_64.webp",
+        "sceneX": -1536,
+        "sceneY": 984,
+        "material": "air"
+      },
+      {
+        "tile": "17/33_64.webp",
+        "sceneX": -1024,
+        "sceneY": 984,
+        "material": "blood"
+      },
+      {
+        "tile": "17/36_64.webp",
+        "sceneX": 512,
+        "sceneY": 984,
+        "material": "oil"
+      },
+      {
+        "tile": "17/33_67.webp",
+        "sceneX": -1024,
+        "sceneY": 2520,
+        "material": "radioactive_liquid"
+      },
+      {
+        "tile": "17/35_71.webp",
+        "sceneX": 0,
+        "sceneY": 4568,
+        "material": "radioactive_liquid"
+      },
+      {
+        "tile": "17/35_78.webp",
+        "sceneX": 0,
+        "sceneY": 8152,
+        "material": "oil"
+      },
+      {
+        "world": "left",
+        "tile": "17/31_67.webp",
+        "sceneX": -37888,
+        "sceneY": 2520,
+        "material": "oil",
+        "url": "https://dynamic-main-branch-left.acidflow.stream/maps/dynamic-main-branch-left/dynamic-main-branch-left-2025-01-25-78633191_files/17/31_67.webp",
+        "sha256": "be6f1fe6df64488e444478065645a708e316062e7589ccc51c311208dd53ed05"
+      },
+      {
+        "world": "left",
+        "tile": "17/32_78.webp",
+        "sceneX": -37376,
+        "sceneY": 8152,
+        "material": "lava",
+        "url": "https://dynamic-main-branch-left.acidflow.stream/maps/dynamic-main-branch-left/dynamic-main-branch-left-2025-01-25-78633191_files/17/32_78.webp",
+        "sha256": "7a054685a55c0333f490c66ce77ae3dfd9d036d135e0704506a6a391b4bad121"
+      },
+      {
+        "world": "left",
+        "tile": "17/37_74.webp",
+        "sceneX": -34816,
+        "sceneY": 6104,
+        "material": "blood",
+        "url": "https://dynamic-main-branch-left.acidflow.stream/maps/dynamic-main-branch-left/dynamic-main-branch-left-2025-01-25-78633191_files/17/37_74.webp",
+        "sha256": "c8bf386c98ceef8e57c2a4e97705b0f3254974e33596a760d435c5cd871bbcd2"
+      },
+      {
+        "world": "right",
+        "tile": "17/31_67.webp",
+        "sceneX": 33792,
+        "sceneY": 2520,
+        "material": "oil",
+        "url": "https://dynamic-main-branch-right.acidflow.stream/maps/dynamic-main-branch-right/dynamic-main-branch-right-2025-01-25-78633191_files/17/31_67.webp",
+        "sha256": "41671fb83ee66b6ff39c38143341f28c924230c3235b8069271c217743f17eb2"
+      },
+      {
+        "world": "right",
+        "tile": "17/35_71.webp",
+        "sceneX": 35840,
+        "sceneY": 4568,
+        "material": "lava",
+        "url": "https://dynamic-main-branch-right.acidflow.stream/maps/dynamic-main-branch-right/dynamic-main-branch-right-2025-01-25-78633191_files/17/35_71.webp",
+        "sha256": "914c6a0731ff746ab0544a6267f0a9128bded799d55b1941bbd7a8f1894f9cc4"
+      },
+      {
+        "world": "right",
+        "tile": "17/36_74.webp",
+        "sceneX": 36352,
+        "sceneY": 6104,
+        "material": "water",
+        "url": "https://dynamic-main-branch-right.acidflow.stream/maps/dynamic-main-branch-right/dynamic-main-branch-right-2025-01-25-78633191_files/17/36_74.webp",
+        "sha256": "726915bdb9b12022a9ee5bab849d9f2f22c733c3eed0e1f696fa60c0d006412c"
+      }
+    ]
+  },
+  "biomeMap": "lib/noita-telescope-vm/data/biome_maps/biome_map.png",
+  "materialArchive": "public/data.zip",
+  "materialPath": "data/materials.xml",
+  "sceneRoot": "lib/noita-telescope-vm/data/pixel_scenes",
+  "topologyBiomes": [
+    "lake",
+    "lake_statue",
+    "lake_deep",
+    "lava",
+    "robot_egg",
+    "biome_watchtower",
+    "biome_potion_mimics",
+    "biome_darkness",
+    "biome_boss_sky",
+    "biome_barren"
+  ],
+  "splicedScenes": [
+    {
+      "key": "spliced/lavalake2",
+      "x": 2048,
+      "y": 0
+    },
+    {
+      "key": "spliced/mountain_lake",
+      "x": 2560,
+      "y": 0
+    },
+    {
+      "key": "spliced/lake_statue",
+      "x": -14848,
+      "y": 0
+    },
+    {
+      "key": "spliced/tree",
+      "x": -2048,
+      "y": -1324
+    },
+    {
+      "key": "spliced/boss_arena",
+      "x": 1536,
+      "y": 12288
+    },
+    {
+      "key": "spliced/lavalake_pit_bottom",
+      "x": 2560,
+      "y": 3072
+    },
+    {
+      "key": "spliced/watercave",
+      "x": -2048,
+      "y": 0
+    },
+    {
+      "key": "spliced/skull",
+      "x": 14848,
+      "y": 16128
+    },
+    {
+      "key": "spliced/skull_in_desert",
+      "x": 7100,
+      "y": -100
+    },
+    {
+      "key": "spliced/gourd_room",
+      "x": -16896,
+      "y": -7168
+    }
+  ],
+  "biomeScenes": [
+    {
+      "colors": [
+        "24888a"
+      ],
+      "key": "excavationsite/cube_chamber"
+    },
+    {
+      "colors": [
+        "18a0d6"
+      ],
+      "key": "snowcave/secret_chamber"
+    },
+    {
+      "colors": [
+        "18d6d6"
+      ],
+      "key": "snowcastle/hourglass_chamber"
+    },
+    {
+      "colors": [
+        "baa345",
+        "1f3b62",
+        "1f3b64"
+      ],
+      "key": "general/secret_lab"
+    },
+    {
+      "colors": [
+        "ffd100",
+        "ffd101",
+        "ffd102",
+        "ffd103",
+        "ffd104",
+        "ffd105",
+        "ffd106",
+        "ffd107",
+        "ffd108",
+        "ffd109",
+        "ffd110",
+        "ffd111"
+      ],
+      "key": "general/orbroom"
+    },
+    {
+      "colors": [
+        "157cb7"
+      ],
+      "key": "general/mystery_teleport"
+    },
+    {
+      "colors": [
+        "4118d6"
+      ],
+      "key": "general/lavalake_racing"
+    },
+    {
+      "colors": [
+        "3d5a4f"
+      ],
+      "key": "general/lavalake_pit",
+      "crackedAtY": 2048,
+      "crackedKey": "general/lavalake_pit_cracked"
+    },
+    {
+      "colors": [
+        "9e4302"
+      ],
+      "key": "general/robot_egg"
+    },
+    {
+      "colors": [
+        "364d24"
+      ],
+      "key": "general/dragoncave"
+    },
+    {
+      "colors": [
+        "157cb0",
+        "157cb5",
+        "157cb8",
+        "567cb0",
+        "326655",
+        "39a760",
+        "3d3e41"
+      ],
+      "key": "general/essenceroom"
+    },
+    {
+      "colors": [
+        "157cb6"
+      ],
+      "key": "general/essenceroom_submerged"
+    },
+    {
+      "colors": [
+        "93cb4c"
+      ],
+      "key": "temple/altar",
+      "offsetY": 260
+    },
+    {
+      "colors": [
+        "93cb4d"
+      ],
+      "key": "temple/altar_left",
+      "offsetY": 260
+    },
+    {
+      "colors": [
+        "93cb4e"
+      ],
+      "key": "temple/altar_right",
+      "offsetY": 260
+    },
+    {
+      "colors": [
+        "93cb4f",
+        "93cb5a"
+      ],
+      "key": "temple/altar_right_snowcastle",
+      "offsetY": 260
+    },
+    {
+      "colors": [
+        "204060"
+      ],
+      "key": "mountain/hall"
+    },
+    {
+      "colors": [
+        "204060"
+      ],
+      "key": "mountain/hall_b",
+      "offsetY": 512
+    },
+    {
+      "colors": [
+        "204060"
+      ],
+      "key": "mountain/hall_r",
+      "offsetX": 512
+    },
+    {
+      "colors": [
+        "204060"
+      ],
+      "key": "mountain/hall_br",
+      "offsetX": 512,
+      "offsetY": 512
+    },
+    {
+      "colors": [
+        "204060"
+      ],
+      "key": "mountain/hall_bottom",
+      "offsetX": -512,
+      "offsetY": 512
+    },
+    {
+      "colors": [
+        "204060"
+      ],
+      "key": "mountain/hall_bottom_2",
+      "offsetX": 552,
+      "offsetY": 512
+    }
+  ],
+  "fixedScenes": [
+    {
+      "key": "general/fishing_hut",
+      "x": -12600,
+      "y": 140
+    },
+    {
+      "key": "general/bunker",
+      "x": -12603,
+      "y": 326
+    },
+    {
+      "key": "general/bunker2",
+      "x": -12953,
+      "y": 540
+    },
+    {
+      "key": "overworld/cliff",
+      "x": -12400,
+      "y": -400
+    },
+    {
+      "key": "general/eyespot",
+      "x": -3408,
+      "y": 1712
+    },
+    {
+      "key": "general/eyespot",
+      "x": 5852,
+      "y": -4944
+    },
+    {
+      "key": "general/eyespot",
+      "x": 15024,
+      "y": 1712
+    },
+    {
+      "key": "general/eyespot",
+      "x": -1360,
+      "y": 9904
+    },
+    {
+      "key": "general/eyespot",
+      "x": 12976,
+      "y": 9904
+    },
+    {
+      "key": "general/cauldron",
+      "x": 3584,
+      "y": 5120
+    }
+  ],
+  "holyMountains": {
+    "depthChunks": [
+      2,
+      5,
+      9,
+      12,
+      16,
+      20,
+      25
+    ],
+    "startChunks": [
+      -3,
+      -4,
+      -5,
+      -4,
+      -5,
+      -6,
+      -6
+    ],
+    "widthChunks": [
+      7,
+      8,
+      10,
+      7,
+      9,
+      11,
+      9
+    ],
+    "offsetY": -40,
+    "sources": [
+      "temple/altar_top",
+      "temple/altar_top_water",
+      "temple/altar_top_blood",
+      "temple/altar_top_oil",
+      "temple/altar_top_radioactive",
+      "temple/altar_top_lava",
+      "temple/altar_top_ending"
+    ]
+  },
+  "sourceChecks": [
+    {
+      "path": "build_scripts/build-static-liquid-masks.mts",
+      "sha256": "ee15fa9964abe3d27392bb30df21685004db4f0ce6d4df2d6bbc4f405f0ab6f0"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/biome_maps/biome_map.png",
+      "sha256": "e3505adc86a09cc5e5415e511b38f02d8adffd6bfc6932d9f8a9f4a26d29dd50"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scene_meta.json",
+      "sha256": "d0b83ab6265c6a70a66178efe3aa23238226a8fdc144e322ef940783e3622fca"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/crypt/cathedral.png",
+      "sha256": "55a58ca4728ec8e8cafc1a25b2fc76fa09de0ae60725a91c67e3cd8485b95355"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/crypt/lavaroom.png",
+      "sha256": "0c6524d62473221a7705ebbda845c716efa6ea29be95d06e2204e523c6fc2d8d"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/crypt/mining.png",
+      "sha256": "fbde596e3241c900be957516e0b0314d5825e6d439a0ddf5846bc214a0944f4d"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/crypt/pit.png",
+      "sha256": "352cb657f34c271b5986b11721332a95d6e193fbe3e9910f24e6f1d304c4f229"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/crypt/stairs_left.png",
+      "sha256": "2a9b1e96b84a6948a7536ffb41a591cde387744e0b0d974587c4354560ba3a53"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/crypt/stairs_right.png",
+      "sha256": "ef1ec8b49f90de92869e6e574eb82f0b4cca0f6add3496fd1981c6b8ccb0a8ef"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/crypt/symbolroom.png",
+      "sha256": "876295948998c6591e7ca332dffacae40a712154c6fd84ddf997445de74d9b8c"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/excavationsite/cube_chamber.png",
+      "sha256": "df917fd65d88137c6dae2be32b158622849892f6b313b83d7b5055fada904288"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/bunker.png",
+      "sha256": "da134e3c19879969609958ef1d33f1f2f9550ad073527c6a76ab8a548c8bd38f"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/bunker2.png",
+      "sha256": "64c6ba8de20316ea048b1db065be411a528f81e59847208f433ab918f4e12009"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/cauldron.png",
+      "sha256": "3f121e851db29054bcc475a2a42c74067e7ac45a8a0fb0a3ed9673824ea37ab9"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/dragoncave.png",
+      "sha256": "e286ad455668eac62e2b04c907c970ced1f549d516b9998abc72b90e5480461e"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/essenceroom_submerged.png",
+      "sha256": "471ed6256058cd07aecd8f17d9fee0100565189921ac31be6d999f0c02f52acf"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/essenceroom.png",
+      "sha256": "e8448ae7d363299f19086e5149512a0c4dbbc85d94b71bb12e557c967f37bfea"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/eyespot.png",
+      "sha256": "dbdaa576fb8df526708692f1d18ae72f493a00891ce070ab07770667ec48a5ce"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/fishing_hut.png",
+      "sha256": "2bc0c4bc5374cf98a7df0c77213c02ec3c208127ef52174902149ce93375cdbc"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/lavalake_pit_cracked.png",
+      "sha256": "8aa1353212d0fa8e76da6f85a80e3603c45577fce462bdf850245b75e5efaeaf"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/lavalake_pit.png",
+      "sha256": "bb9f6fb4f82884d76354b0a42c688ecc58bd7aa45ae26e8e467b177dd4c1d597"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/lavalake_racing.png",
+      "sha256": "9a7e933d6a532d4c6fdc1653e15e00ffe5c9409e982216b22fa5b09e3b89e536"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/mystery_teleport.png",
+      "sha256": "930ea6f4394f106cbe2c2441d7c8bb684e9fefa5976bae30ab50f5f54de56273"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/orbroom.png",
+      "sha256": "a3d9ba357cef91d43ddb74790f2c7ba6727938698de291be8a67b33331d2fb27"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/robot_egg.png",
+      "sha256": "08fe290b6c989be80bd0d7705726484a17870628d74f5c1cebe12a68aecb49cd"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/general/secret_lab.png",
+      "sha256": "7e39a22d4bb06d135448aa6c8f3c824bbfe068719df26cdf1812f0008d1d26cd"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/mountain/hall_b.png",
+      "sha256": "e8c19e966d34ad815292f65e80fbc02b26012d79765a93a3a896f21220c53eb9"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/mountain/hall_bottom_2.png",
+      "sha256": "31198930f333166e9c8fd661f5b118ebae6716e56d47934492f8aed9b317d838"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/mountain/hall_bottom.png",
+      "sha256": "ec97fce442407ef8a464557e205df982745f964de96501c365e515fd21820694"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/mountain/hall_br.png",
+      "sha256": "5b7ea0a1b941b04daf4dc63c4c608dd6518ed4aaefbee8bd850ff9757178e260"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/mountain/hall_r.png",
+      "sha256": "befdfc902fb4c6190fb8976c5bd1490802d9707b93686b3142c47d311006a665"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/mountain/hall.png",
+      "sha256": "d581cad47523700872e21bbc9f2ee4233e2626cd514e20e2f89e2672eb14aeb5"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/overworld/cliff.png",
+      "sha256": "19a55dbb4bd70a2fb8aef7538b5eec77172ee3640c1d90d9b597d52e6fcf6076"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/snowcastle/hourglass_chamber.png",
+      "sha256": "24e5210ae7a0705dbd66c18fe6ac7dbd80138d672a32349ae95fe2e60d0bbbd8"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/snowcave/secret_chamber.png",
+      "sha256": "3b6e473a901639740c6e8c4672892df1eead970aaaaad798ff450a989fd0975e"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/spliced/boss_arena.png",
+      "sha256": "854511377c76aeebb0a1cff7cd2b9f6550a15cca00f36f95b3f6c176bc267f88"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/spliced/gourd_room.png",
+      "sha256": "c2fb8aa622e263db3a432dd1399c831921b2712c899538d83de7c5bfd227b473"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/spliced/lake_statue.png",
+      "sha256": "3a84026f34d379561bb9d5fe54dff6ec6ce4e4fd47e6db9573ddbdf590baf04e"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/spliced/lavalake_pit_bottom.png",
+      "sha256": "fe8e9c2848e8c638cc430200c593d8108a5800239f417cda7c471a75a42a9b2f"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/spliced/lavalake2.png",
+      "sha256": "1762c861f9ebd83036a16aed48fd8514ac6b5327ac4eea1991174b4c8751258b"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/spliced/mountain_lake.png",
+      "sha256": "8c6eb0d46d1f4405423f648f349faa5b96779413b2df8a742b38920464fa0b9d"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/spliced/skull_in_desert.png",
+      "sha256": "17b8c5c25a9df5f6914dabe3e64407c6ccaa8b70cd41455a5ff1c8f85c632032"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/spliced/skull.png",
+      "sha256": "905b2eb6423901d7ff90d06c0313f0c003f256dd23d2f7879ccd6c5714e66e09"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/spliced/tree.png",
+      "sha256": "c28b0d31af041b565d9a02b8de76abe65b43d1edb9325d816886567e1dfabcae"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/spliced/watercave.png",
+      "sha256": "52988c0b57de4f1b7aa0480ba1ab98a721eb44f01d28a9df30cf6352bc4f9740"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_left.png",
+      "sha256": "9432dddc808e139ec951b33164538b0fb692d702b0b048d6a4160e0269280de7"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_right_snowcastle.png",
+      "sha256": "3f2a0ee1b5b244a7eefb7a182dd8b5709e08fcdfec1f08f6b59b8219b5f5fcb0"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_right.png",
+      "sha256": "4bd71427cc54493c377fd4b0d4a7c1ca8e737508d28366cad461ce11c39e18ab"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_top_blood.png",
+      "sha256": "8b38f02fdafd02506b43bfd64688126f854e0e7db65f6efd93e380ad02fad77b"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_top_ending.png",
+      "sha256": "8a86e7404d3a4f2105a3634ad36b4b7534f900e852302d56237f44648e5b48a4"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_top_lava.png",
+      "sha256": "d2cb7d83ac3b793aca21f1b33e207d109d535f1ac9edd85e7ea1ae5574f43bd6"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_top_oil.png",
+      "sha256": "88b16567b721f58245b7670a4ac8376c332f0ce8fd162ef580fc3b4a4ddaba99"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_top_radioactive.png",
+      "sha256": "c9eaffc2be3f287233bb9d2f16cb75138c9a35f5adf4fc1a913fd07ab5be8c02"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_top_water.png",
+      "sha256": "e3514da1d3b366d76ccf7fadd4f1a59ffffd20924444b06f3126a8574d681d07"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_top.png",
+      "sha256": "627fafd256215d21b9b6b413cfc3fd9dda53626bb6c63f02cb8b43403229c129"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar.png",
+      "sha256": "2a185ef84dd1d9e469d1e6890783e4bfe4efe7f949497dc3b7fb2895c499ca9d"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/wang_tiles/pyramid.png",
+      "sha256": "a9d27fd1bf98fa4c3b64cce3dadf247cd3b023077216d777d035aecbebb1c1e8"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/wang_tiles/static/barren_fg.png",
+      "sha256": "9a19c263468be6050aec5c7d34df7d36f627fa7cfb47eeced16c75451f5f8fda"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/wang_tiles/static/boss_fg.png",
+      "sha256": "00c5c8df233650ec861dc17de0cc541a3c6f1f96a37b0c2155854e09df9ed736"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/wang_tiles/static/darkness_fg.png",
+      "sha256": "7468dc995070aff4d09a36282fb303464f981ab9cc9660cdfe333f29ccf4cd29"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/wang_tiles/static/potion_mimics_fg.png",
+      "sha256": "7962f31605d7fe73c0bd7adcbf5122482c10b2c4e8a450c143bd8c2eabb4ad73"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/wang_tiles/static/watchtower_fg.png",
+      "sha256": "9a9a5b7bb5d7feb0b101806b37973c3bc6c7f33d7105683179625e6888fbb305"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/wang_tiles/water.png",
+      "sha256": "451f3b2fcd3867e4180177d702796b7cb5d8e2e53214a5937f586a24e997b832"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/biome_generator.js",
+      "sha256": "e5dde3b7c61fe4b82e16d95c8b8f8e96db0f78e6808f715527de0aad8c90be5b"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/biome_hacks.js",
+      "sha256": "d14601cc35908b023d66913fb998f33de10259ca5ddeeeb282a69da957eb58e3"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/constants.js",
+      "sha256": "7b72b17684f4a32afcb57068c124955d23f86f32b8ce503adcd410e86d600f8f"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/engine_resolve/band_select.js",
+      "sha256": "382769451bd6bc9c37d6c7d6b05d4db95cfafc690147b0423d34e2d95c2964c1"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/engine_resolve/bitmap_caves.js",
+      "sha256": "712888529fd4892039d1a0cde02a9df4e258b0dc4b1e78dad1bc5b756accc412"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/engine_resolve/carve_noise.js",
+      "sha256": "7943650f557fc22c40bc3474f13c7956a59e1fa4742ecd37a3a7482762c31fac"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/engine_resolve/chunk_wobble.js",
+      "sha256": "fe59dc60b2a1b887bea88f6cf3de1904407480c50af15b45d2136d9aa0d10ef0"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/engine_resolve/engine_data.js",
+      "sha256": "a2beaefdd1a4feb84e3784857ba4d210f8c15d0b02dee8bd13be7658ab10af41"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/engine_resolve/lattice_builder.js",
+      "sha256": "7b9078926ed6b1c653258d55ce9794614df909a2668b8e57dbb61d0ddb654347"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/engine_resolve/material_field.js",
+      "sha256": "241dd2e13582f4cfcc5fc1679453c7abe5ce4b4cd77e1018da44945232cf3bc7"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/engine_resolve/perlin_noise.js",
+      "sha256": "3684615a0f4d8a8b9f46cd1537f16872e2af2ef840eec6a6b3405333d8e00ca3"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/engine_resolve/simplex_noise.js",
+      "sha256": "4c176bc35fcd5a5de78df424d4a087622ab7d512a9c3745dce93bc2334a666e0"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/engine_resolve/topo0_resolve.js",
+      "sha256": "016b2d0ab1f533522ba7faeadf85e768ccdb19ddad53d11a86dddf938e063114"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/engine_resolve/topo2_resolve.js",
+      "sha256": "5775a129be5931448f30bdf67b49f56e829145aab7368dc4e71908225119239e"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/generator_config.js",
+      "sha256": "5f242eb8ddc82d68b68b90a865f8a462fbac1a3c2a86bdef8b34809b7ff62d30"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/nolla_prng.js",
+      "sha256": "b1ec3e634e8f8edbc77c6e026e2bc02ae93c268d20800a5afd4dc5dc96fc7cdb"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/pathfinding.js",
+      "sha256": "b0a1c3535e9a6118169c4d99a9268cca4534e6706e8124e8bb5332a9492f9c73"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/pixel_scene_config.js",
+      "sha256": "c7dbb39c2792d332dfbb78b985e084c9127a572b15cd51d46627891beb9c8af0"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/pixel_scene_generation.js",
+      "sha256": "06206280a05bce57867e068b8e08453c18dad4891b9ed43bb0c1482a9b165e88"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/poi_scanner.js",
+      "sha256": "4170b3308c748bfe9ec59cea842b9a143d762a4128b03d7bd5e029f9ee4cb83b"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/spawn_function_config.js",
+      "sha256": "4c06bb9fee9762878b8812f4ff8e41ea248f28bb68773f97af2c58c0ec59be52"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/spawn_functions.js",
+      "sha256": "667c49523f7b9b9ab373e761570534448b030490586318bb3a701239a00ec8e2"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/stbhw.js",
+      "sha256": "5622a9f6ffbd7a49d939cbd0400f779e110b6067c5fda046b45a2229f36fc74c"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/tile_generator.js",
+      "sha256": "f51a705215ac6d31a4e72faca88b205d5d053e32010c6d68132992a010bbeb2e"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/utils.js",
+      "sha256": "99bf6a118933f5c66c31bf9eac6c8ad8a5a8d1dbdd25ad7390135ec241e7242e"
+    },
+    {
+      "path": "lib/noita-telescope-vm/test/helpers/generate.mjs",
+      "sha256": "90a1e8bc669afffc002c46b42075bfaf4965676564a3c52cf7618b9d7c5f2856"
+    },
+    {
+      "path": "src/liquids/materials.ts",
+      "sha256": "aeabde59c71c6ad1ed54864e6b7ec12a60fdb4b2a085df526b71e654a0486804"
+    },
+    {
+      "archive": "public/data.zip",
+      "path": "data/biome/_pixel_scenes.xml",
+      "sha256": "78cf9b4c0abfc4fc24239ab9595d8c54e6e76b212773d8d2d2bf9be4f3fcdf58"
+    },
+    {
+      "archive": "public/data.zip",
+      "path": "data/biome/lava_90percent.xml",
+      "sha256": "d07d48a229980d7070a234dea6cdf7e01f3d1763c776ec4226a143e9f74a987e"
+    },
+    {
+      "archive": "public/data.zip",
+      "path": "data/materials.xml",
+      "sha256": "122df34514edaf312e1a15a619b3d6a44d49ce605c929d5950c9051a57429d04"
+    },
+    {
+      "archive": "public/data.zip",
+      "path": "data/scripts/biomes/pyramid.lua",
+      "sha256": "f556a140314502ede40369716bc32acef42364710360f540ef37082348bf950c"
+    },
+    {
+      "archive": "public/data.zip",
+      "path": "data/scripts/biomes/temple_altar_left.lua",
+      "sha256": "b0775241b30a3ae42615756d39c5eaf622b034fca82b68c7893b46ecfa8989b0"
+    },
+    {
+      "archive": "public/data.zip",
+      "path": "data/scripts/biomes/temple_altar_top_shared.lua",
+      "sha256": "e9c89eafaa18c736e765916e2b7f5ad6f93745ee9de50a76f3f476b2f547e395"
+    },
+    {
+      "archive": "public/data.zip",
+      "path": "data/scripts/biomes/temple_altar.lua",
+      "sha256": "fe436f45a8ee8c4616083c4e48ac28d94472f04357100f6f70a62031e5928460"
+    }
+  ],
+  "coverage": {
+    "complete": false,
+    "gaps": [],
+    "spawnedSceneAudit": [
+      {
+        "key": "crypt/stairs_left",
+        "instances": 42
+      },
+      {
+        "key": "crypt/stairs_right",
+        "instances": 54
+      }
+    ],
+    "stateUncertainties": [
+      "Captured simulation can move, freeze, melt or react material pixels and change entity contents. Source generation does not reproduce those later states."
+    ],
+    "suppliedByDynamicMask": [
+      "Dark Cave layouts are rendered for the active seed and are intentionally supplied by the live/daily mask; the clean captured base has no layout water."
+    ],
+    "otherCaptureIdentities": [
+      "NG+, Nightmare, modded captures and other base-map identities require their own source manifest."
+    ]
+  },
+  "artifact": {
+    "path": "src/liquids/assets/static-mask.bin.gz",
+    "sha256": "9293616bc50757e6280c73bf6574e11c4fa7e114d7d2bc243de1c6b8fc0a1c1e",
+    "bytes": 435258,
+    "rawBytes": 4757234,
+    "rawSha256": "8a8b8bf4a2e473d0757e7bf0fc4d0266e5c468cebeb1e31a01b3f28b2ab1d0b6",
+    "blocks": 1784,
+    "liquidPixels": 363020154,
+    "placements": 461
+  },
+  "polygonBiomes": [
+    {
+      "name": "lava_90percent",
+      "color": "ffa717",
+      "source": "data/biome/lava_90percent.xml",
+      "material": "lava",
+      "coordinateSpace": "normalized-biome-chunk",
+      "note": "Native material selection uses positive integer world-coordinate modulo512 times exact1/512, without a pixel-center offset. The polygon ray crossing excludes left/top boundaries and includes right/bottom.",
+      "nativePixelRange": {
+        "x": [
+          1,
+          511
+        ],
+        "y": [
+          11,
+          511
+        ]
+      },
+      "nativeEvidence": {
+        "materialSelector": "0x0086d325..0x0086d378",
+        "positiveModulo": "0x00918210",
+        "inverseChunkSizeConstant": "0x01053434",
+        "polygonTest": "0x00ddc9a0",
+        "savedDecompileEvidence": "ev_d297e24c2050e88de3819e78cbc600ad31810884b213b81eddf669370b7cab12",
+        "binarySha256": "a0d9f9ca513e27a598c61dd9a19211c7a11d1477c9a2b93d909757d91d17d914",
+        "selectorDecompileSha256": "624217484f494545474671d55418bb476dc8756a226553a8f7569e6fd7215f35",
+        "polygonXmlSha256": "d07d48a229980d7070a234dea6cdf7e01f3d1763c776ec4226a143e9f74a987e",
+        "authority": "shipped-artifact",
+        "sourceOfRead": "Static instruction inspection of the current original executable; saved selector decompilation from the identical binary digest. No game execution.",
+        "documentation": "docs/liquid-refraction-evidence.md"
+      }
+    }
+  ],
+  "spawnedBiomes": [
+    "pyramid"
+  ],
+  "sceneAliases": {
+    "pyramid/cathedral": "crypt/cathedral",
+    "pyramid/mining": "crypt/mining",
+    "pyramid/stairs_right": "crypt/stairs_right",
+    "pyramid/lavaroom": "crypt/lavaroom",
+    "pyramid/pit": "crypt/pit",
+    "pyramid/symbolroom": "crypt/symbolroom",
+    "pyramid/stairs_left": "crypt/stairs_left"
+  }
+}

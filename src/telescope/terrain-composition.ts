@@ -70,10 +70,11 @@ export async function createTerrainComposition(
     : null;
   const edges = await createTerrainEdges(gen, config, width, materialAt);
   const staticMask = createStaticTerrainMask(gen.sceneData?.staticMasks);
+  const liquidIds = await loadLiquidMaterialIds();
   const water = createLiquidSurfacePainter(
     findLiquidSurfaces(
       lattice ?? edges.lattice,
-      await loadLiquidMaterialIds(),
+      liquidIds,
       width,
       offsetY,
     ),
@@ -151,7 +152,12 @@ export async function createTerrainComposition(
       y: number,
       w: number,
       h: number,
+      mask?: Uint8Array,
     ) {
+      if (mask && mask.length !== w * h)
+        throw new Error("Invalid terrain liquid mask dimensions");
+      mask?.fill(0);
+      const surfaceChanges = mask ? new Map<number, number>() : undefined;
       const background = new Uint8ClampedArray(pixels.length);
       for (let row = 0; row < h; row++)
         for (let col = 0; col < w; col++) {
@@ -162,7 +168,7 @@ export async function createTerrainComposition(
         }
       water(pixels, x, y, w, h,
         (wx, wy) => ownership.at(wx, wy - offsetY) < 0 ? -1 : edges.sample(wx, wy),
-        liquidColor);
+        liquidColor, surfaceChanges ? (pixel, id) => surfaceChanges.set(pixel, id) : undefined);
       scenes?.paint(pixels, background, x, y, w, h);
 
       if (hasTerrain(x, y, w, h))
@@ -174,7 +180,11 @@ export async function createTerrainComposition(
           h,
           (wx, wy) =>
             ownership.at(wx, wy - offsetY) >= 0 || !!scenes?.paintsAt(wx, wy),
+          mask ? { pixels: mask, ids: liquidIds, surfaceChanges } : undefined,
         );
+      // Both protected authored solids and authored FORCE AIR are outside the
+      // generated mask. Their independent fixed-art masks are supplied later.
+      if (mask) clearStaticLiquidMask(mask, x, y, w, h, gen.sceneData?.staticMasks);
       staticMask.clear(pixels, x, y, w, h, true);
       for (let i = 0; i < pixels.length; i += 4)
         writeRGBA(
@@ -186,4 +196,20 @@ export async function createTerrainComposition(
       return pixels;
     },
   };
+}
+
+export function clearStaticLiquidMask(
+  pixels: Uint8Array, x: number, y: number, w: number, h: number,
+  masks: import("./static-terrain-mask").StaticTerrainMask[] = [],
+) {
+  for (const m of masks) {
+    const x0 = Math.max(x, m.x), x1 = Math.min(x + w, m.x + m.width);
+    const y0 = Math.max(y, m.y), y1 = Math.min(y + h, m.y + m.height);
+    if (x0 >= x1 || y0 >= y1) continue;
+    for (let wy = y0; wy < y1; wy++) for (let wx = x0; wx < x1; wx++) {
+      const p = (wy - m.y) * m.width + wx - m.x;
+      if (((m.bits[p >> 3] ?? 0) | (m.airBits?.[p >> 3] ?? 0)) & (1 << (p & 7)))
+        pixels[(wy - y) * w + wx - x] = 0;
+    }
+  }
 }

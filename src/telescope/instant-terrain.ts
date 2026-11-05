@@ -709,6 +709,8 @@ export async function addInstantTerrain(
       ), elevatorShafts, plane as VerticalPlane),
     );
     clip = createInstantClip(owners, masks);
+    mainRenderer.registerLiquidClipping?.({ owners, masks,
+      center: deps.getWorldCenter(gen.isNGP, gen.gameMode) });
     const direct = osd.drawer?.getType?.() === 'canvas'
       && typeof osd.drawer._drawTiles === 'function' && typeof mainRenderer.configureViewport === 'function';
     if (direct) await mainRenderer.configureViewport({ owners, masks,

@@ -5,11 +5,17 @@ import {
   stampEdgeDecals,
 } from "noita-telescope-full-pixels/edge_decals.js";
 import { createMaterialField } from "noita-telescope-full-pixels/engine_resolve/material_field.js";
-import { sceneMaterialGrid } from "./scene-material-grid";
+import { sceneMaterialGrid, SCENE_UNTOUCHED } from "./scene-material-grid";
 import { compositeTerrain } from "./terrain-backgrounds";
 import { readRGBA, writeRGBA } from "./terrain-scenes";
 import type { GLTerrainGeneration } from "./gl-terrain-tile-source";
 export type TerrainMaterialAt = (x: number, worldY: number) => number;
+export interface TerrainLiquidMask {
+  pixels: Uint8Array;
+  ids: ReadonlySet<number>;
+  /** Pixel indices changed by surface leveling before pixel scenes paint. */
+  surfaceChanges?: ReadonlyMap<number, number>;
+}
 
 /** Paint the existing render-perf EdgeGraphics pass into final leaf pixels,
  * not a zoom-gated overlay. The deterministic world-space pass includes a halo
@@ -51,7 +57,10 @@ export async function createTerrainEdges(
       w: number,
       h: number,
       canPaint: (x: number, y: number) => boolean,
+      liquid?: TerrainLiquidMask,
     ) {
+      if (liquid && liquid.pixels.length !== w * h)
+        throw new Error("Invalid terrain liquid mask dimensions");
       const pad = EDGE_DECAL_HALO,
         pw = w + pad * 2,
         ph = h + pad * 2;
@@ -83,11 +92,21 @@ export async function createTerrainEdges(
         mapWidth: width,
         inset: pad,
       });
+      const authoredAt = (wx: number, wy: number) => sceneGrids.some(scene => {
+        const sx = wx - scene.x, sy = wy - scene.y;
+        return sx >= 0 && sy >= 0 && sx < scene.width && sy < scene.height &&
+          scene.grid[sy * scene.width + sx] !== SCENE_UNTOUCHED;
+      });
       stats.tiles++;
       for (let py = 0; py < h; py++)
         for (let px = 0; px < w; px++) {
           const s = ((py + pad) * pw + px + pad) * 4,
             d = (py * w + px) * 4;
+          // stampEdgeDecals has already replaced material IDs under scenes,
+          // including FORCE AIR. No second material-resolution pass is needed.
+          if (liquid)
+            liquid.pixels[d / 4] = liquid.ids.has(materials[s / 4]) &&
+              (canPaint(x + px, y + py) || authoredAt(x + px, y + py)) ? 255 : 0;
           if (!decals[s + 3] || !canPaint(x + px, y + py)) continue;
           writeRGBA(
             pixels,
@@ -96,6 +115,13 @@ export async function createTerrainEdges(
           );
           stats.stampedPixels++;
         }
+      for (const [pixel, material] of liquid?.surfaceChanges ?? []) {
+        const wx = x + pixel % w, wy = y + Math.floor(pixel / w);
+        // Leveling precedes scenes. An authored scene cell takes precedence,
+        // even when FORCE AIR happens to equal the pre-scene material ID.
+        if (!authoredAt(wx, wy))
+          liquid!.pixels[pixel] = liquid!.ids.has(material) && canPaint(wx, wy) ? 255 : 0;
+      }
     },
   };
 }

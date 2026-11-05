@@ -2,38 +2,9 @@ import Flatbush from "flatbush";
 import { MATERIAL_NAMES_BY_ID } from "noita-telescope-full-pixels/engine_resolve/engine_data.js";
 import { writeRGBA } from "./terrain-scenes";
 
-/** Noita uses cell_type="liquid" for powders too. Honor the actual inherited
- * liquid_sand flag rather than flattening ores/sand based on the cell_type.
- * Static desert ground additionally sets liquid_static=1; loose sand/powders
- * generally do not. BOTH sand cases must be excluded from liquid leveling.
- * Unknown/missing flags are excluded conservatively, not assumed to be water. */
-export function liquidMaterialIds(xml: string, names: string[]): Set<number> {
-  const entries = new Map<string, Record<string, string>>();
-  // Disabled definitions in XML comments must never override live materials.
-  for (const match of xml
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .matchAll(/<CellData(?:Child)?\b([^>]*?)>/g)) {
-    const attributes: Record<string, string> = {};
-    for (const a of match[1].matchAll(/([\w]+)\s*=\s*"([^"]*)"/g))
-      attributes[a[1]] = a[2];
-    if (attributes.name) entries.set(attributes.name, attributes);
-  }
-  const resolve = (
-    name: string,
-    seen = new Set<string>(),
-  ): Record<string, string> => {
-    if (seen.has(name)) return {};
-    seen.add(name);
-    const value = entries.get(name) ?? {};
-    return { ...(value._parent ? resolve(value._parent, seen) : {}), ...value };
-  };
-  const ids = new Set<number>();
-  names.forEach((name, id) => {
-    const m = resolve(name);
-    if (m.cell_type === "liquid" && m.liquid_sand === "0") ids.add(id);
-  });
-  return ids;
-}
+import { liquidMaterialIds } from "../liquids/materials";
+export { liquidMaterialIds } from "../liquids/materials";
+
 let liquids: Promise<Set<number>> | undefined;
 export function loadLiquidMaterialIds(): Promise<Set<number>> {
   return (liquids ??= (async () => {
@@ -162,6 +133,7 @@ export function createLiquidSurfacePainter(
     h: number,
     sample: (x: number, y: number) => number,
     color: (id: number, x: number, y: number) => number,
+    materialChanged?: (pixel: number, material: number) => void,
   ) => {
     const p0 = Math.floor((x + worldWidth / 2) / worldWidth),
       p1 = Math.floor((x + w - 1 + worldWidth / 2) / worldWidth);
@@ -187,9 +159,14 @@ export function createLiquidSurfacePainter(
             if (existing !== 0 && existing !== s.material) continue;
             const i = ((wy - y) * w + wx - x) * 4;
             if (wy < s.y) {
-              if (existing === s.material) pixels.fill(0, i, i + 4);
-            } else if (existing === 0 && sample(wx, bottom) === s.material)
+              if (existing === s.material) {
+                pixels.fill(0, i, i + 4);
+                materialChanged?.(i / 4, 0);
+              }
+            } else if (existing === 0 && sample(wx, bottom) === s.material) {
               writeRGBA(pixels, i, color(s.material, wx, wy));
+              materialChanged?.(i / 4, s.material);
+            }
           }
       }
     }
