@@ -101,7 +101,7 @@
   "Edge of available area": "Межа доступної області",
   "Enter a valid Twitch username.": "Введіть дійсне ім’я користувача Twitch.",
   "Exit game": "Вийти з гри",
-  "Explore with the buttons below the clue map. Hover to see point costs. Moving back and zooming in are free.": "Досліджуйте мапу кнопками під підказкою. Наведіть курсор, щоб побачити вартість в очках. Повернення та наближення безкоштовні.",
+  "Explore with the buttons below the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Досліджуйте мапу кнопками під підказкою. Вартість в очках указана на кожній кнопці. Повернення та наближення безкоштовні.",
   "Export scores (JSON)": "Експорт очок (JSON)",
   "Filter players by name or login": "Фільтр гравців за ім’ям або логіном",
   "Find a player": "Знайти гравця",

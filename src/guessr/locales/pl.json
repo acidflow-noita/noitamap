@@ -101,7 +101,7 @@
   "Edge of available area": "Krawędź dostępnego obszaru",
   "Enter a valid Twitch username.": "Wpisz prawidłową nazwę użytkownika Twitch.",
   "Exit game": "Wyjdź z gry",
-  "Explore with the buttons below the clue map. Hover to see point costs. Moving back and zooming in are free.": "Eksploruj przyciskami pod mapą ze wskazówką. Najedź kursorem, aby zobaczyć koszt punktowy. Powrót i przybliżanie są bezpłatne.",
+  "Explore with the buttons below the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Eksploruj przyciskami pod mapą ze wskazówką. Każdy przycisk pokazuje koszt w punktach. Powrót i przybliżanie są bezpłatne.",
   "Export scores (JSON)": "Eksportuj wyniki (JSON)",
   "Filter players by name or login": "Filtruj graczy według nazwy lub loginu",
   "Find a player": "Znajdź gracza",

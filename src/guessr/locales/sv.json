@@ -97,7 +97,7 @@
   "Edge of available area": "Det tillgängliga områdets kant",
   "Enter a valid Twitch username.": "Ange ett giltigt Twitch-användarnamn.",
   "Exit game": "Lämna spelet",
-  "Explore with the buttons below the clue map. Hover to see point costs. Moving back and zooming in are free.": "Utforska med knapparna under ledtrådskartan. Håll pekaren över en knapp för att se poängkostnaden. Att gå tillbaka och zooma in kostar inga poäng.",
+  "Explore with the buttons below the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Utforska med knapparna under ledtrådskartan. Varje knapp visar sin poängkostnad. Att gå tillbaka och zooma in kostar inga poäng.",
   "Export scores (JSON)": "Exportera poäng (JSON)",
   "Filter players by name or login": "Filtrera spelare efter namn eller användarnamn",
   "Find a player": "Hitta en spelare",

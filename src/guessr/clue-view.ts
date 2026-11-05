@@ -8,7 +8,6 @@ import {
 import { ClueViewport } from "./clue-viewport";
 import { setControlIcon } from "./control-icons";
 import { bindAttribute, bindText, formatGuessrNumber, tr } from "./i18n";
-import { hoverHelp } from './hover-help';
 
 let controlId = 0;
 
@@ -46,11 +45,10 @@ export function attachClueControls(
   clue.after(controls);
   let stopped = false,
     pending = false;
-  let retryHelp: ReturnType<typeof hoverHelp> | undefined;
   const buttons: {
     button: HTMLButtonElement;
     anchor: HTMLSpanElement;
-    help: ReturnType<typeof hoverHelp>;
+    costLabel: HTMLElement;
     target: () => [number, number, number];
     label: string;
   }[] = [];
@@ -64,16 +62,18 @@ export function attachClueControls(
     const button = document.createElement("button");
     button.id = `guessr-clue-control-${++controlId}`;
     button.type = "button";
-    button.className = "small";
+    button.className = "btn btn-sm btn-outline theme-primary clue-control";
     setControlIcon(button, icon, label, false);
     button.addEventListener("click", () => void load(...target()));
-    // A disabled button cannot receive hover/focus; its wrapper can explain why.
+    // Keep disabled actions keyboard-readable without an interactive popover.
     const anchor = document.createElement('span');
-    anchor.className = 'control-help';
+    anchor.className = 'control-help focus-ring';
     anchor.setAttribute('aria-labelledby', button.id);
     anchor.append(button); parent.append(anchor);
-    const help = hoverHelp(anchor, () => tr(label), button);
-    buttons.push({ button, anchor, help, target, label });
+    const costLabel = document.createElement('small');
+    costLabel.className = 'clue-control-cost';
+    button.append(costLabel);
+    buttons.push({ button, anchor, costLabel, target, label });
     return button;
   };
   const zoomTarget = (level: number): [number, number, number] => {
@@ -114,25 +114,38 @@ export function attachClueControls(
   const actionHint = (label: string, hint: string) =>
     tr("{{action}} — {{hint}}", { action: tr(label), hint });
 
+  function preview(target: () => [number, number, number]) {
+    const [dx, dy, level] = target();
+    const next = { ...progress, visited: [...progress.visited] };
+    const available = changeClue(place, next, dx, dy, level);
+    const same = dx === progress.dx && dy === progress.dy && level === progress.level;
+    return { available, same, cost: available ? maximumScore(progress) - maximumScore(next) : 0 };
+  }
+  function costText(cost: number) {
+    return cost ? tr('{{points}} points', { count: cost, points: formatGuessrNumber(-cost) }) : tr('Free');
+  }
+
   function update(): void {
-    for (const { button, anchor, help, target, label } of buttons) {
-      const [dx, dy, level] = target();
-      const next = { ...progress, visited: [...progress.visited] };
-      const available = changeClue(place, next, dx, dy, level);
-      const same =
-        dx === progress.dx && dy === progress.dy && level === progress.level;
+    for (const { button, anchor, costLabel, target, label } of buttons) {
+      const { available, same } = preview(target);
       button.disabled = pending || !available || same;
       anchor.tabIndex = button.disabled ? 0 : -1;
-      const cost = available ? maximumScore(progress) - maximumScore(next) : 0;
-      help.update(() => {
+      bindText(costLabel, () => {
+        const next = preview(target);
+        return !next.available || next.same ? '—' : costText(next.cost);
+      });
+      const hint = () => {
+        const { available, same, cost } = preview(target);
         if (!available) return actionHint(label, tr("No further views"));
         if (same) return button.dataset.direction
           ? actionHint(label, tr(progress.level === 6 ? "Zoom in to move" : "Edge of available area"))
-          : tr(label);
+          : actionHint(label, tr(label === 'Return to start' ? 'Already at the starting position' : 'No further views'));
         return actionHint(label, cost
           ? tr("Costs {{points}} points", { count: cost, points: formatGuessrNumber(cost) })
           : tr("Free action"));
-      });
+      };
+      bindAttribute(button, 'aria-description', hint);
+      bindAttribute(anchor, 'aria-description', hint);
     }
     bindText(description, () => {
       const position = [
@@ -159,7 +172,6 @@ export function attachClueControls(
     if (stopped || pending || !supportedCamera(place, { dx, dy, level }))
       return;
     pending = true;
-    retryHelp?.dispose(); retryHelp = undefined;
     error.replaceChildren();
     update();
     try {
@@ -174,14 +186,18 @@ export function attachClueControls(
           `${tr("Image could not load. No points were charged.")} `);
         const retry = document.createElement("button");
         retry.type = "button";
-        retry.className = "small";
-        bindText(retry, "Retry image");
-        const next = { ...progress, visited: [...progress.visited] };
-        changeClue(place, next, dx, dy, level);
-        const cost = maximumScore(progress) - maximumScore(next);
-        retryHelp = hoverHelp(retry, () => actionHint("Retry image", cost
-          ? tr("Costs {{points}} points if the image loads", { count: cost, points: formatGuessrNumber(cost) })
-          : tr("Free action")));
+        retry.className = "btn btn-sm btn-outline theme-primary clue-retry";
+        const retryLabel = document.createElement('span'); bindText(retryLabel, 'Retry image');
+        const retryCost = document.createElement('small'); retryCost.className = 'clue-control-cost';
+        const target = (): [number, number, number] => [dx, dy, level];
+        bindText(retryCost, () => costText(preview(target).cost));
+        bindAttribute(retry, 'aria-description', () => {
+          const { cost } = preview(target);
+          return actionHint('Retry image', cost
+            ? tr('Costs {{points}} points if the image loads', { count: cost, points: formatGuessrNumber(cost) })
+            : tr('Free action'));
+        });
+        retry.append(retryLabel, retryCost);
         retry.onclick = () => void load(dx, dy, level);
         error.append(message, retry);
       }
@@ -193,8 +209,6 @@ export function attachClueControls(
   void load(progress.dx, progress.dy, progress.level);
   return () => {
     stopped = true;
-    retryHelp?.dispose();
-    for (const { help } of buttons) help.dispose();
     viewport.destroy();
     controls.remove();
   };

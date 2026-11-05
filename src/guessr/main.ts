@@ -1430,7 +1430,7 @@ function help(): void {
   body.append(
     instructionSteps(
       node('p', 'mb-0', msg('Find the starting point marked on the clue map.')),
-      node('p', 'mb-0', msg('Explore with the buttons below the clue map. Hover to see point costs. Moving back and zooming in are free.')),
+      node('p', 'mb-0', msg('Explore with the buttons below the clue map. Each button shows its point cost. Moving back and zooming in are free.')),
       node('p', 'mb-0', msg('Place your pin on the world map, then submit your guess.')),
     ),
     node("p", "", msg("No time limit. Your progress saves automatically.")),

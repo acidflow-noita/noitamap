@@ -97,7 +97,7 @@
   "Edge of available area": "可用区域的边缘",
   "Enter a valid Twitch username.": "请输入有效的 Twitch 用户名。",
   "Exit game": "退出游戏",
-  "Explore with the buttons below the clue map. Hover to see point costs. Moving back and zooming in are free.": "使用线索地图下方的按钮进行探索。将鼠标悬停在上面可查看积分成本。返回和放大操作均不消耗积分。",
+  "Explore with the buttons below the clue map. Each button shows its point cost. Moving back and zooming in are free.": "使用线索地图下方的按钮进行探索。每个按钮都会显示所需积分。返回和放大操作均不消耗积分。",
   "Export scores (JSON)": "导出分数 (JSON)",
   "Filter players by name or login": "按姓名或登录名筛选玩家",
   "Find a player": "查找球员",

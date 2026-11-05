@@ -3,7 +3,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--game-gutter);
-  --camera-key: 2.5rem;
+  --camera-key: 4rem;
   --camera-button-gap: 0.25rem;
 }
 
@@ -23,6 +23,30 @@
   min-width: var(--camera-key, 2.75rem);
   min-height: var(--camera-key, 2.75rem);
   padding: 0.25rem;
+}
+.camera-controls .clue-control,
+.clue-retry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bs-spacer-1, 0.125rem);
+  inline-size: var(--camera-key, 4rem);
+  padding: 0.25rem;
+  white-space: normal;
+}
+.clue-retry { display: inline-flex; vertical-align: middle; inline-size: auto; min-inline-size: 6rem; }
+.clue-control-cost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  block-size: 2.4em;
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums slashed-zero;
+  overflow-wrap: anywhere;
+  text-align: center;
+  white-space: normal;
 }
 .icon-button svg {
   display: block;
@@ -63,7 +87,7 @@
 
 @media (max-width: 380px) {
   .camera-controls {
-    --camera-key: 2.375rem;
+    --camera-key: 4rem;
     gap: var(--game-gutter);
   }
 }
