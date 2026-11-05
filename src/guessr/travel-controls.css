@@ -28,9 +28,9 @@
 .clue-retry {
   display: inline-flex;
   flex-direction: row;
-  gap: 0.375rem;
+  gap: var(--control-gap);
   min-block-size: 2.5rem;
-  padding: 0.375rem 0.5rem;
+  padding: var(--control-padding-y) var(--control-padding-x);
   white-space: nowrap;
 }
 .clue-retry { display: inline-flex; vertical-align: middle; inline-size: auto; min-inline-size: 6rem; }
@@ -38,8 +38,8 @@
 .clue-control-price > * { grid-area: 1 / 1; }
 .clue-control-cost-sizer { visibility: hidden; pointer-events: none; }
 .clue-control-cost, .clue-control-cost-sizer {
-  font-size: 0.8125rem;
-  line-height: 1.25;
+  font-size: var(--control-font-size);
+  line-height: var(--control-line-height);
   font-weight: 500;
   font-variant-numeric: tabular-nums slashed-zero;
   text-align: center;

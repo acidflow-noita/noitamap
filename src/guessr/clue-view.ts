@@ -64,7 +64,7 @@ export function attachClueControls(
     const button = document.createElement("button");
     button.id = `guessr-clue-control-${++controlId}`;
     button.type = "button";
-    button.className = "btn btn-sm btn-outline theme-secondary rounded-3 clue-control";
+    button.className = "btn btn-sm btn-outline theme-secondary clue-control";
     setControlIcon(button, icon, label, false);
     button.addEventListener("click", () => void load(...target()));
     // Keep disabled actions keyboard-readable without an interactive popover.
@@ -196,7 +196,7 @@ export function attachClueControls(
           `${tr("Image could not load. No points were charged.")} `);
         const retry = document.createElement("button");
         retry.type = "button";
-        retry.className = "btn btn-sm btn-outline theme-secondary rounded-3 clue-retry";
+        retry.className = "btn btn-sm btn-outline theme-secondary clue-retry";
         const retryLabel = document.createElement('span'); bindText(retryLabel, 'Retry image');
         const retryCost = document.createElement('small'); retryCost.className = 'clue-control-cost';
         const target = (): [number, number, number] => [dx, dy, level];

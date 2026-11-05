@@ -1,6 +1,7 @@
 @import "bootstrap/dist/css/bootstrap.css";
 @import "../../public/css/design-tokens.css";
 @import "../../public/css/auth-providers.css";
+@import "../../public/css/controls.css";
 @import "./travel-controls.css";
 
 :root {
@@ -34,6 +35,10 @@
   /* Tailwind emerald-700/800: logo-adjacent green with readable white labels. */
   --game-action: oklch(50.8% 0.118 165.612);
   --game-action-hover: oklch(43.2% 0.095 166.913);
+  /* Tailwind sky-300/950/800 distinguishes available points from earned points. */
+  --game-maximum-fg: oklch(82.8% 0.111 230.318);
+  --game-maximum-bg: oklch(29.3% 0.066 243.157);
+  --game-maximum-border: oklch(44.3% 0.11 240.79);
   /* Bootstrap 6's prefixed distribution tokens, using the shared map palette. */
   --bs-body-font-family: Inter, system-ui, sans-serif;
   --bs-bg-body: var(--bg);
@@ -532,7 +537,12 @@ header.page-heading {
 }
 .clue-heading { min-inline-size: 0; }
 .clue-difficulty { display: block; margin-block-start: .125rem; color: var(--text-muted); font-size: .75rem; line-height: 1.2; }
-.round-points.round-maximum { font-size: 1rem; }
+.round-points.round-maximum {
+  color: var(--game-maximum-fg);
+  background: var(--game-maximum-bg);
+  border-color: var(--game-maximum-border);
+  font-size: 1rem;
+}
 .map-bar--budget { justify-content: center; }
 .map-bar--budget > :is(.map-heading, .buttons):empty { display: none; }
 .stream-budget-bar { justify-content: center; }
