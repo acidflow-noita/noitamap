@@ -18,9 +18,7 @@ import { fileURLToPath } from "node:url";
 import { deserialize } from "node:v8";
 import { createHash } from "node:crypto";
 import { availableParallelism, totalmem } from "node:os";
-import { createBakedWorldMetadata, readBakedWorldMetadata, writeBakedWorldMetadata, REPORT_INVENTORY_VERSION,
-  LIQUID_MASK_VERSION, completeLiquidMaskCheckpoint, writeBakedWorldLiquidMask, readBakedWorldLiquidMask,
-} from "./baked-world-metadata.mjs";
+import { createBakedWorldMetadata, readBakedWorldMetadata, writeBakedWorldMetadata, REPORT_INVENTORY_VERSION } from "./baked-world-metadata.mjs";
 import {
   TILE,
   OVERLAP,
@@ -181,8 +179,6 @@ for (const file of [
   "src/report-inventory.ts",
   "src/liquids/mask-codec.ts",
   "src/liquids/materials.ts",
-  "src/liquids/captured-reservations.ts",
-  "src/liquids/assets/captured-fluid-reservations.json",
   "package-lock.json",
   "public/data.zip",
   "public/wang_tiles.zip",
@@ -226,7 +222,7 @@ if (args["prepare-only"]) {
   await atomicWrite(resolve(out, "benchmark.json"), JSON.stringify({ ...metrics, seed, prepareOnly: true, elapsedMs: Date.now()-start }, null, 2));
   process.exit(0);
 }
-const renderId = `${seed}-${data.version}-${codeHash}-${backend}-liquid${LIQUID_MASK_VERSION}`;
+const renderId = `${seed}-${data.version}-${codeHash}-${backend}`;
 const work = resolve(out, ".work", renderId),
   cores = resolve(work, "cores"),
   publish = resolve(work, "publish");
@@ -254,7 +250,6 @@ if (selected.length === 3) {
         );
         if (!m.complete || m.renderId !== renderId || m.reportInventoryVersion !== REPORT_INVENTORY_VERSION)
           return false;
-        await readBakedWorldLiquidMask(out, world, seed, renderId, m.liquidMask);
         return true;
       } catch {
         return false;
@@ -396,8 +391,7 @@ async function pending(jobs) {
   // readers instead of opening every leaf checkpoint in the world at once.
   for (let start = 0; start < jobs.length; start += 32) {
     const checks = await Promise.all(jobs.slice(start, start + 32).map(async job =>
-      (await completeFile(job.path)) &&
-      (job.kind !== "render" || await completeLiquidMaskCheckpoint(job)) ? null : job));
+      await completeFile(job.path) ? null : job));
     result.push(...checks.filter(Boolean));
   }
   return result;
@@ -503,11 +497,7 @@ try {
         }
     }
     const minX = -width / 2 + pw * width;
-    if (verified + 4 > 20000) throw new Error(`${world} exceeds the publication file budget`);
-    const maskStart = performance.now();
-    const liquidMask = await writeBakedWorldLiquidMask(publish, world, seed, renderId,
-      { x: minX, y: top, width, height }, leafTasks.filter(tile => tile.world === world));
-    (metrics.liquidMasks ??= []).push({ world, bytes: liquidMask.bytes, packagingMs: performance.now() - maskStart });
+    if (verified + 3 > 20000) throw new Error(`${world} exceeds the publication file budget`);
     const descriptor = {
       Image: {
         xmlns: "http://schemas.microsoft.com/deepzoom/2008",
@@ -526,7 +516,6 @@ try {
       terrainVersion: data.version,
       renderBackend: backend,
       reportInventoryVersion: REPORT_INVENTORY_VERSION,
-      liquidMask,
       complete: true,
       tileCount: verified,
       generatedAt: new Date().toISOString(),
@@ -553,7 +542,7 @@ try {
   if (selected.length === 3)
     await atomicWrite(resolve(out, "seed.txt"), String(seed) + "\n");
   await atomicWrite(resolve(out, "benchmark.json"), JSON.stringify({
-    ...metrics, seed, renderId, terrainVersion: data.version, liquidMaskVersion: LIQUID_MASK_VERSION, codeHash,
+    ...metrics, seed, renderId, terrainVersion: data.version, codeHash,
     complete: selected.length === 3, tileCount: totalFiles, elapsedMs: Date.now() - start,
   }, null, 2));
   log(

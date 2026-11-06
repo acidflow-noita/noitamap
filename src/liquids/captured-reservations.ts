@@ -1,4 +1,6 @@
 import blocks from './assets/captured-fluid-reservations.json';
+// Historical geometry checks only. Production rendering no longer reserves
+// these pixels or cuts them out of the terrain/background.
 import type { StaticTerrainMask } from '../telescope/static-terrain-mask';
 import type { MaskBounds } from './mask-index';
 

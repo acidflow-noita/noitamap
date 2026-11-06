@@ -37,8 +37,7 @@ it("exports matching actual CPU/GPU bake masks without changing pixels, across v
       }
       expect(sample.results[0].liquidPixels).toBeGreaterThan(0);
       expect(sample.results[0].liquidPixels).toBeLessThan(200 * 120);
-      expect(sample.results[4].opaquePixels).toBeLessThanOrEqual(184); // unfilled half of first surface row only
-      expect(sample.results[4].liquidPixels).toBe(0); // static mask owns these pixels
+      expect(sample.results[4].opaquePixels).toBe(367 * 15); // ordinary biome background covers the former strip
     }
     console.log("[liquid mask native]", JSON.stringify(result));
   } finally { await rm(bundle, { recursive: true, force: true }); }

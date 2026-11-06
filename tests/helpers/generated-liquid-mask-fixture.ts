@@ -4,7 +4,6 @@ import { prepareTerrainPlane } from "../../src/telescope/terrain-planes";
 import { serializeTileLayer } from "../../src/telescope/tile-layer-cache";
 import { openBakeRenderer } from "../../src/telescope/bake-entry";
 import { encodeLiquidMask, maskBlock } from "../../src/liquids/mask-codec";
-import { capturedFluidMasks } from '../../src/liquids/captured-reservations';
 
 export async function verifyMasks(seed = 195331) {
   setFullPixelTerrainForBake(true);
@@ -16,7 +15,7 @@ export async function verifyMasks(seed = 195331) {
       tileLayers: data.tileLayers.map(serializeTileLayer),
       elevatorShafts: data.elevatorShafts?.map(serializeTileLayer) };
   }
-  const snapshot = { seed: gen.seed, planes, sceneData: { scenes: [], sources: {}, staticMasks: capturedFluidMasks([0]) } };
+  const snapshot = { seed: gen.seed, planes, sceneData: { scenes: [], sources: {}, staticMasks: [] } };
   const cpu = await openBakeRenderer(snapshot), gpu = await openBakeRenderer(snapshot, "gpu");
   const regions = [
     // Reported generated pool at 626,2043, in an old Daily without a sidecar.
@@ -25,8 +24,7 @@ export async function verifyMasks(seed = 195331) {
     { x: -3230, y: 810 + 24576, w: 200, h: 120 },
     // A single request straddles two plane finishers and unowned world cells.
     { x: -4032, y: -7184, w: 64, h: 32 },
-    // Captured oil above the HM chunk must remain visible, independent of this
-    // seed's selected altar. Its source mask is supplied by the static artifact.
+    // The former basin reservation must no longer cut holes in native output.
     { x: 585, y: 1009, w: 367, h: 15 },
   ];
   const results = [];

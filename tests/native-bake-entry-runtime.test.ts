@@ -99,6 +99,9 @@ it("prepares missing scene assets and the CI seed through the actual native bake
       expect(plane.biomeData.pixels.length).toBeGreaterThan(0);
     }
     expect(Object.keys(snapshot.sceneData.sources).length).toBeGreaterThan(0);
+    // Production preparation must not restore the removed 15px basin cutouts.
+    expect(snapshot.sceneData.staticMasks.some((mask: { x: number; y: number; width: number; height: number }) =>
+      mask.x === 585 && mask.y === 1009 && mask.width === 367 && mask.height === 15)).toBe(false);
     // Telescope's spliced backgrounds use pixel_scenes.zip, not data.zip.
     // The actual CI entrypoint must export their authored pixels, not omit them.
     const sceneArchive = await JSZip.loadAsync(await readFile(resolve(root, "public/pixel_scenes.zip")));

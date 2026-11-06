@@ -1,121 +1,82 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cropLiquidMask } from '../src/liquids/mask-index';
-const io = vi.hoisted(() => ({ paint: vi.fn(), crop: vi.fn(), destroy: vi.fn(), live: vi.fn(), init: vi.fn() }));
+import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
+import { decodeLiquidMask } from '../src/liquids/mask-codec';
+import { LiquidMaskIndex, cropLiquidMask } from '../src/liquids/mask-index';
+const io = vi.hoisted(() => ({ paint: vi.fn(), crop: vi.fn(), destroy: vi.fn(), live: vi.fn() }));
 vi.mock('../src/liquids/mask-worker-client', () => ({ LiquidMaskWorkerClient: class {
   paint = io.paint; crop = io.crop; destroy = io.destroy;
 } }));
-vi.mock('../src/liquids/live-source', () => ({ createLiveLiquidSource: io.init }));
+vi.mock('../src/liquids/live-source', () => ({ createLiveLiquidSource: io.live }));
 import { LiquidMaskProvider } from '../src/liquids/mask-provider';
 
+const water = new LiquidMaskIndex(decodeLiquidMask(gunzipSync(readFileSync(
+  new URL('../src/liquids/assets/holy-mountain-water.bin.gz', import.meta.url)))));
+const view = { x: -600, y: 1380, width: 240, height: 140 };
 beforeEach(() => {
   vi.clearAllMocks();
-  io.paint.mockImplementation(async (bounds: any) => new Uint8Array(bounds.width * bounds.height));
+  io.paint.mockImplementation(async (bounds: any) => {
+    const pixels = new Uint8Array(bounds.width * bounds.height); water.paint(pixels, bounds); return pixels;
+  });
   io.crop.mockImplementation(async (bounds: any, pixels: Uint8Array, exclusions: any) => cropLiquidMask(pixels, bounds, exclusions));
-  io.live.mockImplementation(async (_bounds: any, pixels: Uint8Array) => { pixels[0] = 255; return true; });
-  io.init.mockResolvedValue({ paint: io.live });
 });
 afterEach(() => vi.restoreAllMocks());
-const world = (pw: number, hasMask = true) => ({ pw, x: pw * 35840 - 17920, y: -31744, width: 35840,
-  dziUrl: `https://world${pw}.test/map.dzi`, bust: 'today',
-  liquidMask: hasMask ? { url: `https://world${pw}.test/liquid-mask.bin?v=a`, bytes: 12, sha256: 'a'.repeat(64) } : undefined });
 
-describe('mask source selection and bounded live queries', () => {
-  it('publishes captured fluid before a delayed Daily mask download finishes', async () => {
-    let release!: (pixels: Uint8Array) => void;
-    io.paint.mockImplementationOnce(async (bounds: any) => {
-      const pixels = new Uint8Array(bounds.width * bounds.height); pixels[0] = 255; return pixels;
-    }).mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
-    const provider = new LiquidMaskProvider({ baked: [world(0)], staticBackground: true, exclusions: () => [] });
-    const progress = vi.fn(), finished = vi.fn();
-    const pending = provider.prepare({ x: 0, y: 0, width: 256, height: 256 }, new AbortController().signal, progress).then(finished);
-    await vi.waitFor(() => expect(progress).toHaveBeenCalledOnce());
-    expect(finished).not.toHaveBeenCalled(); expect(progress.mock.calls[0][0].pixels[0]).toBe(255);
-    expect(progress.mock.calls[0][0].complete).toBe(false);
-    release(new Uint8Array(256 * 256)); await pending;
-    expect(finished.mock.calls[0][0]).toMatchObject({ complete: true, coverage: { x: 0, y: 0, width: 256, height: 256 } });
-    provider.destroy();
+describe('Holy Mountain water source', () => {
+  it('returns the same complete water mask for live, old baked and sidecar-equipped maps, without generation or sidecar requests', async () => {
+    const masks = [];
+    for (const extras of [{ live: { seed: 42, scenes: [], loadScene: vi.fn() } },
+      { baked: [{ pw: 0 }] }, { baked: [{ pw: 0, liquidMask: { url: 'https://daily.test/liquid-mask.bin' } }] }]) {
+      const provider = new LiquidMaskProvider({ staticBackground: true, exclusions: () => [], ...extras });
+      const mask = await provider.prepare(view, new AbortController().signal);
+      expect(mask).toMatchObject({ complete: true, coverage: expect.objectContaining({ x: -768, y: 1280 }) });
+      masks.push(mask); provider.destroy();
+    }
+    expect(masks[0]).toEqual(masks[1]); expect(masks[1]).toEqual(masks[2]);
+    expect(io.live).not.toHaveBeenCalled();
+    for (const [, sources] of io.paint.mock.calls) {
+      expect(sources).toHaveLength(1);
+      expect(sources[0]).toMatchObject({ url: expect.stringContaining('holy-mountain-water.bin.gz'), bytes: expect.any(Number),
+        sha256: expect.stringMatching(/^[0-9a-f]{64}$/) });
+    }
   });
-  it('shows the first generated pool while later blocks are still pending, starting near the center', async () => {
-    let release!: () => void;
-    io.live.mockImplementationOnce(async (_bounds: any, pixels: Uint8Array) => { pixels[0] = 255; return true; })
-      .mockImplementationOnce(async () => { await new Promise<void>(resolve => { release = resolve; }); return true; });
-    const provider = new LiquidMaskProvider({ staticBackground: false, live: { seed: 42, scenes: [], loadScene: vi.fn() }, exclusions: () => [] });
-    const progress = vi.fn(), finished = vi.fn();
-    const pending = provider.prepare({ x: 0, y: 0, width: 1024, height: 256 }, new AbortController().signal, progress).then(finished);
-    await vi.waitFor(() => expect(io.live).toHaveBeenCalledTimes(2));
-    expect(progress).toHaveBeenCalledOnce(); expect(finished).not.toHaveBeenCalled();
-    expect(io.live.mock.calls[0][0].x).toBe(256); expect(io.live.mock.calls[1][0].x).toBe(512);
-    expect(progress.mock.calls[0][0]).toMatchObject({ x: 256, y: 0, complete: false });
-    release(); await pending;
-    expect(finished.mock.calls[0][0].complete).toBe(true); provider.destroy();
+  it.each([
+    { x: -500, y: 1300, width: 30, height: 20 }, // same aligned block, water still outside view
+    { x: 585, y: 984, width: 367, height: 240 }, // upper basin and portal cup
+    { x: 526, y: 1943, width: 200, height: 200 }, // generated liquid
+    { x: -4096, y: 13312, width: 512, height: 512 }, // lava lake
+    { x: -14848, y: 512, width: 512, height: 512 }, // captured lake
+  ])('does no mask IO for other liquids at $x,$y', async bounds => {
+    const provider = new LiquidMaskProvider({ staticBackground: true, exclusions: () => [] });
+    expect(await provider.prepare(bounds, new AbortController().signal)).toBeNull();
+    expect(io.paint).not.toHaveBeenCalled(); expect(io.live).not.toHaveBeenCalled();
+    provider.destroy(); expect(io.destroy).not.toHaveBeenCalled();
   });
-  it('does not publish a cancelled partial crop or mutate a previously published mask', async () => {
+  it('does no mask IO for unsupported base maps', async () => {
+    const provider = new LiquidMaskProvider({ staticBackground: false, exclusions: () => [] });
+    expect(await provider.prepare(view, new AbortController().signal)).toBeNull();
+    expect(io.paint).not.toHaveBeenCalled(); provider.destroy();
+  });
+  it('reapplies marker exclusions and releases its worker', async () => {
+    const exclusions = vi.fn(() => [] as typeof view[]);
+    const provider = new LiquidMaskProvider({ staticBackground: true, exclusions });
+    expect(await provider.prepare(view, new AbortController().signal)).not.toBeNull();
+    exclusions.mockReturnValue([{ x: -768, y: 1280, width: 512, height: 256 }]);
+    expect(await provider.prepare(view, new AbortController().signal)).toBeNull();
+    expect(provider.stats().generatedPending).toBe(false);
+    provider.destroy(); expect(io.destroy).toHaveBeenCalledOnce();
+    expect(await provider.prepare(view, new AbortController().signal)).toBeNull();
+    expect(io.paint).toHaveBeenCalledTimes(2);
+  });
+  it('rejects a cancelled crop instead of presenting stale water', async () => {
     let release!: (mask: any) => void;
-    io.paint.mockResolvedValue(new Uint8Array(256 * 256).fill(255));
     io.crop.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
-    const provider = new LiquidMaskProvider({ staticBackground: true, live: { seed: 42, scenes: [], loadScene: vi.fn() }, exclusions: () => [] });
-    const controller = new AbortController(), progress = vi.fn();
-    const pending = provider.prepare({ x: 0, y: 0, width: 256, height: 256 }, controller.signal, progress);
+    const provider = new LiquidMaskProvider({ staticBackground: true, exclusions: () => [] });
+    const controller = new AbortController();
+    const pending = provider.prepare(view, controller.signal);
     const rejected = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
     await vi.waitFor(() => expect(io.crop).toHaveBeenCalledOnce());
-    controller.abort(); release({ x: 0, y: 0, width: 1, height: 1, pixels: new Uint8Array([255]) }); await rejected;
-    expect(progress).not.toHaveBeenCalled(); expect(io.live).not.toHaveBeenCalled(); provider.destroy();
-  });
-  it('loads only visible baked worlds and never initializes live terrain for a Daily', async () => {
-    const provider = new LiquidMaskProvider({ baked: [-1, 0, 1].map(pw => world(pw)), staticBackground: true, exclusions: () => [] });
-    expect(io.paint).not.toHaveBeenCalled();
-    await provider.prepare({ x: 100, y: 100, width: 256, height: 256 }, new AbortController().signal);
-    const sources = io.paint.mock.calls.flatMap(call => call[1]);
-    expect(sources).toHaveLength(2);
-    expect(sources[0].url).toContain('static-mask.bin.gz'); expect(sources[1].url).toContain('world0.test');
-    expect(io.init).not.toHaveBeenCalled(); provider.destroy();
-  });
-  it('does not probe old bakes for missing files or import generation just to animate captured pools', async () => {
-    const provider = new LiquidMaskProvider({ baked: [world(0, false)], staticBackground: true, exclusions: () => [] });
-    await provider.prepare({ x: 0, y: 0, width: 256, height: 256 }, new AbortController().signal);
-    expect(io.paint.mock.calls[0][1]).toHaveLength(1);
-    expect(io.paint.mock.calls[0][1][0].excludeCapturedFluidsIn).toEqual([{ x: -17920, width: 35840 }]);
-    expect(provider.stats().missingBakedWorlds).toEqual([0]);
-    expect(io.init).not.toHaveBeenCalled(); provider.destroy();
-  });
-  it('reserves the complete captured pool only when that world advertises corrected bake pixels', async () => {
-    const corrected = world(0); Object.assign(corrected.liquidMask!, { preservesCapturedFluids: true });
-    const provider = new LiquidMaskProvider({ baked: [world(-1), corrected], staticBackground: true, exclusions: () => [] });
-    await provider.prepare({ x: -18000, y: 1000, width: 500, height: 80 }, new AbortController().signal);
-    expect(io.paint.mock.calls[0][1][0].excludeCapturedFluidsIn).toEqual([{ x: -53760, width: 35840 }]);
-    expect(provider.stats().missingBakedWorlds).toEqual([]); provider.destroy();
-  });
-  it('retries after an initially unavailable live renderer rather than caching absence', async () => {
-    io.init.mockResolvedValueOnce(null);
-    const provider = new LiquidMaskProvider({ staticBackground: false, live: { seed: 42, scenes: [], loadScene: vi.fn() }, exclusions: () => [] });
-    const bounds = { x: 0, y: 0, width: 256, height: 256 }, signal = new AbortController().signal;
-    expect(await provider.prepare(bounds, signal)).toBeNull();
-    expect(provider.stats().generatedPending).toBe(true);
-    expect(await provider.prepare(bounds, signal)).not.toBeNull();
-    expect(provider.stats().generatedPending).toBe(false);
-    expect(io.init).toHaveBeenCalledTimes(2); provider.destroy();
-  });
-  it('caches successful aligned live blocks, reapplies fresh marker exclusions, and releases them', async () => {
-    const exclusion = { x: 0, y: 0, width: 1, height: 1 }, exclusions = vi.fn(() => [] as any[]);
-    const provider = new LiquidMaskProvider({ staticBackground: false,
-      live: { seed: 42, scenes: [], loadScene: vi.fn() }, exclusions });
-    const bounds = { x: 0, y: 0, width: 256, height: 256 }, signal = new AbortController().signal;
-    expect(await provider.prepare(bounds, signal)).not.toBeNull();
-    expect(io.live).toHaveBeenCalledOnce();
-    expect(io.live.mock.calls[0][0]).toEqual(bounds);
-    exclusions.mockReturnValue([exclusion]);
-    expect(await provider.prepare(bounds, signal)).toBeNull();
-    expect(io.live).toHaveBeenCalledOnce(); expect(io.init).toHaveBeenCalledOnce();
-    expect(provider.stats().cachedBytes).toBe(65536);
-    provider.destroy(); expect(provider.stats().cachedBytes).toBe(0); expect(io.destroy).toHaveBeenCalledOnce();
-  });
-  it('does not cache incomplete GPU queries and aborts before preparing a stale viewport', async () => {
-    const provider = new LiquidMaskProvider({ staticBackground: false, live: { seed: 42, scenes: [], loadScene: vi.fn() }, exclusions: () => [] });
-    io.live.mockResolvedValue(false);
-    const bounds = { x: 0, y: 0, width: 256, height: 256 }, controller = new AbortController();
-    await provider.prepare(bounds, controller.signal); expect(provider.stats().cachedBlocks).toBe(0);
-    controller.abort();
-    await expect(provider.prepare(bounds, controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
-    expect(io.live).toHaveBeenCalledOnce(); provider.destroy();
+    controller.abort(); release({ x: -520, y: 1420, width: 1, height: 1, pixels: new Uint8Array([255]) });
+    await rejected; provider.destroy();
   });
 });

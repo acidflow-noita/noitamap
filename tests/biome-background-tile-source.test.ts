@@ -134,7 +134,7 @@ function pixelCheck(ctx: any, left: number, top: number, offset = 0, owns = (_x:
 }
 
 describe("native biome backgrounds through installed OSD and native canvas", () => {
-  it('preserves captured basin pixels in both cached tiles and immediate viewport drawing', async () => {
+  it('covers the former upper basin strip in both cached tiles and immediate viewport drawing', async () => {
     const left = 512, top = 984, width = 512, height = 64;
     const pack = createBiomeBackgroundTiles({ originX: left, originY: top, width, height, phaseX, phaseY,
       regions: [{ rings: [rect(left, top, width, height)], textureKey: 'wandcave' }], textures: new Map([['wandcave', texture]]) });
@@ -146,20 +146,16 @@ describe("native biome backgrounds through installed OSD and native canvas", () 
       const data = ctx.getImageData(0, 0, width, height).data;
       let missing = 0;
       for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
-        const reserved = y === 25 ? x >= 257 && x < 440 : y >= 26 && y < 40 && x >= 73 && x < 440;
-        if (data[(y * width + x) * 4 + 3] !== (reserved ? 0 : 255)) missing++;
+        if (data[(y * width + x) * 4 + 3] !== 255) missing++;
       }
       expect(missing).toBe(0);
     };
     try {
-      const captured = pack.createSource(0, true), ordinary = pack.createSource(0, false);
-      for (let x = 0; x < 2; x++) ctx.drawImage((await load(captured, x)).canvas, x * 256, 0);
+      const source = pack.createSource();
+      for (let x = 0; x < 2; x++) ctx.drawImage((await load(source, x)).canvas, x * 256, 0);
       check();
-      // Sharing decoded textures must not share clipped/unclipped tile caches.
-      const unchanged = await load(ordinary, 0);
-      expect(unchanged.getImageData(80, 30, 1, 1).data[3]).toBe(255);
       ctx.clearRect(0, 0, width, height);
-      expect(captured.__drawViewport(ctx, { imageToViewportCoordinates: (x: number, y: number) => ({ x, y }) },
+      expect(source.__drawViewport(ctx, { imageToViewportCoordinates: (x: number, y: number) => ({ x, y }) },
         { pixelFromPoint: (point: any) => point })).toBe(true);
       check();
     } finally { pack.destroy(); }

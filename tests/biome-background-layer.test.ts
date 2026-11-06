@@ -155,7 +155,7 @@ it('places independently phased PW sources below subsequent terrain layers', asy
   const viewer = { world: { getItemCount: () => 5, removeItem: vi.fn() }, addTiledImage: vi.fn() };
   const attached = vi.fn();
   attachBiomeBackgroundLayer(viewer, layer, [-35840, 0, 35840], () => true, attached);
-  expect(vi.mocked(layer.tiles.createSource).mock.calls).toEqual([[-35840, false], [0, false], [35840, false]]);
+  expect(vi.mocked(layer.tiles.createSource).mock.calls).toEqual([[-35840], [0], [35840]]);
   expect(viewer.addTiledImage.mock.calls.map(([options]) => [options.x, options.y, options.width, options.index])).toEqual([
     [-53760, -7168, 2048, 5], [-17920, -7168, 2048, 5], [17920, -7168, 2048, 5],
   ]);

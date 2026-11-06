@@ -1,5 +1,10 @@
 # Liquid refraction and generated mask export
 
+Status, 2026-11-06: production wobble is restricted to the captured Holy Mountain
+water pools. The all-liquid adaptation and basin reservations described below
+are historical research, not the current rendering policy. New Daily bakes no
+longer export generated-liquid masks. See [liquid-wobble.md](liquid-wobble.md).
+
 ## Native evidence
 
 Inspected on 2026-11-04 without starting the game. The source executable was

@@ -14,21 +14,6 @@ beforeEach(async () => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('worker-owned sparse masks', () => {
-  it('removes only the covered basin strip from old bakes before applying any generated fluid', async () => {
-    const bounds = { x: 768, y: 1008, width: 3, height: 17 };
-    const full = new Uint8Array(51).fill(255), generated = new Uint8Array(51);
-    generated[4] = 255;
-    const captured = encodeLiquidMask([maskBlock(bounds.x, bounds.y, 3, 17, full)!]);
-    const live = encodeLiquidMask([maskBlock(bounds.x, bounds.y, 3, 17, generated)!]);
-    vi.stubGlobal('fetch', vi.fn(async (url: string) => new Response(Uint8Array.from(url === '/captured' ? captured : live).buffer)));
-    const sources = [{ url: '/captured', excludeCapturedFluidsIn: [{ x: -17920, width: 35840 }] }];
-    await worker.onmessage({ data: { id: 1, type: 'paint', bounds, sources } });
-    const pixels = worker.postMessage.mock.calls[0][0].pixels;
-    expect([...pixels.slice(0, 9)]).toEqual([255, 255, 255, 255, 0, 0, 0, 0, 0]);
-    expect([...pixels.slice(48)]).toEqual([255, 255, 255]); // world 1024 is visibly liquid
-    await worker.onmessage({ data: { id: 2, type: 'paint', bounds, sources: [...sources, { url: '/generated' }] } });
-    expect(worker.postMessage.mock.calls[1][0].pixels[4]).toBe(255);
-  });
   it.each([false, true])('decodes bounded assets once and reuses them without repeated fetches (gzip=%s)', async compressed => {
     const body = compressed ? gzipSync(bytes) : bytes;
     const fetcher = vi.fn(async () => new Response(Uint8Array.from(body).buffer)); vi.stubGlobal('fetch', fetcher);

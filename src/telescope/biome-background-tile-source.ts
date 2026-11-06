@@ -1,6 +1,5 @@
 import { copyTerrainContext, InstantTerrainCache } from "./instant-terrain-cache";
 import { drawViewportArt } from './viewport-art';
-import { clipCapturedFluids } from '../liquids/captured-reservations';
 
 declare const OpenSeadragon: any;
 
@@ -55,7 +54,7 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
     return { scale, w, h, left: originX + x * TILE_SIZE / scale, top: originY + y * TILE_SIZE / scale };
   }
 
-  function render(key: string, level: number, x: number, y: number, worldOffsetX: number, pinned: boolean, preserveCapturedFluids: boolean) {
+  function render(key: string, level: number, x: number, y: number, worldOffsetX: number, pinned: boolean) {
     const work: Work = { aborted: false, subscribers: 0, promise: null! };
     work.promise = Promise.resolve().then(() => {
       if (destroyed || work.aborted) throw new DOMException("Background tile cancelled", "AbortError");
@@ -68,7 +67,6 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
       ctx.imageSmoothingEnabled = false;
       try {
         ctx.setTransform(scale, 0, 0, scale, -left * scale, -top * scale);
-        if (preserveCapturedFluids) clipCapturedFluids(ctx, { x: left, y: top, width: w / scale, height: h / scale }, worldOffsetX);
         for (const region of regions) {
           if (region.maxX <= left || region.maxY <= top || region.minX >= left + w / scale || region.minY >= top + h / scale) continue;
           const texture = textures.get(region.textureKey);
@@ -119,14 +117,14 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
     return work;
   }
 
-  function createSource(worldOffsetX = 0, preserveCapturedFluids = false): any {
+  function createSource(worldOffsetX = 0): any {
     if (destroyed) throw new Error("Biome background tiles were destroyed");
     if (!Number.isFinite(worldOffsetX)) throw new RangeError("Invalid biome background world offset");
     const source = new OpenSeadragon.TileSource({ width, height, tileSize: TILE_SIZE, tileOverlap: 0, minLevel: 0, maxLevel });
     let detached = false;
     const pending = new Set<(fail?: boolean) => void>();
     const cutoff = source.getClosestLevel();
-    const keyFor = (level: number, x: number, y: number) => `${worldOffsetX}/${Number(preserveCapturedFluids)}/${level}/${x}/${y}`;
+    const keyFor = (level: number, x: number, y: number) => `${worldOffsetX}/${level}/${x}/${y}`;
     source.__biomeBg = true;
     source.__instantCoverage = true;
     source.instantCoverageExtraLevels = 1;
@@ -141,7 +139,6 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
         const left = bounds.left + originX, top = bounds.top + originY;
         const right = bounds.right + originX, bottom = bounds.bottom + originY;
         context.translate(-originX, -originY);
-        if (preserveCapturedFluids) clipCapturedFluids(context, { x: left, y: top, width: right - left, height: bottom - top }, worldOffsetX);
         for (const region of regions) {
           if (region.maxX <= left || region.maxY <= top || region.minX >= right || region.minY >= bottom) continue;
           const texture = textures.get(region.textureKey);
@@ -212,7 +209,7 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
         const hit = cache.get(key);
         if (hit) result = Promise.resolve(hit);
         else {
-          const work = inflight.get(key) ?? render(key, level, x, y, worldOffsetX, level >= cutoff && level <= cutoff + 1, preserveCapturedFluids);
+          const work = inflight.get(key) ?? render(key, level, x, y, worldOffsetX, level >= cutoff && level <= cutoff + 1);
           work.subscribers++;
           let released = false;
           release = () => {

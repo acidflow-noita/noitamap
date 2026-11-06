@@ -1,4 +1,4 @@
-import { capture } from './static-sources.json';
+import { capture } from './holy-mountain-water.json';
 import { getTileData } from '../data_sources/tile_data';
 
 /** Never apply one capture's liquid geometry to a different background map. */

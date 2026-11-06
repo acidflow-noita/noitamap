@@ -4,7 +4,6 @@ import { getSunUnlocks } from "../sun-unlocks";
 import { clearLiquidWobble, installLiquidWobble } from "../liquids";
 import { liquidMarkerExclusions } from "../liquids/marker-exclusions";
 import { supportsCapturedLiquidMask } from "../liquids/capture-identity";
-import { capturedFluidMasks } from "../liquids/captured-reservations";
 import { createDustAttribution, usesDustAnimation } from "../portals/attribution";
 import { particleIcon, type ParticleIconPOI } from '../portals/icons';
 import { canOpenPOIFromCanvas, drawingOwnsMapPointer, onDrawingMapOwnershipChange } from "../drawing/poi-interaction";
@@ -607,7 +606,7 @@ export function addBiomeBgToOSD(viewer: any, isCurrent = () => true): void {
   attachBiomeBackgroundLayer(viewer, _bgLayer,
     (isLightMode() ? [0] : [-1, 0, 1]).map(pw => pw * 70 * 512),
     () => epoch === _bgEpoch && isCurrent(),
-    item => dynamicTiledImages.add(item), index, !isSimplisticBackground() && supportsCapturedLiquidMask());
+    item => dynamicTiledImages.add(item), index);
 }
 
 /**
@@ -2425,8 +2424,7 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
       backgroundArt,
     };
   }
-  const staticMasks: StaticTerrainMask[] = !result.isNGP && result.worldSize === 70 &&
-    !isSimplisticBackground() && supportsCapturedLiquidMask() ? capturedFluidMasks(result.parallelWorlds) : [];
+  const staticMasks: StaticTerrainMask[] = [];
   const maskByKey = new Map<string, Uint8Array>(), placed = new Set<string>();
   for (const scene of Object.values(result.pixelScenesByPW).flat()) {
     // The static scene skip/no-op list still owns the same pixels. Skipping the
@@ -2452,8 +2450,6 @@ async function instantSceneMasks(result: GenerationResult): Promise<StaticTerrai
     rendered.has(scene) || (isCapturedGoldRoom(scene, result.worldSize) && !isSimplisticBackground()) || pixelSceneConfig.skipNames.has(scene.name) ||
     pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]));
   const masks = await loadInstantSceneMasks(scenes, key => ensurePixelSceneData(key, { art: false }));
-  if (!result.isNGP && result.worldSize === 70 && !isSimplisticBackground() && supportsCapturedLiquidMask())
-    masks.push(...capturedFluidMasks(result.parallelWorlds));
   return masks;
 }
 
@@ -5410,13 +5406,7 @@ export async function renderGenerationResult(
     // added to loot counts. Scene metadata also works on existing daily bakes.
     installPortalAnimations(viewer, result, getSunUnlocks(getActiveDescriptor()), !!bakedDZIs?.length);
     installLiquidWobble(viewer, {
-      baked: bakedDZIs ?? undefined,
       staticBackground: !result.isNGP && result.worldSize === 70 && !isSimplisticBackground() && supportsCapturedLiquidMask(),
-      live: bakedDZIs?.length ? undefined : {
-        seed: result.seed,
-        scenes: renderableScenes(result).filter(scene => !isRepeatedTempleTemplate(scene)),
-        loadScene: key => ensurePixelSceneData(key, { art: false }),
-      },
       exclusions: bounds => liquidMarkerExclusions(activeMarkerData, bounds),
     });
 

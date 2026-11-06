@@ -1,0 +1,347 @@
+{
+  "version": 1,
+  "scope": "holy-mountain-water",
+  "material": "water",
+  "capture": {
+    "mapKey": "dynamic-main-branch",
+    "sourceDate": "2025-01-25",
+    "filenameSeed": 78633191,
+    "parallelWorlds": [
+      -1,
+      0,
+      1
+    ],
+    "worldWidth": 35840
+  },
+  "artifact": {
+    "path": "src/liquids/assets/holy-mountain-water.bin.gz",
+    "bytes": 919,
+    "sha256": "6f0812292770fc465cd9e1d31e5fce8166ca979023afa3bb7b01fc56070dad7c",
+    "rawBytes": 27372,
+    "rawSha256": "7341bd7abc025f02b8a09f706b03eb578b29bd9e6f21d1681db2e6e4e6f7af4e"
+  },
+  "pools": [
+    {
+      "key": "temple/altar_left",
+      "x": -36411,
+      "y": 1402,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": -36352,
+      "y": 1402,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": -571,
+      "y": 1402,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": -512,
+      "y": 1402,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": 35269,
+      "y": 1402,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": 35328,
+      "y": 1402,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": -36411,
+      "y": 2938,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": -36352,
+      "y": 2938,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": -571,
+      "y": 2938,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": -512,
+      "y": 2938,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": 35269,
+      "y": 2938,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": 35328,
+      "y": 2938,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": -36411,
+      "y": 4986,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": -36352,
+      "y": 4986,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": -571,
+      "y": 4986,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": -512,
+      "y": 4986,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": 35269,
+      "y": 4986,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": 35328,
+      "y": 4986,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": -36411,
+      "y": 6522,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": -36352,
+      "y": 6522,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": -571,
+      "y": 6522,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": -512,
+      "y": 6522,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": 35269,
+      "y": 6522,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": 35328,
+      "y": 6522,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": -36411,
+      "y": 8570,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": -36352,
+      "y": 8570,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": -571,
+      "y": 8570,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": -512,
+      "y": 8570,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": 35269,
+      "y": 8570,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": 35328,
+      "y": 8570,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": -36411,
+      "y": 10618,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": -36352,
+      "y": 10618,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": -571,
+      "y": 10618,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": -512,
+      "y": 10618,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    },
+    {
+      "key": "temple/altar_left",
+      "x": 35269,
+      "y": 10618,
+      "width": 59,
+      "height": 85,
+      "pixels": 4688
+    },
+    {
+      "key": "temple/altar",
+      "x": 35328,
+      "y": 10618,
+      "width": 124,
+      "height": 78,
+      "pixels": 4985
+    }
+  ],
+  "sourceChecks": [
+    {
+      "path": "src/liquids/static-sources.json",
+      "sha256": "fabfb23622c3fb81a3e3f460c5aad1894cba94380c26be8df4bfed9e49cf9eff"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/biome_maps/biome_map.png",
+      "sha256": "e3505adc86a09cc5e5415e511b38f02d8adffd6bfc6932d9f8a9f4a26d29dd50"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar.png",
+      "sha256": "2a185ef84dd1d9e469d1e6890783e4bfe4efe7f949497dc3b7fb2895c499ca9d"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_left.png",
+      "sha256": "9432dddc808e139ec951b33164538b0fb692d702b0b048d6a4160e0269280de7"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_right.png",
+      "sha256": "4bd71427cc54493c377fd4b0d4a7c1ca8e737508d28366cad461ce11c39e18ab"
+    },
+    {
+      "path": "lib/noita-telescope-vm/data/pixel_scenes/temple/altar_right_snowcastle.png",
+      "sha256": "3f2a0ee1b5b244a7eefb7a182dd8b5709e08fcdfec1f08f6b59b8219b5f5fcb0"
+    },
+    {
+      "path": "lib/noita-telescope-vm/js/engine_resolve/engine_data.js",
+      "sha256": "a2beaefdd1a4feb84e3784857ba4d210f8c15d0b02dee8bd13be7658ab10af41"
+    },
+    {
+      "path": "build_scripts/build-holy-mountain-water-mask.mts",
+      "sha256": "83212bbe7635754840cf0481bd98505930057e25eebe3478a1f2c09d4911dc3c"
+    }
+  ]
+}

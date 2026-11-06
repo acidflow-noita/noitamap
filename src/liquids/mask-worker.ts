@@ -1,8 +1,7 @@
 import { decodeLiquidMask } from './mask-codec';
 import { LiquidMaskIndex, assertMaskBounds, cropLiquidMask } from './mask-index';
-import { clearCapturedFluids, type WorldSpan } from './captured-reservations';
 
-export interface MaskAsset { url: string; bytes?: number; sha256?: string; excludeCapturedFluidsIn?: readonly WorldSpan[] }
+export interface MaskAsset { url: string; bytes?: number; sha256?: string }
 const sources = new Map<string, Promise<LiquidMaskIndex>>();
 const active = new Set<number>(), cancelled = new Set<number>();
 async function load(asset: MaskAsset) {
@@ -50,10 +49,7 @@ self.onmessage = async ({ data }) => {
       const indices = await Promise.all(assets.map(load));
       if (cancelled.has(id)) return;
       const pixels = new Uint8Array(bounds.width * bounds.height);
-      for (let i = 0; i < indices.length; i++) {
-        indices[i].paint(pixels, bounds);
-        if (assets[i].excludeCapturedFluidsIn) clearCapturedFluids(pixels, bounds, assets[i].excludeCapturedFluidsIn!);
-      }
+      for (const index of indices) index.paint(pixels, bounds);
       self.postMessage({ id, pixels }, { transfer: [pixels.buffer] });
     } else if (type === 'crop') {
       const mask = cropLiquidMask(data.pixels, bounds, data.exclusions);

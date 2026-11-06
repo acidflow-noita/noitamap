@@ -1,4 +1,8 @@
 The captured-base liquid mask is generated offline from material instructions,
+
+Status, 2026-11-06: this document describes the historical full-liquid mask.
+Production now uses only the Holy Mountain water mask described in
+[liquid-wobble.md](liquid-wobble.md). Basin reservations are no longer applied.
 not the rendered map's colors. `src/liquids/static-sources.json` identifies the
 capture, source files, placements, reviewed hashes, and known coverage gaps.
 `src/liquids/assets/static-mask.bin.gz` contains sparse native-resolution row runs
