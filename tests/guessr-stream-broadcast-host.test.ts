@@ -1,11 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { StreamBroadcastHost } from '../src/guessr/stream-broadcast-host';
-import { StreamBroadcaster, StreamPacketReader, guessReceiptKey, streamPacketText } from '../src/guessr/stream-wire';
+import { StreamBroadcaster, StreamPacketReader, guessReceiptKey, streamPacketText, STREAM_RECEIPT_BATCH } from '../src/guessr/stream-wire';
 import { StreamService } from '../src/guessr/stream-server';
 import { newStreamGame } from '../src/guessr/stream-state';
 import { startStreamTiming, startHostWindow, closeChatWindow } from '../src/guessr/stream-timing';
 import { gameCode } from '../src/guessr/routes';
-import { streamNow, streamSecret, streamHost, streamSource } from './helpers/guessr-stream';
+import { streamNow, streamSecret, streamHost, streamSource, streamArea, streamAnswer } from './helpers/guessr-stream';
 const hosts: StreamBroadcastHost[] = [];
 afterEach(() => { hosts.splice(0).forEach(h => h.dispose()); vi.useRealTimers(); });
 
@@ -17,6 +17,87 @@ async function fixture() {
   const host = new StreamBroadcastHost(game, '/images', send, failure, save, joined);
   hosts.push(host); return { game, host, sent, save, failure, joined, send };
 }
+
+function clock(f: Awaited<ReturnType<typeof fixture>>) {
+  const publisher = (f.host as unknown as { publisher: StreamBroadcaster }).publisher;
+  const offer = publisher.offer.bind(publisher), preparations: Promise<void>[] = [];
+  vi.spyOn(publisher, 'offer').mockImplementation((...args) => {
+    const job = offer(...args); preparations.push(job); return job;
+  });
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+  vi.setSystemTime(streamNow);
+  const ready = async () => { while (preparations.length) await Promise.all(preparations.splice(0)); };
+  return { ready, advance: async (ms: number) => { await vi.advanceTimersByTimeAsync(ms); await ready(); } };
+}
+
+it('answers a thousand receipt checks without resending clues or delaying a new round update', async () => {
+  const f = await fixture(), timer = clock(f);
+  const keys = await Promise.all(Array.from({ length: 1000 }, async (_, i) => {
+    const user = String(i + 1000), nonce = i.toString(16).padStart(16, '0');
+    await f.host.remember(0, user, nonce, false);
+    return guessReceiptKey(f.game.session.rounds[0].id, user, nonce);
+  }));
+  await f.host.start(); await timer.ready(); await timer.advance(4000);
+  expect(f.host.snapshot().timing?.recovery).toBe(1);
+  for (let i = 0; i < 1000; i++) f.host.receiveRequest({ player: { id: String(i + 1000), login: 'chatter', name: 'Chatter' },
+    id: String(i), sentAt: Date.now(), text: `!noitaguessr_recover streamer ${gameCode(f.game.session.id, 'twitch')} 0 0:${keys[i]}` });
+  for (let i = 0; i < 100; i++) {
+    if (i === 16) { f.game.timing!.revision++; f.host.publishState(false); await timer.ready(); }
+    await timer.advance(1000);
+  }
+  const reader = new StreamPacketReader('streamer', f.game.session.id), received = new Set<string>();
+  for (const item of f.sent) {
+    const packet = await reader.receive({ player: { id: '100', login: 'streamer', name: 'Streamer' }, id: crypto.randomUUID(), text: item.text, sentAt: item.at }, item.at);
+    if (packet?.payload.type === 'receipts') packet.payload.keys.forEach(key => received.add(key));
+  }
+  expect(received).toEqual(new Set(keys));
+  expect(f.sent.filter(item => item.text.includes(' state-sync '))).toHaveLength(0);
+  expect(f.sent.filter(item => item.text.includes(' guess-received '))).toHaveLength(Math.ceil(1000 / STREAM_RECEIPT_BATCH));
+  const transition = f.sent.find(item => item.text.includes(' state-update '));
+  expect(transition).toBeDefined(); expect(transition!.at).toBeLessThanOrEqual(streamNow + 25000);
+  for (const item of f.sent) expect(f.sent.filter(other => other.at > item.at - 30000 && other.at <= item.at).length).toBeLessThanOrEqual(14);
+  expect(f.failure).not.toHaveBeenCalled();
+});
+
+it('recovers a released result without replaying the clue or exposing an unreleased result', async () => {
+  const f = await fixture(), timer = clock(f);
+  f.game.reveals[0] = { roundId: f.game.session.rounds[0].id, answer: streamAnswer, area: streamArea };
+  f.game.participants.push({ id: '123', login: 'chatter', name: 'Chatter', guesses: [
+    { point: streamAnswer, maximum: 5000, messageId: 'guess', sentAt: streamNow },
+  ] });
+  await f.host.start(); await timer.ready(); await timer.advance(4000);
+  f.host.receiveRequest({ player: { id: '123', login: 'chatter', name: 'Chatter' }, id: 'recover', sentAt: Date.now(),
+    text: `!noitaguessr_recover streamer ${gameCode(f.game.session.id, 'twitch')} 3` });
+  await timer.ready(); await timer.advance(10000);
+  expect(f.sent.filter(item => item.text.includes(' state-sync '))).toHaveLength(0);
+  expect(f.sent.filter(item => item.text.includes(' round-solution r1 '))).toHaveLength(1);
+  expect(f.sent.filter(item => item.text.includes(' round-solution r2 '))).toHaveLength(0);
+  expect(f.failure).not.toHaveBeenCalled();
+});
+
+it('still delivers a complete shared snapshot to a viewer joining halfway through a multipart clue', async () => {
+  const f = await fixture(), timer = clock(f);
+  f.game.session.rounds[0].clue = { frames: Array.from({ length: 12 }, (_, i) => ({
+    image: '/images/' + crypto.randomUUID().replaceAll('-', '') + '.webp', x: -1024 + i % 4 * 512, y: -512 + Math.floor(i / 4) * 384, width: 512, height: 384,
+  })) };
+  await f.host.start(); await timer.ready();
+  expect(f.sent).toHaveLength(1);
+  expect(f.sent[0].text).toMatch(/ 1\/[2-9] /);
+  await timer.advance(500);
+  const joinedAt = Date.now();
+  f.host.receiveRequest({ player: { id: '123', login: 'chatter', name: 'Chatter' }, id: 'join', sentAt: joinedAt,
+    text: `!noitaguessr_sync streamer ${gameCode(f.game.session.id, 'twitch')} 0` });
+  for (let i = 0; i < 12; i++) await timer.advance(1000);
+  const reader = new StreamPacketReader('streamer', f.game.session.id), delivered = [];
+  for (const item of f.sent.filter(item => item.at > joinedAt)) {
+    const packet = await reader.receive({ player: { id: '100', login: 'streamer', name: 'Streamer' }, id: crypto.randomUUID(), text: item.text, sentAt: item.at }, item.at);
+    if (packet) delivered.push(packet);
+  }
+  expect(delivered).toHaveLength(1);
+  expect(delivered[0].payload).toMatchObject({ type: 'state', state: { round: 1, online: true, timing: { recovery: 1 } } });
+  expect(delivered[0].sentAt - joinedAt).toBeLessThanOrEqual(10000);
+  expect(f.failure).not.toHaveBeenCalled();
+});
 
 it.each([false, true])('broadcasts a newer closed state when leaving the host page (quit: %s)', async quit => {
   const f = await fixture(), revision = f.game.timing!.revision;

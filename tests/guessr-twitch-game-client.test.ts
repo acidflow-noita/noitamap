@@ -21,12 +21,52 @@ afterEach(() => { clients.splice(0).forEach(c => c.dispose()); vi.restoreAllMock
 function fixture() {
   const sendMessage = vi.fn(async () => 'sync-id');
   const viewer = { getState: () => ({ connected: true, userId: '123' }), sendMessage } as unknown as TwitchViewer;
-  const handlers = { state: vi.fn(), status: vi.fn(), reveal: vi.fn(), receipts: vi.fn(), recovery: () => ({ missing: 0, receipts: [] }) };
+  const handlers = { state: vi.fn(), status: vi.fn(), reveal: vi.fn(), receipts: vi.fn(),
+    recovery: vi.fn<Parameters<typeof watchTwitchGame>[3]['recovery']>(() => ({ missing: 0, receipts: [] })) };
   const client = watchTwitchGame(viewer, 'streamer', id, handlers); clients.push(client);
   return { client, sendMessage, handlers };
 }
 const message = (text: string, login = 'streamer', sender = '100') => ({ id: crypto.randomUUID(), text,
   player: { id: sender, login, name: login }, sentAt: now });
+const requestText = (call: unknown) => new TextDecoder().decode(readChatEnvelope((call as [string, string])[1])!.subarray(3));
+
+it.each([true, false])('requests only missing receipts/results when supported, retaining old-host compatibility (supported: %s)', async supported => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] }); vi.setSystemTime(now);
+  const f = fixture(); f.client.transport('live', 'Connected');
+  const advertised = { ...state, timing: { ...state.timing!, ...(supported ? { recovery: 1 as const } : {}) } };
+  for (const text of await encodeStreamPacket(id, { type: 'state', state: advertised })) await f.client.receive(message(text));
+  await vi.advanceTimersByTimeAsync(7000);
+  f.handlers.recovery.mockReturnValue({ missing: 1, receipts: [{ round: 0, key: '0123456789abcdef' }] });
+  f.client.requestRecovery();
+  expect(requestText(f.sendMessage.mock.calls[1])).toMatch(supported ? /^!noitaguessr_recover streamer / : /^!noitaguessr_sync streamer /);
+  expect(requestText(f.sendMessage.mock.calls[1])).toMatch(/ 1 0:0123456789abcdef$/);
+  await vi.advanceTimersByTimeAsync(6000); f.client.retry();
+  expect(requestText(f.sendMessage.mock.calls[2])).toMatch(/^!noitaguessr_sync streamer /);
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+it('cancels a delayed recovery request when the requested receipt has already arrived', async () => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] }); vi.setSystemTime(now);
+  const f = fixture(); f.client.transport('live', 'Connected');
+  for (const text of await encodeStreamPacket(id, { type: 'state', state })) await f.client.receive(message(text));
+  f.handlers.recovery.mockReturnValue({ missing: 0, receipts: [{ round: 0, key: '0123456789abcdef' }] });
+  f.client.requestRecovery();
+  f.handlers.receipts.mockImplementation(() => f.handlers.recovery.mockReturnValue({ missing: 0, receipts: [] }));
+  for (const text of await encodeStreamPacket(id, { type: 'receipts', round: 0, keys: ['0123456789abcdef'] })) await f.client.receive(message(text));
+  await vi.advanceTimersByTimeAsync(30000);
+  expect(f.handlers.receipts).toHaveBeenCalled();
+  expect(f.sendMessage).toHaveBeenCalledOnce(); expect(fetch).not.toHaveBeenCalled();
+});
+
+it('still requests the current state after F5 even when cached data supports targeted recovery', () => {
+  store.set('noitamap-guessr-live:' + id, JSON.stringify({ ...state, timing: { ...state.timing!, recovery: 1 } }));
+  const f = fixture();
+  f.handlers.recovery.mockReturnValue({ missing: 1, receipts: [{ round: 0, key: '0123456789abcdef' }] });
+  f.client.transport('live', 'Connected');
+  expect(requestText(f.sendMessage.mock.calls[0])).toMatch(/^!noitaguessr_sync streamer /);
+  expect(f.handlers.state).toHaveBeenCalledWith(expect.objectContaining({ paused: true, online: false }));
+  expect(fetch).not.toHaveBeenCalled();
+});
 
 it('uses one Twitch resync request and accepts the owner’s broadcast without any Worker call', async () => {
   const f = fixture(); f.client.transport('live', 'Connected');

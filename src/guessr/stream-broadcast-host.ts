@@ -65,7 +65,7 @@ export class StreamBroadcastHost {
       timing: { phase: timing.phase, startsAt: window?.opensAt ?? timing.startsAt,
         deadline: timing.chatRound === null ? null : window?.closesAt ?? timing.deadline,
         chatRound: timing.chatRound === null ? null : timing.chatRound + 1,
-        hostRound: game.round + 1, seconds: timing.seconds,
+        hostRound: game.round + 1, seconds: timing.seconds, recovery: 1,
         ...(timing.early ? { early: true } : {}),
         revealed: game.reveals.reduce((mask, reveal, i) => reveal ? mask | 1 << i : mask, 0) } };
   }
@@ -77,12 +77,12 @@ export class StreamBroadcastHost {
     this.lastState = signature;
     this.lastSnapshot = Date.now();
     if (full) { this.lastFullSnapshot = this.lastSnapshot; clearTimeout(this.resyncTimer); this.resyncTimer = undefined; }
-    this.prepare(this.publisher.offer('state', { type: 'state', state, ...(resync ? { event: 'sync' as const } : {}) }, 0));
+    this.prepare(this.publisher.offer('state', { type: 'state', state, ...(resync ? { event: 'sync' as const } : {}) }, resync ? 2 : 0));
   }
-  publishReveal(round: number): void {
+  publishReveal(round: number, recovery = false): void {
     const reveal = this.game.reveals[round];
     if (this.stopped || !reveal || this.publisher.has(`reveal-${round}`)) return;
-    this.prepare(this.publisher.offer(`reveal-${round}`, { type: 'reveal', round, reveal }, 1));
+    this.prepare(this.publisher.offer(`reveal-${round}`, { type: 'reveal', round, reveal }, recovery ? 2 : 1));
   }
   private prepare(job: Promise<void>): void {
     this.preparations.add(job);
@@ -128,8 +128,10 @@ export class StreamBroadcastHost {
     let text = hidden?.[0] === 78 && hidden[1] === 71 && hidden[2] === 82 ? new TextDecoder().decode(hidden.subarray(3)) : message.text;
     const request = /^(?:NoitaGuessr|NG) ([0-9a-z]{26}|-) player-(?:join|sync) ([a-z0-9_]{1,25}) need=([0-9a-f]{1,3})(?: receipts=(.+))?$/.exec(text);
     if (request) text = `!noitaguessr_sync ${request[2]} ${request[1]} ${request[3]}${request[4] ? ' ' + request[4] : ''}`;
-    const match = /^!noitaguessr_sync ([a-z0-9_]{1,25}) ([0-9a-z]{26}|-) ([0-9a-f]{1,3})(?: ([0-9]:[0-9a-f]{16}(?:,[0-9]:[0-9a-f]{16}){0,9}))?$/.exec(text);
+    const match = /^!noitaguessr_(?:sync|recover) ([a-z0-9_]{1,25}) ([0-9a-z]{26}|-) ([0-9a-f]{1,3})(?: ([0-9]:[0-9a-f]{16}(?:,[0-9]:[0-9a-f]{16}){0,9}))?$/.exec(text);
     if (!match || match[1] !== this.game.session.host.login || match[2] !== '-' && gameIdFromCode(match[2]) !== this.game.session.id) return;
+    const needsState = text.startsWith('!noitaguessr_sync ');
+    if (!needsState && match[2] === '-') return;
     if (message.player.id !== this.game.session.host.id) {
       this.game.joinedPlayers ??= {};
       if (!this.game.joinedPlayers[message.player.id] && !this.game.joinedOverflow && Object.keys(this.game.joinedPlayers).length < 3000) {
@@ -154,13 +156,17 @@ export class StreamBroadcastHost {
     // A join/refresh storm still produces one shared snapshot at most every 5s.
     // A viewer joining halfway through a packet needs a complete following
     // snapshot. The broadcaster finishes the in-flight packet before this one.
-    if (Date.now() - this.lastFullSnapshot >= 5000) this.publishState(true, true);
-    else if (!this.resyncTimer) this.resyncTimer = setTimeout(() => this.publishState(true, true), this.lastFullSnapshot + 5000 - Date.now());
+    // Receipt/result checks already have the current clue. Only a join, refresh
+    // or an explicit missing-state request needs this shared snapshot.
+    if (needsState) {
+      if (now - this.lastFullSnapshot >= 5000) this.publishState(true, true);
+      else if (!this.resyncTimer) this.resyncTimer = setTimeout(() => this.publishState(true, true), this.lastFullSnapshot + 5000 - now);
+    }
     const missing = parseInt(match[3], 16);
     const participant = missing ? this.game.participants.find(p => p.id === message.player.id) : undefined;
     for (let round = 0; round < this.game.reveals.length; round++) if (missing & 1 << round) {
       if (!participant?.guesses[round] || this.requestedReveals.has(round)) continue;
-      this.requestedReveals.add(round); this.publishReveal(round);
+      this.requestedReveals.add(round); this.publishReveal(round, true);
       setTimeout(() => this.requestedReveals.delete(round), 15_000);
     }
     for (const entry of match[4]?.split(',') ?? []) {

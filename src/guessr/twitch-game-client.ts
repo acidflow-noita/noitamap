@@ -22,6 +22,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
   recovery: () => { missing: number; receipts: { round: number; key: string }[] };
 }) {
   let closed = false, currentGame = expectedGame, revision = -1, connected = false, lastRequest = 0;
+  let needsState = true;
   let timeOffset = 0, hasClock = false;
   let latest: LiveRoomView | undefined;
   let watchdog: ReturnType<typeof setTimeout> | undefined, requestTimer: ReturnType<typeof setTimeout> | undefined;
@@ -38,13 +39,16 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
     }, delay);
   };
   const request = () => {
+    clearTimeout(requestTimer); requestTimer = undefined;
     if (closed || latest?.ended || latest?.phase === 'complete' || !connected || !viewer.getState().connected) return;
-    clearTimeout(requestTimer);
+    const recovery = handlers.recovery();
+    // A delayed check may have been answered by a broadcast while waiting for
+    // the send budget. Never turn it into another join/resync request.
+    if (!needsState && !recovery.missing && !recovery.receipts.length) return;
     if (viewer.getState().sending) { requestTimer = setTimeout(request, 1000); return; }
     const wait = lastRequest + 6000 - Date.now();
     if (wait > 0) { requestTimer = setTimeout(request, wait); return; }
     lastRequest = Date.now();
-    const recovery = handlers.recovery();
     const receipts = recovery.receipts.slice(0, 6).filter(r => r.round >= 0 && r.round < 10 && /^[a-f0-9]{16}$/.test(r.key))
       .map(r => `${r.round}:${r.key}`).join(',');
     const code = currentGame ? gameCode(currentGame, 'twitch') : '-';
@@ -55,7 +59,10 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
       : tr(recovery.receipts.length ? 'NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.'
       : recovery.missing ? 'NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.'
       : 'NoitaGuessr {{game}}: joining {{channel}}’s game.', values);
-    const requestText = `!noitaguessr_sync ${channel} ${code} ${(recovery.missing & 1023).toString(16)}${receipts ? ' ' + receipts : ''}`;
+    // Older host tabs retain the existing command until they reload. Capability
+    // comes from a fresh host state; F5/reconnect always requests state first.
+    const command = needsState || latest?.timing?.recovery !== 1 ? '!noitaguessr_sync' : '!noitaguessr_recover';
+    const requestText = `${command} ${channel} ${code} ${(recovery.missing & 1023).toString(16)}${receipts ? ' ' + receipts : ''}`;
     const message = chatEnvelope(label, new Uint8Array([78, 71, 82, ...new TextEncoder().encode(requestText)]));
     void viewer.sendMessage(GUESSR_TRANSPORT_CHANNEL, message).catch(() => {
       if (!closed && !latest) handlers.status('retrying', 'Waiting for the streamer’s game update.');
@@ -84,11 +91,12 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
       if (payload.type === 'state') {
         if (payload.state.revision < revision) return;
         if (payload.state.clue === null && !payload.state.ended && payload.state.timing?.phase !== 'lobby') {
-          if (latest?.roundId !== payload.state.roundId || !latest.clue) { request(); return; }
+          if (latest?.roundId !== payload.state.roundId || !latest.clue) { needsState = true; request(); return; }
           payload.state.clue = latest.clue;
         }
         revision = payload.state.revision;
         latest = payload.state;
+        needsState = false;
         watch();
         try { localStorage.setItem('noitamap-guessr-live:' + currentGame, JSON.stringify(payload.state)); } catch { /* Optional cache. */ }
         handlers.state(payload.state);
@@ -106,6 +114,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
       if (connected) {
         if (latest?.ended) { handlers.status('stopped', 'The streamer ended this game.'); return; }
         if (latest?.phase === 'complete') { handlers.status('connected', ''); return; }
+        needsState = true;
         handlers.status('connecting', 'Waiting for the streamer’s game update.'); watch(); request();
       }
       else {
@@ -113,7 +122,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
         handlers.status(status === 'connecting' ? 'connecting' : status === 'reconnecting' ? 'retrying' : 'stopped', detail);
       }
     },
-    retry() { request(); watch(); },
+    retry() { needsState = true; request(); watch(); },
     now() { return Date.now() + timeOffset; },
     requestRecovery: request,
     dispose() { closed = true; clearTimeout(watchdog); clearTimeout(requestTimer); },

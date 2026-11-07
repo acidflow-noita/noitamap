@@ -53,6 +53,7 @@ function pack(payload: StreamWirePayload): unknown[] | Uint8Array<ArrayBuffer> {
     return [0, s.revision, s.hostId, s.phase, s.online, s.paused, s.round, s.roundId, s.clue, s.expiresAt, s.resultId,
       t ? { phase: t.phase, startsAt: t.startsAt, deadline: t.deadline, hostRound: t.hostRound, seconds: t.seconds, revealed: t.revealed,
         ...(t.chatRound !== undefined ? { chatRound: t.chatRound } : {}),
+        ...(t.recovery === 1 ? { recovery: 1 } : {}),
         ...(t.early ? { early: true } : {}),
         ...(['easy', 'normal', 'hard'].includes(s.difficultyTier ?? '') ? { d: ['easy', 'normal', 'hard'].indexOf(s.difficultyTier!) } : {}),
         ...(s.ended ? { ended: true } : {}) } : undefined];
@@ -150,6 +151,7 @@ export class StreamPacketReader {
           || timing.chatRound !== undefined && timing.chatRound !== null && (!Number.isInteger(timing.chatRound) || timing.chatRound < 1 || timing.chatRound > 10)
           || !Number.isInteger(timing.seconds) || timing.seconds < 0 || timing.seconds > 600) return null;
         if (timing.d !== undefined && (!Number.isInteger(timing.d) || timing.d < 0 || timing.d > 2)) return null;
+        if (timing.recovery !== undefined && timing.recovery !== 1) return null;
         const difficultyTier = (['easy', 'normal', 'hard'] as const)[timing.d as number];
         delete timing.d;
         payload = { type: 'state', state: { schema: 1, channel: this.channel, gameId, revision, hostId, hostPro: 'active', phase,
@@ -201,8 +203,13 @@ export class StreamBroadcaster {
     const frames = await encodeStreamPacket(this.gameId, payload);
     if (this.stopped || this.serial.get(key) !== version) return;
     if (this.queue.size >= 64 && !this.queue.has(key)) throw Error('Broadcast queue is full');
-    const publication = { frames, next: 0, priority, done, lost, payload, retries: 0 }, current = this.queue.get(key);
-    if (current && (current.next > 0 || current === this.active)) current.successor = publication;
+    const current = this.queue.get(key);
+    const inFlight = current && (current.next > 0 || current === this.active);
+    // A later recovery snapshot must not demote an unsent round transition.
+    const pendingPriority = inFlight ? current.successor?.priority : current?.priority;
+    priority = Math.min(priority, pendingPriority ?? priority);
+    const publication = { frames, next: 0, priority, done, lost, payload, retries: 0 };
+    if (inFlight) { current.priority = Math.min(current.priority, priority); current.successor = publication; }
     else this.queue.set(key, publication);
     this.pump();
   }

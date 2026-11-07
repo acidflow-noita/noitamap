@@ -12,6 +12,34 @@ const packet: StreamWirePayload = { type: 'state', state: { schema: 1, channel: 
 const chat = (text: string, login = 'streamer') => ({ text, player: { id: '123', login, name: 'Streamer' }, id: crypto.randomUUID(), sentAt: 10000 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
+it('does not demote a pending round transition when a later recovery snapshot replaces its contents', async () => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] }); vi.setSystemTime(1_000_000);
+  const sent: string[] = [], broadcaster = new StreamBroadcaster(id, async text => { sent.push(text); }, error => { throw error; });
+  await broadcaster.offer('initial', packet, 0);
+  await broadcaster.offer('state', packet, 0);
+  const sync: StreamWirePayload = { ...packet, type: 'state', state: { ...packet.state, revision: 3 }, event: 'sync' };
+  await broadcaster.offer('state', sync, 2);
+  await broadcaster.offer('reveal', { type: 'reveal', round: 0, reveal: { roundId: id, answer: streamAnswer, area: streamArea } }, 1);
+  await vi.advanceTimersByTimeAsync(1800);
+  expect(sent).toHaveLength(2);
+  expect(sent[1]).toContain(' state-sync r2 v3 ');
+  await vi.advanceTimersByTimeAsync(10000); await broadcaster.drain(); broadcaster.dispose();
+});
+
+it('keeps a follow-up resync behind the new solution once the original state is already being sent', async () => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] }); vi.setSystemTime(1_000_000);
+  const sent: string[] = []; let release!: () => void;
+  const broadcaster = new StreamBroadcaster(id, async text => {
+    sent.push(text); if (sent.length === 1) await new Promise<void>(resolve => { release = resolve; });
+  }, error => { throw error; });
+  await broadcaster.offer('state', packet, 0);
+  await broadcaster.offer('state', { ...packet, type: 'state', state: packet.state, event: 'sync' }, 2);
+  await broadcaster.offer('reveal', { type: 'reveal', round: 0, reveal: { roundId: id, answer: streamAnswer, area: streamArea } }, 1);
+  release(); await vi.advanceTimersByTimeAsync(1800);
+  expect(sent).toHaveLength(2); expect(sent[1]).toContain(' round-solution ');
+  await vi.advanceTimersByTimeAsync(10000); await broadcaster.drain(); broadcaster.dispose();
+});
+
 it('recovers one temporary send failure without stopping the game or bypassing the cooldown', async () => {
   vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] }); vi.setSystemTime(1_000_000);
   const send = vi.fn().mockRejectedValueOnce(new TwitchTransportError('Temporary failure', true, 7000, 429)).mockResolvedValue(undefined);
