@@ -3,6 +3,8 @@ import { canShareGameLink, postTwitchGameLink } from './twitch-announcement';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import { streamPacketText } from './stream-wire';
 import { twitchColor } from './player-color';
+import { TwitchTransportError, twitchRetryDelay } from './twitch-transport-error';
+import { connectionDiagnostic } from './connection-diagnostics';
 
 export interface TwitchChatCredentials {
   accessToken: string;
@@ -66,15 +68,31 @@ export class TwitchChatConnection {
     if (this.options.broadcasterLogin !== GUESSR_TRANSPORT_CHANNEL || !this.broadcasterId || !credentials
       || !canShareGameLink(credentials, false) || !/^!noitaguessr_state /.test(streamPacketText(message)) || message.length > 500)
       throw Error('Reconnect Twitch to send game updates.');
-    const response = await (this.options.fetch ?? fetch)('https://api.twitch.tv/helix/chat/messages', {
+    let response: Response;
+    try { response = await (this.options.fetch ?? fetch)('https://api.twitch.tv/helix/chat/messages', {
       method: 'POST', credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(10000),
       headers: { Authorization: `Bearer ${credentials.accessToken}`, 'Client-Id': credentials.clientId, 'Content-Type': 'application/json' },
       body: JSON.stringify({ broadcaster_id: this.broadcasterId, sender_id: credentials.userId, message }),
-    });
+    }); } catch {
+      connectionDiagnostic({ event: 'send-failed', code: 'network' });
+      throw new TwitchTransportError('Twitch could not send the game update.', true, 3000);
+    }
     if (response.status === 401) this.authRequired();
-    if (!response.ok) throw Error('Twitch could not send the game update.');
-    const body = await response.json() as { data?: { is_sent?: boolean }[] };
-    if (body.data?.length !== 1 || body.data[0]?.is_sent !== true) throw Error('Twitch could not send the game update.');
+    if (!response.ok) {
+      connectionDiagnostic({ event: 'send-failed', status: response.status });
+      throw new TwitchTransportError(response.status === 429 ? 'Twitch is limiting messages. Wait before sending again.'
+        : response.status === 403 ? 'Twitch does not allow this account to send messages in that channel.'
+        : 'Twitch could not send the game update.', response.status === 429 || response.status >= 500,
+        twitchRetryDelay(response.headers), response.status);
+    }
+    const body = await response.json().catch(() => null) as { data?: { is_sent?: boolean; drop_reason?: { code?: string } }[] } | null;
+    if (body?.data?.length !== 1 || body.data[0]?.is_sent !== true) {
+      const rawCode = body?.data?.[0]?.drop_reason?.code;
+      const code = typeof rawCode === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(rawCode) ? rawCode : undefined;
+      connectionDiagnostic({ event: 'send-failed', status: response.status, code });
+      throw new TwitchTransportError('Twitch did not send this message. Check the channel’s chat restrictions.',
+        false, 0, response.status, code);
+    }
   }
   stop(): void {
     this.stopped = true;
@@ -94,7 +112,9 @@ export class TwitchChatConnection {
     this.active = this.candidate = undefined;
     for (const socket of sockets)
       if (socket) {
+        socket.onmessage = null;
         socket.onclose = null;
+        socket.onerror = null;
         socket.close(1000);
       }
   }
@@ -200,8 +220,8 @@ export class TwitchChatConnection {
       this.watchdogs.set(
         socket,
         setTimeout(() => {
-          if (this.stopped || epoch !== this.epoch) return;
-          socket.close(4000);
+          if (this.stopped || epoch !== this.epoch || socket !== this.active && socket !== this.candidate) return;
+          connectionDiagnostic({ event: 'keepalive-timeout' });
           this.retry();
         }, heartbeat),
       );
@@ -211,6 +231,7 @@ export class TwitchChatConnection {
       if (
         this.stopped ||
         epoch !== this.epoch ||
+        socket !== this.active && socket !== this.candidate ||
         typeof event.data !== "string"
       )
         return;
@@ -241,7 +262,9 @@ export class TwitchChatConnection {
           if (previous) {
             clearTimeout(this.watchdogs.get(previous));
             this.watchdogs.delete(previous);
+            previous.onmessage = null;
             previous.onclose = null;
+            previous.onerror = null;
             previous.close(1000);
           }
           this.live();
@@ -273,6 +296,7 @@ export class TwitchChatConnection {
         return;
       }
       if (type === "revocation") {
+        connectionDiagnostic({ event: 'subscription-revoked', code: value.payload.subscription?.status });
         this.authRequired();
         return;
       }
@@ -321,10 +345,12 @@ export class TwitchChatConnection {
         },
       });
     };
-    socket.onclose = () => {
+    socket.onclose = (event) => {
       clearTimeout(this.watchdogs.get(socket));
       this.watchdogs.delete(socket);
       if (this.stopped || epoch !== this.epoch) return;
+      if (socket !== this.active && socket !== this.candidate) return;
+      connectionDiagnostic({ event: 'socket-close', status: event.code });
       if (socket === this.active && this.candidate) {
         this.active = undefined;
         return;
@@ -369,10 +395,14 @@ export class TwitchChatConnection {
       if (this.stopped || epoch !== this.epoch || this.active !== socket)
         return;
       if (response.status === 401 || response.status === 403) {
+        connectionDiagnostic({ event: 'subscription-failed', status: response.status });
         this.authRequired();
         return;
       }
-      if (response.status !== 202) throw Error();
+      if (response.status !== 202) {
+        connectionDiagnostic({ event: 'subscription-failed', status: response.status });
+        throw Error();
+      }
       }
       this.live();
     } catch {
@@ -381,6 +411,7 @@ export class TwitchChatConnection {
   }
   private live(): void {
     this.retries = 0;
+    connectionDiagnostic({ event: 'connected' });
     this.options.status(
       "live",
       "Chat connected. Latest valid guess received before you submit counts.",

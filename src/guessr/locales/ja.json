@@ -537,5 +537,7 @@
   "Select a streamer to see their saved game results.": "ストリーマーを選択して、そのストリーマーの保存済みゲーム結果を確認してください。",
   "No published game results yet.": "まだ試合結果は公表されていません。",
   "Your last 30 games in Demo mode on this device.": "このデバイスでのデモモードにおける直近30試合。",
-  "You have not finished a game in Demo mode yet.": "まだデモモードでゲームをクリアしていません。"
+  "You have not finished a game in Demo mode yet.": "まだデモモードでゲームをクリアしていません。",
+  "You’ve already played today’s Daily.": "今日のデイリーチャレンジはすでにプレイ済みです。",
+  "You’ve already played this Daily.": "このデイリーチャレンジはすでにプレイ済みです。"
 }

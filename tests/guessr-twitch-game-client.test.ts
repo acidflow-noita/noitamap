@@ -17,7 +17,7 @@ beforeEach(() => {
   vi.stubGlobal('localStorage', { getItem: (key: string) => store.get(key) ?? null, setItem: (key: string, value: string) => store.set(key, value) });
   vi.stubGlobal('fetch', vi.fn(() => { throw Error('Unexpected Cloudflare request'); }));
 });
-afterEach(() => { clients.splice(0).forEach(c => c.dispose()); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+afterEach(() => { clients.splice(0).forEach(c => c.dispose()); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 function fixture() {
   const sendMessage = vi.fn(async () => 'sync-id');
   const viewer = { getState: () => ({ connected: true, userId: '123' }), sendMessage } as unknown as TwitchViewer;
@@ -58,6 +58,25 @@ it('renders the cached clue locked after F5 and unlocks only after a fresh owner
     await restored.client.receive(message(text));
   expect(restored.handlers.state).toHaveBeenLastCalledWith(expect.objectContaining({ round: 2, paused: false }));
   expect(restored.sendMessage).toHaveBeenCalledOnce(); expect(fetch).not.toHaveBeenCalled();
+});
+
+it('identifies a missing round update without declaring Twitch disconnected and recovers without polling', async () => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] }); vi.setSystemTime(now);
+  const f = fixture(); f.client.transport('live', 'Connected');
+  for (const text of await encodeStreamPacket(id, { type: 'state', state })) await f.client.receive(message(text));
+  await vi.advanceTimersByTimeAsync(108000);
+  expect(f.handlers.status).toHaveBeenLastCalledWith('retrying', 'Waiting for the streamer’s game update.');
+  expect(f.sendMessage).toHaveBeenCalledOnce();
+  const next = { ...state, revision: 2, round: 2, timing: { ...state.timing!, phase: 'play' as const,
+    startsAt: Date.now(), deadline: Date.now() + 30000 } };
+  for (const text of await encodeStreamPacket(id, { type: 'state', state: next }))
+    await f.client.receive({ ...message(text), sentAt: Date.now() });
+  expect(f.handlers.state).toHaveBeenLastCalledWith(expect.objectContaining(next));
+  expect(f.handlers.status).toHaveBeenLastCalledWith('connected', '');
+  f.client.dispose();
+  const restored = fixture();
+  expect(restored.handlers.state).toHaveBeenCalledWith(expect.objectContaining({ round: 2, clue: 'abc', paused: true }));
+  expect(fetch).not.toHaveBeenCalled();
 });
 
 it('does not replace a saved game with a later game from the same streamer', async () => {

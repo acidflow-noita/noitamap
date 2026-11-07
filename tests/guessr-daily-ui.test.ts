@@ -2,7 +2,10 @@
 // @vitest-environment-options {"url":"https://dynamic-map.noitamap.com/guess/daily/?a=daily-one&lng=en"}
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-beforeEach(() => { vi.resetModules(); vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.resetModules(); vi.clearAllMocks();
+  history.replaceState(null, '', '/guess/daily/?a=daily-one&lng=en');
+});
 
 const app = vi.hoisted(() => ({ request: vi.fn(), image: vi.fn(), source: vi.fn(), board: vi.fn(), pick: (_p: { x: number; y: number }) => {} }));
 vi.mock('../src/guessr/image-game', () => ({ imageGameRequest: async () => ({ version: 'captured', bounds: { x: -2000, y: -2000, width: 4000, height: 4000 }, overview: '', map: { tiles: '/captured/' } }) }));
@@ -18,6 +21,25 @@ vi.mock('../src/guessr/clue-viewport', () => ({ ClueViewport: class {
   async show(_camera: unknown, ready?: () => void) { ready?.(); return true; } destroy() {}
 } }));
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); document.body.replaceChildren(); });
+
+it('shows already played and only result review for a completed Daily even without a history row', async () => {
+  vi.stubGlobal('localStorage', { getItem: () => null, setItem() {}, removeItem() {} });
+  vi.spyOn(window, 'addEventListener').mockImplementation(() => {});
+  document.body.innerHTML = '<div id="guess-app"></div>';
+  history.replaceState(null, '', '/guess/daily/?lng=en');
+  const today = new Date().toISOString().slice(0, 10);
+  app.request.mockImplementation(async (path: string) => {
+    if (path.startsWith('/api/daily?')) return { challenge: { id: 'daily-today', day: today, title: 'Daily', totalRounds: 10 },
+      attemptId: 'completed-today', attemptStatus: 'complete' };
+    if (path === '/api/history') return { attempts: [] };
+    throw Error('A completed Daily must not start another attempt');
+  });
+  await import('../src/guessr/main');
+  await vi.waitFor(() => expect(document.querySelector('.daily-already-played')?.textContent).toBe('You’ve already played today’s Daily.'));
+  expect(document.querySelector('.daily-start button')?.textContent).toBe('View results');
+  expect(document.querySelector('.daily-start')?.textContent).not.toContain('Start daily');
+  expect(app.request).toHaveBeenCalledTimes(2);
+});
 
 it('uses the daily tile set and shared exploration controls, then submits their score allowance', async () => {
   const values = new Map<string, string>();

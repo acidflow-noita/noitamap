@@ -546,5 +546,7 @@
   "Select a streamer to see their saved game results.": "Sélectionnez un streamer pour consulter les résultats de ses parties enregistrées.",
   "No published game results yet.": "Aucun résultat de match n'a encore été publié.",
   "Your last 30 games in Demo mode on this device.": "Vos 30 derniers jeux en mode démo sur cet appareil.",
-  "You have not finished a game in Demo mode yet.": "Vous n'avez pas encore terminé une partie en mode démo."
+  "You have not finished a game in Demo mode yet.": "Vous n'avez pas encore terminé une partie en mode démo.",
+  "You’ve already played today’s Daily.": "Tu as déjà relevé le défi du jour.",
+  "You’ve already played this Daily.": "Tu as déjà participé à ce défi quotidien."
 }

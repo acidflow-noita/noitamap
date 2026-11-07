@@ -332,10 +332,10 @@ async function route(
       .first<Challenge>();
     if (!current) return json({ challenge: null });
     const existing = await env.DB.prepare(
-      "SELECT id FROM attempts WHERE user_id=? AND challenge_id=?",
+      "SELECT id,next_round,completed_at FROM attempts WHERE user_id=? AND challenge_id=?",
     )
       .bind(user.sub, current.id)
-      .first<{ id: string }>();
+      .first<{ id: string; next_round: number; completed_at: number | null }>();
     return json({
       challenge: {
         id: current.id,
@@ -347,6 +347,7 @@ async function route(
         totalRounds: DAILY_ROUNDS,
       },
       attemptId: existing?.id ?? null,
+      attemptStatus: existing ? existing.completed_at !== null || existing.next_round >= DAILY_ROUNDS ? 'complete' : 'active' : null,
     });
   }
   if (path === "/api/attempts" && request.method === "POST") {
@@ -363,7 +364,11 @@ async function route(
     )
       .bind(user.sub, c.id)
       .first<Attempt>();
-    if (existing) return json(await state(env, existing, c, now));
+    if (existing) {
+      if (existing.completed_at !== null || existing.next_round >= DAILY_ROUNDS)
+        fail(409, 'You’ve already played this Daily.');
+      return json(await state(env, existing, c, now));
+    }
     if (now < c.opens_at) fail(409, "This challenge is closed.");
     const count = await env.DB.prepare(
       "SELECT COUNT(*) AS n FROM questions WHERE challenge_id=?",
@@ -381,6 +386,8 @@ async function route(
     )
       .bind(user.sub, c.id)
       .first<Attempt>();
+    if (a!.completed_at !== null || a!.next_round >= DAILY_ROUNDS)
+      fail(409, 'You’ve already played this Daily.');
     return json(await state(env, a!, c, now));
   }
   const match = path.match(

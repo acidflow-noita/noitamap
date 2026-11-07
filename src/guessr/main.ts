@@ -1175,17 +1175,21 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
     }
     const c = status.challenge,
       panel = node("section", "panel daily-start");
+    const completed = status.attemptStatus === 'complete'
+      || !!status.attemptId && !!past.attempts.find(a => a.id === status.attemptId)?.complete;
     const details = node('div', 'daily-start-meta');
     const date = node('time', 'daily-start-date', msg(() => new Date(c.day + 'T00:00:00Z').toLocaleDateString(guessrLocale(), { dateStyle: 'long', timeZone: 'UTC' })));
     date.dateTime = c.day;
     details.append(date, node('span', 'muted', msg('{{rounds}} rounds', () => ({ rounds: formatGuessrNumber(c.totalRounds), count: c.totalRounds }))));
     panel.append(
       details,
-      node('p', '', msg('No time limit. Your progress saves automatically.')),
+      node('p', completed ? 'daily-already-played' : '', msg(completed
+        ? c.day === utcDay() ? 'You’ve already played today’s Daily.' : 'You’ve already played this Daily.'
+        : 'No time limit. Your progress saves automatically.')),
     );
     panel.append(
       button(
-        status.attemptId ? past.attempts.find((a) => a.id === status.attemptId)?.complete ? msg("View results") : msg("Continue daily") : msg("Start daily"),
+        status.attemptId ? completed ? msg("View results") : msg("Continue daily") : msg("Start daily"),
         async () => {
           if (busy) return;
           busy = true;

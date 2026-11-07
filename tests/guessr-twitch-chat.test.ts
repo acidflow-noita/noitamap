@@ -48,7 +48,7 @@ afterEach(() => {
 const flush = async () => {
   for (let i = 0; i < 6; i++) await Promise.resolve();
 };
-function fixture(broadcasterLogin?: string) {
+function fixture(broadcasterLogin?: string, scopes?: string[]) {
   const sockets: FakeSocket[] = [],
     message = vi.fn(),
     status = vi.fn();
@@ -62,6 +62,7 @@ function fixture(broadcasterLogin?: string) {
     clientId: "client",
     accessToken: "private-user-token",
     expiresAt: Date.now() + 3600000,
+    scopes,
   }));
   const connection = new TwitchChatConnection({
     userId: "100",
@@ -98,6 +99,32 @@ function fixture(broadcasterLogin?: string) {
   return { connection, sockets, message, status, request, chat, credentials };
 }
 describe("Twitch EventSub browser transport", () => {
+  it('preserves Twitch send status and drop codes without treating a send rejection as a socket disconnect', async () => {
+    const f = fixture('noitaguessr', ['user:write:chat']); await flush(); await flush();
+    f.sockets[0].welcome('session'); await flush();
+    f.request.mockResolvedValueOnce(Response.json({}, { status: 429, headers: { 'Retry-After': '9' } }));
+    await expect(f.connection.sendTransport('!noitaguessr_state packet')).rejects.toMatchObject({
+      name: 'TwitchTransportError', status: 429, retryable: true, retryAfterMs: 9000,
+    });
+    expect(f.sockets[0].closed).toBe(false);
+    f.request.mockResolvedValueOnce(Response.json({ data: [{ is_sent: false, drop_reason: { code: 'msg_banned' } }] }));
+    await expect(f.connection.sendTransport('!noitaguessr_state packet')).rejects.toMatchObject({
+      status: 200, dropCode: 'msg_banned', retryable: false,
+    });
+    expect(f.status).toHaveBeenLastCalledWith('live', expect.any(String));
+  });
+  it('does not let a retired handoff socket re-arm a watchdog or disconnect its healthy replacement', async () => {
+    const f = fixture(); await flush();
+    const old = f.sockets[0]; old.welcome('old'); await flush();
+    old.receive('session_reconnect', { session: { reconnect_url: 'wss://eventsub.wss.twitch.tv/ws?reconnect=safe' } });
+    const queuedMessage = old.onmessage!;
+    const next = f.sockets[1]; next.welcome('next'); await flush();
+    expect(old.onmessage).toBeNull();
+    queuedMessage(new MessageEvent('message', { data: JSON.stringify({ metadata: { message_type: 'session_keepalive' }, payload: {} }) }));
+    for (let i = 0; i < 4; i++) { await vi.advanceTimersByTimeAsync(8000); next.receive('session_keepalive', {}); }
+    expect(f.sockets).toHaveLength(2); expect(next.closed).toBe(false);
+    expect(f.status).toHaveBeenLastCalledWith('live', expect.any(String));
+  });
   it('uses the already validated host credential to announce without another credential request', async () => {
     const f = fixture('noitaguessr');
     f.credentials.mockResolvedValue({ userId: '100', login: 'streamer', clientId: 'client', accessToken: 'private-user-token',

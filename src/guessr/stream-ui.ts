@@ -577,16 +577,21 @@ export class StreamUI {
         this.roomHealthy = true;
         if (game.paused) resumeStreamTiming(game, streamTime(game));
         if (!this.broadcast) {
-          const failed = (error: unknown) => {
-            if (this.game !== game || !this.mounted) return;
+          let publisher: StreamBroadcastHost;
+          const failed = (error: unknown, key?: string) => {
+            if (this.game !== game || !this.mounted || this.broadcast !== publisher) return;
+            console.warn('[NoitaGuessr] Broadcast failed:', error);
+            // Confirmed guesses remain saved even if one receipt is rejected.
+            // A later delivery check can request it again without killing play.
+            if (key?.startsWith('receipts-')) return;
             suspendStreamTiming(game, streamTime(game));
             this.roomHealthy = false;
+            this.statusDetail = error instanceof Error ? error.message : 'Twitch could not send the game update.';
             this.broadcast?.dispose(); this.broadcast = undefined;
-            console.warn('[NoitaGuessr] Broadcast failed:', error);
             this.save(); this.render(); this.hooks.toast(tr('Twitch could not send the game update.'));
           };
           const viewer = this.viewer, receiver = this.chat;
-          this.broadcast = new StreamBroadcastHost(game, this.viewerImageRoot(), text => this.api.local
+          publisher = new StreamBroadcastHost(game, this.viewerImageRoot(), text => this.api.local
             ? viewer!.sendMessage(GUESSR_TRANSPORT_CHANNEL, text) : receiver!.sendTransport(text), failed, this.save, () => {
               this.saveTimer ??= setTimeout(this.save, 250);
               this.lobbyTimer ??= setTimeout(() => {
@@ -594,6 +599,7 @@ export class StreamUI {
                 if (this.mounted && this.game === game) this.updateLobby(true);
               }, 250);
             });
+          this.broadcast = publisher;
           void this.broadcast.start().catch(failed);
         } else this.broadcast.publishState();
         this.save(); if (needsRender) this.render(); this.startTick();
@@ -966,7 +972,7 @@ export class StreamUI {
     status.id = "stream-chat-status";
     status.tabIndex = 0; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
     this.statusHelp = hoverHelp(status, () => tr(this.api.local && !game.session.localChat ? 'Local simulated chat'
-      : this.status === 'live' ? 'Receiving guesses from Twitch.' : this.statusDetail));
+      : this.status === 'live' && this.roomHealthy ? 'Receiving guesses from Twitch.' : this.statusDetail));
     const identity = el('span', '', 'stream-host-identity');
     const name = el('span', '', 'stream-name');
     name.append(el('strong', () => game.session.host.login), this.proStatus.badge); identity.append(name);

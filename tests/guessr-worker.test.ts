@@ -133,6 +133,21 @@ describe("ranked game authority", () => {
     expect(
       f.sqlite.prepare("SELECT COUNT(*) AS n FROM attempts").get(),
     ).toMatchObject({ n: 1 });
+    expect(await (await f.call('/api/daily')).json()).toMatchObject({ attemptId: a.id, attemptStatus: 'active' });
+  });
+  it('refuses a completed Daily restart while keeping its result available', async () => {
+    const f = await fixture(), a = await f.start();
+    for (let round = 0; round < 10; round++) {
+      const response = await f.call(`/api/attempts/${a.id}/guess`, {
+        round, guess: { x: round * 50, y: round * 100 }, requestId: `finished-daily-round-${round}`,
+      });
+      expect(response.status).toBe(200);
+    }
+    expect(await (await f.call('/api/daily')).json()).toMatchObject({ attemptId: a.id, attemptStatus: 'complete' });
+    const restart = await f.call('/api/attempts', { challengeId: 'daily-test' });
+    expect(restart.status).toBe(409); expect(await restart.json()).toEqual({ error: 'You’ve already played this Daily.' });
+    expect(await (await f.call(`/api/attempts/${a.id}`)).json()).toMatchObject({ id: a.id, status: 'complete', score: 50000 });
+    expect(f.sqlite.prepare('SELECT COUNT(*) AS n FROM attempts').get()).toMatchObject({ n: 1 });
   });
   it("quits without discarding earned points or allowing the daily to restart", async () => {
     const f = await fixture(),
@@ -173,7 +188,10 @@ describe("ranked game authority", () => {
     ).toBe(200);
     expect(f.sqlite.prepare("SELECT * FROM attempts").get()).toEqual(saved);
     expect(f.sqlite.prepare("SELECT * FROM guesses").all()).toEqual(guesses);
-    expect(await f.start()).toMatchObject({
+    const retry = await f.call('/api/attempts', { challengeId: 'daily-test' });
+    expect(retry.status).toBe(409);
+    expect(await retry.json()).toEqual({ error: 'You’ve already played this Daily.' });
+    expect(await (await f.call(`/api/attempts/${a.id}`)).json()).toMatchObject({
       id: a.id,
       status: "complete",
       round: 10,

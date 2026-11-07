@@ -17,6 +17,34 @@ async function fixture(seconds = 90) {
 }
 
 describe('chat first, timed streamer rounds', () => {
+  it('never extends a 30-second round when a disconnect and refresh last several minutes', async () => {
+    const f = await fixture(30); startHostWindow(f.game, streamNow + 33_000);
+    const deadline = f.game.timing!.deadline!, start = f.game.timing!.startsAt;
+    suspendStreamTiming(f.game, start + 10_000);
+    const restored = JSON.parse(JSON.stringify(f.game));
+    resumeStreamTiming(restored, start + 190_000);
+    expect(restored.timing.deadline).toBe(deadline);
+    expect(restored.timing.windows[1].closesAt).toBe(deadline);
+    expect(hostMayGuess(restored, start + 190_000)).toBe(false);
+    expect(streamTick(restored, start + 190_000)).toBe('submit');
+  });
+  it('does not restart the countdown on repeated connected notifications', async () => {
+    const f = await fixture(30), original = structuredClone(f.game.timing);
+    resumeStreamTiming(f.game, streamNow + 5000);
+    resumeStreamTiming(f.game, streamNow + 12000);
+    expect(f.game.timing).toEqual(original);
+  });
+  it('repairs a persisted inflated deadline without granting a fresh round', async () => {
+    const f = await fixture(30); startHostWindow(f.game, streamNow + 33_000);
+    const deadline = f.game.timing!.deadline!;
+    f.game.timing!.deadline! += 180_000;
+    f.game.timing!.windows[1]!.closesAt! += 180_000;
+    f.game.paused = true;
+    const restored = JSON.parse(JSON.stringify(f.game));
+    resumeStreamTiming(restored, streamNow + 45_000);
+    expect(restored.timing.deadline).toBe(deadline);
+    expect(restored.timing.windows[1].closesAt).toBe(deadline);
+  });
   it('closes early only after the enrolled chatters and the streamer have submitted, preserving chat-ahead order', async () => {
     const f = await fixture();
     f.game.joinedPlayers = { '123': { login: 'chatter', name: 'Chatter' } };
@@ -115,7 +143,7 @@ describe('chat first, timed streamer rounds', () => {
     expect(f.guess(1, open + 1001)).toBe('closed');
   });
 
-  it('preserves the current phase through refresh and extends only unfinished windows during recovery', async () => {
+  it('preserves the current phase and original closing times through refresh', async () => {
     const f = await fixture(); startHostWindow(f.game, streamNow + 93_000);
     const start = f.game.timing!.startsAt, oldDeadline = f.game.timing!.deadline!;
     suspendStreamTiming(f.game, start + 10_000);
@@ -123,7 +151,7 @@ describe('chat first, timed streamer rounds', () => {
     const restored = JSON.parse(JSON.stringify(f.game));
     resumeStreamTiming(restored, start + 40_000);
     expect(restored.timing.startsAt).toBe(start);
-    expect(restored.timing.deadline).toBe(oldDeadline + 30_000);
+    expect(restored.timing.deadline).toBe(oldDeadline);
     expect(restored.timing.windows[0].closesAt).toBe(streamNow + 93_000);
     expect(hostMayGuess(restored, start + 40_000)).toBe(true);
   });

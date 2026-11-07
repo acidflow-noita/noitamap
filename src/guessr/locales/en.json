@@ -537,5 +537,7 @@
   "Your round {{round}} / {{total}}": "Your round {{round}} / {{total}}",
   "Invalid history page.": "Invalid history page.",
   "Select a streamer to see their saved game results.": "Select a streamer to see their saved game results.",
-  "Your last 30 games in Demo mode on this device.": "Your last 30 games in Demo mode on this device."
+  "Your last 30 games in Demo mode on this device.": "Your last 30 games in Demo mode on this device.",
+  "You’ve already played today’s Daily.": "You’ve already played today’s Daily.",
+  "You’ve already played this Daily.": "You’ve already played this Daily."
 }

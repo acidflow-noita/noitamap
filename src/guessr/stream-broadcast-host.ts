@@ -28,7 +28,7 @@ export class StreamBroadcastHost {
   private completing?: Promise<void>;
   private preparations = new Set<Promise<void>>();
   constructor(private game: StreamGame, private imageRoot: string, private send: (message: string) => Promise<unknown>,
-    private failed: (error: unknown) => void, private save: () => void, private joined: () => void = () => {}) {
+    private failed: (error: unknown, key?: string) => void, private save: () => void, private joined: () => void = () => {}) {
     this.publisher = new StreamBroadcaster(game.session.id, send, failed, game.session.host.id);
     for (const [round, keys] of Object.entries(game.receipts ?? {})) this.receipts.set(Number(round), new Set(keys));
   }

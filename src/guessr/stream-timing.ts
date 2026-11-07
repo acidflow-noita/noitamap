@@ -101,16 +101,16 @@ export function suspendStreamTiming(game: StreamGame, now: number): void {
 export function resumeStreamTiming(game: StreamGame, now: number): void {
   const timing = game.timing;
   if (!timing) { game.paused = false; return; }
-  const stopped = timing.suspendedAt ?? timing.lastActiveAt;
-  const gap = Math.max(0, now - stopped);
-  if (timing.startsAt > stopped) timing.startsAt += gap;
-  if (timing.deadline !== null) timing.deadline += gap;
-  if (timing.resultsUntil && timing.resultsUntil > stopped) timing.resultsUntil += gap;
+  if (!game.paused) return;
+  // A transport interruption must not grant extra playing time. Keep absolute
+  // deadlines across F5/reconnect, and repair saves extended by the old code.
+  if (timing.deadline !== null && timing.seconds)
+    timing.deadline = Math.min(timing.deadline, timing.startsAt + timing.seconds * 1000);
+  if (timing.resultsUntil)
+    timing.resultsUntil = Math.min(timing.resultsUntil, now + STREAM_RESULTS_HOLD_MS);
   const window = timing.chatRound === null ? null : timing.windows[timing.chatRound];
-  if (window && !window.closed) {
-    if (window.opensAt > stopped) window.opensAt += gap;
-    if (window.closesAt !== null) window.closesAt += gap;
-  }
+  if (window && !window.closed && window.closesAt !== null && timing.seconds)
+    window.closesAt = Math.min(window.closesAt, window.opensAt + timing.seconds * 1000, timing.deadline ?? Infinity);
   timing.suspendedAt = null; timing.lastActiveAt = now; timing.revision++;
   game.paused = false;
 }

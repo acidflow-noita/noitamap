@@ -3,6 +3,8 @@ import type { StreamChatMessage } from './stream-state';
 import type { LiveRoomView } from './live-room-types';
 import type { StreamReveal } from './stream-types';
 import { readChatEnvelope } from './chat-envelope';
+import { TwitchTransportError } from './twitch-transport-error';
+import { connectionDiagnostic } from './connection-diagnostics';
 
 const PREFIX = '!noitaguessr_state';
 export const STREAM_RECEIPT_BATCH = 35;
@@ -171,7 +173,8 @@ export async function guessReceiptKey(roundId: string, userId: string, nonce: st
   return Array.from(hash.subarray(0, 8), n => n.toString(16).padStart(2, '0')).join('');
 }
 
-interface Publication { frames: string[]; next: number; priority: number; done?: () => void; lost?: () => void; successor?: Publication }
+interface Publication { frames: string[]; next: number; priority: number; payload?: StreamWirePayload;
+  retries?: number; retryAt?: number; done?: () => void; lost?: () => void; successor?: Publication }
 /** At most 14 messages per rolling 30 seconds and at least 1.8 seconds apart.
  * Coalesce repeated snapshots; never create a response queue per viewer. */
 export class StreamBroadcaster {
@@ -184,7 +187,7 @@ export class StreamBroadcaster {
   private stopped = false;
   private waiters = new Set<() => void>();
   private budgetKey: string;
-  constructor(private gameId: string, private send: (message: string) => Promise<unknown>, private failed: (error: unknown) => void, senderId = gameId) {
+  constructor(private gameId: string, private send: (message: string) => Promise<unknown>, private failed: (error: unknown, key?: string) => void, senderId = gameId) {
     this.budgetKey = 'noitamap-guessr-broadcast-budget:' + senderId;
     try {
       const saved = JSON.parse(localStorage.getItem(this.budgetKey) ?? 'null');
@@ -198,7 +201,7 @@ export class StreamBroadcaster {
     const frames = await encodeStreamPacket(this.gameId, payload);
     if (this.stopped || this.serial.get(key) !== version) return;
     if (this.queue.size >= 64 && !this.queue.has(key)) throw Error('Broadcast queue is full');
-    const publication = { frames, next: 0, priority, done, lost }, current = this.queue.get(key);
+    const publication = { frames, next: 0, priority, done, lost, payload, retries: 0 }, current = this.queue.get(key);
     if (current && (current.next > 0 || current === this.active)) current.successor = publication;
     else this.queue.set(key, publication);
     this.pump();
@@ -207,9 +210,10 @@ export class StreamBroadcaster {
     if (this.busy || this.stopped || !this.queue.size) return;
     clearTimeout(this.timer);
     const now = Date.now(); this.sent = this.sent.filter(at => at > now - 30_000);
-    const wait = Math.max(0, (this.sent.at(-1) ?? 0) + 1800 - now, this.sent.length >= 14 ? this.sent[0] + 30_001 - now : 0);
-    if (wait) { this.timer = setTimeout(() => this.pump(), wait); return; }
     const [key, entry] = [...this.queue].sort((a, b) => a[1].priority - b[1].priority)[0];
+    const wait = Math.max(0, (entry.retryAt ?? 0) - now,
+      (this.sent.at(-1) ?? 0) + 1800 - now, this.sent.length >= 14 ? this.sent[0] + 30_001 - now : 0);
+    if (wait) { this.timer = setTimeout(() => this.pump(), wait); return; }
     this.busy = true; this.active = entry; this.sent.push(now);
     try { localStorage.setItem(this.budgetKey, JSON.stringify(this.sent)); } catch { /* Optional refresh protection. */ }
     void this.send(entry.frames[entry.next]).then(() => {
@@ -218,9 +222,28 @@ export class StreamBroadcaster {
         if (entry.successor) this.queue.set(key, entry.successor); else this.queue.delete(key);
         entry.done?.();
       }
-    }).catch(error => {
+    }).catch(async error => {
+      if (this.stopped || this.queue.get(key) !== entry) return;
+      if (error instanceof TwitchTransportError && error.retryable && error.retryAfterMs <= 60_000
+        && entry.payload && (entry.retries ?? 0) < 2) {
+        entry.retries = (entry.retries ?? 0) + 1;
+        // Retry a complete packet with a new packet ID. An uncertain send may
+        // already have arrived; state/reveals/receipts are idempotent at readers.
+        try {
+          const frames = await encodeStreamPacket(this.gameId, entry.payload);
+          if (this.stopped || this.queue.get(key) !== entry) return;
+          entry.frames = frames; entry.next = 0;
+          entry.retryAt = Date.now() + Math.max(error.retryAfterMs, entry.retries * 3000);
+          connectionDiagnostic({ event: 'broadcast-retry', status: error.status, attempt: entry.retries });
+          return;
+        } catch (retryError) { error = retryError; }
+      }
       if (this.queue.get(key) === entry) this.queue.delete(key);
-      if (!this.stopped) { entry.lost?.(); this.failed(error); }
+      if (!this.stopped) {
+        connectionDiagnostic({ event: 'broadcast-failed', status: error instanceof TwitchTransportError ? error.status : undefined,
+          code: error instanceof TwitchTransportError ? error.dropCode : undefined });
+        entry.lost?.(); this.failed(error, key);
+      }
     }).finally(() => { this.busy = false; this.active = undefined; this.pump(); if (!this.queue.size) this.resolveDrain(); });
   }
   drain(): Promise<void> {

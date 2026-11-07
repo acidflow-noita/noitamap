@@ -10,6 +10,7 @@ import { gameCode, gameIdFromCode } from './routes';
 import { prepareAreaScorer } from './area-rules';
 import { chatEnvelope } from './chat-envelope';
 import { tr, formatGuessrNumber } from './i18n';
+import { connectionDiagnostic } from './connection-diagnostics';
 
 /** Receives through the page's existing Twitch connection. No Cloudflare socket,
  * polling, viewer heartbeat, or per-guess Worker request. */
@@ -32,7 +33,8 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
     const delay = latest?.timing?.deadline ? Math.max(10_000, latest.timing.deadline - Date.now() - timeOffset + 15_000) : 15_000;
     watchdog = setTimeout(() => {
       if (closed) return;
-      handlers.status('retrying', 'NoitaGuessr game connection unavailable. Try reconnecting.');
+      connectionDiagnostic({ event: 'game-update-timeout' });
+      handlers.status('retrying', 'Waiting for the streamer’s game update.');
     }, delay);
   };
   const request = () => {

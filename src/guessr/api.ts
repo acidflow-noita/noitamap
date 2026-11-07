@@ -57,6 +57,7 @@ export interface DailyStatus {
     totalRounds: number;
   } | null;
   attemptId: string | null;
+  attemptStatus?: 'active' | 'complete' | null;
 }
 export interface Leaderboard {
   period: string;

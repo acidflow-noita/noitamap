@@ -555,5 +555,7 @@
   "Select a streamer to see their saved game results.": "Виберіть стрімера, щоб переглянути його збережені результати ігор.",
   "No published game results yet.": "Результати матчів ще не опубліковано.",
   "Your last 30 games in Demo mode on this device.": "Ваші останні 30 ігор у режимі «Демо» на цьому пристрої.",
-  "You have not finished a game in Demo mode yet.": "Ви ще не завершили гру в демо-режимі."
+  "You have not finished a game in Demo mode yet.": "Ви ще не завершили гру в демо-режимі.",
+  "You’ve already played today’s Daily.": "Ви вже виконали сьогоднішнє щоденне завдання.",
+  "You’ve already played this Daily.": "Ви вже пройшли це щоденне завдання."
 }

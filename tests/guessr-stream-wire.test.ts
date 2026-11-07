@@ -3,6 +3,7 @@ import { encodeStreamPacket, StreamPacketReader, guessReceiptKey, StreamBroadcas
 import type { StreamWirePayload } from '../src/guessr/stream-wire';
 import { streamArea, streamAnswer } from './helpers/guessr-stream';
 import { gameCode } from '../src/guessr/routes';
+import { TwitchTransportError } from '../src/guessr/twitch-transport-error';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const packet: StreamWirePayload = { type: 'state', state: { schema: 1, channel: 'streamer', hostId: '123', hostPro: 'active', gameId: id,
@@ -10,6 +11,49 @@ const packet: StreamWirePayload = { type: 'state', state: { schema: 1, channel: 
   timing: { phase: 'play', startsAt: 10000, deadline: 100000, hostRound: 1, seconds: 90 } } };
 const chat = (text: string, login = 'streamer') => ({ text, player: { id: '123', login, name: 'Streamer' }, id: crypto.randomUUID(), sentAt: 10000 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+it('recovers one temporary send failure without stopping the game or bypassing the cooldown', async () => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] }); vi.setSystemTime(1_000_000);
+  const send = vi.fn().mockRejectedValueOnce(new TwitchTransportError('Temporary failure', true, 7000, 429)).mockResolvedValue(undefined);
+  const failed = vi.fn(), done = vi.fn(), broadcaster = new StreamBroadcaster(id, send, failed);
+  await broadcaster.offer('state', packet, 0, done);
+  await vi.waitFor(() => expect((broadcaster as any).queue.get('state')?.retryAt).toBeGreaterThan(Date.now()));
+  const wait = (broadcaster as any).queue.get('state').retryAt - Date.now();
+  await vi.advanceTimersByTimeAsync(wait - 1); expect(send).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(1); await broadcaster.drain();
+  expect(send).toHaveBeenCalledTimes(2); expect(done).toHaveBeenCalledOnce(); expect(failed).not.toHaveBeenCalled();
+  expect(send.mock.calls[0][0]).not.toBe(send.mock.calls[1][0]);
+  const received = await new StreamPacketReader('streamer', id).receive(chat(send.mock.calls[1][0]));
+  expect(received?.payload).toEqual(packet); broadcaster.dispose();
+});
+
+it('does not automatically retry moderation/permission rejections and reports which packet failed', async () => {
+  const error = new TwitchTransportError('Rejected', false, 0, 403, 'msg_banned');
+  const send = vi.fn().mockRejectedValue(error), failed = vi.fn(), lost = vi.fn();
+  const broadcaster = new StreamBroadcaster(id, send, failed);
+  await broadcaster.offer('receipts-0-false', { type: 'receipts', round: 0, keys: ['1234567890abcdef'] }, 2, undefined, lost);
+  await broadcaster.drain();
+  expect(send).toHaveBeenCalledOnce(); expect(lost).toHaveBeenCalledOnce();
+  expect(failed).toHaveBeenCalledWith(error, 'receipts-0-false'); broadcaster.dispose();
+});
+
+it('bounds transient retries and cancels a pending recovery when leaving the game', async () => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] }); vi.setSystemTime(1_000_000);
+  const send = vi.fn().mockRejectedValue(new TwitchTransportError('Temporary failure', true, 3000, 503)), failed = vi.fn();
+  const broadcaster = new StreamBroadcaster(id, send, failed);
+  await broadcaster.offer('state', packet);
+  for (let n = 0; n < 3; n++) {
+    await vi.waitFor(() => expect((broadcaster as any).busy).toBe(false));
+    await vi.advanceTimersByTimeAsync(30_000);
+  }
+  await broadcaster.drain(); expect(send).toHaveBeenCalledTimes(3); expect(failed).toHaveBeenCalledOnce(); broadcaster.dispose();
+  send.mockClear(); failed.mockClear();
+  const cancelled = new StreamBroadcaster(id, send, failed);
+  await cancelled.offer('state', packet);
+  await vi.waitFor(() => expect((cancelled as any).queue.get('state')?.retryAt).toBeGreaterThan(Date.now()));
+  cancelled.dispose(); await vi.advanceTimersByTimeAsync(60_000);
+  expect(send).toHaveBeenCalledOnce(); expect(failed).not.toHaveBeenCalled();
+});
 
 it('round-trips bounded packets only from the requested actual Twitch sender and game', async () => {
   const messages = await encodeStreamPacket(id, packet), reader = new StreamPacketReader('streamer', id);

@@ -9,13 +9,17 @@ import { formatGuessCommand } from '../src/guessr/guess-command';
 import type { TwitchViewer } from '../src/guessr/twitch-viewer';
 import { startStreamTiming, startHostWindow } from '../src/guessr/stream-timing';
 import { TwitchAnnouncementError } from '../src/guessr/twitch-announcement';
+import type { StreamBroadcastHost } from '../src/guessr/stream-broadcast-host';
 
 const mocks = vi.hoisted(() => ({ pause: vi.fn(async () => ({})), quit: vi.fn(async () => ({ phase: 'waiting' })), picker: vi.fn(), notice: vi.fn(), channel: vi.fn(), watchChat: vi.fn((_channel: string, _handlers: Parameters<TwitchViewer['watchChat']>[1]) => vi.fn()), start: vi.fn(), reveal: vi.fn(), post: vi.fn(async (_channel: string, _message: string, _announcements: boolean) => {}),
+  broadcasters: [] as { failed: ConstructorParameters<typeof StreamBroadcastHost>[3]; dispose: ReturnType<typeof vi.fn> }[],
   shareAccess: true, announcementAccess: true, connect: vi.fn(async (_options: { announcements?: boolean }) => {}),
   publish: vi.fn(), result: vi.fn(), stateBroadcast: vi.fn(), revealBroadcast: vi.fn(), receipt: vi.fn(async () => {}), reject: vi.fn(async () => {}), roundView: vi.fn((main: HTMLElement, _game: unknown, _index: number, actions: HTMLElement) => { main.append(actions); return () => {}; }) }));
 vi.mock('../src/guessr/stream-broadcast-host', () => ({ StreamBroadcastHost: class {
+  dispose = vi.fn();
+  constructor(...args: ConstructorParameters<typeof StreamBroadcastHost>) { mocks.broadcasters.push({ failed: args[3], dispose: this.dispose }); }
   start = async () => {}; publishState = mocks.stateBroadcast; publishReveal = mocks.revealBroadcast;
-  remember = mocks.receipt; reject = mocks.reject; receiveRequest() {} dispose() {} close = async () => {}; complete = async () => {};
+  remember = mocks.receipt; reject = mocks.reject; receiveRequest() {} close = async () => {}; complete = async () => {};
 } }));
 vi.mock('../src/guessr/stream-round-results', () => ({ streamRoundResults: mocks.roundView }));
 vi.mock('../src/guessr/stream-api', () => ({ StreamApi: class {
@@ -36,7 +40,7 @@ vi.mock('../src/guessr/clue-viewport', () => ({ ClueViewport: class { show = asy
 vi.mock('../src/guessr/button-notice', () => ({ buttonNotice: () => ({ show: mocks.notice, dispose: vi.fn() }) }));
 let ui: StreamUI | undefined;
 beforeEach(() => {
-  vi.clearAllMocks(); document.body.replaceChildren();
+  vi.clearAllMocks(); mocks.broadcasters.length = 0; document.body.replaceChildren();
   mocks.publish.mockReset(); mocks.result.mockReset();
   mocks.quit.mockReset().mockResolvedValue({ phase: 'waiting' });
   mocks.post.mockReset().mockResolvedValue(undefined);
@@ -83,6 +87,42 @@ async function liveFixture(announcements = false) {
   receiver.status('live', 'Connected');
   return { ...f, receiver };
 }
+
+it('keeps receiving guesses after a receipt failure and ignores failures from a replaced publisher', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(streamNow);
+  const { receiver } = await liveFixture();
+  const game = ui!.game!;
+  startStreamTiming(game, 30, Date.now());
+  receiver.status('live', 'Connected');
+  await vi.advanceTimersByTimeAsync(4000);
+  const firstPublisher = mocks.broadcasters.at(-1)!;
+  const deadline = game.timing!.deadline;
+  const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const message = (id: number) => ({ id: String(id), player: { id: '123', login: 'chatter', name: 'Chatter' }, sentAt: Date.now(),
+    text: formatGuessCommand(1, streamAnswer, 5000, game.session.rounds[0].id, { userId: '123', nonce: new Uint8Array(8).fill(id) }) });
+  receiver.message(message(1));
+  firstPublisher.failed(Error('Twitch did not send this message. Check the channel’s chat restrictions.'), 'receipts-0-false');
+  await vi.advanceTimersByTimeAsync(1);
+  receiver.message(message(2));
+  expect(game.participants.find(p => p.id === '123')!.guesses[0]!.messageId).toBe('2');
+  expect(game.paused).toBe(false);
+  expect(firstPublisher.dispose).not.toHaveBeenCalled();
+  expect(game.timing!.deadline).toBe(deadline);
+  expect(document.getElementById('stream-chat-status')!.dataset.connection).toBe('connected');
+  firstPublisher.failed(Error('Twitch could not send the game update.'), 'state');
+  expect(game.paused).toBe(true);
+  expect(document.getElementById('stream-reconnect')!.hidden).toBe(false);
+  expect(document.getElementById('stream-chat-status')!.dataset.connection).toBe('disconnected');
+  await vi.advanceTimersByTimeAsync(4000);
+  receiver.status('live', 'Connected');
+  expect(mocks.broadcasters).toHaveLength(2);
+  firstPublisher.failed(Error('Late error from an old publisher'), 'state');
+  expect(game.paused).toBe(false);
+  expect(game.timing!.deadline).toBe(deadline);
+  expect(game.participants.find(p => p.id === '123')!.guesses[0]!.messageId).toBe('2');
+  expect(document.getElementById('stream-chat-status')!.dataset.connection).toBe('connected');
+  expect(warning).toHaveBeenCalledTimes(2);
+});
 
 it('runs the warm-up and timed chat-ahead flow in the host UI without a pause or skip action', async () => {
   vi.useFakeTimers(); vi.setSystemTime(streamNow);
