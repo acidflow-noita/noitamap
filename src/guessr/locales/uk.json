@@ -557,5 +557,7 @@
   "Your last 30 games in Demo mode on this device.": "Ваші останні 30 ігор у режимі «Демо» на цьому пристрої.",
   "You have not finished a game in Demo mode yet.": "Ви ще не завершили гру в демо-режимі.",
   "You’ve already played today’s Daily.": "Ви вже виконали сьогоднішнє щоденне завдання.",
-  "You’ve already played this Daily.": "Ви вже пройшли це щоденне завдання."
+  "You’ve already played this Daily.": "Ви вже пройшли це щоденне завдання.",
+  "Today’s result publishing limit has been reached. Please try again later.": "Сьогоднішній ліміт оприлюднення результатів вичерпано. Спробуйте ще раз пізніше.",
+  "Result storage is full. Download your result to keep a copy.": "Місце для зберігання результатів заповнене. Завантажте свій результат, щоб зберегти його копію."
 }

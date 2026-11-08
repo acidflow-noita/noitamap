@@ -539,5 +539,7 @@
   "Your last 30 games in Demo mode on this device.": "Je laatste 30 spellen in de demomodus op dit apparaat.",
   "You have not finished a game in Demo mode yet.": "Je hebt nog geen spel in de demomodus uitgespeeld.",
   "You’ve already played today’s Daily.": "Je hebt de dagelijkse uitdaging van vandaag al gespeeld.",
-  "You’ve already played this Daily.": "Je hebt deze dagelijkse uitdaging al gespeeld."
+  "You’ve already played this Daily.": "Je hebt deze dagelijkse uitdaging al gespeeld.",
+  "Today’s result publishing limit has been reached. Please try again later.": "De limiet voor het publiceren van resultaten voor vandaag is bereikt. Probeer het later nog eens.",
+  "Result storage is full. Download your result to keep a copy.": "De opslagruimte voor resultaten is vol. Download je resultaat om een kopie te bewaren."
 }

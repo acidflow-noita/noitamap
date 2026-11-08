@@ -539,5 +539,7 @@
   "Your last 30 games in Demo mode on this device.": "Viimeiset 30 peliäsi demotilassa tällä laitteella.",
   "You have not finished a game in Demo mode yet.": "Et ole vielä pelannut peliä loppuun demotilassa.",
   "You’ve already played today’s Daily.": "Olet jo suorittanut tämän päivän päivittäisen haasteen.",
-  "You’ve already played this Daily.": "Olet jo suorittanut tämän päivittäisen haasteen."
+  "You’ve already played this Daily.": "Olet jo suorittanut tämän päivittäisen haasteen.",
+  "Today’s result publishing limit has been reached. Please try again later.": "Tämän päivän tulosten julkaisuraja on saavutettu. Yritä myöhemmin uudelleen.",
+  "Result storage is full. Download your result to keep a copy.": "Tulostietokanta on täynnä. Lataa tuloksesi, jotta saat siitä kopion."
 }

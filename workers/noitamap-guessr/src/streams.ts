@@ -14,8 +14,8 @@ import type { Env } from "./index";
 import { liveRoomGame } from "../../../src/guessr/live-room-game";
 import { liveRoomErrorStatus, liveRoomErrorMessage } from "../../../src/guessr/live-room-core";
 import { prepareStreamRoundOutcome } from "../../../src/guessr/stream-outcome";
+import { encodeStoredResult, storedResultResponse, STREAM_STORAGE_BUDGET_BYTES, STREAM_RESULT_OVERHEAD_BYTES, type StoredResultBody } from './result-storage';
 
-export const STREAM_STORED_GAME_CAP = 200;
 export const STREAM_DAILY_PUBLISH_CAP = 100;
 export const STREAM_HOST_DAILY_CAP = 20;
 const idPattern =
@@ -118,7 +118,7 @@ export async function streamRoute(
         throw new ImageGameError(400, 'Invalid history page.');
       const query = env.DB.prepare(`SELECT id, created_at,
         json_extract(result_json, '$.finishedAt') AS finishedAt,
-        json_array_length(result_json, '$.players') AS players,
+        COALESCE(json_extract(result_json, '$.playerCount'), json_array_length(result_json, '$.players')) AS players,
         json_extract(result_json, '$.host.name') AS hostName
         FROM stream_results WHERE json_extract(result_json, '$.host.login')=?
         ${match ? 'AND (created_at, id) < (?, ?)' : ''}
@@ -146,21 +146,17 @@ export async function streamRoute(
       if (!idPattern.test(resultMatch[1]))
         throw new ImageGameError(404, "Result not found.");
       const stored = await env.DB.prepare(
-        "SELECT result_json FROM stream_results WHERE id=?",
+        // SELECT * keeps legacy reads working before the additive migration.
+        "SELECT * FROM stream_results WHERE id=?",
       )
         .bind(resultMatch[1])
-        .first<{ result_json: string }>();
+        .first<StoredResultBody>();
       if (!stored)
         throw new ImageGameError(
           404,
           "Result not found. Ask the host for the downloaded result.",
         );
-      return new Response(stored.result_json, {
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          "Cache-Control": "public, max-age=31536000, immutable",
-        },
-      });
+      return storedResultResponse(stored, request);
     }
     if (
       ![
@@ -263,18 +259,21 @@ export async function streamRoute(
       return json({ id: result.id, published: true });
     }
     const day = new Date(now).toISOString().slice(0, 10);
+    const encoded = await encodeStoredResult(result, serialized, bytes);
     const inserted = await env.DB.prepare(
-      "INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json) SELECT ?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM stream_results) < ? AND (SELECT COUNT(*) FROM stream_results WHERE day=?) < ? AND (SELECT COUNT(*) FROM stream_results WHERE owner=? AND day=?) < ? ON CONFLICT(id) DO NOTHING RETURNING id",
+      "INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json,result_gzip) SELECT ?,?,?,?,?,?,?,? WHERE (SELECT used_bytes FROM stream_result_storage WHERE id=1)+? <= ? AND (SELECT COUNT(*) FROM stream_results WHERE day=?) < ? AND (SELECT COUNT(*) FROM stream_results WHERE owner=? AND day=?) < ? ON CONFLICT(id) DO NOTHING RETURNING id",
     )
       .bind(
         result.id,
         owner,
         day,
         now,
-        bytes.byteLength,
+        encoded.bytes,
         digest,
-        serialized,
-        STREAM_STORED_GAME_CAP,
+        encoded.json,
+        encoded.gzip,
+        encoded.bytes + STREAM_RESULT_OVERHEAD_BYTES,
+        STREAM_STORAGE_BUDGET_BYTES,
         day,
         STREAM_DAILY_PUBLISH_CAP,
         owner,
@@ -297,9 +296,16 @@ export async function streamRoute(
           409,
           "This game already has an immutable published result.",
         );
+      const storage = await env.DB.prepare('SELECT used_bytes FROM stream_result_storage WHERE id=1').first<{ used_bytes: number }>();
+      if (!storage) throw new Error('Result storage accounting is unavailable.');
+      if (storage.used_bytes + encoded.bytes + STREAM_RESULT_OVERHEAD_BYTES <= STREAM_STORAGE_BUDGET_BYTES) {
+        const response = json({ error: 'Today’s result publishing limit has been reached. Please try again later.' }, 429);
+        response.headers.set('Retry-After', String(Math.max(1, Math.ceil((Date.parse(day) + 86400000 - now) / 1000))));
+        return response;
+      }
       throw new ImageGameError(
-        429,
-        "Free result storage has reached its limit. Your result is saved locally; download it to share.",
+        507,
+        'Result storage is full. Download your result to keep a copy.',
       );
     }
     // A newer game can already be running; the immutable older result still stands.

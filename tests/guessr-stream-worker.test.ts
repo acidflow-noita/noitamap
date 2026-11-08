@@ -2,10 +2,8 @@ import { packStreamPublish } from "../src/guessr/stream-codec";
 import { liveRoomGame } from "../src/guessr/live-room-game";
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  streamRoute,
-  STREAM_STORED_GAME_CAP,
-} from "../workers/noitamap-guessr/src/streams";
+import { streamRoute } from "../workers/noitamap-guessr/src/streams";
+import { STREAM_STORAGE_BUDGET_BYTES, STREAM_RESULT_OVERHEAD_BYTES } from '../workers/noitamap-guessr/src/result-storage';
 import { handle, type Env } from "../workers/noitamap-guessr/src/index";
 import { signGameTicket } from "../workers/noitamap-guessr/src/tickets";
 import {
@@ -41,6 +39,7 @@ async function fixture() {
     ),
   );
   db.sqlite.exec(readFileSync("workers/noitamap-guessr/migrations/0005_stream_history.sql", "utf8"));
+  db.sqlite.exec(readFileSync("workers/noitamap-guessr/migrations/0006_stream_storage.sql", "utf8"));
   const ticket = await signGameTicket(
     streamHost.sub,
     streamHost.name,
@@ -241,12 +240,13 @@ describe("single-document stream publication", () => {
     const f = await fixture(), input = await f.completed();
     const publication = await (await f.call('/results', input)).json() as any;
     const stored = f.sqlite.prepare('SELECT * FROM stream_results WHERE id=?').get(publication.id) as any;
-    const original = JSON.parse(stored.result_json);
-    const insert = f.sqlite.prepare('INSERT INTO stream_results VALUES(?,?,?,?,?,?,?)');
+    const original = await (await f.call('/results/' + publication.id, undefined, null)).json() as any;
+    const insert = f.sqlite.prepare('INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json) VALUES(?,?,?,?,?,?,?)');
     for (let i = 0; i < 24; i++) {
       const id = crypto.randomUUID(), result = { ...original, id };
       if (i === 23) result.host = { ...result.host, login: 'another_streamer' };
-      insert.run(id, stored.owner, stored.day, stored.created_at + (i % 3), stored.bytes, stored.digest, JSON.stringify(result));
+      const json = JSON.stringify(result);
+      insert.run(id, stored.owner, stored.day, stored.created_at + (i % 3), new TextEncoder().encode(json).byteLength, stored.digest, json);
     }
     const changes = f.sqlite.prepare('SELECT total_changes() AS n').get();
     const calls = f.calls();
@@ -293,21 +293,64 @@ describe("single-document stream publication", () => {
       ).status,
     ).toBe(404);
   });
-  it("stops at the hard storage cap without changing existing results", async () => {
+  it('publishes beyond 200 games and accounts actual stored bytes without deleting old results', async () => {
+    const f = await fixture(), input = await f.completed();
+    const insert = f.sqlite.prepare('INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json) VALUES(?,?,?,?,?,?,?)');
+    for (let i = 0; i < 250; i++) insert.run('fixture-' + i, 'other', '2026-01-01', 1, 2, 'digest', '{}');
+    const result = await f.call('/results', input);
+    expect(result.status).toBe(201);
+    expect(f.sqlite.prepare('SELECT COUNT(*) AS games FROM stream_results').get()).toEqual({ games: 251 });
+    const sum = f.sqlite.prepare('SELECT SUM(bytes+?) AS used_bytes, COUNT(*) AS games FROM stream_results').get(STREAM_RESULT_OVERHEAD_BYTES);
+    expect(f.sqlite.prepare('SELECT used_bytes,games FROM stream_result_storage WHERE id=1').get()).toEqual(sum);
+    const before = f.sqlite.prepare('SELECT total_changes() AS n').get();
+    expect((await f.call('/results', input)).status).toBe(200);
+    expect(f.sqlite.prepare('SELECT total_changes() AS n').get()).toEqual(before);
+  });
+  it("stops at the byte budget without changing existing results", async () => {
     const f = await fixture(),
       input = await f.completed();
     const insert = f.sqlite.prepare(
-      "INSERT INTO stream_results VALUES(?,?,?,?,?,?,?)",
+      "INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json) VALUES(?,?,?,?,?,?,?)",
     );
-    for (let i = 0; i < STREAM_STORED_GAME_CAP; i++)
-      insert.run("fixture-" + i, "other", "2026-01-01", 1, 2, "digest", "{}");
+    insert.run('fixture', 'other', '2026-01-01', 1, 2, 'digest', '{}');
+    f.sqlite.prepare('UPDATE stream_result_storage SET used_bytes=? WHERE id=1').run(STREAM_STORAGE_BUDGET_BYTES);
     const writes = f.sqlite.prepare("SELECT total_changes() AS n").get();
     const result = await f.call("/results", input);
-    expect(result.status).toBe(429);
+    expect(result.status).toBe(507);
     expect(((await result.json()) as any).error).toMatch(/download/i);
     expect(f.sqlite.prepare("SELECT total_changes() AS n").get()).toEqual(
       writes,
     );
+  });
+  it('acknowledges an already-published result even when all storage budget is used', async () => {
+    const f = await fixture(), input = await f.completed();
+    expect((await f.call('/results', input)).status).toBe(201);
+    f.sqlite.prepare('UPDATE stream_result_storage SET used_bytes=? WHERE id=1').run(STREAM_STORAGE_BUDGET_BYTES);
+    const before = f.sqlite.prepare('SELECT total_changes() AS n').get();
+    expect((await f.call('/results', input)).status).toBe(200);
+    expect(f.sqlite.prepare('SELECT total_changes() AS n').get()).toEqual(before);
+  });
+  it('admits only one concurrent publication when the remaining byte budget fits one', async () => {
+    const f = await fixture(), first = await f.completed(), second = await f.completed();
+    // A real one-player result takes much less than this; two result overhead
+    // allowances alone exceed it. Both requests see the same owner/day.
+    f.sqlite.prepare('UPDATE stream_result_storage SET used_bytes=? WHERE id=1')
+      .run(STREAM_STORAGE_BUDGET_BYTES - 7000);
+    const responses = await Promise.all([f.call('/results', first), f.call('/results', second)]);
+    expect(responses.map(r => r.status).sort()).toEqual([201, 507]);
+    expect(f.sqlite.prepare('SELECT COUNT(*) AS games FROM stream_results').get()).toEqual({ games: 1 });
+    expect((f.sqlite.prepare('SELECT used_bytes FROM stream_result_storage').get() as { used_bytes: number }).used_bytes)
+      .toBeLessThanOrEqual(STREAM_STORAGE_BUDGET_BYTES);
+  });
+  it('distinguishes the daily publication limit from storage exhaustion and keeps the real retry time', async () => {
+    const f = await fixture(), input = await f.completed();
+    const insert = f.sqlite.prepare('INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json) VALUES(?,?,?,?,?,?,?)');
+    const day = new Date(streamNow).toISOString().slice(0, 10);
+    for (let i = 0; i < 100; i++) insert.run('quota-' + i, 'other', day, streamNow, 2, 'digest', '{}');
+    const result = await f.call('/results', input);
+    expect(result.status).toBe(429); expect((await result.json() as any).error).toContain('Today’s result publishing limit');
+    expect(Number(result.headers.get('Retry-After'))).toBeGreaterThan(60);
+    expect(f.sqlite.prepare('SELECT COUNT(*) AS games FROM stream_results').get()).toEqual({ games: 100 });
   });
   it("rejects coerced numeric or array player IDs before publication", async () => {
     const f = await fixture(),

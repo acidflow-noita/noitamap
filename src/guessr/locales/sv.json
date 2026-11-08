@@ -539,5 +539,7 @@
   "Your last 30 games in Demo mode on this device.": "Dina senaste 30 spel i demoläge på den här enheten.",
   "You have not finished a game in Demo mode yet.": "Du har ännu inte avslutat något spel i demoläget.",
   "You’ve already played today’s Daily.": "Du har redan klarat dagens utmaning.",
-  "You’ve already played this Daily.": "Du har redan klarat den här dagliga utmaningen."
+  "You’ve already played this Daily.": "Du har redan klarat den här dagliga utmaningen.",
+  "Today’s result publishing limit has been reached. Please try again later.": "Dagens gräns för publicering av resultat har nåtts. Försök igen senare.",
+  "Result storage is full. Download your result to keep a copy.": "Resultatlagret är fullt. Ladda ner ditt resultat för att spara en kopia."
 }

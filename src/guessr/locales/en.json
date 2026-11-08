@@ -539,5 +539,7 @@
   "Select a streamer to see their saved game results.": "Select a streamer to see their saved game results.",
   "Your last 30 games in Demo mode on this device.": "Your last 30 games in Demo mode on this device.",
   "You’ve already played today’s Daily.": "You’ve already played today’s Daily.",
-  "You’ve already played this Daily.": "You’ve already played this Daily."
+  "You’ve already played this Daily.": "You’ve already played this Daily.",
+  "Today’s result publishing limit has been reached. Please try again later.": "Today’s result publishing limit has been reached. Please try again later.",
+  "Result storage is full. Download your result to keep a copy.": "Result storage is full. Download your result to keep a copy."
 }

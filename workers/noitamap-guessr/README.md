@@ -104,9 +104,37 @@ replacement is received. Round ten has the same duration as the other rounds;
 chat then waits while the streamer finishes their tenth location.
 
 Completion moves the host to `/guess/results/<game-id>/`. Published results are
-immutable D1 records with no automatic expiry. The current 200-game cap rejects
-new publications instead of deleting existing ones. Public result data is also
+immutable D1 records with no automatic expiry. New results use lossless gzip
+storage when it saves space; existing JSON records remain unchanged and readable.
+The former 200-game cap is replaced by a 256 MiB application budget covering
+stored payload bytes plus a conservative 4 KiB allowance per game for row/index
+overhead. This leaves headroom for Daily data and further database overhead
+within the existing 500 MB Free database limit. It is not a measurement of the
+entire database's physical size; inspect D1 storage as usage grows.
+One atomic conditional insert and its accounting trigger enforce the budget.
+The trigger updates one aggregate row once per new publication, not per player
+or round. Duplicate retries do not consume budget. The existing limits of 100
+publications/day globally and 20/day per host remain, with a UTC-reset retry
+time. Storage exhaustion returns 507; daily throttling returns 429. Neither
+case deletes existing results or claims an unsaved browser copy is durable.
+Public result data is also
 saved locally for refresh/offline recovery, without session tokens or credentials.
+
+`/guess/<channel>/` opens public channel history. Reserved names such as `daily`
+use `/guess/history/?channel=daily`; older history/result/game links still work.
+History fetches 20 rows per requested page with the existing channel index,
+without polling, read counters or per-result fetches. Unpublished local games
+remain visible, confirmed publications clear stale local retry state, and a
+failed page can be retried without losing already displayed results. Game-header
+channel links open history in another tab so the running game stays open.
+
+Apply `0006_stream_storage.sql` before deploying the new Worker. It adds the
+nullable compressed payload column and initializes byte accounting without
+rewriting existing results. No image/baker or primary-auth changes are needed.
+After compressed results have been written, backend rollbacks must retain the
+gzip reader; older readers cannot display the new representation. Frontend
+rollbacks remain compatible because public JSON and result URLs are unchanged.
+Account-specific migration commands are documented in the private Worker repository.
 
 With ordinary `npm run dev`, the host can connect the same remembered Twitch
 identity used by the chatter page. Start a new game to listen to the shared

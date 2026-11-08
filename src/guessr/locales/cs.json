@@ -557,5 +557,7 @@
   "Your last 30 games in Demo mode on this device.": "Tvých posledních 30 her v režimu Demo na tomto zařízení.",
   "You have not finished a game in Demo mode yet.": "V demo režimu jste ještě žádnou hru nedohráli.",
   "You’ve already played today’s Daily.": "Dnešní denní výzvu jsi už absolvoval.",
-  "You’ve already played this Daily.": "Tuto denní výzvu jsi již absolvoval."
+  "You’ve already played this Daily.": "Tuto denní výzvu jsi již absolvoval.",
+  "Today’s result publishing limit has been reached. Please try again later.": "Dnešní limit pro zveřejňování výsledků byl vyčerpán. Zkuste to prosím později.",
+  "Result storage is full. Download your result to keep a copy.": "Úložiště výsledků je plné. Stáhněte si svůj výsledek, abyste si uchovali kopii."
 }

@@ -17,7 +17,7 @@ export function gameDatabase() {
   function prepare(sql: string, args: unknown[] = []): Statement {
     return {
       bind(...values) {
-        return prepare(sql, values);
+        return prepare(sql, values.map(value => value instanceof ArrayBuffer ? new Uint8Array(value) : value));
       },
       async first<T>() {
         calls++;

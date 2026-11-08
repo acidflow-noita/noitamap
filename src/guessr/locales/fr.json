@@ -548,5 +548,7 @@
   "Your last 30 games in Demo mode on this device.": "Vos 30 derniers jeux en mode démo sur cet appareil.",
   "You have not finished a game in Demo mode yet.": "Vous n'avez pas encore terminé une partie en mode démo.",
   "You’ve already played today’s Daily.": "Tu as déjà relevé le défi du jour.",
-  "You’ve already played this Daily.": "Tu as déjà participé à ce défi quotidien."
+  "You’ve already played this Daily.": "Tu as déjà participé à ce défi quotidien.",
+  "Today’s result publishing limit has been reached. Please try again later.": "La limite quotidienne de publication des résultats a été atteinte. Veuillez réessayer plus tard.",
+  "Result storage is full. Download your result to keep a copy.": "L'espace de stockage des résultats est plein. Téléchargez votre résultat pour en conserver une copie."
 }

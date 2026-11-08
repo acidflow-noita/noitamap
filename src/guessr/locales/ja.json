@@ -539,5 +539,7 @@
   "Your last 30 games in Demo mode on this device.": "このデバイスでのデモモードにおける直近30試合。",
   "You have not finished a game in Demo mode yet.": "まだデモモードでゲームをクリアしていません。",
   "You’ve already played today’s Daily.": "今日のデイリーチャレンジはすでにプレイ済みです。",
-  "You’ve already played this Daily.": "このデイリーチャレンジはすでにプレイ済みです。"
+  "You’ve already played this Daily.": "このデイリーチャレンジはすでにプレイ済みです。",
+  "Today’s result publishing limit has been reached. Please try again later.": "本日の結果公開の上限に達しました。後ほど再度お試しください。",
+  "Result storage is full. Download your result to keep a copy.": "結果の保存容量がいっぱいです。結果をダウンロードして、コピーを保存してください。"
 }

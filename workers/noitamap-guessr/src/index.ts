@@ -628,7 +628,9 @@ export async function handle(
   if (response.status === 101) return response;
   const headers = new Headers(response.headers);
   headers.set("X-Content-Type-Options", "nosniff");
-  headers.set("Vary", "Origin");
+  const vary = headers.get('Vary')?.split(',').map(s => s.trim()).filter(Boolean) ?? [];
+  if (!vary.some(value => ['*', 'origin'].includes(value.toLowerCase()))) vary.push('Origin');
+  headers.set('Vary', vary.join(', '));
   if (origin) headers.set("Access-Control-Allow-Origin", origin);
   if (request.method === "OPTIONS") {
     headers.set(
@@ -638,8 +640,12 @@ export async function handle(
     headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     headers.set("Access-Control-Max-Age", "86400");
   }
-  if (response.status === 429) headers.set("Retry-After", "60");
-  return new Response(response.body, { status: response.status, headers });
+  if (response.status === 429 && !headers.has('Retry-After')) headers.set("Retry-After", "60");
+  // Stored result BLOBs are already gzip encoded. Preserve that mode across
+  // this CORS wrapper; automatic encoding here would gzip the bytes twice.
+  const precompressed = new URL(request.url).pathname.startsWith('/api/streams/results/') && headers.get('Content-Encoding') === 'gzip';
+  const init = { status: response.status, headers, ...(precompressed ? { encodeBody: 'manual' as const } : {}) };
+  return new Response(response.body, init);
 }
 export default {
   fetch(request: Request, env: Env): Promise<Response> {
