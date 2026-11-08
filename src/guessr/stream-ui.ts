@@ -975,7 +975,12 @@ export class StreamUI {
       : this.status === 'live' && this.roomHealthy ? 'Receiving guesses from Twitch.' : this.statusDetail));
     const identity = el('span', '', 'stream-host-identity');
     const name = el('span', '', 'stream-name');
-    name.append(el('strong', () => game.session.host.login), this.proStatus.badge); identity.append(name);
+    const historyLink = el('a', () => game.session.host.login, 'stream-channel-link');
+    historyLink.href = guessRouteUrl('history', location.origin, { channel: game.session.host.login }).href;
+    historyLink.target = '_blank'; historyLink.rel = 'noopener noreferrer';
+    bindAttribute(historyLink, 'aria-label', '{{player}}’s results', { player: game.session.host.login });
+    const hostName = el('strong'); hostName.append(historyLink);
+    name.append(hostName, this.proStatus.badge); identity.append(name);
     navigation.append(status, identity);
     if (!this.api.local || game.session.localChat) {
       const share = action('Share game link in chat', () => this.shareGameLink(), 'btn btn-sm btn-outline theme-secondary stream-share-button');
@@ -1237,8 +1242,8 @@ export class StreamUI {
     message.id = 'stream-publish-message'; message.setAttribute('role', 'status');
     const copy = copyAction('Copy result link', () => guessRouteUrl('stream-result', location.origin, { result: entry.result.id }).href, this.hooks.toast);
     const retry = action('Retry publishing', () => { void publish(); });
-    const historyLink = el('a', () => tr('{{player}}’s results', { player: entry.result.host.name }), 'secondary');
-    const historyUrl = guessRouteUrl('history', location.origin); historyUrl.searchParams.set('channel', entry.result.host.login); historyLink.href = historyUrl.href;
+    const historyLink = el('a', () => tr('{{player}}’s results', { player: entry.result.host.name }), 'btn btn-outline theme-secondary');
+    historyLink.href = guessRouteUrl('history', location.origin, { channel: entry.result.host.login }).href;
     const actions = actionRow(copy, retry, historyLink);
     panel.append(message, actions);
     view.querySelector('.finish-hero')!.after(panel);

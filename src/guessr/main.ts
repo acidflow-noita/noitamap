@@ -964,13 +964,15 @@ async function reviewImageGame(ordinal: number): Promise<void> {
 }
 
 function history(): void {
-  const channel = new URL(location.href).searchParams.get('channel');
+  const route = readGuessRoute(new URL(location.href));
+  const channel = route.pane === 'history' ? route.channel : undefined;
   view = "history";
   setPane('history');
   const main = shell();
   if (channel && /^[a-z0-9_]{1,25}$/.test(channel)) {
-    const url = guessRouteUrl('history', location.href); url.searchParams.set('channel', channel); historyReplace(url);
-    main.append(pageHeading(node('h1', '', msg('History'), 'clock-history'), button(msg('Back'), () => { const url = guessRouteUrl('history', location.href); url.searchParams.delete('channel'); historyReplace(url); history(); })));
+    historyReplace(guessRouteUrl('history', location.href, { channel }));
+    main.append(pageHeading(node('h1', '', msg('{{player}}’s results', { player: channel }), 'clock-history'),
+      button(msg('Back'), () => { historyReplace(guessRouteUrl('history', location.href, { channel: '' })); history(); })));
     void streamHistorySection(main, channel); return;
   }
   const entries = readHistory(storage);

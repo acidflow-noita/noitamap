@@ -23,13 +23,16 @@ const paths: Record<GuessPane, string> = {
   home: '/guess/', practice: '/guess/demo/', ranked: '/guess/daily/', history: '/guess/history/',
   stream: '/guess/stream/', 'stream-picker': '/guess/join/', 'stream-result': '/guess/results/',
 };
+const reservedChannels = new Set(['demo', 'daily', 'history', 'join', 'stream', 'results']);
+const validChannel = (value?: string | null) => value && /^[a-z0-9_]{1,25}$/i.test(value) ? value.toLowerCase() : undefined;
 
 /** Shared by navigation and the dev server. Assets and OAuth callbacks are excluded. */
 export function isGuessrPagePath(path: string): boolean {
   return /^\/guess\/(?:demo|daily|history|join)\/?$/.test(path)
     || /^\/guess\/stream(?:\/[a-z0-9_]{1,25})?\/?$/i.test(path)
     || /^\/guess\/results(?:\/[a-f0-9-]{36})?\/?$/.test(path)
-    || /^\/guess\/[a-z0-9_]{1,25}\/[0-9abcdefghjkmnpqrstvwxyz]{26}\/?$/i.test(path);
+    || /^\/guess\/[a-z0-9_]{1,25}\/[0-9abcdefghjkmnpqrstvwxyz]{26}\/?$/i.test(path)
+    || /^\/guess\/[a-z0-9_]{1,25}\/?$/i.test(path) && !reservedChannels.has(path.split('/')[2].toLowerCase());
 }
 export function readGuessRoute(url: URL): GuessRoute {
   const path = url.pathname.replace(/\/$/, '');
@@ -44,27 +47,35 @@ export function readGuessRoute(url: URL): GuessRoute {
   const result = /^\/guess\/results\/([a-f0-9-]{36})$/.exec(path)?.[1];
   if (result) return { pane: 'stream-result', result };
   for (const [pane, route] of Object.entries(paths)) {
-    if (pane !== 'home' && path === route.replace(/\/$/, '')) return { pane: pane as GuessPane };
+    if (pane !== 'home' && path.toLowerCase() === route.replace(/\/$/, '')) {
+      const channel = pane === 'history' ? validChannel(url.searchParams.get('channel')) : undefined;
+      return { pane: pane as GuessPane, ...(channel ? { channel } : {}) };
+    }
   }
+  const historyChannel = /^\/guess\/([a-z0-9_]{1,25})$/i.exec(path)?.[1];
+  if (historyChannel && !reservedChannels.has(historyChannel.toLowerCase())) return { pane: 'history', channel: historyChannel.toLowerCase() };
   // Keep already-shared links and saved login returns working.
   const legacy = url.searchParams.get('pane');
   const pane: GuessPane = legacy && Object.hasOwn(paths, legacy) ? legacy as GuessPane
     : !legacy && url.searchParams.has('channel') ? 'stream-picker' : 'home';
-  return { pane, ...(pane === 'stream-picker' ? { channel: url.searchParams.get('channel')?.toLowerCase() } : {}),
+  return { pane, ...(pane === 'stream-picker' ? { channel: url.searchParams.get('channel')?.toLowerCase() }
+    : pane === 'history' && validChannel(url.searchParams.get('channel')) ? { channel: validChannel(url.searchParams.get('channel')) } : {}),
     ...(pane === 'stream-result' ? { result: url.searchParams.get('result') ?? undefined } : {}) };
 }
 export function guessRouteUrl(pane: GuessPane, from: string | URL, details: { channel?: string; result?: string; game?: string; transport?: 'twitch' } = {}): URL {
   const url = new URL(from), previous = readGuessRoute(url);
-  const channel = details.channel ?? (previous.pane === pane ? previous.channel : undefined);
+  const channel = validChannel(details.channel ?? (previous.pane === pane ? previous.channel : undefined));
   const result = details.result ?? (previous.pane === pane ? previous.result : undefined);
   const game = details.game ?? (previous.pane === pane && previous.channel === channel ? previous.game : undefined);
   const transport = details.transport ?? (previous.pane === pane && previous.channel === channel ? previous.transport : undefined);
   url.pathname = pane === 'stream-picker' && channel && /^[a-z0-9_]{1,25}$/i.test(channel)
     ? game ? `/guess/${channel.toLowerCase()}/${gameCode(game, transport)}/` : `/guess/stream/${channel.toLowerCase()}/`
-    : pane === 'stream-result' && result && /^[a-f0-9-]{36}$/.test(result) ? `/guess/results/${result}/` : paths[pane];
+    : pane === 'stream-result' && result && /^[a-f0-9-]{36}$/.test(result) ? `/guess/results/${result}/`
+    : pane === 'history' && channel && !reservedChannels.has(channel) ? `/guess/${channel}/` : paths[pane];
   for (const key of ['pane', 'channel', 'result', 'round']) {
-    if (key !== 'channel' || pane !== 'history' || previous.pane !== 'history') url.searchParams.delete(key);
+    url.searchParams.delete(key);
   }
+  if (pane === 'history' && channel && reservedChannels.has(channel)) url.searchParams.set('channel', channel);
   if (pane !== 'ranked') for (const key of ['a', 'c']) url.searchParams.delete(key);
   const fragment = new URLSearchParams(url.hash.slice(1));
   if (pane !== 'stream-picker' && fragment.has('clue')) {

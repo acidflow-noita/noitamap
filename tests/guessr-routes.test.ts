@@ -6,9 +6,26 @@ describe('Guessr page routes', () => {
   it('preserves a channel history link through F5 and language changes, but removes it when leaving history', () => {
     const url = new URL('/guess/history/?channel=wuote&lng=ru', origin);
     expect(readGuessRoute(url).pane).toBe('history');
-    expect(guessRouteUrl('history', url).searchParams.get('channel')).toBe('wuote');
+    expect(guessRouteUrl('history', url).pathname).toBe('/guess/wuote/');
+    expect(guessRouteUrl('history', url).searchParams.get('lng')).toBe('ru');
     expect(guessRouteUrl('home', url).searchParams.has('channel')).toBe(false);
     expect(guessRouteUrl('stream', url).searchParams.has('channel')).toBe(false);
+  });
+  it('opens canonical channel history without colliding with reserved panes or callbacks', () => {
+    for (const path of ['/guess/wuote', '/guess/WUOTE/']) {
+      const url = new URL(path, origin);
+      expect(readGuessRoute(url)).toEqual({ pane: 'history', channel: 'wuote' });
+      expect(isGuessrPagePath(path)).toBe(true);
+    }
+    for (const channel of ['daily', 'history', 'stream', 'results', 'join', 'demo']) {
+      const url = guessRouteUrl('history', origin, { channel });
+      expect(url.pathname).toBe('/guess/history/');
+      expect(readGuessRoute(url)).toEqual({ pane: 'history', channel });
+    }
+    const url = guessRouteUrl('history', origin, { channel: 'wuote' });
+    expect(guessRouteUrl('history', url, { channel: '' }).pathname).toBe('/guess/history/');
+    for (const path of ['/guess/twitch-callback', '/guess/twitch-callback.html', '/guess/twitch-callback.js'])
+      expect(isGuessrPagePath(path)).toBe(false);
   });
   it('keeps a unique game identity in the URL through refresh and login returns', () => {
     const id = '11111111-1111-4111-8111-111111111111';

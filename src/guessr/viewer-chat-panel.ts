@@ -1,7 +1,8 @@
 import type { TwitchViewer } from './twitch-viewer';
 import { streamerProStatus, hasKnownStreamerPro } from './streamer-pro-status';
 import type { TwitchChatStatus } from './twitch-chat';
-import { bindText, onGuessrLanguageChanged, tr } from './i18n';
+import { bindAttribute, bindText, onGuessrLanguageChanged, tr } from './i18n';
+import { guessRouteUrl } from './routes';
 import { twitchMessageText } from './twitch-viewer';
 import { gameApiOrigin } from './api';
 import { hoverHelp } from './hover-help';
@@ -15,6 +16,8 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
   const panel = document.createElement('section'); panel.className = 'game-panel stream-connection-bar';
   const header = document.createElement('div'); header.className = 'stream-chat-header';
   const title = document.createElement('strong');
+  const historyLink = document.createElement('a'); historyLink.className = 'stream-channel-link';
+  historyLink.target = '_blank'; historyLink.rel = 'noopener noreferrer'; title.append(historyLink);
   const identity = document.createElement('div'); identity.className = 'stream-chat-identity';
   const pro = streamerProStatus({ channel: initialChannel, local: !gameApiOrigin() && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) });
   const changeStreamer = bindText(document.createElement('button'), 'Exit game');
@@ -66,7 +69,9 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
     changeStreamer.hidden = !channel || !onChangeStreamer;
     gift.hidden = !channel || !!gameId || hasGame || hasKnownStreamerPro(channel) || state.login === channel;
     bindText(gift, 'Gift Pro to {{channel}}', { channel }); giftHelp.update();
-    title.textContent = channel;
+    historyLink.textContent = channel;
+    historyLink.href = guessRouteUrl('history', location.origin, { channel }).href;
+    bindAttribute(historyLink, 'aria-label', '{{player}}’s results', { player: channel });
     actions.hidden = gift.hidden;
     // Switching games does not reconnect the shared transport subscription.
     const next = state.connected && channel ? `${state.userId}/${GUESSR_TRANSPORT_CHANNEL}` : '';

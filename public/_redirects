@@ -1,5 +1,7 @@
 # Use the canonical directory URL. Pages normalizes index.html before rewrite lookup.
 # APIs and OAuth callback files stay separate.
+/guess/index.html /guess/ 200
+/guess/twitch-callback /guess/twitch-callback 200
 /guess/demo /guess/ 200
 /guess/demo/ /guess/ 200
 /guess/daily /guess/ 200
@@ -14,3 +16,8 @@
 /guess/results/* /guess/ 200
 /guess/:channel/:game /guess/ 200
 /guess/:channel/:game/ /guess/ 200
+# File-like paths pass through before the channel page rule. Pages applies only
+# the first proxy rule, so OAuth HTML and assets cannot become history pages.
+/guess/:asset.:extension /guess/:asset.:extension 200
+/guess/:channel /guess/ 200
+/guess/:channel/ /guess/ 200

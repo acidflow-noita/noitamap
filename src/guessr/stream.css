@@ -95,8 +95,10 @@
 .stream-score-table { --bs-table-color: var(--text); --bs-table-bg: transparent; --bs-table-border-color: var(--border); border-collapse: collapse; }
 .stream-score-table :is(th, td) { padding: .65rem .9rem; border-block-end: 1px solid var(--border); vertical-align: middle; }
 .stream-score-table th { font-size: .8125rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+.stream-channel-link { color: inherit; text-decoration: none; }
+.stream-channel-link:hover { color: inherit; text-decoration: underline; }
 .stream-score-table .numeric { text-align: end; font-variant-numeric: tabular-nums; }
-.stream-score-table :is(th, td):nth-child(2) { text-align: start; }
+.stream-score-table :is(th, td):nth-child(2):not(.numeric) { text-align: start; }
 .stream-round-score-table :is(th, td):first-child { inline-size: 4rem; }
 .stream-round-score-table :is(th, td):nth-child(2) { inline-size: auto; }
 .stream-round-score-table tr.selected { background: var(--accent-bg); outline: 1px solid var(--accent-fg); outline-offset: -1px; }

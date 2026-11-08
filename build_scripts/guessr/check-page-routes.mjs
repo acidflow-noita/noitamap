@@ -15,6 +15,7 @@ try {
   await writeFile(join(directory, 'index.html'), '<title>Noita Map</title>');
   await writeFile(join(directory, 'guess/index.html'), '<title>NoitaGuessr</title>');
   await writeFile(join(directory, 'guess/twitch-callback.html'), '<title>Twitch callback</title>');
+  await writeFile(join(directory, 'guess/probe.js'), '/* JavaScript asset, not a channel page. */');
   await writeFile(join(directory, '_redirects'), await readFile(new URL('../../public/_redirects', import.meta.url)));
   runtime = new Miniflare(convertV4MiniflareOptions({
     compatibilityDate: '2026-10-08', modules: true,
@@ -24,17 +25,21 @@ try {
   const pages = ['/', '/guess/', '/guess/demo', '/guess/demo/', '/guess/daily/', '/guess/history/',
     '/guess/join/', '/guess/stream/', '/guess/stream/wuote/', '/guess/stream/dunkorslam/?auth_resume=example',
     '/guess/results/11111111-1111-4111-8111-111111111111/',
-    '/guess/wuote/00000000000000000000000001/', '/guess/wuote/00000000000000000000000001?auth_resume=example'];
+    '/guess/wuote/00000000000000000000000001/', '/guess/wuote/00000000000000000000000001?auth_resume=example',
+    '/guess/wuote/', '/guess/wuote', '/guess/dunkorslam/?lng=ru', '/guess/history/?channel=stream'];
   for (const page of pages) {
     const response = await runtime.dispatchFetch('https://example.com' + page);
     assert.equal(response.status, 200, page);
     assert.equal(await response.text(), page === '/' ? '<title>Noita Map</title>' : '<title>NoitaGuessr</title>', page);
   }
-  const callback = await runtime.dispatchFetch('https://example.com/guess/twitch-callback.html', { redirect: 'manual' });
-  assert.equal(callback.status, 307);
-  const result = await runtime.dispatchFetch(new URL(callback.headers.get('location'), 'https://example.com'));
-  assert.equal(await result.text(), '<title>Twitch callback</title>');
-  console.log(`Passed ${pages.length} page routes and the OAuth callback; no user Worker executed.`);
+  for (const path of ['/guess/twitch-callback.html', '/guess/twitch-callback']) {
+    const callback = await runtime.dispatchFetch('https://example.com' + path);
+    assert.equal(callback.status, 200);
+    assert.equal(await callback.text(), '<title>Twitch callback</title>');
+  }
+  const asset = await runtime.dispatchFetch('https://example.com/guess/probe.js');
+  assert.equal(asset.status, 200); assert.equal(await asset.text(), '/* JavaScript asset, not a channel page. */');
+  console.log(`Passed ${pages.length} page routes, both OAuth callback forms and an asset; no user Worker executed.`);
 } finally {
   await runtime?.dispose();
   await rm(directory, { recursive: true, force: true });
