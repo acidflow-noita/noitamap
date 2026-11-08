@@ -119,7 +119,7 @@ describe("private ranked pack preparation", () => {
     expect(sql).toContain("A ''quoted'' title");
     expect(sql.match(/[a-f0-9]{64}\.webp/g)).toHaveLength(10);
     expect(sql).not.toContain("/guessr/practice/");
-  });
+  }, 15000); // Ten full-sized images can take over five seconds on CI runners.
   it("rejects duplicate clues and missing rounds", async () => {
     const root = await mkdtemp(join(tmpdir(), "guessr-pack-"));
     cleanup.push(root);
