@@ -36,7 +36,10 @@ function fixture() {
 
 describe('prepared Daily publication and gameplay', () => {
   it('plays all ten rounds through the API, allows the final image, and caps the total at 50,000', async () => {
-    const f = fixture(), p = pack(); await f.publish(p);
+    const f = fixture(), p = pack();
+    p.rounds[0] = { ...p.rounds[0], area: { ...p.rounds[0].area, id: 'terrain/edr',
+      difficultyTier: 'hard', viewDifficulty: 'featureless-edr' } };
+    await f.publish(p);
     f.env.ASSETS.fetch = async () => new Response('image', { headers: { 'Content-Type': 'image/webp' } });
     const ticket = await signGameTicket('twitch:ten', 'Ten rounds', gameSecret, now);
     const call = (path: string, body?: unknown) => handle(new Request('https://guessr-api.sage-data.xyz' + path, {
@@ -46,6 +49,8 @@ describe('prepared Daily publication and gameplay', () => {
     expect(await (await call('/api/daily')).json()).toMatchObject({ challenge: { totalRounds: 10 } });
     let state = await (await call('/api/attempts', { challengeId: 'daily-2026-10-25' })).json() as any;
     expect(state).toMatchObject({ round: 0, totalRounds: 10, status: 'active' });
+    expect(state.difficultyTier).toBe('hard');
+    expect(JSON.stringify(state)).not.toContain('featureless-edr');
     expect((await call(`/api/attempts/${state.id}/image/9`)).status).toBe(403);
     for (let round = 0; round < 10; round++) {
       const response = await call(`/api/attempts/${state.id}/guess`, {
@@ -63,6 +68,7 @@ describe('prepared Daily publication and gameplay', () => {
     // A fresh read restores the saved scores, before the public reveal time.
     const reopened = await (await call(`/api/attempts/${state.id}`)).json() as any;
     expect(reopened).toMatchObject({ status: 'complete', score: 50000 });
+    expect(reopened.results[0]).toMatchObject({ difficultyTier: 'hard', guess: { area_score: 1000, position_score: 4000 } });
     expect(reopened.results).toHaveLength(10);
     expect(f.sqlite.prepare('SELECT COUNT(*) AS saved FROM guesses WHERE attempt_id=?').get(state.id)).toEqual({ saved: 10 });
   });

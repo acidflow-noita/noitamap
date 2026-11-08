@@ -103,7 +103,7 @@ export function localImageGameMiddleware(root: string, rooms = new LocalLiveRoom
           async sampleRounds(count) {
             const service = await get();
             return service.selectRounds(count).map((round) => ({
-              area: service.areas.find((a) => a.id === round.areaId)!,
+              area: service.roundArea(round),
               answer: round.answer,
               frames: framesForPoint(
                 service.index,

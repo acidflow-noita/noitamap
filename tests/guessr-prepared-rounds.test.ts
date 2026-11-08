@@ -101,6 +101,43 @@ async function fixture(areaIds = ['private-area-0', 'private-area-1'], random = 
 }
 
 describe("prepared private Worker rounds", () => {
+  it('caps EDR and Hell featureless views together without changing area IDs or adding asset reads on warm draws', async () => {
+    const f = await fixture(['terrain/edr', 'biome/the-work-hell', 'biome/other'], () => 0);
+    f.index.viewDifficulty = { schemaVersion: 1, imageVersion: f.index.version, cellSize: 32,
+      areas: Object.fromEntries(f.areas.slice(0, 2).map(area => [area.id, [area.bounds!]])) };
+    await writeFile(f.options.indexPath, JSON.stringify(f.index));
+    const report = await prepareWorkerData(f.options);
+    expect(report.featurelessVariants).toBe(2);
+    expect(report.areas).toBe(3);
+    for (let game = 0; game < 2; game++) {
+      const rounds = await f.source.sampleRounds(10);
+      expect(rounds.filter(r => r.area.viewDifficulty)).toHaveLength(1);
+      expect(rounds[0].area).toMatchObject({ id: 'terrain/edr', difficultyTier: 'hard', viewDifficulty: 'featureless-edr',
+        scoring: { area: 1000, position: 4000, maximum: 5000 } });
+      expect(rounds.slice(1).every(r => r.area.id === 'biome/other')).toBe(true);
+    }
+    const reads = [...f.requests];
+    await f.source.sampleRounds(10); expect(f.requests).toEqual(reads);
+    expect(JSON.stringify(await f.source.config())).not.toContain('viewDifficulty');
+  });
+
+  it('draws split areas once and freezes the selected point’s tier without mutating the catalog', async () => {
+    const f = await fixture(['terrain/edr', 'biome/other'], () => 0);
+    const starts = prepareAreaStarts(f.index, f.areas[0]);
+    const target = { x: starts.rectangles[0].x + Math.floor(starts.rectangles[0].width / 2), y: 0 };
+    f.index.viewDifficulty = { schemaVersion: 1, imageVersion: f.index.version, cellSize: 32,
+      areas: { 'terrain/edr': [{ x: target.x, y: 0, width: 2048, height: 1024 }] } };
+    await writeFile(f.options.indexPath, JSON.stringify(f.index));
+    const report = await prepareWorkerData(f.options);
+    expect(report.areas).toBe(2); expect(report.featurelessVariants).toBe(1);
+    expect(report.positions).toBe(f.report.positions);
+    const rounds = await f.source.sampleRounds(2);
+    expect(rounds.map(r => r.area.id)).toEqual(['terrain/edr', 'biome/other']);
+    expect(rounds[0].area.difficultyTier).toBe('normal');
+    expect(rounds[0].answer.x).toBeLessThan(target.x);
+    expect(f.areas[0].difficultyTier).toBe('normal');
+  });
+
   it.each([3, 10])('shares one Holy Mountain/brickwork slot across all depths in a %i-round game', async count => {
     const ids = [1, 2, 3, 4, 5, 6, 'final'].map(depth => `landmark/holy-mountain-${depth}`);
     ids.push(...Array.from({ length: 12 }, (_, n) => `biome/fixture-${n}`));

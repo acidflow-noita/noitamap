@@ -1,6 +1,6 @@
 /** Private, exact starting-view eligibility. No decoding or image generation
  * at round time: the export already recorded the native nonblack pixels. */
-import type { AreaDefinition } from "./area-rules.ts";
+import { featurelessDifficulty, featurelessKind, type AreaDefinition } from "./area-rules.ts";
 import { cameraRect, intersection } from "./clue-camera.ts";
 import type { PrivateImageSet } from "./image-game-server.ts";
 import type { Bounds, Point } from "./rules.ts";
@@ -167,6 +167,10 @@ export function prepareAreaStarts(
         }
       strips.push(...union(rectangles));
     }
+  return startSampler(strips);
+}
+
+export function startSampler(strips: readonly Bounds[]): StartSampler {
   const cumulative: number[] = [];
   let pixels = 0;
   for (const r of strips) {
@@ -186,7 +190,7 @@ export function prepareAreaStarts(
       ),
     sample(random) {
       if (!pixels)
-        throw new Error(`Area ${area.id}: no starting views contain terrain.`);
+        throw new Error('Area has no starting views containing terrain.');
       const value = random();
       if (!Number.isFinite(value) || value < 0 || value >= 1)
         throw new Error("Random source must return a finite number in [0, 1)");
@@ -206,4 +210,63 @@ export function prepareAreaStarts(
       };
     },
   };
+}
+
+/** Sweep disjoint source rectangles through a mask without enumerating native
+ * pixels. Both halves retain uniform integer-position sampling. */
+export function partitionStarts(source: readonly Bounds[], mask: readonly Bounds[]) {
+  const events = [...source.map((rect, id) => ({ rect, id, group: 0 })),
+    ...mask.map((rect, id) => ({ rect, id, group: 1 }))].flatMap(entry => [
+      { ...entry, y: entry.rect.y, start: true }, { ...entry, y: entry.rect.y + entry.rect.height, start: false },
+    ]).sort((a, b) => a.y - b.y);
+  const active = [new Map<number, Bounds>(), new Map<number, Bounds>()];
+  const inside: Bounds[] = [], outside: Bounds[] = [];
+  const intervals = (rects: Iterable<Bounds>) => {
+    const result: [number, number][] = [];
+    for (const r of [...rects].sort((a, b) => a.x - b.x)) {
+      const last = result.at(-1);
+      if (last && r.x <= last[1]) last[1] = Math.max(last[1], r.x + r.width);
+      else result.push([r.x, r.x + r.width]);
+    }
+    return result;
+  };
+  let i = 0;
+  while (i < events.length) {
+    const y = events[i].y;
+    while (i < events.length && events[i].y === y) {
+      const event = events[i++];
+      if (event.start) active[event.group].set(event.id, event.rect);
+      else active[event.group].delete(event.id);
+    }
+    if (i === events.length || !active[0].size) continue;
+    const height = events[i].y - y, cuts = intervals(active[1].values());
+    for (const [left, right] of intervals(active[0].values())) {
+      let x = left;
+      for (const [from, to] of cuts) {
+        if (to <= x) continue;
+        if (from >= right) break;
+        if (from > x) outside.push({ x, y, width: from - x, height });
+        const begin = Math.max(x, from), end = Math.min(right, to);
+        inside.push({ x: begin, y, width: end - begin, height }); x = end;
+        if (x === right) break;
+      }
+      if (x < right) outside.push({ x, y, width: right - x, height });
+    }
+  }
+  return { inside, outside };
+}
+
+export function areaStartVariants(index: PrivateImageSet, area: AreaDefinition, starts = prepareAreaStarts(index, area)) {
+  const evidence = index.viewDifficulty;
+  if (!evidence || !featurelessKind(area)) return [{ definition: area, sampler: starts }];
+  if (evidence.schemaVersion !== 1 || evidence.imageVersion !== index.version || evidence.cellSize !== 32)
+    throw new Error('View difficulty does not match the prepared images.');
+  const mask = evidence.areas[area.id] ?? [];
+  if (mask.some(r => ![r.x, r.y, r.width, r.height].every(Number.isSafeInteger) || r.width <= 0 || r.height <= 0))
+    throw new Error('Invalid view-difficulty mask.');
+  const { inside, outside } = partitionStarts(starts.rectangles, mask);
+  return [
+    { definition: area, sampler: startSampler(outside) },
+    { definition: featurelessDifficulty(area), sampler: startSampler(inside) },
+  ].filter(variant => variant.sampler.pixels > 0);
 }

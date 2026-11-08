@@ -1,10 +1,11 @@
 /** Server-only image selection and scoring. No image decoder, cropper, encoder
  * or filesystem dependency: all round images already exist in the dataset. */
-import { isHolyMountainArea, scoreAreaGuess, type AreaDefinition } from "./area-rules.ts";
+import { isHolyMountainArea, scoreAreaGuess, type AreaDefinition, type AreaDifficulty, type AreaScoring, type ViewDifficulty } from "./area-rules.ts";
 import { cameraRect, type PreparedFrame } from "./clue-camera.ts";
 import { within, type Bounds, type Point } from "./rules.ts";
 import {
   prepareAreaStarts,
+  areaStartVariants,
   type ImageContent,
   type StartSampler,
 } from "./starting-view.ts";
@@ -32,11 +33,19 @@ export interface PrivateImageSet {
     string,
     { width: number; height: number; content?: ImageContent }
   >;
+  /** Offline view classification, tied to these exact images. */
+  viewDifficulty?: {
+    schemaVersion: 1;
+    imageVersion: string;
+    cellSize: number;
+    areas: Record<string, readonly Bounds[]>;
+  };
 }
 export interface PrivateRound {
   id: string;
   areaId: string;
   answer: Point;
+  difficulty?: { tier: AreaDifficulty; scoring: AreaScoring; view?: ViewDifficulty };
   result?: ImageRoundResult;
 }
 export interface PrivateImageGame {
@@ -108,6 +117,7 @@ export class ImageGameService {
   readonly areas: AreaDefinition[];
   readonly bounds: Bounds;
   private starts = new Map<string, StartSampler>();
+  private variants = new Map<string, ReturnType<typeof areaStartVariants>>();
   constructor(
     readonly index: PrivateImageSet,
     areas: AreaDefinition[],
@@ -157,15 +167,40 @@ export class ImageGameService {
     }
     return starts;
   }
-  private createRound(area: AreaDefinition): PrivateRound | null {
-    const starts = this.areaStarts(area);
-    if (!starts.pixels) return null;
+  private areaVariants(area: AreaDefinition, excludeFeatureless = false) {
+    let variants = this.variants.get(area.id);
+    if (!variants) {
+      variants = areaStartVariants(this.index, area, this.areaStarts(area)).filter(v => v.sampler.pixels > 0);
+      this.variants.set(area.id, variants);
+    }
+    return variants.filter(v => !excludeFeatureless || !v.definition.viewDifficulty);
+  }
+  private createRound(area: AreaDefinition, excludeFeatureless = false): PrivateRound | null {
+    const variants = this.areaVariants(area, excludeFeatureless);
+    if (!variants.length) return null;
+    let selected = variants[0];
+    if (variants.length > 1) {
+      let target = Math.floor(this.random() * variants.reduce((n, v) => n + v.sampler.pixels, 0));
+      for (const variant of variants) { selected = variant; if (target < variant.sampler.pixels) break; target -= variant.sampler.pixels; }
+    }
+    const { definition, sampler: starts } = selected;
     const answer = starts.sample(this.random);
     framesForPoint(this.index, answer, this.imageRoot);
-    return { id: crypto.randomUUID(), areaId: area.id, answer };
+    return { id: crypto.randomUUID(), areaId: area.id, answer, difficulty: {
+      tier: definition.difficultyTier!, scoring: { ...definition.scoring! },
+      ...(definition.viewDifficulty ? { view: definition.viewDifficulty } : {}),
+    } };
   }
-  selectRounds(count: number): PrivateRound[] {
-    let selection = [...this.areas], holyMountainUsed = false;
+  roundArea(round: PrivateRound): AreaDefinition {
+    const area = this.areas.find(a => a.id === round.areaId);
+    if (!area) throw new ImageGameError(409, 'This area definition has changed. Start a new game.');
+    return round.difficulty ? { ...area, difficultyTier: round.difficulty.tier, scoring: { ...round.difficulty.scoring },
+      ...(round.difficulty.view ? { viewDifficulty: round.difficulty.view } : {}) } : area;
+  }
+  selectRounds(count: number, previous: readonly PrivateRound[] = []): PrivateRound[] {
+    let holyMountainUsed = previous.some(r => isHolyMountainArea({ id: r.areaId }));
+    let featurelessUsed = previous.some(r => r.difficulty?.view);
+    let selection = this.areas.filter(area => !holyMountainUsed || !isHolyMountainArea(area));
     const rounds: PrivateRound[] = [];
     while (rounds.length < count) {
       if (!selection.length) {
@@ -174,16 +209,17 @@ export class ImageGameService {
           throw new Error(
             "No starting views contain terrain in the reviewed areas.",
           );
-        selection = eligible.filter(area => !holyMountainUsed || !isHolyMountainArea(area));
+        selection = eligible.filter(area => (!holyMountainUsed || !isHolyMountainArea(area)) && this.areaVariants(area, featurelessUsed).length > 0);
         if (!selection.length) throw new Error('Not enough eligible puzzle areas.');
       }
       const area = selection.splice(
         Math.floor(this.random() * selection.length),
         1,
       )[0];
-      const round = this.createRound(area);
+      const round = this.createRound(area, featurelessUsed);
       if (round) {
         rounds.push(round);
+        if (round.difficulty?.view) featurelessUsed = true;
         if (isHolyMountainArea(area)) {
           holyMountainUsed = true;
           selection = selection.filter(candidate => !isHolyMountainArea(candidate));
@@ -217,7 +253,7 @@ export class ImageGameService {
           ? null
           : {
               id: current.id,
-              difficultyTier: this.areas.find(area => area.id === current.areaId)?.difficultyTier ?? undefined,
+              difficultyTier: this.roundArea(current).difficultyTier ?? undefined,
               clue: {
                 frames: framesForPoint(
                   this.index,
@@ -246,8 +282,9 @@ export class ImageGameService {
       if (round.result) continue;
       const area = this.areas.find((a) => a.id === round.areaId);
       if (area && this.areaStarts(area).contains(round.answer)) continue;
+      const otherRounds = game.rounds.filter((_, n) => n !== i);
       game.rounds[i] =
-        (area && this.createRound(area)) || this.selectRounds(1)[0];
+        (area && this.createRound(area, otherRounds.some(r => r.difficulty?.view))) || this.selectRounds(1, otherRounds)[0];
       repaired = true;
     }
     if (repaired) await this.store.put(game);
@@ -278,12 +315,7 @@ export class ImageGameService {
         );
       return this.publicState(game);
     }
-    const area = this.areas.find((a) => a.id === round.areaId);
-    if (!area)
-      throw new ImageGameError(
-        409,
-        "This area definition has changed. Start a new game.",
-      );
+    const area = this.roundArea(round);
     const scored = scoreAreaGuess(area, round.answer, guess, maximum);
     round.result = {
       ordinal: game.round,

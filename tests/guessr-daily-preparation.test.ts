@@ -12,9 +12,9 @@ import { gameDatabase } from './helpers/guessr-database';
 let directory: string;
 beforeEach(async () => { directory = await mkdtemp(join(tmpdir(), 'guessr-daily-')); vi.spyOn(console, 'log').mockImplementation(() => {}); });
 afterEach(async () => { vi.restoreAllMocks(); await rm(directory, { recursive: true, force: true }); });
-async function fixture() {
+async function fixture(material = { r: 30, g: 40, b: 50, alpha: 1 }) {
   const png = join(directory, 'source.png'), bake = join(directory, 'middle');
-  await sharp({ create: { width: 2048, height: 2048, channels: 4, background: { r: 30, g: 40, b: 50, alpha: 1 } } }).png().toFile(png);
+  await sharp({ create: { width: 2048, height: 2048, channels: 4, background: material } }).png().toFile(png);
   const source = await prepareCapturedMap(png, bake, { originX: -17920, originY: 0 });
   await writeFile(join(bake, 'background.json'), JSON.stringify({ schemaVersion: 1, kind: 'dynamic-map-background', identity: 'a'.repeat(64),
     source: 'test-fixture', capture: { width: 2048, height: 2048, originX: -17920, originY: 0, tileSize: 512, overlap: 2, maxLevel: 11 } }));
@@ -72,6 +72,25 @@ it('prepares a reusable whole-world image set and publishes its matching private
     expect(activated).toBe(true); expect(published.published).toBe(true);
     expect(database.sqlite.prepare('SELECT COUNT(*) n FROM questions').get()).toMatchObject({ n: 10 });
   } finally { database.close(); }
+});
+
+it('classifies final composed Daily images privately and limits featureless views across the ten-round selection', async () => {
+  const input = await fixture({ r: 39, g: 22, b: 18, alpha: 1 });
+  const recipe = JSON.parse(await readFile(input.areasPath, 'utf8'));
+  recipe.areas[0].id = 'terrain/edr';
+  recipe.areas.push({ ...recipe.areas[0], id: 'biome/other' });
+  await writeFile(input.areasPath, JSON.stringify(recipe));
+  const report = await prepareDaily(input);
+  expect(report.featurelessVariants).toBe(1);
+  expect(report.featurelessPositions).toBeGreaterThan(0);
+  const daily = JSON.parse(await readFile(join(input.outputDirectory, 'private/daily.json'), 'utf8'));
+  expect(daily.rounds).toHaveLength(10);
+  const hard = daily.rounds.filter((r: any) => r.area.viewDifficulty);
+  expect(hard.length).toBeLessThanOrEqual(1);
+  for (const round of hard) expect(round.area).toMatchObject({ id: 'terrain/edr', difficultyTier: 'hard',
+    scoring: { area: 1000, position: 4000, maximum: 5000 } });
+  const publicData = await readFile(join(input.outputDirectory, 'clues/dataset.json'), 'utf8');
+  expect(publicData).not.toMatch(/viewDifficulty|featureless|terrain\/edr/);
 });
 
 it('rejects a mismatched seed before producing publishable output', async () => {

@@ -4,7 +4,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { privateOutput } from "./private-output.mjs";
-import { prepareAreaStarts } from "../../src/guessr/starting-view.ts";
+import { areaStartVariants } from "../../src/guessr/starting-view.ts";
 import type { AreaDefinition } from "../../src/guessr/area-rules.ts";
 import type { PrivateImageSet } from "../../src/guessr/image-game-server.ts";
 import {
@@ -95,44 +95,47 @@ export async function prepareWorkerData(
         excluded.push(area.id);
         continue;
       }
-      const sampler = prepareAreaStarts(index, area);
-      if (!sampler.pixels) {
+      const variants = areaStartVariants(index, area).filter(variant => variant.sampler.pixels > 0);
+      if (!variants.length) {
         excluded.push(area.id);
         continue;
       }
-      if (sampler.pixels > 0xffffffff)
-        throw new Error(
-          `Area ${area.id} exceeds the sampler's native-pixel limit.`,
-        );
-      const data = Buffer.alloc(8 + sampler.rectangles.length * 20);
-      data.write("NGS1");
-      data.writeUInt32LE(sampler.rectangles.length, 4);
-      let total = 0;
-      sampler.rectangles.forEach((r, n) => {
-        const offset = 8 + n * 20;
-        data.writeInt32LE(r.x, offset);
-        data.writeInt32LE(r.y, offset + 4);
-        data.writeUInt32LE(r.width, offset + 8);
-        data.writeUInt32LE(r.height, offset + 12);
-        total += r.width * r.height;
-        data.writeUInt32LE(total, offset + 16);
-      });
-      const filename =
-        createHash("sha256").update(area.id).digest("hex").slice(0, 32) + ".bin";
-      await write(resolve(output, "game-data/starts", filename), data);
-      const definition: AreaDefinition = {
-        id: area.id,
-        label: area.label,
-        originY: area.originY,
-        runs: area.runs,
-        bounds: area.bounds,
-        cells: area.cells,
-        difficultyTier: area.difficultyTier,
-        scoring: area.scoring,
-      };
-      catalog.areas.push({ definition, starts: filename, positions: total });
-      samplerBytes += data.byteLength;
-      positions += total;
+      for (const { definition: selected, sampler } of variants) {
+        if (sampler.pixels > 0xffffffff)
+          throw new Error(
+            `Area ${area.id} exceeds the sampler's native-pixel limit.`,
+          );
+        const data = Buffer.alloc(8 + sampler.rectangles.length * 20);
+        data.write("NGS1");
+        data.writeUInt32LE(sampler.rectangles.length, 4);
+        let total = 0;
+        sampler.rectangles.forEach((r, n) => {
+          const offset = 8 + n * 20;
+          data.writeInt32LE(r.x, offset);
+          data.writeInt32LE(r.y, offset + 4);
+          data.writeUInt32LE(r.width, offset + 8);
+          data.writeUInt32LE(r.height, offset + 12);
+          total += r.width * r.height;
+          data.writeUInt32LE(total, offset + 16);
+        });
+        const filename =
+          createHash("sha256").update(area.id + (selected.viewDifficulty ? ':' + selected.viewDifficulty : '')).digest("hex").slice(0, 32) + ".bin";
+        await write(resolve(output, "game-data/starts", filename), data);
+        const definition: AreaDefinition = {
+          id: area.id,
+          label: area.label,
+          originY: area.originY,
+          runs: area.runs,
+          bounds: area.bounds,
+          cells: area.cells,
+          difficultyTier: selected.difficultyTier,
+          scoring: selected.scoring,
+          ...(selected.viewDifficulty ? { viewDifficulty: selected.viewDifficulty } : {}),
+        };
+        catalog.areas.push({ definition, starts: filename, positions: total });
+        samplerBytes += data.byteLength;
+        positions += total;
+      }
     } finally { options.onProgress?.(); }
   }
   if (!catalog.areas.length)
@@ -151,7 +154,9 @@ export async function prepareWorkerData(
   }
   return {
     directory: output,
-    areas: catalog.areas.length,
+    areas: new Set(catalog.areas.map(area => area.definition.id)).size,
+    featurelessVariants: catalog.areas.filter(area => area.definition.viewDifficulty).length,
+    featurelessPositions: catalog.areas.filter(area => area.definition.viewDifficulty).reduce((n, area) => n + area.positions, 0),
     positions,
     excluded,
     catalogBytes: Buffer.byteLength(text),

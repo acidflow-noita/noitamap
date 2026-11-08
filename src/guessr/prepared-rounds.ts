@@ -267,12 +267,28 @@ export function createPreparedRoundSource(
         throw new Error("Invalid round count.");
       const data = await loadCatalog(),
         native = await loadGrid(data.capture);
-      let pool = [...data.areas], holyMountainUsed = false;
+      const grouped = new Map<string, PreparedGameCatalog['areas']>();
+      for (const area of data.areas) {
+        const group = grouped.get(area.definition.id) ?? [];
+        group.push(area); grouped.set(area.definition.id, group);
+      }
+      let holyMountainUsed = false, featurelessUsed = false;
+      const eligible = (area: PreparedGameCatalog['areas'][number]) =>
+        (!holyMountainUsed || !isHolyMountainArea(area.definition)) && (!featurelessUsed || !area.definition.viewDifficulty);
+      const refill = () => [...grouped.values()].map(group => group.filter(eligible)).filter(group => group.length);
+      let pool = refill();
       const result: PreparedRound[] = [];
       for (let n = 0; n < count; n++) {
-        if (!pool.length) pool = data.areas.filter(area => !holyMountainUsed || !isHolyMountainArea(area.definition));
+        if (!pool.length) pool = refill();
         if (!pool.length) throw new Error('Not enough eligible puzzle areas.');
-        const area = pool.splice(drawIndex(pool.length), 1)[0];
+        const group = pool.splice(drawIndex(pool.length), 1)[0];
+        // Select a semantic area once, then weight its view variants by native
+        // eligible positions. Splitting an area must not give it extra tickets.
+        let area = group[0];
+        if (group.length > 1) {
+          let target = drawIndex(group.reduce((n, entry) => n + entry.positions, 0));
+          for (const entry of group) { area = entry; if (target < entry.positions) break; target -= entry.positions; }
+        }
         const answer = sample(await loadSampler(area), area.positions);
         result.push({
           area: area.definition,
@@ -281,8 +297,9 @@ export function createPreparedRoundSource(
         });
         if (isHolyMountainArea(area.definition)) {
           holyMountainUsed = true;
-          pool = pool.filter(candidate => !isHolyMountainArea(candidate.definition));
         }
+        if (area.definition.viewDifficulty) featurelessUsed = true;
+        pool = pool.map(group => group.filter(eligible)).filter(group => group.length);
       }
       return result;
     },

@@ -78,6 +78,26 @@ function fixture() {
 }
 
 describe("reusable-image rounds", () => {
+  it.each(['terrain/edr', 'biome/the-work-hell'])('keeps %s view difficulty and scoring after F5 and changed preparation metadata', async id => {
+    const f = fixture(), area = { ...f.area, id }, other = { ...f.area, id: 'biome/other' };
+    f.index.viewDifficulty = { schemaVersion: 1, imageVersion: f.index.version, cellSize: 32, areas: { [id]: [area.bounds!] } };
+    const service = new ImageGameService(f.index, [area, other], f.store, '/images', '/reference', () => 0);
+    const state = await service.start(), game = await service.load(state.id);
+    expect(state.current?.difficultyTier).toBe('hard');
+    expect(game.rounds.filter(r => r.difficulty?.view)).toHaveLength(1);
+    expect(service.roundArea(game.rounds[0])).toMatchObject({ id, difficultyTier: 'hard' });
+    expect(JSON.stringify(state)).not.toMatch(/viewDifficulty|featureless|hell-background|areaId/);
+    f.index.viewDifficulty.areas = {};
+    const restored = new ImageGameService(f.index, [area, other], f.store);
+    const beforeGuess = restored.publicState(await restored.load(state.id));
+    expect(beforeGuess.current?.difficultyTier).toBe('hard');
+    const scored = await restored.guess(state.id, game.rounds[0].id, game.rounds[0].answer, 5000);
+    expect(scored.results[0]).toMatchObject({ difficultyTier: 'hard', score: 5000,
+      areaScore: id === 'terrain/edr' ? 1000 : 3000, positionScore: id === 'terrain/edr' ? 4000 : 2000 });
+    expect((await restored.review(state.id, 0)).result.difficultyTier).toBe('hard');
+    expect(area.difficultyTier).toBe('normal');
+  });
+
   it.each([3, 10])('limits new local %i-round games to one Holy Mountain including brickwork', count => {
     const f = fixture();
     const areas = [1, 2, 3, 4, 5, 6, 'final'].map(depth => ({ ...f.area, id: `landmark/holy-mountain-${depth}` }));

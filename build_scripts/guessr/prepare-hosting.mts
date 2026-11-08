@@ -14,10 +14,12 @@ import { randomUUID } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
 import { exportImageSet } from "./export-image-set.mjs";
 import { prepareWorkerData } from "./prepare-worker-data.mts";
+import { prepareFeaturelessViews } from './featureless-views.mts';
 
 const sourceDirectory = resolve("task/guessr/site/captured");
 const referenceDirectory = resolve("task/guessr/reference-site");
 const images = await exportImageSet();
+await prepareFeaturelessViews();
 const index = JSON.parse(await readFile(images.privateIndexPath, "utf8"));
 const count = Object.values(index.levels).reduce(
   (sum: number, level: any) => sum + Object.keys(level.images).length,

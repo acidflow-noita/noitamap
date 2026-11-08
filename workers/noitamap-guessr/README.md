@@ -317,6 +317,35 @@ refilling never resets the Holy Mountain limit. Existing saved games and
 already-published Dailies keep their selected rounds. After publishing changes
 to this sampler, update biome-baker's `GUESSR_TOOLS_REVISION` to the published
 commit so subsequent Daily bakes use the same rule.
+View difficulty is prepared from the complete 1728x768 exploration boundary,
+not just the 27x12 initial crop. Plain EDR and world-aligned Hell background
+receive Hard variants inside their existing area IDs. EDR retains its 1000/4000
+score split; background-only Hell uses 3000/2000. A new game contains at most one
+of these featureless variants in total, independently of the Holy Mountain cap.
+Variants are weighted by their valid native positions after choosing an area,
+so partitioning an area does not increase its selection weight. Round metadata
+freezes the selected tier and score split; older saved rounds keep their rules.
+
+`featureless-views.mts` checks 32px cells inside the reviewed EDR/Hell masks.
+EDR uses a capture-aware material-colour envelope; Hell matches its repeating
+artwork at the actual world phase, with small capture-resampling tolerance.
+Unknown pixels and mixed/edge cells remain Normal. The widest view of every
+native centre in a classified cell must fit wholly inside matching cells, so
+the conservative boundary margin is at most 31px. This is a bounded image
+classifier, not recovery of exact material IDs from the original game.
+The private index stores view masks, and the Worker receives only precomputed
+samplers. Public images, filenames, reference configuration and gameplay
+request counts are unchanged. The Daily preparation job performs the same
+classification on its final composited images and reports progress separately.
+For an existing local captured image set, rebuild only the private metadata:
+
+```sh
+node --import tsx build_scripts/guessr/featureless-views.mts
+node --import tsx build_scripts/guessr/prepare-worker-data.mts
+```
+
+`prepare-hosting.mts` also includes this step. Ship the changed catalog/sampler
+files in the private Worker repository together with the matching source.
 Old saved games repair only unanswered black starts; submitted results remain
 unchanged. The changed round ID resets its old camera and assistance allowance.
 The mode cards and map panels share the same 16px layout gutter.

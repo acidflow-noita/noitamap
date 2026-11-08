@@ -11,6 +11,7 @@ import { DAILY_ROUNDS, type DailyImagePack } from '../../src/guessr/daily-pack';
 import type { AreaDefinition } from '../../src/guessr/area-rules';
 import { loadDailyBackground, composeDailyWorld } from './daily-background.mts';
 import { withProgress } from './progress.mts';
+import { prepareFeaturelessViews } from './featureless-views.mts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const pendingImages = 'https://images.invalid/images';
@@ -90,6 +91,7 @@ export async function prepareDaily(options: {
   if (recipe.schemaVersion !== 1 || !Array.isArray(recipe.areas) || !recipe.areas.length) throw new Error('Reviewed puzzle-area recipe is unavailable.');
   const inventoryPath = join(privateRoot, 'inventory.json');
   await writeFile(inventoryPath, JSON.stringify({ capture, puzzleAreas: recipe.areas as AreaDefinition[] }));
+  await prepareFeaturelessViews({ indexPath, inventoryPath, imageDirectory: join(output, 'clues/images') });
   const workerDirectory = join(privateRoot, 'worker-assets');
   const prepared = await withProgress('Preparing playable areas', recipe.areas.length, progress => prepareWorkerData({
     indexPath, inventoryPath, outputDirectory: workerDirectory, onProgress: () => progress.advance(),
@@ -110,6 +112,7 @@ export async function prepareDaily(options: {
     schemaVersion: 1, complete: true, day: pack.day, seed, version: pack.version, renderId: pack.renderId,
     clueFiles: images.stats.assets + 2, referenceFiles: composed.tiles + 2, backgroundIdentity: composed.backgroundIdentity,
     eligibleAreas: prepared.areas, eligiblePositions: prepared.positions, excludedAreas: prepared.excluded,
+    featurelessVariants: prepared.featurelessVariants, featurelessPositions: prepared.featurelessPositions,
     rounds: rounds.length,
   };
   await writeFile(join(output, 'manifest.json'), JSON.stringify(summary, null, 2) + '\n');

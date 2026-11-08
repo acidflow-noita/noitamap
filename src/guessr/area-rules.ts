@@ -2,6 +2,7 @@
 import type { Bounds, Point } from "./rules.ts";
 
 export type AreaDifficulty = "easy" | "normal" | "hard";
+export type ViewDifficulty = 'featureless-edr' | 'hell-background-only';
 export type AreaRun = readonly [row: number, start: number, end: number];
 export interface AreaScoring {
   area: number;
@@ -26,12 +27,24 @@ export interface AreaDefinition {
   difficultyTier?: AreaDifficulty | null;
   scoring?: AreaScoring | null;
   difficultyRule?: SnowDifficultyRule | null;
+  /** Private evidence for a fixed, view-specific tier; never an area ID. */
+  viewDifficulty?: ViewDifficulty;
 }
 
 /** Each curated mountain includes its altar, basins and brickwork walls.
  * Depths remain separate scoring areas but share one slot in a new game. */
 export function isHolyMountainArea(area: Pick<AreaDefinition, 'id'>): boolean {
   return area.id.startsWith('landmark/holy-mountain-');
+}
+export function featurelessKind(area: Pick<AreaDefinition, 'id'>): ViewDifficulty | undefined {
+  if (area.id === 'terrain/edr') return 'featureless-edr';
+  if (area.id === 'biome/the-work-hell') return 'hell-background-only';
+}
+export function featurelessDifficulty(area: AreaDefinition): AreaDefinition {
+  const viewDifficulty = featurelessKind(area);
+  if (!viewDifficulty || !area.scoring) throw new Error('Unsupported featureless puzzle area.');
+  return { ...area, difficultyTier: 'hard', viewDifficulty,
+    scoring: viewDifficulty === 'featureless-edr' ? { ...area.scoring } : { area: 3000, position: 2000, maximum: 5000 } };
 }
 export interface AreaGuessResult {
   score: number;
@@ -102,6 +115,8 @@ function assertReadyArea(area: AreaDefinition): asserts area is ReadyArea {
     !["easy", "normal", "hard"].includes(area.difficultyTier)
   )
     fail("difficulty tier is missing or invalid");
+  if (area.viewDifficulty && (featurelessKind(area) !== area.viewDifficulty || area.difficultyTier !== 'hard'))
+    fail('view-specific difficulty does not match this area');
   const scoring = area.scoring;
   if (!scoring) fail("scoring is missing; requires review");
   if (
