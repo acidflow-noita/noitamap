@@ -2,7 +2,7 @@ import "./game.css";
 import Dialog from "bootstrap/js/dist/dialog.js";
 import { bindText, bindAttribute, tr, initializeGuessrTranslations, guessrLocale, guessrGameTerm, formatGuessrNumber } from './i18n';
 import { createGuessrLanguagePicker, disposeGuessrLanguagePickers } from './language-picker';
-import { difficultyIndicator, difficultyLabel, maximumIndicator, updateRoundIndicators } from './round-status';
+import { difficultyIndicator, maximumIndicator, updateDifficultyIndicators, updateRoundIndicators } from './round-status';
 import { msg, setText, localizedDistance, localizedError, type LocalizedText } from './messages';
 import {
   GUESSR_CANONICAL_URL,
@@ -468,19 +468,13 @@ function showMapResult(
 ): void {
   const clueTitle = main.querySelector('.game-grid > .game-panel:first-child .panel-title');
   if (clueTitle) bindText(clueTitle, 'Revealed area');
-  const difficultyText = main.querySelector('[data-clue-difficulty]');
-  if (difficultyText) bindText(difficultyText, () => difficultyLabel(difficulty));
+  updateDifficultyIndicators(main, difficulty);
   const heading = main.querySelector(".map-heading")!;
   const explore = link(msg(() => guessrGameTerm(name)), url, "panel-title result-link");
   explore.target = "_blank";
   explore.rel = "noopener noreferrer";
   bindAttribute(explore, 'title', '{{name}} — Explore on Noitamap', () => ({ name: guessrGameTerm(name) }));
-  const summary = () => [
-    difficulty ? tr(({ easy: 'Easy difficulty', normal: 'Normal difficulty', hard: 'Hard difficulty' } as Record<string, string>)[difficulty] ?? difficulty) : '',
-    localizedDistance(distance),
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const summary = () => localizedDistance(distance);
   const detail = node("span", "map-result-meta", msg(summary));
   bindAttribute(detail, 'title', summary);
   const points = node(

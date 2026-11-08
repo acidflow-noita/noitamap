@@ -325,7 +325,7 @@ describe('shared channel guess picker', () => {
       clue: new URL(roundLink('/guess/?channel=wuote', 1, true)).hash.slice(6), expiresAt: Date.now() + 99999,
     };
     handlers.state(state); handlers.status('connected', ''); await flush();
-    expect(f.main.querySelector('[data-clue-difficulty]')!.textContent).toBe('Normal difficulty');
+    expect(f.main.querySelector('[data-clue-difficulty]')!.textContent).toBe('Normal');
     expect(f.main.querySelector('[data-clue-maximum]')!.textContent).toBe('Up to 5,000 points');
     expect(f.main.querySelector<HTMLElement>('.stream-budget-bar')!.hidden).toBe(false);
     f.button('Sign in with Twitch').click(); await flush(); ui.pick({ x: 10, y: 20 });

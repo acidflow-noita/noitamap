@@ -1,4 +1,4 @@
-import { bindText, formatGuessrNumber, tr } from './i18n';
+import { bindAttribute, bindText, formatGuessrNumber, tr } from './i18n';
 import { maximumScore, type ClueProgress } from './rules';
 import type { AreaDifficulty } from './area-rules';
 
@@ -21,9 +21,20 @@ export function difficultyLabel(tier?: string | null): string {
   return tier && Object.hasOwn(labels, tier) ? tr(labels[tier]) : `${tr('Difficulty')}: —`;
 }
 export function difficultyIndicator(): HTMLElement {
-  const label = document.createElement('small');
-  label.className = 'clue-difficulty'; label.dataset.clueDifficulty = '';
+  const label = document.createElement('span');
+  label.className = 'badge badge-subtle clue-difficulty'; label.dataset.clueDifficulty = '';
+  label.hidden = true;
   return label;
+}
+export function updateDifficultyIndicators(root: ParentNode, tier?: string | null) {
+  const labels: Record<string, string> = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
+  const known = !!tier && Object.hasOwn(labels, tier);
+  for (const label of root.querySelectorAll<HTMLElement>('[data-clue-difficulty]')) {
+    label.hidden = !known;
+    label.dataset.difficulty = known ? tier : '';
+    updateLabel(label, () => known ? tr(labels[tier]) : '');
+    bindAttribute(label, 'aria-label', () => difficultyLabel(tier));
+  }
 }
 export function maximumIndicator(): HTMLOutputElement {
   const value = document.createElement('output');
@@ -32,8 +43,7 @@ export function maximumIndicator(): HTMLOutputElement {
   return value;
 }
 export function updateRoundIndicators(root: ParentNode, progress: ClueProgress, tier?: AreaDifficulty | null) {
-  for (const label of root.querySelectorAll<HTMLElement>('[data-clue-difficulty]'))
-    updateLabel(label, () => difficultyLabel(tier));
+  updateDifficultyIndicators(root, tier);
   for (const value of root.querySelectorAll<HTMLOutputElement>('[data-clue-maximum]'))
     updateLabel(value, () => tr('Up to {{points}} points', {
       count: maximumScore(progress), points: formatGuessrNumber(maximumScore(progress)),

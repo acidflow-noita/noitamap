@@ -75,7 +75,8 @@ it('changes live labels and formatted costs without replacing icons, moving the 
   expect(svg?.getAttribute('aria-hidden')).toBe('true');
   expect(document.activeElement).toBe(out);
   expect(out.getAttribute('aria-label')).toBe('Verkleinern');
-  expect(document.querySelector('[data-clue-difficulty]')?.textContent).toBe('Normale Schwierigkeit');
+  expect(document.querySelector('[data-clue-difficulty]')?.textContent).toBe('Normal');
+  expect(document.querySelector('[data-clue-difficulty]')?.getAttribute('aria-label')).toBe('Normale Schwierigkeit');
   expect(document.querySelector('[data-clue-maximum]')?.textContent).toBe('Bis zu 2.000 Punkte');
   expect(out.getAttribute('aria-description')).toBe('Verkleinern — Kostet 1.000 Punkte');
   expect(out.querySelector('.clue-control-cost')?.textContent).toBe('-1.000');
@@ -117,7 +118,7 @@ it('keeps return and backtracking free and translates the position without chang
 
 it('shows the remaining maximum before a guess and updates it only after successful exploration', async () => {
   const f = await fixture(), budget = document.querySelector('[data-clue-maximum]')!;
-  expect(document.querySelector('[data-clue-difficulty]')?.textContent).toBe('Normal difficulty');
+  expect(document.querySelector('[data-clue-difficulty]')?.textContent).toBe('Normal');
   expect(budget.textContent).toBe('Up to 5,000 points');
   const text = budget.firstChild;
   updateRoundIndicators(document, f.progress, 'normal');

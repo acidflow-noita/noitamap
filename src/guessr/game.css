@@ -535,8 +535,39 @@ header.page-heading {
   font-size: 0.9375rem;
   font-weight: 600;
 }
-.clue-heading { min-inline-size: 0; }
-.clue-difficulty { display: block; margin-block-start: .125rem; color: var(--text-muted); font-size: .75rem; line-height: 1.2; }
+.clue-heading { min-inline-size: 0; display: flex; flex-wrap: wrap; align-items: center; gap: .375rem .5rem; }
+.badge.clue-difficulty {
+  --bs-badge-padding-x: .5em;
+  --bs-badge-padding-y: .25em;
+  --bs-badge-border-radius: var(--bs-radius-5);
+  --bs-badge-border-color: var(--bs-theme-border);
+  display: inline-flex;
+  padding: var(--bs-badge-padding-y) var(--bs-badge-padding-x);
+  border-color: var(--bs-badge-border-color);
+  border-radius: var(--bs-badge-border-radius);
+  color: var(--bs-badge-color);
+  background: var(--bs-badge-bg);
+  font-size: .75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+.clue-difficulty[hidden] { display: none; }
+/* Tailwind green, amber and red, using 300/950/800 for text/surface/border. */
+.clue-difficulty[data-difficulty="easy"] {
+  --bs-theme-fg: oklch(87.1% 0.15 154.449);
+  --bs-theme-bg-subtle: oklch(26.6% 0.065 152.934);
+  --bs-theme-border: oklch(44.8% 0.119 151.328);
+}
+.clue-difficulty[data-difficulty="normal"] {
+  --bs-theme-fg: oklch(87.9% 0.169 91.605);
+  --bs-theme-bg-subtle: oklch(27.9% 0.077 45.635);
+  --bs-theme-border: oklch(47.3% 0.137 46.201);
+}
+.clue-difficulty[data-difficulty="hard"] {
+  --bs-theme-fg: oklch(80.8% 0.114 19.571);
+  --bs-theme-bg-subtle: oklch(25.8% 0.092 26.042);
+  --bs-theme-border: oklch(44.4% 0.177 26.899);
+}
 .round-points.round-maximum {
   color: var(--game-maximum-fg);
   background: var(--game-maximum-bg);
