@@ -87,7 +87,7 @@ jobs:
         trial: [1, 2, 3]
     container:
       image: ${{ needs.prepare.outputs.image }}
-      options: --init --ipc=host
+      options: --init --ipc=host --user 1001
     defaults:
       run:
         shell: bash
@@ -112,11 +112,11 @@ jobs:
         id: runtime
         timeout-minutes: 2
         run: |
-          # Browser binaries and their OS dependencies are in the version-matched
-          # official image. Only supplement Mesa/Xauth if the image lacks them.
+          # The official image already includes browsers, Mesa and Xauth.
+          # Fail setup explicitly if a future image changes that contract.
           if ! dpkg-query -W -f='${db:Status-Status}\n' libgl1-mesa-dri libglx-mesa0 libegl-mesa0 xauth 2>/dev/null | awk '$0 == "installed" { n++ } END { exit n != 4 }'; then
-            timeout --kill-after=5s 45s apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 update
-            timeout --kill-after=5s 60s apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 install -y --no-install-recommends libgl1-mesa-dri libglx-mesa0 libegl-mesa0 xauth
+            echo '::error::The Playwright image is missing required Mesa/Xauth packages.'
+            exit 1
           fi
           node performance-bundle/harness/check-runtime.mjs
       - name: Compare cold, warm, reload, mod launch, and navigation

@@ -14,8 +14,10 @@ for one day; compact reports and build logs remain available for seven days.
 
 The browser jobs use the [official Playwright image](https://playwright.dev/docs/docker)
 whose version matches those installed packages. They do not check out source,
-install the application's packages or rebuild the site. Mesa/Xauth are checked
-separately and installed only if missing, with bounded download/install times.
+install the application's packages or rebuild the site. They use the standard
+runner UID (1001), matching the mounted home directory required by Firefox.
+Mesa/Xauth and browser executables are checked before measurement; a missing
+dependency fails setup explicitly instead of starting another installation.
 The existing Mesa renderer and pixel-readback checks remain mandatory.
 
 Build commands have individual timeouts and progress messages. Job and step
