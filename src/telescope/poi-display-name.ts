@@ -156,7 +156,7 @@ export function getPOIDisplayName(poi: {
     const materialKey =
       ({ ambrosia: "magic_liquid_protection_all", just_death: "magic_liquid_death" } as Record<string, string>)[String(poi.material)]
         ?? String(poi.material);
-    name += ` · ${gameTranslator.translateMaterial(materialKey)}`;
+    name += ` (${gameTranslator.translateMaterial(materialKey)})`;
   }
   return name;
 }

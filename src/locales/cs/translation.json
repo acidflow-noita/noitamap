@@ -4952,7 +4952,10 @@
     "notFoundAllWorlds": "Nenalezen ve třech světech",
     "notFoundMainWorld": "Nenalezeno v hlavním světě",
     "findInTelescope": "najít pomocí dalekohledu",
-    "searching": "Vyhledávání…"
+    "searching": "Vyhledávání…",
+    "ingredientDistance": "Složka ({{recipe}}): {{distance}}",
+    "spellDistance": "Kouzlo: {{spell}}, {{distance}}",
+    "alwaysCastDistance": "Automatické kouzlo: {{spell}}, {{distance}}"
   },
   "highValueFilter": {
     "title": "High-value items",

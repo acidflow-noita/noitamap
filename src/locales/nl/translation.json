@@ -4952,7 +4952,10 @@
     "notFoundAllWorlds": "Niet te vinden in drie werelden",
     "notFoundMainWorld": "Niet gevonden in de hoofdwereld",
     "findInTelescope": "vinden met behulp van een telescoop",
-    "searching": "Zoeken…"
+    "searching": "Zoeken…",
+    "ingredientDistance": "Ingrediënt ({{recipe}}): {{distance}}",
+    "spellDistance": "Spreuk: {{spell}}, {{distance}}",
+    "alwaysCastDistance": "Automatische spreuk: {{spell}}, {{distance}}"
   },
   "highValueFilter": {
     "title": "High-value items",

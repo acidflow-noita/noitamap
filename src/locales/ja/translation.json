@@ -4952,7 +4952,10 @@
     "notFoundAllWorlds": "3つの世界では見つからない",
     "notFoundMainWorld": "メインワールドでは見つからない",
     "findInTelescope": "望遠鏡を使って見つける",
-    "searching": "検索中…"
+    "searching": "検索中…",
+    "ingredientDistance": "材料（{{recipe}}）：{{distance}}",
+    "spellDistance": "呪文：{{spell}}、{{distance}}",
+    "alwaysCastDistance": "常に呪文を詠唱：{{spell}}、{{distance}}"
   },
   "highValueFilter": {
     "title": "High-value items",

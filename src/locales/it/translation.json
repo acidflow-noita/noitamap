@@ -4952,7 +4952,10 @@
     "notFoundAllWorlds": "Non trovato in tre mondi",
     "notFoundMainWorld": "Non trovato nel mondo principale",
     "findInTelescope": "trovare utilizzando il telescopio",
-    "searching": "Ricerca…"
+    "searching": "Ricerca…",
+    "ingredientDistance": "Ingrediente ({{recipe}}): {{distance}}",
+    "spellDistance": "Incantesimo: {{spell}}, {{distance}}",
+    "alwaysCastDistance": "Lancia sempre: {{spell}}, {{distance}}"
   },
   "highValueFilter": {
     "title": "High-value items",

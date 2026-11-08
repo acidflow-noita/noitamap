@@ -4952,7 +4952,10 @@
     "notFoundAllWorlds": "Не знайдено в трьох світах",
     "notFoundMainWorld": "Не знайдено в основному світі",
     "findInTelescope": "знайти за допомогою телескопа",
-    "searching": "Пошук…"
+    "searching": "Пошук…",
+    "ingredientDistance": "Інгредієнт ({{recipe}}): {{distance}}",
+    "spellDistance": "Заклинання: {{spell}}, {{distance}}",
+    "alwaysCastDistance": "Завжди використовує: {{spell}}, {{distance}}"
   },
   "highValueFilter": {
     "title": "High-value items",

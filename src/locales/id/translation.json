@@ -4952,7 +4952,10 @@
     "notFoundAllWorlds": "Tidak ditemukan di tiga dunia",
     "notFoundMainWorld": "Tidak ditemukan di dunia utama",
     "findInTelescope": "temukan menggunakan Teleskop",
-    "searching": "Mencari…"
+    "searching": "Mencari…",
+    "ingredientDistance": "Bahan ({{recipe}}): {{distance}}",
+    "spellDistance": "Mantra: {{spell}}, {{distance}}",
+    "alwaysCastDistance": "Mantra otomatis: {{spell}}, {{distance}}"
   },
   "highValueFilter": {
     "title": "High-value items",

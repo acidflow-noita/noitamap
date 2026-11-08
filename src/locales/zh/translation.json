@@ -4952,7 +4952,10 @@
     "notFoundAllWorlds": "三个世界都找不到",
     "notFoundMainWorld": "主世界中找不到",
     "findInTelescope": "使用望远镜寻找",
-    "searching": "正在寻找..."
+    "searching": "正在寻找...",
+    "ingredientDistance": "配料（{{recipe}}）：{{distance}}",
+    "spellDistance": "法术：{{spell}}，{{distance}}",
+    "alwaysCastDistance": "始终施放：{{spell}}，{{distance}}"
   },
   "highValueFilter": {
     "title": "High-value items",

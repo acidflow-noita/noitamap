@@ -4952,7 +4952,10 @@
     "notFoundAllWorlds": "Finns inte i tre världar",
     "notFoundMainWorld": "Finns inte i huvudvärlden",
     "findInTelescope": "hitta med hjälp av teleskop",
-    "searching": "Sökande…"
+    "searching": "Sökande…",
+    "ingredientDistance": "Ingrediens ({{recipe}}): {{distance}}",
+    "spellDistance": "Trollformel: {{spell}}, {{distance}}",
+    "alwaysCastDistance": "Automatisk besvärjelse: {{spell}}, {{distance}}"
   },
   "highValueFilter": {
     "title": "High-value items",

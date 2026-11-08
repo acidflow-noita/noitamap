@@ -4952,7 +4952,10 @@
     "notFoundAllWorlds": "Не встречается в трёх мирах",
     "notFoundMainWorld": "Не встречается в основном мире",
     "findInTelescope": "найти с помощью телескопа",
-    "searching": "Идет поиск…"
+    "searching": "Идет поиск…",
+    "ingredientDistance": "Ингредиент ({{recipe}}): {{distance}}",
+    "spellDistance": "Заклинание: {{spell}}, {{distance}}",
+    "alwaysCastDistance": "Всегда накладывает: {{spell}}, {{distance}}"
   },
   "highValueFilter": {
     "title": "High-value items",

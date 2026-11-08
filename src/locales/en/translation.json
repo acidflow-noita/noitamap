@@ -489,7 +489,10 @@
     "findInTelescope": "find using Telescope",
     "ingredient": "Ingredient",
     "searching": "Searching…",
-    "chunksAway": "~{{count}} chunks away"
+    "chunksAway": "~{{count}} chunks away",
+    "ingredientDistance": "Ingredient ({{recipe}}): {{distance}}",
+    "spellDistance": "Spell: {{spell}}, {{distance}}",
+    "alwaysCastDistance": "Always casts: {{spell}}, {{distance}}"
   },
   "searchFilters": {
     "wands": "Filter results to show only wands",

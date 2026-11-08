@@ -4952,7 +4952,10 @@
     "notFoundAllWorlds": "Nie występuje w trzech światach",
     "notFoundMainWorld": "Nie występuje w głównym świecie",
     "findInTelescope": "znaleźć za pomocą teleskopu",
-    "searching": "Badawczy…"
+    "searching": "Badawczy…",
+    "ingredientDistance": "Składnik ({{recipe}}): {{distance}}",
+    "spellDistance": "Zaklęcie: {{spell}}, {{distance}}",
+    "alwaysCastDistance": "Zawsze rzuca: {{spell}}, {{distance}}"
   },
   "highValueFilter": {
     "title": "High-value items",

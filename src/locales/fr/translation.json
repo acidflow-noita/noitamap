@@ -4952,7 +4952,10 @@
     "notFoundAllWorlds": "Introuvable dans trois mondes",
     "notFoundMainWorld": "Introuvable dans le monde principal",
     "findInTelescope": "trouver à l'aide du télescope",
-    "searching": "Recherche…"
+    "searching": "Recherche…",
+    "ingredientDistance": "Ingrédient ({{recipe}}) : {{distance}}",
+    "spellDistance": "Sort: {{spell}}, {{distance}}",
+    "alwaysCastDistance": "Lancer assuré: {{spell}}, {{distance}}"
   },
   "highValueFilter": {
     "title": "High-value items",

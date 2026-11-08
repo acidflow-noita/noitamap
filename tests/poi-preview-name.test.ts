@@ -33,6 +33,14 @@ beforeAll(async () => {
 });
 beforeEach(async () => { await instance.current.changeLanguage('en'); });
 describe("canonical loot display names", () => {
+  it('preserves the localized pouch type and Brass material in its preview label', async () => {
+    for (const language of ['en', 'ru', 'ja', 'de']) {
+      await instance.current.changeLanguage(language);
+      expect(getPOIDisplayName({ type: 'item', item: 'pouch', material: 'brass' })).toBe(
+        `${instance.current.t('gameContent.ui.item_powder_stash_3')} (${instance.current.t('gameContent.materials.brass')})`,
+      );
+    }
+  });
   it('labels biome shops without changing the separate canonical Secret Shop biome', async () => {
     for (const language of ['en', 'ru', 'ja']) {
       await instance.current.changeLanguage(language);
@@ -75,7 +83,7 @@ describe("canonical loot display names", () => {
     expect(getPOIDisplayName({ type: "wand", name: "Saha" })).toBe("Saha Wand");
     expect(
       getPOIDisplayName({ type: "item", item: "potion", material: "ambrosia" }),
-    ).toBe("Potion · Ambrosia");
+    ).toBe("Potion (Ambrosia)");
     expect(getPOIDisplayName({ type: "chest", chestVariant: "coral" })).toBe(
       "Coral chest",
     );
@@ -105,7 +113,7 @@ describe("canonical loot display names", () => {
     expect(getPOIDisplayName({ type: 'item', item: 'spell', spell: 'DIVIDE_10' })).toBe('Divide by 10');
     expect(getPOIDisplayName({ type: 'spell', item: 'DIVIDE_10' })).toBe('Divide by 10');
     expect(getPOIDisplayName({ type: 'item', item: 'potion', material: 'just_death' }))
-      .toBe(`Potion · ${en.gameContent.materials.magic_liquid_death}`);
+      .toBe(`Potion (${en.gameContent.materials.magic_liquid_death})`);
   });
   it('ships both canonical Ukko names in all 16 supported locale files', () => {
     const locales = resolve(import.meta.dirname, '../src/locales');

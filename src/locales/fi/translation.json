@@ -4952,7 +4952,10 @@
     "notFoundAllWorlds": "Ei löydy kolmesta maailmasta",
     "notFoundMainWorld": "Ei löydy päämaailmasta",
     "findInTelescope": "löytää kaukoputken avulla",
-    "searching": "Haetaan…"
+    "searching": "Haetaan…",
+    "ingredientDistance": "Ainesosa ({{recipe}}): {{distance}}",
+    "spellDistance": "Loitsu: {{spell}}, {{distance}}",
+    "alwaysCastDistance": "Automaattinen loitsu: {{spell}}, {{distance}}"
   },
   "highValueFilter": {
     "title": "High-value items",
