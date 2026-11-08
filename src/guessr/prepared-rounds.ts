@@ -1,6 +1,6 @@
 /** Compact, private build products for Workers Free. Eligibility is computed
  * offline; requests only sample a weighted strip and select existing images. */
-import type { AreaDefinition } from "./area-rules";
+import { isHolyMountainArea, type AreaDefinition } from "./area-rules";
 import { cameraRect, type PreparedFrame } from "./clue-camera";
 import type { ImageGameConfig } from "./image-game";
 import type { Point } from "./rules";
@@ -267,10 +267,11 @@ export function createPreparedRoundSource(
         throw new Error("Invalid round count.");
       const data = await loadCatalog(),
         native = await loadGrid(data.capture);
-      const pool = [...data.areas],
-        result: PreparedRound[] = [];
+      let pool = [...data.areas], holyMountainUsed = false;
+      const result: PreparedRound[] = [];
       for (let n = 0; n < count; n++) {
-        if (!pool.length) pool.push(...data.areas);
+        if (!pool.length) pool = data.areas.filter(area => !holyMountainUsed || !isHolyMountainArea(area.definition));
+        if (!pool.length) throw new Error('Not enough eligible puzzle areas.');
         const area = pool.splice(drawIndex(pool.length), 1)[0];
         const answer = sample(await loadSampler(area), area.positions);
         result.push({
@@ -278,6 +279,10 @@ export function createPreparedRoundSource(
           answer,
           frames: frames(data.capture, native, answer),
         });
+        if (isHolyMountainArea(area.definition)) {
+          holyMountainUsed = true;
+          pool = pool.filter(candidate => !isHolyMountainArea(candidate.definition));
+        }
       }
       return result;
     },

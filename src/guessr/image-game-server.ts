@@ -1,6 +1,6 @@
 /** Server-only image selection and scoring. No image decoder, cropper, encoder
  * or filesystem dependency: all round images already exist in the dataset. */
-import { scoreAreaGuess, type AreaDefinition } from "./area-rules.ts";
+import { isHolyMountainArea, scoreAreaGuess, type AreaDefinition } from "./area-rules.ts";
 import { cameraRect, type PreparedFrame } from "./clue-camera.ts";
 import { within, type Bounds, type Point } from "./rules.ts";
 import {
@@ -165,24 +165,30 @@ export class ImageGameService {
     return { id: crypto.randomUUID(), areaId: area.id, answer };
   }
   selectRounds(count: number): PrivateRound[] {
-    const selection = [...this.areas],
-      rounds: PrivateRound[] = [];
+    let selection = [...this.areas], holyMountainUsed = false;
+    const rounds: PrivateRound[] = [];
     while (rounds.length < count) {
       if (!selection.length) {
-        selection.push(
-          ...this.areas.filter((area) => this.areaStarts(area).pixels > 0),
-        );
-        if (!selection.length)
+        const eligible = this.areas.filter((area) => this.areaStarts(area).pixels > 0);
+        if (!eligible.length)
           throw new Error(
             "No starting views contain terrain in the reviewed areas.",
           );
+        selection = eligible.filter(area => !holyMountainUsed || !isHolyMountainArea(area));
+        if (!selection.length) throw new Error('Not enough eligible puzzle areas.');
       }
       const area = selection.splice(
         Math.floor(this.random() * selection.length),
         1,
       )[0];
       const round = this.createRound(area);
-      if (round) rounds.push(round);
+      if (round) {
+        rounds.push(round);
+        if (isHolyMountainArea(area)) {
+          holyMountainUsed = true;
+          selection = selection.filter(candidate => !isHolyMountainArea(candidate));
+        }
+      }
     }
     return rounds;
   }

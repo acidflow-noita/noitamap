@@ -78,6 +78,34 @@ function fixture() {
 }
 
 describe("reusable-image rounds", () => {
+  it.each([3, 10])('limits new local %i-round games to one Holy Mountain including brickwork', count => {
+    const f = fixture();
+    const areas = [1, 2, 3, 4, 5, 6, 'final'].map(depth => ({ ...f.area, id: `landmark/holy-mountain-${depth}` }));
+    areas.push(...Array.from({ length: 12 }, (_, n) => ({ ...f.area, id: `biome/fixture-${n}` })));
+    const service = new ImageGameService(f.index, areas, f.store, '/images', '/reference', () => 0);
+    for (let game = 0; game < 2; game++) {
+      const rounds = service.selectRounds(count);
+      expect(rounds).toHaveLength(count);
+      expect(rounds.filter(r => r.areaId.startsWith('landmark/holy-mountain-'))).toHaveLength(1);
+      expect(new Set(rounds.map(r => r.areaId)).size).toBe(count);
+    }
+    expect(service.areas).toEqual(areas);
+  });
+
+  it('keeps the family limit after pool refill and preserves valid already-started rounds', async () => {
+    const f = fixture();
+    const areas = [{ ...f.area, id: 'landmark/holy-mountain-final' }, { ...f.area, id: 'landmark/holy-mountain-1' }, f.area];
+    const service = new ImageGameService(f.index, areas, f.store, '/images', '/reference', () => 0);
+    expect(service.selectRounds(10).map(r => r.areaId)).toEqual([areas[0].id, ...Array(9).fill(f.area.id)]);
+    const state = await service.start();
+    const saved = f.games.get(state.id)!;
+    saved.rounds.forEach((r, n) => { r.areaId = areas[n % 2].id; });
+    const original = structuredClone(saved);
+    expect(await service.load(state.id)).toEqual(original);
+    const onlyMountains = new ImageGameService(f.index, areas.slice(0, 2), f.store, '/images', '/reference', () => 0);
+    expect(() => onlyMountains.selectRounds(3)).toThrow('Not enough eligible puzzle areas');
+  });
+
   it("refuses all-black starts and skips empty areas without making black puzzles", async () => {
     const { index, area, store } = fixture();
     for (const image of Object.values(index.images)) image.content = "empty";

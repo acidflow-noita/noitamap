@@ -20,7 +20,7 @@ afterEach(async () => {
   );
 });
 
-async function fixture() {
+async function fixture(areaIds = ['private-area-0', 'private-area-1'], random = () => 0.375) {
   const root = await mkdtemp(join(tmpdir(), "guessr-worker-data-"));
   temporary.push(root);
   const images: PrivateImageSet["images"] = {},
@@ -51,13 +51,13 @@ async function fixture() {
       maxLevel: 11,
     },
   };
-  const areas: AreaDefinition[] = [0, 1].map((row) => ({
-    id: "private-area-" + row,
-    label: "Private area " + row,
+  const areas: AreaDefinition[] = areaIds.map((id, ordinal) => ({
+    id,
+    label: "Private area " + ordinal,
     originY: 0,
-    runs: [[row, 0, 4]],
+    runs: [[ordinal % 2, 0, 4]],
     cells: 4,
-    bounds: { x: -17920, y: row * 512, width: 2048, height: 512 },
+    bounds: { x: -17920, y: (ordinal % 2) * 512, width: 2048, height: 512 },
     difficultyTier: "normal",
     scoring: { area: 1000, position: 4000, maximum: 5000 },
   }));
@@ -95,12 +95,37 @@ async function fixture() {
     },
     "/images",
     options.referenceRoot,
-    () => 0.375,
+    random,
   );
   return { index, areas, inventory, source, requests, report, options };
 }
 
 describe("prepared private Worker rounds", () => {
+  it.each([3, 10])('shares one Holy Mountain/brickwork slot across all depths in a %i-round game', async count => {
+    const ids = [1, 2, 3, 4, 5, 6, 'final'].map(depth => `landmark/holy-mountain-${depth}`);
+    ids.push(...Array.from({ length: 12 }, (_, n) => `biome/fixture-${n}`));
+    const f = await fixture(ids, () => 0);
+    for (let game = 0; game < 2; game++) {
+      const rounds = await f.source.sampleRounds(count);
+      expect(rounds).toHaveLength(count);
+      expect(rounds.filter(r => r.area.id.startsWith('landmark/holy-mountain-'))).toHaveLength(1);
+      expect(new Set(rounds.map(r => r.area.id)).size).toBe(count);
+      for (const round of rounds) {
+        expect(round.area).toMatchObject(f.areas.find(area => area.id === round.area.id)!);
+        expect(prepareAreaStarts(f.index, round.area).contains(round.answer)).toBe(true);
+      }
+    }
+    expect(f.areas.map(area => area.id)).toEqual(ids);
+  });
+
+  it('does not refill the Holy Mountain family when a small collection repeats other areas', async () => {
+    const f = await fixture(['landmark/holy-mountain-final', 'landmark/holy-mountain-1', 'biome/other'], () => 0);
+    const rounds = await f.source.sampleRounds(10);
+    expect(rounds.map(r => r.area.id)).toEqual(['landmark/holy-mountain-final', ...Array(9).fill('biome/other')]);
+    const onlyMountains = await fixture(['landmark/holy-mountain-1', 'landmark/holy-mountain-final'], () => 0);
+    await expect(onlyMountains.source.sampleRounds(3)).rejects.toThrow('Not enough eligible puzzle areas');
+  });
+
   it("samples exact eligible points and the same opaque frames without decoding pixel masks", async () => {
     const f = await fixture(),
       rounds = await f.source.sampleRounds(2);

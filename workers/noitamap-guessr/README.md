@@ -309,6 +309,14 @@ service intersects their visible-view footprints with the area mask, preserves
 holes and samples uniformly from the eligible integer positions. Image overlaps
 and tile seams do not duplicate sampling weight. Entirely blank areas cannot
 supply a puzzle. No decoding, recutting or new image assets happen during play.
+New Demo, Chat vs Streamer and baked Daily games select at most one Holy
+Mountain in total, including its brickwork, basin and altar sections. All depths
+share that limit, while their individual masks and scoring remain unchanged.
+Other areas are drawn without replacement before a small collection refills;
+refilling never resets the Holy Mountain limit. Existing saved games and
+already-published Dailies keep their selected rounds. After publishing changes
+to this sampler, update biome-baker's `GUESSR_TOOLS_REVISION` to the published
+commit so subsequent Daily bakes use the same rule.
 Old saved games repair only unanswered black starts; submitted results remain
 unchanged. The changed round ID resets its old camera and assistance allowance.
 The mode cards and map panels share the same 16px layout gutter.

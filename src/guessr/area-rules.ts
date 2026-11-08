@@ -27,6 +27,12 @@ export interface AreaDefinition {
   scoring?: AreaScoring | null;
   difficultyRule?: SnowDifficultyRule | null;
 }
+
+/** Each curated mountain includes its altar, basins and brickwork walls.
+ * Depths remain separate scoring areas but share one slot in a new game. */
+export function isHolyMountainArea(area: Pick<AreaDefinition, 'id'>): boolean {
+  return area.id.startsWith('landmark/holy-mountain-');
+}
 export interface AreaGuessResult {
   score: number;
   distance: number | null;
