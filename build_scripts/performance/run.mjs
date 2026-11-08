@@ -2,7 +2,7 @@
 import { chromium, firefox } from 'playwright';
 import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir, stat } from 'node:fs/promises';
-import { resolve, join, extname } from 'node:path';
+import { resolve, join, extname, dirname } from 'node:path';
 import { compareRuns, markdownSummary } from './compare.mjs';
 import { inspectDaily, publicResponseHeaders, dailyPreflightSummary, performanceExitCode } from './daily-preflight.mjs';
 import { captureDailyFixture, fixturePath, installDailyTransport } from './daily-fixture.mjs';
@@ -11,7 +11,10 @@ import { cpus, availableParallelism } from 'node:os';
 
 const options = Object.fromEntries(process.argv.slice(2).map(arg => { const [key, ...value] = arg.replace(/^--/, '').split('='); return [key, value.join('=')]; }));
 const config = JSON.parse(await readFile(new URL('./config.json', import.meta.url), 'utf8'));
-const variants = JSON.parse(await readFile(resolve(options.versions || 'performance-versions.json'), 'utf8'));
+const versionsFile = resolve(options.versions || 'performance-versions.json');
+const variants = JSON.parse(await readFile(versionsFile, 'utf8')).map(variant => ({
+  ...variant, root: resolve(dirname(versionsFile), variant.root),
+}));
 const kind = options.browser || 'chromium', out = resolve(options.out || `performance-results/${kind}`);
 const presentation = options.terrain || 'gpu';
 if (!['gpu', 'worker'].includes(presentation)) throw Error('terrain must be gpu or worker');

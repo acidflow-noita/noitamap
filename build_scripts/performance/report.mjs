@@ -32,7 +32,10 @@ export function aggregateReport(combined, config) {
   const issues = [...combined.problems, ...results.flatMap(result =>
     result.comparison.problems.map(problem => `${browserName(result.browser)}: ${problem}`))];
   let status, headline;
-  if (!combined.valid || issues.length || failed.length || !runs.length) {
+  if (combined.setupFailures?.length) {
+    status = 'hold';
+    headline = 'DEPLOY: HOLD — Benchmark setup failed; complete performance results are unavailable.';
+  } else if (!combined.valid || issues.length || failed.length || !runs.length) {
     status = 'hold';
     headline = failed.length
       ? `DEPLOY: HOLD — ${failed.length} of ${runs.length} browser runs failed; the performance check is incomplete.`
@@ -57,7 +60,7 @@ export function aggregateReport(combined, config) {
   lines.push('<details>', '<summary>Detailed timings, compared commits and diagnostics</summary>', '');
   const variants = ['candidate', 'previous', 'reference'];
   const names = { candidate: 'This commit', previous: 'Previous commit', reference: 'Fixed reference' };
-  lines.push(variants.map(variant => `${names[variant]}: \`${escape(runs.find(run => run.variant === variant)?.commit?.slice(0, 7) || 'unavailable')}\``).join(' · '), '');
+  lines.push(variants.map(variant => `${names[variant]}: \`${escape(runs.find(run => run.variant === variant)?.commit?.slice(0, 7) || 'unavailable')}\``).join('; '), '');
   if (issues.length) lines.push('**Failed or incomplete checks:**', '', ...[...new Set(issues)].map(issue => `- ${escape(issue)}`), '');
   if (warnings.length) lines.push('**Timing warnings:**', '', ...warnings.map(({ browser, row }) =>
     `- ${browserName(browser)} — ${checkName(row)}: ${row.regressions.map(change).join('; ')}.`), '');

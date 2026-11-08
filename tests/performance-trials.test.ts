@@ -86,6 +86,18 @@ describe('isolated performance trials', () => {
       expect(readFileSync(join(root, 'step-output'), 'utf8')).toContain('summary-written=true');
       expect(run({ PERF_WORKER_RESULT: 'failure' }).status).toBe(1);
       expect(readFileSync(join(root, 'step-summary'), 'utf8')).toMatch(/^\*\*DEPLOY: HOLD/);
+      expect(run({ PERF_PREPARE_RESULT: 'failure', PERF_WORKER_RESULT: 'skipped' }).status).toBe(1);
+      expect(readFileSync(join(root, 'step-summary'), 'utf8')).toContain('Benchmark setup failed');
+      const setupFile = join(root, 'input/map-performance-firefox-2/performance-results/job-status.json');
+      writeFileSync(setupFile, JSON.stringify({ browser: 'firefox', trial: 2,
+        setup: { download: 'success', extract: 'success', runtime: 'failure' }, measure: 'skipped' }));
+      expect(run({ PERF_WORKER_RESULT: 'failure' }).status).toBe(1);
+      expect(readFileSync(join(root, 'step-summary'), 'utf8')).toContain('firefox/2: runtime setup failure');
+      writeFileSync(setupFile, JSON.stringify({ browser: 'firefox', trial: 2,
+        setup: { download: 'success', extract: 'success', runtime: 'success' }, measure: 'failure' }));
+      expect(run().status).toBe(1);
+      expect(readFileSync(join(root, 'step-summary'), 'utf8')).toContain('firefox/2: measurement step failure');
+      rmSync(setupFile);
       rmSync(join(root, 'input', 'map-performance-chromium-3'), { recursive: true });
       expect(run().status).toBe(1);
       expect(readFileSync(join(root, 'step-summary'), 'utf8')).toMatch(/^\*\*DEPLOY: HOLD/);

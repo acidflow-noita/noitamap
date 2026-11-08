@@ -20,6 +20,14 @@ function reports(warning = false) {
 }
 
 describe('workflow deploy verdict', () => {
+  it('distinguishes preparation failure from a measured map slowdown', () => {
+    const combined = { ...combineTrials(reports(true), 3), setupFailures: ['firefox/2: runtime setup failure'] };
+    combined.problems.push(...combined.setupFailures); combined.valid = false;
+    const report = aggregateReport(combined, config);
+    expect(report.status).toBe('hold');
+    expect(report.headline).toBe('DEPLOY: HOLD — Benchmark setup failed; complete performance results are unavailable.');
+    expect(report.markdown).toContain('firefox/2: runtime setup failure');
+  });
   it('leads with one deploy pass and collapses one combined table for both browsers', () => {
     const report = aggregateReport(combineTrials(reports(), 3), config);
     expect(report.status).toBe('pass');

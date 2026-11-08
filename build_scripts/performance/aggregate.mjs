@@ -10,12 +10,30 @@ const config = JSON.parse(await readFile(new URL('./config.json', import.meta.ur
 let files;
 try { files = await readdir(input, { recursive: true }); }
 catch (error) { if (error.code !== 'ENOENT') throw error; files = []; }
-const reports = [], readErrors = [];
+const reports = [], readErrors = [], setupFailures = [], statuses = new Set();
+for (const file of files.filter(file => file === 'job-status.json' || file.endsWith('/job-status.json'))) {
+  try {
+    const record = JSON.parse(await readFile(join(input, file), 'utf8'));
+    const key = `${record.browser}/${record.trial}`;
+    if (!['chromium', 'firefox'].includes(record.browser) || !Number.isInteger(record.trial)
+      || record.trial < 1 || record.trial > config.repeats || statuses.has(key) || !record.setup)
+      throw Error('Invalid or duplicate job setup record');
+    statuses.add(key);
+    for (const phase of ['download', 'extract', 'runtime']) if (record.setup[phase] !== 'success')
+      setupFailures.push(`${key}: ${phase} setup ${record.setup[phase] || 'did not run'}`);
+    if (['download', 'extract', 'runtime'].every(phase => record.setup[phase] === 'success') && record.measure !== 'success')
+      readErrors.push(`${key}: measurement step ${record.measure || 'did not run'}`);
+  } catch (error) { readErrors.push(`${file}: ${error}`); }
+}
 for (const file of files.filter(file => file.endsWith('/results.json'))) {
   try { reports.push(JSON.parse(await readFile(join(input, file), 'utf8'))); }
   catch (error) { readErrors.push(`${file}: ${error}`); }
 }
 const combined = combineTrials(reports, config.repeats);
+if (process.env.PERF_PREPARE_RESULT && process.env.PERF_PREPARE_RESULT !== 'success')
+  setupFailures.unshift(`Shared builds/checks ${process.env.PERF_PREPARE_RESULT}; browser measurements were not ready to run.`);
+combined.setupFailures = setupFailures;
+combined.problems.push(...setupFailures);
 combined.problems.push(...readErrors);
 if (process.env.PERF_REPORT_DOWNLOAD === 'failure') combined.problems.push('Could not download all worker reports.');
 if (process.env.PERF_WORKER_RESULT && process.env.PERF_WORKER_RESULT !== 'success')

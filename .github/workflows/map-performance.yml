@@ -17,16 +17,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  compare:
+  prepare:
+    name: Build and check once
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox]
-        trial: [1, 2, 3]
+    timeout-minutes: 10
+    outputs:
+      image: ${{ steps.package.outputs.playwright-image }}
+      artifact: ${{ steps.builds.outputs.artifact-id }}
     env:
-      LIBGL_ALWAYS_SOFTWARE: '1'
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      npm_config_fetch_retries: '1'
+      npm_config_fetch_timeout: '60000'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -36,33 +37,114 @@ jobs:
         with:
           node-version: '22'
           package-manager-cache: false
-      - name: Install public test tooling
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Build candidate, parent, and fixed reference
+          cache: npm
+      - name: Build candidate, parent, and fixed reference in parallel
+        timeout-minutes: 6
         run: node build_scripts/performance/build-versions.mjs
-      - name: Check candidate types and navigation regressions
+      - name: Check candidate types and regressions once
+        timeout-minutes: 3
         working-directory: ${{ runner.temp }}/noitamap-performance/candidate
         run: |
           npm run typecheck
-          npm test -- tests/tab-coordinator.test.ts tests/mod-navigation.test.ts tests/unlocks-poi-refresh.test.ts tests/dynamic-map-url.test.ts tests/performance-comparison.test.ts tests/performance-preflight.test.ts tests/performance-trials.test.ts tests/performance-report.test.ts tests/creature-spawn-url.test.ts tests/startup.test.ts tests/app-startup-cleanup.test.ts
-          npm test -- tests/scene-prefetch.test.ts tests/terrain-startup-overlap.test.ts tests/telescope-osd-lifetime.test.ts tests/instant-terrain-viewport.test.ts
-          npm test -- tests/cache-storage.test.ts tests/generation-cache-records.test.ts
-          npm test -- tests/telescope-search-link.test.ts tests/search-inventory.test.ts tests/search-index-scheduling.test.ts
-      - name: Check game rules, private access, and static delivery
-        if: matrix.browser == 'chromium' && matrix.trial == 1
-        working-directory: ${{ runner.temp }}/noitamap-performance/candidate
+          npm test -- tests/tab-coordinator.test.ts tests/mod-navigation.test.ts tests/unlocks-poi-refresh.test.ts tests/dynamic-map-url.test.ts tests/performance-comparison.test.ts tests/performance-preflight.test.ts tests/performance-trials.test.ts tests/performance-report.test.ts tests/performance-packaging.test.ts tests/creature-spawn-url.test.ts tests/startup.test.ts tests/app-startup-cleanup.test.ts tests/scene-prefetch.test.ts tests/terrain-startup-overlap.test.ts tests/telescope-osd-lifetime.test.ts tests/instant-terrain-viewport.test.ts tests/cache-storage.test.ts tests/generation-cache-records.test.ts tests/telescope-search-link.test.ts tests/search-inventory.test.ts tests/search-index-scheduling.test.ts tests/guessr-rules.test.ts tests/guessr-camera.test.ts tests/guessr-command.test.ts tests/guessr-worker.test.ts tests/guessr-auth-ticket.test.ts tests/guessr-pack.test.ts tests/guessr-captured-map.test.ts tests/vite-delivery.test.ts
+          node node_modules/typescript/bin/tsc --project workers/noitamap-guessr/tsconfig.json
+      - name: Package public builds and locked test runtime
+        id: package
+        timeout-minutes: 2
+        run: node build_scripts/performance/package-versions.mjs performance-versions.json "$RUNNER_TEMP/noitamap-performance/package"
+      - name: Share prepared builds
+        id: builds
+        timeout-minutes: 2
+        uses: actions/upload-artifact@v7
+        with:
+          name: performance-builds
+          path: ${{ steps.package.outputs.archive }}
+          compression-level: 0
+          overwrite: true
+          retention-days: 1
+          if-no-files-found: error
+      - name: Save build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: performance-build-logs
+          overwrite: true
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            performance-versions.json
+            ${{ runner.temp }}/noitamap-performance/*-build.log
+            ${{ runner.temp }}/noitamap-performance/package/package.json
+
+  compare:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+        trial: [1, 2, 3]
+    container:
+      image: ${{ needs.prepare.outputs.image }}
+      options: --init --ipc=host
+    defaults:
+      run:
+        shell: bash
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - name: Download prepared builds
+        id: download
+        timeout-minutes: 2
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.artifact }}
+          path: performance-build
+          digest-mismatch: error
+      - name: Extract prepared builds
+        id: extract
+        timeout-minutes: 1
         run: |
-          npm test -- tests/guessr-rules.test.ts tests/guessr-camera.test.ts tests/guessr-command.test.ts tests/guessr-worker.test.ts tests/guessr-auth-ticket.test.ts tests/guessr-pack.test.ts tests/guessr-captured-map.test.ts tests/vite-delivery.test.ts
-          npx tsc --project workers/noitamap-guessr/tsconfig.json
-      - name: Install browser and display dependencies
+          mkdir -p performance-bundle
+          tar -xzf performance-build/performance-build.tar.gz -C performance-bundle
+      - name: Verify browser and software graphics installation
+        id: runtime
+        timeout-minutes: 2
         run: |
-          npx playwright install --with-deps ${{ matrix.browser }}
-          sudo apt-get install -y --no-install-recommends libgl1-mesa-dri libglx-mesa0 libegl-mesa0
+          # Browser binaries and their OS dependencies are in the version-matched
+          # official image. Only supplement Mesa/Xauth if the image lacks them.
+          if ! dpkg-query -W -f='${db:Status-Status}\n' libgl1-mesa-dri libglx-mesa0 libegl-mesa0 xauth 2>/dev/null | awk '$0 == "installed" { n++ } END { exit n != 4 }'; then
+            timeout --kill-after=5s 45s apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 update
+            timeout --kill-after=5s 60s apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15 install -y --no-install-recommends libgl1-mesa-dri libglx-mesa0 libegl-mesa0 xauth
+          fi
+          node performance-bundle/harness/check-runtime.mjs
       - name: Compare cold, warm, reload, mod launch, and navigation
+        id: measure
+        timeout-minutes: 8
         # Independent repeats use separate standard runners; all revisions
         # remain paired on one machine. No concurrent browsers on a runner.
         # Mesa is software WebGL; retain real rendering and pixel readback.
-        run: xvfb-run -a node build_scripts/performance/run.mjs --browser=${{ matrix.browser }} --graphics=mesa --trial=${{ matrix.trial }} --out=performance-results/${{ matrix.browser }}/trial-${{ matrix.trial }}
+        run: xvfb-run -a node performance-bundle/harness/run.mjs --versions=performance-bundle/performance-versions.json --browser=${{ matrix.browser }} --graphics=mesa --trial=${{ matrix.trial }} --out=performance-results/${{ matrix.browser }}/trial-${{ matrix.trial }}
+      - name: Record setup outcome
+        if: always()
+        env:
+          PERF_BROWSER: ${{ matrix.browser }}
+          PERF_TRIAL: ${{ matrix.trial }}
+          PERF_DOWNLOAD: ${{ steps.download.outcome }}
+          PERF_EXTRACT: ${{ steps.extract.outcome }}
+          PERF_RUNTIME: ${{ steps.runtime.outcome }}
+          PERF_MEASURE: ${{ steps.measure.outcome }}
+        run: |
+          node --input-type=module <<'JS'
+          import { mkdirSync, writeFileSync } from 'node:fs';
+          const { PERF_BROWSER: browser, PERF_TRIAL: trial, PERF_DOWNLOAD: download,
+            PERF_EXTRACT: extract, PERF_RUNTIME: runtime, PERF_MEASURE: measure } = process.env;
+          mkdirSync('performance-results', { recursive: true });
+          writeFileSync('performance-results/job-status.json', JSON.stringify({
+            browser, trial: Number(trial), setup: { download, extract, runtime }, measure,
+          }, null, 2));
+          JS
       - name: Save compact evidence
         if: always()
         uses: actions/upload-artifact@v7
@@ -73,12 +155,11 @@ jobs:
           if-no-files-found: warn
           path: |
             performance-results/
-            performance-versions.json
-            ${{ runner.temp }}/noitamap-performance/*-build.log
+            performance-bundle/performance-versions.json
 
   summary:
     name: Overall deploy verdict
-    needs: compare
+    needs: [prepare, compare]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -101,6 +182,7 @@ jobs:
         if: ${{ !cancelled() }}
         env:
           PERF_REPORT_DOWNLOAD: ${{ steps.reports.outcome }}
+          PERF_PREPARE_RESULT: ${{ needs.prepare.result }}
           PERF_WORKER_RESULT: ${{ needs.compare.result }}
         run: node build_scripts/performance/aggregate.mjs
       - name: Report unavailable verdict
