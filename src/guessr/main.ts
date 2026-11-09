@@ -45,6 +45,7 @@ import { instructionSteps } from './stepper';
 import { pageHeading } from './page-heading';
 import { restoreDailyView, saveDailyView } from './daily-progress';
 import { dailyResultsTable } from './daily-results';
+import { dailyResultShare } from './daily-share';
 import { loadingPlaceholders, clueLoadingPlaceholder } from './loading-placeholders';
 import { iconLabel, type ControlIcon } from './control-icons';
 import { ACTIVE_MODE_KEY, readDailyResume, rememberDailyResume, forgetDailyResume } from './resume-progress';
@@ -1266,10 +1267,12 @@ function renderRanked(): void {
       node("div", "total", msg(() => (ranked?.score || 0).toLocaleString(guessrLocale()))),
       node("p", "", msg("out of {{value1}}", () => ({ value1: (ranked!.totalRounds * 5000).toLocaleString(guessrLocale()) }))),
     );
+    const share = dailyResultShare(ranked);
+    if (share) hero.append(share.element);
     main.append(pageHeading(node("h1", "", ranked.title), button(msg("Back to daily"), rankedLobby)), hero);
     const results = dailyResultsTable(ranked, reviewRanked);
     main.append(results.element);
-    clearClue = results.destroy;
+    clearClue = () => { share?.destroy(); results.destroy(); };
     return;
   }
   main.append(

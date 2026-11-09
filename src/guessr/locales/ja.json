@@ -541,5 +541,13 @@
   "You’ve already played today’s Daily.": "今日のデイリーチャレンジはすでにプレイ済みです。",
   "You’ve already played this Daily.": "このデイリーチャレンジはすでにプレイ済みです。",
   "Today’s result publishing limit has been reached. Please try again later.": "本日の結果公開の上限に達しました。後ほど再度お試しください。",
-  "Result storage is full. Download your result to keep a copy.": "結果の保存容量がいっぱいです。結果をダウンロードして、コピーを保存してください。"
+  "Result storage is full. Download your result to keep a copy.": "結果の保存容量がいっぱいです。結果をダウンロードして、コピーを保存してください。",
+  "Share result": "結果を共有する",
+  "Copy image": "画像をコピー",
+  "Download PNG": "PNGをダウンロード",
+  "Share image": "画像を共有する",
+  "Preparing image…": "画像を読み込んでいます…",
+  "Could not create the image. Try again.": "画像を作成できませんでした。もう一度お試しください。",
+  "Could not copy the image. Download the PNG instead.": "画像をコピーできませんでした。代わりにPNGファイルをダウンロードしてください。",
+  "Could not share the image. Download the PNG instead.": "画像を共有できませんでした。代わりにPNGファイルをダウンロードしてください。"
 }

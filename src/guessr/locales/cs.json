@@ -559,5 +559,13 @@
   "You’ve already played today’s Daily.": "Dnešní denní výzvu jsi už absolvoval.",
   "You’ve already played this Daily.": "Tuto denní výzvu jsi již absolvoval.",
   "Today’s result publishing limit has been reached. Please try again later.": "Dnešní limit pro zveřejňování výsledků byl vyčerpán. Zkuste to prosím později.",
-  "Result storage is full. Download your result to keep a copy.": "Úložiště výsledků je plné. Stáhněte si svůj výsledek, abyste si uchovali kopii."
+  "Result storage is full. Download your result to keep a copy.": "Úložiště výsledků je plné. Stáhněte si svůj výsledek, abyste si uchovali kopii.",
+  "Share result": "Sdílet výsledek",
+  "Copy image": "Kopírovat obrázek",
+  "Download PNG": "Stáhnout PNG",
+  "Share image": "Sdílet obrázek",
+  "Preparing image…": "Připravuje se obrázek…",
+  "Could not create the image. Try again.": "Nelze vytvořit obrázek. Zkuste to znovu.",
+  "Could not copy the image. Download the PNG instead.": "Obrázek se nepodařilo zkopírovat. Stáhněte si místo toho soubor PNG.",
+  "Could not share the image. Download the PNG instead.": "Sdílení obrázku se nezdařilo. Stáhněte si místo toho soubor PNG."
 }

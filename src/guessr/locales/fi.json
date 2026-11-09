@@ -541,5 +541,13 @@
   "You’ve already played today’s Daily.": "Olet jo suorittanut tämän päivän päivittäisen haasteen.",
   "You’ve already played this Daily.": "Olet jo suorittanut tämän päivittäisen haasteen.",
   "Today’s result publishing limit has been reached. Please try again later.": "Tämän päivän tulosten julkaisuraja on saavutettu. Yritä myöhemmin uudelleen.",
-  "Result storage is full. Download your result to keep a copy.": "Tulostietokanta on täynnä. Lataa tuloksesi, jotta saat siitä kopion."
+  "Result storage is full. Download your result to keep a copy.": "Tulostietokanta on täynnä. Lataa tuloksesi, jotta saat siitä kopion.",
+  "Share result": "Jaa tulos",
+  "Copy image": "Kopioi kuva",
+  "Download PNG": "Lataa PNG-tiedosto",
+  "Share image": "Jaa kuva",
+  "Preparing image…": "Kuva ladataan…",
+  "Could not create the image. Try again.": "Kuvaa ei voitu luoda. Yritä uudelleen.",
+  "Could not copy the image. Download the PNG instead.": "Kuvaa ei voitu kopioida. Lataa sen sijaan PNG-tiedosto.",
+  "Could not share the image. Download the PNG instead.": "Kuvaa ei voitu jakaa. Lataa sen sijaan PNG-tiedosto."
 }

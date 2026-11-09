@@ -14,6 +14,7 @@ export function resolveLocalPro(noitamapRoot: string) {
     root,
     available: root !== undefined,
     aliases: {
+      "noitamap/image-export": resolve(noitamapRoot, "src/image-export.ts"),
       "noitamap/sage/records": resolve(noitamapRoot, "src/sage/records.ts"),
       "noitamap/sage/seed-scheme.json": resolve(noitamapRoot, "src/sage/seed-scheme.json"),
       "noitamap/report-inventory": resolve(noitamapRoot, "src/report-inventory.ts"),

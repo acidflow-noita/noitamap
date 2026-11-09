@@ -541,5 +541,13 @@
   "You’ve already played today’s Daily.": "Du har redan klarat dagens utmaning.",
   "You’ve already played this Daily.": "Du har redan klarat den här dagliga utmaningen.",
   "Today’s result publishing limit has been reached. Please try again later.": "Dagens gräns för publicering av resultat har nåtts. Försök igen senare.",
-  "Result storage is full. Download your result to keep a copy.": "Resultatlagret är fullt. Ladda ner ditt resultat för att spara en kopia."
+  "Result storage is full. Download your result to keep a copy.": "Resultatlagret är fullt. Ladda ner ditt resultat för att spara en kopia.",
+  "Share result": "Dela resultatet",
+  "Copy image": "Kopiera bilden",
+  "Download PNG": "Ladda ner PNG",
+  "Share image": "Dela bilden",
+  "Preparing image…": "Förbereder bild…",
+  "Could not create the image. Try again.": "Det gick inte att skapa bilden. Försök igen.",
+  "Could not copy the image. Download the PNG instead.": "Det gick inte att kopiera bilden. Ladda ner PNG-filen istället.",
+  "Could not share the image. Download the PNG instead.": "Det gick inte att dela bilden. Ladda ner PNG-filen istället."
 }

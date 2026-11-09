@@ -59,6 +59,7 @@ it('uses the daily tile set and shared exploration controls, then submits their 
   });
   await import('../src/guessr/main');
   await vi.waitFor(() => expect(document.querySelector('[aria-label="Zoom out"]')).not.toBeNull());
+  expect(document.querySelector('.daily-share-open')).toBeNull();
   expect(app.board).toHaveBeenCalledWith(config.bounds, config.map);
   expect(app.source).toHaveBeenCalledWith(clue);
   const zoom = document.querySelector<HTMLButtonElement>('button[aria-label="Zoom out"]')!;
@@ -87,6 +88,7 @@ it('restores a completed ten-round Daily from the API into a table with previews
   expect(document.querySelectorAll('.result-preview')).toHaveLength(10);
   expect(document.querySelectorAll('.board-row')).toHaveLength(0);
   expect(document.querySelector('.daily-results-table tfoot')!.textContent).toContain('45,000');
+  expect(document.querySelector('.daily-share-open')?.textContent).toBe('Share result');
   expect(app.request).toHaveBeenCalledExactlyOnceWith('/api/attempts/daily-saved');
   expect(app.image).not.toHaveBeenCalled();
   expect(app.source).toHaveBeenCalledTimes(10);

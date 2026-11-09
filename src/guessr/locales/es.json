@@ -550,5 +550,13 @@
   "You’ve already played today’s Daily.": "Ya has jugado al reto diario de hoy.",
   "You’ve already played this Daily.": "Ya has completado este reto diario.",
   "Today’s result publishing limit has been reached. Please try again later.": "Se ha alcanzado el límite de publicación de resultados de hoy. Inténtalo de nuevo más tarde.",
-  "Result storage is full. Download your result to keep a copy.": "El almacenamiento de resultados está lleno. Descarga tu resultado para guardar una copia."
+  "Result storage is full. Download your result to keep a copy.": "El almacenamiento de resultados está lleno. Descarga tu resultado para guardar una copia.",
+  "Share result": "Compartir resultado",
+  "Copy image": "Copiar imagen",
+  "Download PNG": "Descargar PNG",
+  "Share image": "Compartir imagen",
+  "Preparing image…": "Preparando la imagen…",
+  "Could not create the image. Try again.": "No se ha podido crear la imagen. Inténtalo de nuevo.",
+  "Could not copy the image. Download the PNG instead.": "No se ha podido copiar la imagen. Descarga el archivo PNG en su lugar.",
+  "Could not share the image. Download the PNG instead.": "No se ha podido compartir la imagen. Descarga el archivo PNG en su lugar."
 }

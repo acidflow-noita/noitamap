@@ -559,5 +559,13 @@
   "You’ve already played today’s Daily.": "Ви вже виконали сьогоднішнє щоденне завдання.",
   "You’ve already played this Daily.": "Ви вже пройшли це щоденне завдання.",
   "Today’s result publishing limit has been reached. Please try again later.": "Сьогоднішній ліміт оприлюднення результатів вичерпано. Спробуйте ще раз пізніше.",
-  "Result storage is full. Download your result to keep a copy.": "Місце для зберігання результатів заповнене. Завантажте свій результат, щоб зберегти його копію."
+  "Result storage is full. Download your result to keep a copy.": "Місце для зберігання результатів заповнене. Завантажте свій результат, щоб зберегти його копію.",
+  "Share result": "Поділитися результатом",
+  "Copy image": "Скопіювати зображення",
+  "Download PNG": "Завантажити PNG",
+  "Share image": "Поділитися зображенням",
+  "Preparing image…": "Підготовка зображення…",
+  "Could not create the image. Try again.": "Не вдалося створити зображення. Спробуйте ще раз.",
+  "Could not copy the image. Download the PNG instead.": "Не вдалося скопіювати зображення. Замість цього завантажте файл у форматі PNG.",
+  "Could not share the image. Download the PNG instead.": "Не вдалося поділитися зображенням. Замість цього завантажте файл у форматі PNG."
 }

@@ -559,5 +559,13 @@
   "You’ve already played today’s Daily.": "Вы уже прошли сегодняшний дейли.",
   "You’ve already played this Daily.": "Вы уже прошли этот дейли.",
   "Today’s result publishing limit has been reached. Please try again later.": "Сегодняшний лимит публикации результатов исчерпан. Пожалуйста, попробуйте позже.",
-  "Result storage is full. Download your result to keep a copy.": "Хранилище результатов переполнено. Скачайте свой результат, чтобы сохранить его копию."
+  "Result storage is full. Download your result to keep a copy.": "Хранилище результатов переполнено. Скачайте свой результат, чтобы сохранить его копию.",
+  "Share result": "Поделиться результатом",
+  "Copy image": "Скопировать изображение",
+  "Download PNG": "Скачать PNG",
+  "Share image": "Поделиться изображением",
+  "Preparing image…": "Подготовка изображения…",
+  "Could not create the image. Try again.": "Не удалось создать изображение. Попробуйте ещё раз.",
+  "Could not copy the image. Download the PNG instead.": "Не удалось скопировать изображение. Вместо этого скачайте файл в формате PNG.",
+  "Could not share the image. Download the PNG instead.": "Не удалось поделиться изображением. Вместо этого скачайте файл в формате PNG."
 }
