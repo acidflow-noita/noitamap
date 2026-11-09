@@ -7,7 +7,7 @@ import { newStreamGame, closeStreamRound, revealStreamRound, advanceStreamRound,
 import { streamSource, streamHost, streamSecret, streamNow, streamAnswer } from './helpers/guessr-stream';
 import { formatGuessCommand } from '../src/guessr/guess-command';
 import type { TwitchViewer } from '../src/guessr/twitch-viewer';
-import { startStreamTiming, startHostWindow } from '../src/guessr/stream-timing';
+import { startStreamTiming, startHostWindow, STREAM_SUBMISSION_GRACE_MS } from '../src/guessr/stream-timing';
 import { TwitchAnnouncementError } from '../src/guessr/twitch-announcement';
 import type { StreamBroadcastHost } from '../src/guessr/stream-broadcast-host';
 
@@ -192,6 +192,34 @@ it('keeps manual timing optional and closes chat only when the streamer submits'
   expect([...document.querySelectorAll('button')].find(b => b.textContent === 'Next round')!.disabled).toBe(false);
 });
 
+it('withholds an early host solution until collection ends and records a late-delivered chatter guess', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(streamNow);
+  const f = await fixture(); f.game.session.transport = 'twitch'; f.game.session.localChat = true;
+  mocks.start.mockResolvedValue(f.game.session);
+  mocks.reveal.mockResolvedValue(await f.service.reveal(f.game.session.rounds[0].token, streamHost, streamNow + 200000));
+  history.replaceState(null, '', '/guess/stream/'); ui = new StreamUI(f.hooks); await ui.open();
+  const seconds = document.getElementById('stream-round-seconds') as HTMLInputElement;
+  seconds.value = '30';
+  [...document.querySelectorAll('button')].find(b => b.textContent === 'Start new game')!.click(); await flush();
+  const receiver = mocks.watchChat.mock.calls[0][1]; receiver.status('live', 'Connected');
+  await vi.advanceTimersByTimeAsync(4000); // Let the automatic invitation finish.
+  (document.getElementById('stream-start-game') as HTMLButtonElement).click();
+  const deadline = ui.game!.timing!.deadline!;
+  await vi.advanceTimersByTimeAsync(deadline - Date.now() + 3000);
+  ui.game!.guess = streamAnswer; ui.render();
+  (document.getElementById('confirm-guess') as HTMLButtonElement).click(); await flush();
+  expect(ui.game!.stage).toBe('closing'); expect(mocks.reveal).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(1000);
+  receiver.message({ player: { id: '123', login: 'chatter', name: 'Chatter' }, id: 'last-second', sentAt: deadline + 1100,
+    text: formatGuessCommand(1, streamAnswer, 4900, ui.game!.session.rounds[0].id, { userId: '123', nonce: new Uint8Array(8).fill(9) }) });
+  expect(ui.game!.participants.find(p => p.id === '123')!.guesses[0]!.maximum).toBe(4900);
+  expect(mocks.reveal).not.toHaveBeenCalled(); expect(mocks.revealBroadcast).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(999); expect(mocks.reveal).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(1); await flush();
+  expect(mocks.reveal).toHaveBeenCalledOnce(); expect(ui.game!.stage).toBe('reveal');
+  expect(mocks.receipt).toHaveBeenCalledWith(0, '123', '0909090909090909');
+});
+
 it('renews a missing receipt for an accepted duplicate and explicitly rejects a guess after closure', async () => {
   vi.useFakeTimers(); vi.setSystemTime(streamNow);
   const f = await fixture(); f.game.session.transport = 'twitch'; f.game.session.localChat = true;
@@ -206,7 +234,7 @@ it('renews a missing receipt for an accepted duplicate and explicitly rejects a 
     text: formatGuessCommand(1, streamAnswer, 5000, game.session.rounds[0].id, { userId: '123', nonce, label: 'Chatter submitted a guess.' }) };
   receiver.message(message); receiver.message(message);
   expect(mocks.receipt).toHaveBeenCalledTimes(2); expect(mocks.reject).not.toHaveBeenCalled();
-  await vi.advanceTimersByTimeAsync(game.timing!.deadline! - Date.now() + 1);
+  await vi.advanceTimersByTimeAsync(game.timing!.deadline! - Date.now() + STREAM_SUBMISSION_GRACE_MS + 1);
   receiver.message({ ...message, id: 'late', sentAt: Date.now(), text: formatGuessCommand(1, streamAnswer, 5000,
     game.session.rounds[0].id, { userId: '123', nonce: new Uint8Array(8).fill(2), label: 'Chatter submitted a guess.' }) });
   expect(mocks.reject).toHaveBeenCalledWith(0, '123', '0202020202020202', 'closed');

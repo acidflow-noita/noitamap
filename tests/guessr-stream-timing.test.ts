@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { StreamService } from '../src/guessr/stream-server';
 import { newStreamGame, acceptStreamGuess, closeStreamRound, revealStreamRound, advanceStreamRound } from '../src/guessr/stream-state';
-import { startStreamTiming, startHostWindow, streamTick, hostMayGuess, suspendStreamTiming, resumeStreamTiming, shortenFinishedWindow } from '../src/guessr/stream-timing';
+import { startStreamTiming, startHostWindow, streamTick, hostMayGuess, suspendStreamTiming, resumeStreamTiming, shortenFinishedWindow, STREAM_SUBMISSION_GRACE_MS, STREAM_DELIVERY_GRACE_MS } from '../src/guessr/stream-timing';
 import { formatGuessCommand } from '../src/guessr/guess-command';
 import { streamAnswer, streamHost, streamNow, streamSecret, streamSource } from './helpers/guessr-stream';
 
@@ -96,15 +96,33 @@ describe('chat first, timed streamer rounds', () => {
     expect(hostMayGuess(f.game, t.startsAt - 1)).toBe(false);
     expect(hostMayGuess(f.game, t.startsAt)).toBe(true);
     expect(f.guess(1, t.startsAt)).toBe('accepted');
-    expect(f.guess(0, streamNow + 93_001)).toBe('closed');
+    expect(f.guess(0, streamNow + 93_001 + STREAM_SUBMISSION_GRACE_MS)).toBe('closed');
   });
 
-  it('accepts small delivery delays by Twitch send time, but rejects guesses sent after closure', async () => {
+  it('accepts bounded Twitch/send-queue latency across a round change without extending either timer', async () => {
     const f = await fixture(), deadline = f.game.timing!.deadline!;
     streamTick(f.game, deadline); startHostWindow(f.game, deadline);
+    const nextDeadline = f.game.timing!.deadline;
     expect(f.guess(0, deadline - 1, deadline + 2000)).toBe('accepted');
-    expect(f.guess(0, deadline + 1, deadline + 2000)).toBe('closed');
-    expect(f.guess(0, deadline - 1, deadline + 6000)).toBe('closed');
+    expect(f.guess(0, deadline + 1100, deadline + 3000)).toBe('accepted');
+    expect(f.guess(0, deadline + STREAM_SUBMISSION_GRACE_MS, deadline + STREAM_DELIVERY_GRACE_MS)).toBe('accepted');
+    expect(f.guess(0, deadline + STREAM_SUBMISSION_GRACE_MS + 1, deadline + 3000)).toBe('closed');
+    expect(f.guess(0, deadline - 1, deadline + STREAM_DELIVERY_GRACE_MS + 1)).toBe('closed');
+    expect(f.game.timing!.windows[0]!.closesAt).toBe(deadline);
+    expect(f.game.timing!.deadline).toBe(nextDeadline);
+    const restored = JSON.parse(JSON.stringify(f.game));
+    expect(restored.participants[1].guesses[0].maximum).toBe(4900);
+  });
+
+  it('rejects copied identities and submissions after an answer is revealed even inside the grace window', async () => {
+    const f = await fixture(30), deadline = f.game.timing!.deadline!;
+    streamTick(f.game, deadline); startHostWindow(f.game, deadline);
+    const text = formatGuessCommand(1, streamAnswer, 5000, f.session.rounds[0].id, { userId: '123' });
+    expect(acceptStreamGuess(f.game, { player: { id: '999', login: 'copycat', name: 'Copycat' }, id: 'copy', text,
+      sentAt: deadline + 1 }, deadline + 1000)).toBe('invalid');
+    f.game.reveals[0] = await f.service.reveal(f.session.rounds[0].token, streamHost, deadline + 1000);
+    expect(f.guess(0, deadline - 1, deadline + 1001)).toBe('closed');
+    expect(f.guess(0, deadline + 1, deadline + 1001)).toBe('closed');
   });
 
   it('keeps the chatter window open after an early timed host submission and preserves the chatter’s own allowance', async () => {
@@ -127,7 +145,7 @@ describe('chat first, timed streamer rounds', () => {
     expect(streamTick(f.game, deadline)).toBeNull();
     expect(f.game.timing!.windows[1]!.closed).toBe(true);
     expect(f.game.timing!.resultsUntil).toBe(deadline + 14500);
-    expect(f.guess(1, deadline + 1)).toBe('closed');
+    expect(f.guess(1, deadline + STREAM_SUBMISSION_GRACE_MS + 1)).toBe('closed');
     expect(streamTick(f.game, deadline + 14499)).toBeNull();
     expect(streamTick(f.game, deadline + 14500)).toBe('advance');
   });
@@ -140,7 +158,8 @@ describe('chat first, timed streamer rounds', () => {
     expect(f.guess(1, open)).toBe('accepted');
     closeStreamRound(f.game, streamAnswer, open + 1000);
     expect(f.game.timing!.windows[1]!.closed).toBe(true);
-    expect(f.guess(1, open + 1001)).toBe('closed');
+    expect(f.guess(1, open + 1001)).toBe('accepted');
+    expect(f.guess(1, open + 1001 + STREAM_SUBMISSION_GRACE_MS)).toBe('closed');
   });
 
   it('preserves the current phase and original closing times through refresh', async () => {

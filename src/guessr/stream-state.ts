@@ -49,8 +49,8 @@ export interface StreamChatMessage {
   sentAt: number;
 }
 
-/** Last valid message by Twitch timestamp wins, if received while this round is
- * open. Ties retain the first accepted message; there is no speed score/tiebreak.
+/** Last valid message by Twitch timestamp wins within the round's bounded
+ * collection window. Ties retain the first accepted message; no speed tiebreak.
  * A later replacement takes the allowance then available, never an earlier one. */
 export function acceptStreamGuess(
   game: StreamGame,

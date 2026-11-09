@@ -1,7 +1,7 @@
 import { readChatEnvelope } from '../src/guessr/chat-envelope';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { watchTwitchGame } from '../src/guessr/twitch-game-client';
-import { encodeStreamPacket } from '../src/guessr/stream-wire';
+import { encodeStreamPacket, StreamPacketReader } from '../src/guessr/stream-wire';
 import type { TwitchViewer } from '../src/guessr/twitch-viewer';
 import type { LiveRoomView } from '../src/guessr/live-room-types';
 
@@ -29,6 +29,17 @@ function fixture() {
 const message = (text: string, login = 'streamer', sender = '100') => ({ id: crypto.randomUUID(), text,
   player: { id: sender, login, name: login }, sentAt: now });
 const requestText = (call: unknown) => new TextDecoder().decode(readChatEnvelope((call as [string, string])[1])!.subarray(3));
+
+it('does not add packet decoding time to the chatter countdown', async () => {
+  const f = fixture();
+  vi.spyOn(StreamPacketReader.prototype, 'receive').mockImplementationOnce(async () => {
+    vi.mocked(Date.now).mockReturnValue(now + 1800);
+    return { gameId: id, payload: { type: 'state', state }, sentAt: now };
+  });
+  await f.client.receive(message('packet'));
+  expect(f.client.now()).toBe(now + 1800);
+  expect(fetch).not.toHaveBeenCalled();
+});
 
 it.each([true, false])('requests only missing receipts/results when supported, retaining old-host compatibility (supported: %s)', async supported => {
   vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] }); vi.setSystemTime(now);

@@ -44,7 +44,7 @@ export interface TwitchViewerState {
   error: string | null;
 }
 export type TwitchViewerErrorCode = 'configuration' | 'popup' | 'denied' | 'expired' | 'validation'
-  | 'disconnected' | 'busy' | 'invalid-guess' | 'invalid-message' | 'channel' | 'channel-not-found' | 'forbidden' | 'rate-limit' | 'dropped' | 'uncertain';
+  | 'disconnected' | 'busy' | 'invalid-guess' | 'invalid-message' | 'channel' | 'channel-not-found' | 'forbidden' | 'rate-limit' | 'dropped' | 'uncertain' | 'round-closed';
 export class TwitchViewerError extends Error {
   constructor(public readonly code: TwitchViewerErrorCode, message: string) { super(message); this.name = 'TwitchViewerError'; }
 }
@@ -378,7 +378,7 @@ export class TwitchViewer {
 
   /** Exactly one send attempt, called explicitly after connect() has completed.
    * An uncertain response is never retried: Twitch may already have sent it. */
-  async sendGuess(channel: string, round: number, point: Point, maximum?: number, roundId?: string, nonce?: Uint8Array, gameId?: string): Promise<string> {
+  async sendGuess(channel: string, round: number, point: Point, maximum?: number, roundId?: string, nonce?: Uint8Array, gameId?: string, sendDeadline?: number): Promise<string> {
     const credentials = await this.currentCredentials();
     let command: string;
     try {
@@ -388,10 +388,10 @@ export class TwitchViewer {
       });
       command = formatGuessCommand(round, point, maximum, roundId, { userId: credentials.userId, nonce, label });
     } catch { throw new TwitchViewerError('invalid-guess', 'Choose a valid round, map position, and Twitch channel before sending.'); }
-    return this.sendMessage(GUESSR_TRANSPORT_CHANNEL, command, credentials.userId);
+    return this.sendMessage(GUESSR_TRANSPORT_CHANNEL, command, credentials.userId, sendDeadline);
   }
 
-  async sendMessage(channel: string, message: string, expectedUserId?: string): Promise<string> {
+  async sendMessage(channel: string, message: string, expectedUserId?: string, sendDeadline?: number): Promise<string> {
     if (this.state.sending) throw new TwitchViewerError('busy', 'Your previous message is still being sent.');
     if (!/^[a-z0-9_]{1,25}$/i.test(channel) || typeof message !== 'string' || !message.trim() || message.length > 500)
       throw new TwitchViewerError('invalid-message', 'Choose a channel and enter a message of up to 500 characters.');
@@ -405,10 +405,16 @@ export class TwitchViewer {
       this.sends = this.sends.filter(send => send.at > now - 30000);
       const last = this.sends.slice().reverse().find(send => send.channel === target)?.at ?? 0;
       const wait = Math.max(0, last + 1100 - now, this.sends.length >= 14 ? this.sends[0].at + 30001 - now : 0);
+      // Do not post an obsolete guess after waiting out Twitch's send budget.
+      // This local guard saves a send; the host still validates Twitch's time.
+      if (sendDeadline !== undefined && (!Number.isFinite(sendDeadline) || now + wait > sendDeadline))
+        throw new TwitchViewerError('round-closed', 'This round is closed');
       if (wait) await new Promise(resolve => setTimeout(resolve, wait));
       if (generation !== this.generation || this.#credentials?.token !== credentials.token || this.disposed
         || expectedUserId !== undefined && credentials.userId !== expectedUserId)
         throw new TwitchViewerError('disconnected', 'The Twitch connection changed. Click Send after connecting again.');
+      if (sendDeadline !== undefined && Date.now() > sendDeadline)
+        throw new TwitchViewerError('round-closed', 'This round is closed');
       attempted = true;
       this.sends.push({ at: Date.now(), channel: target });
       const response = await this.request(SEND_URL, { method: 'POST', headers: { ...this.headers(credentials), 'Content-Type': 'application/json' },

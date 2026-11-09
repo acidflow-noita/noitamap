@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MapBoard } from "../src/guessr/map-board";
-import { MAP_PIN_PATH, MAP_PIN_TIP, GUESS_PIN_COLOR, ANSWER_PIN_COLOR, GUESS_PIN_HEIGHT, ANSWER_PIN_HEIGHT, PLAYER_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT } from '../src/guessr/map-pin';
+import { MAP_PIN_PATH, MAP_PIN_TIP, ANSWER_PIN_CENTER, GUESS_PIN_COLOR, ANSWER_PIN_COLOR, GUESS_PIN_HEIGHT, ANSWER_PIN_HEIGHT, PLAYER_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT } from '../src/guessr/map-pin';
 
 const harness = vi.hoisted(() => ({
   viewer: null as any,
@@ -131,22 +131,29 @@ function click(mount: HTMLElement, x: number, y: number) {
 }
 
 describe("guess-map camera", () => {
-  it('uses larger logo pins with fixed screen sizes, exact tip anchors, and distinct overlapping colors', async () => {
+  it('centres the solution target under the exact guess-pin tip through zoom changes', async () => {
     const { board } = await fixture(), point = { x: 1000, y: 2000 };
     board.setMarkers(point, point);
     const guess = board.svg.querySelector<SVGGElement>('[data-pin-kind="guess"]')!;
     const answer = board.svg.querySelector<SVGGElement>('[data-pin-kind="answer"]')!;
     expect(guess.getAttribute('fill')).toBe(GUESS_PIN_COLOR); expect(answer.getAttribute('fill')).toBe(ANSWER_PIN_COLOR);
     expect(guess.querySelector('path')?.getAttribute('d')).toBe(MAP_PIN_PATH);
+    for (const circle of answer.querySelectorAll('circle')) {
+      expect(Number(circle.getAttribute('cx'))).toBe(ANSWER_PIN_CENTER.x);
+      expect(Number(circle.getAttribute('cy'))).toBe(ANSWER_PIN_CENTER.y);
+    }
+    expect([...answer.querySelectorAll('path')].some(path => path.getAttribute('d') === MAP_PIN_PATH)).toBe(false);
     expect(guess.previousElementSibling).toBe(answer);
     expect(ANSWER_PIN_HEIGHT).toBeGreaterThan(GUESS_PIN_HEIGHT);
+    expect(ANSWER_PIN_HEIGHT).toBeGreaterThan(HIGHLIGHT_PIN_HEIGHT);
     for (const zoom of [1, 3, .25]) {
       board.zoom(zoom);
       for (const [pin, expectedHeight] of [[guess, GUESS_PIN_HEIGHT], [answer, ANSWER_PIN_HEIGHT]] as const) {
         const values = pin.getAttribute('transform')!.match(/-?[\d.]+(?:e[+-]?\d+)?/gi)!.map(Number);
         const [x, y, scale, tipX, tipY] = values;
         expect([x, y]).toEqual([point.x, point.y]);
-        expect([tipX, tipY]).toEqual([-MAP_PIN_TIP.x, -MAP_PIN_TIP.y]);
+        const anchor = pin === answer ? ANSWER_PIN_CENTER : MAP_PIN_TIP;
+        expect([tipX, tipY]).toEqual([-anchor.x, -anchor.y]);
         expect(64 * scale * width / camera().width).toBeCloseTo(expectedHeight, 8);
       }
     }

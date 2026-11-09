@@ -51,7 +51,11 @@ export class StreamViewerHistory {
   receipts(round: number, keys: string[], rejected = false, reason?: GuessRejectionReason): void {
     const record = this.history?.rounds[round]; if (!record) return;
     const set = new Set(keys);
-    for (const value of record.submissions) if (set.has(value.key)) { value.status = rejected ? 'rejected' : 'received'; value.reason = rejected ? reason : undefined; }
+    for (const value of record.submissions) if (set.has(value.key)) {
+      // A delayed negative recovery response cannot undo an actual acceptance.
+      if (rejected && value.status === 'received') continue;
+      value.status = rejected ? 'rejected' : 'received'; value.reason = rejected ? reason : undefined;
+    }
     this.save();
   }
   reveal(round: number, reveal: StreamReveal): void {

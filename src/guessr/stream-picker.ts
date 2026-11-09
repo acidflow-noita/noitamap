@@ -6,6 +6,7 @@ import type { ImageGameConfig } from './image-game';
 import { MapBoard } from './map-board';
 import { maximumScore, newClueProgress, within, type Point, type ClueProgress } from './rules';
 import { STREAM_ROUNDS } from './stream-types';
+import { STREAM_SUBMISSION_GRACE_MS } from './stream-timing';
 import { TwitchViewer, twitchMessageText } from './twitch-viewer';
 import { decodeViewerClue } from './viewer-clue';
 import { viewerChatPanel } from './viewer-chat-panel';
@@ -56,6 +57,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     main.append(panel); return () => {};
   }
   let point: Point | null = null, lastSent = '', sending = false, closed = false;
+  let sendingRound: number | undefined;
   let viewport: ClueViewport | undefined, clearControls: (() => void) | undefined;
   let snapshot: ReturnType<typeof decodeViewerClue> | undefined;
   let progress: ClueProgress | null = null, roundKey = '';
@@ -145,30 +147,37 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (!point || !channel || !snapshot || !canGuess() || sending || !viewer.getState().connected) return;
     const submittedPoint = { x: Math.round(point.x), y: Math.round(point.y) }, submittedChannel = channel, key = guessKey(), identity = roundKey, playerId = viewer.getState().userId!;
     const submittedRound = snapshot.round;
-    sending = true; actionError = ''; refresh();
+    const submittedMaximum = progress ? maximumScore(progress) : 5000;
+    const target = live?.roundId ? { roundId: live.roundId, gameId: live.gameId!,
+      sendDeadline: live.timing?.deadline == null ? undefined : Date.now() + live.timing.deadline - gameNow() + STREAM_SUBMISSION_GRACE_MS } : undefined;
+    sending = true; sendingRound = submittedRound - 1; lastSendAt = Date.now(); actionError = ''; refresh();
     let receipt: string | undefined;
     try {
-      if (twitchUpdates && live?.roundId) {
+      if (twitchUpdates && target) {
         const nonce = crypto.getRandomValues(new Uint8Array(8));
-        receipt = await guessReceiptKey(live.roundId, playerId, Array.from(nonce, n => n.toString(16).padStart(2, '0')).join(''));
-        if (roundKey !== identity || !canGuess()) return;
-        personal.identify(live.gameId!, playerId);
-        personal.submit(snapshot.round - 1, receipt, submittedPoint, progress ? maximumScore(progress) : 5000);
-        await viewer.sendGuess(submittedChannel, submittedRound, submittedPoint, progress ? maximumScore(progress) : 5000, live.roundId, nonce, live.gameId!);
+        receipt = await guessReceiptKey(target.roundId, playerId, Array.from(nonce, n => n.toString(16).padStart(2, '0')).join(''));
+        // The click was allowed before zero. A round update while hashing or
+        // sending must not cancel it, retarget it, or borrow the next allowance.
+        if (closed || live?.gameId !== target.gameId || viewer.getState().userId !== playerId) return;
+        personal.identify(target.gameId, playerId);
+        personal.submit(submittedRound - 1, receipt, submittedPoint, submittedMaximum);
+        refresh();
+        await viewer.sendGuess(submittedChannel, submittedRound, submittedPoint, submittedMaximum, target.roundId, nonce, target.gameId, target.sendDeadline);
         personal.markSent(submittedRound - 1, receipt);
       }
-      else if (live?.roundId) await viewer.sendGuess(submittedChannel, snapshot.round, submittedPoint, progress ? maximumScore(progress) : 5000, live.roundId);
-      else if (progress) await viewer.sendGuess(submittedChannel, snapshot.round, submittedPoint, maximumScore(progress));
-      else await viewer.sendGuess(submittedChannel, snapshot.round, submittedPoint);
+      else if (target) await viewer.sendGuess(submittedChannel, submittedRound, submittedPoint, submittedMaximum, target.roundId);
+      else if (progress) await viewer.sendGuess(submittedChannel, submittedRound, submittedPoint, submittedMaximum);
+      else await viewer.sendGuess(submittedChannel, submittedRound, submittedPoint);
       if (roundKey === identity) {
         lastSent = key; lastSendAt = Date.now(); submitted = { playerId, point: submittedPoint }; saveProgress();
       }
     } catch (error) {
-      if (receipt && ['dropped', 'forbidden', 'expired', 'invalid-guess', 'disconnected', 'rate-limit', 'busy'].includes((error as { code?: string }).code ?? ''))
+      if (receipt && ['dropped', 'forbidden', 'expired', 'invalid-guess', 'disconnected', 'rate-limit', 'busy', 'round-closed'].includes((error as { code?: string }).code ?? ''))
         personal.receipts(submittedRound - 1, [receipt], true);
-      if (!closed) actionError = twitchMessageText((error as Error).message);
+      if (!closed) actionError = (roundKey === identity ? '' : `${tr('Round {{round}}', { round: formatGuessrNumber(submittedRound) })}: `)
+        + twitchMessageText((error as Error).message);
     }
-    finally { sending = false; if (!closed) refresh(); }
+    finally { sending = false; sendingRound = undefined; if (!closed) refresh(); }
   }, 'primary');
   const sendControl = node('span', 'stream-send-control'); sendControl.append(send);
   const sendHelp = hoverHelp(sendControl, () => tr(sendReason), send);
@@ -392,16 +401,25 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     bindText(connect, state.restoring ? 'Restoring Twitch…' : state.connecting ? 'Signing in…' : 'Sign in with Twitch');
     disconnect.hidden = !state.connected; disconnect.disabled = state.sending;
     const own = live ? personal.round(live.round - 1) : null;
+    let deliveryRound = live ? live.round - 1 : undefined;
+    if (sending && sendingRound !== undefined) deliveryRound = sendingRound;
+    else if (twitchUpdates && live && !own?.submitted) {
+      for (let previous = live.round - 2; previous >= 0; previous--) {
+        if (personal.round(previous).pending) { deliveryRound = previous; break; }
+      }
+    }
+    const deliveryOwn = deliveryRound === undefined ? own : personal.round(deliveryRound);
+    const previousDelivery = !!live && deliveryRound !== undefined && deliveryRound !== live.round - 1;
     const sameGuess = !!guessKey() && guessKey() === lastSent;
     const mayResend = twitchUpdates && sameGuess && (own?.lastStatus === 'rejected' || own?.pending && Date.now() - lastSendAt >= 15_000);
     send.disabled = !canGuess() || !state.connected || !point || !channel || sending || state.sending || sameGuess && !mayResend;
     bindText(send, mayResend ? 'Resend guess' : own?.submitted && !sameGuess ? 'Update guess' : 'Send guess');
-    const receiptStatus = live?.ended ? 'The streamer ended this game.' : sending ? 'Sending…' : own?.pending ? own.received ? 'Update awaiting confirmation. Previous guess counts.'
-      : own.sent ? 'Sent to Twitch. Waiting for the streamer’s confirmation.' : 'Waiting for confirmation'
-      : own?.lastStatus === 'rejected' ? own.received ? 'Update not received. Previous guess counts.' : guessRejectionText(own.reason)
-      : own?.received ? 'Guess received' : !twitchUpdates && sameGuess ? 'Guess sent' : 'Place a pin first';
-    bindText(delivery, () => actionError || tr(receiptStatus));
-    delivery.dataset.state = actionError || own?.lastStatus === 'rejected' ? 'error' : own?.received && !own.pending ? 'received' : 'waiting';
+    const receiptStatus = live?.ended ? 'The streamer ended this game.' : sending ? 'Sending…' : deliveryOwn?.pending ? deliveryOwn.received ? 'Update awaiting confirmation. Previous guess counts.'
+      : deliveryOwn.sent ? 'Sent to Twitch. Waiting for the streamer’s confirmation.' : 'Waiting for confirmation'
+      : deliveryOwn?.lastStatus === 'rejected' ? deliveryOwn.received ? 'Update not received. Previous guess counts.' : guessRejectionText(deliveryOwn.reason)
+      : deliveryOwn?.received ? 'Guess received' : !twitchUpdates && sameGuess ? 'Guess sent' : 'Place a pin first';
+    bindText(delivery, () => actionError || (previousDelivery ? `${tr('Round {{round}}', { round: formatGuessrNumber(deliveryRound! + 1) })}: ` : '') + tr(receiptStatus));
+    delivery.dataset.state = actionError || deliveryOwn?.lastStatus === 'rejected' ? 'error' : deliveryOwn?.received && !deliveryOwn.pending ? 'received' : 'waiting';
     const controls = cluePanel.querySelector<HTMLElement>('.clue-controls');
     if (controls && twitchUpdates) controls.inert = !canGuess();
     if (twitchUpdates && live?.timing) {
@@ -433,8 +451,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       : !point ? 'Place a pin first' : '';
     sendControl.tabIndex = send.disabled ? 0 : -1;
     if (disabledReason !== sendReason) { sendReason = disabledReason; sendHelp.update(); }
-    if (!sending && !actionError && !own?.submitted && disabledReason) bindText(delivery, disabledReason);
-    const needsReceipt = twitchUpdates && own?.pending && Date.now() - lastSendAt > 15_000;
+    if (!sending && !actionError && !own?.submitted && !previousDelivery && disabledReason) bindText(delivery, disabledReason);
+    const needsReceipt = twitchUpdates && deliveryOwn?.pending && Date.now() - lastSendAt > 15_000;
     retry.hidden = !!legacyPayload || live?.ended || live?.phase === 'complete' || !['stopped', 'retrying'].includes(connectionState) && !needsReceipt;
     bindText(retry, needsReceipt && connectionState !== 'stopped' ? 'Check delivery' : 'Reconnect');
     if (!legacyPayload && connectionState === 'connected') {

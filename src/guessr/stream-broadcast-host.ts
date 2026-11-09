@@ -6,6 +6,7 @@ import type { LiveRoomView } from './live-room-types';
 import { encodeViewerClue } from './viewer-clue';
 import { gameIdFromCode } from './routes';
 import { twitchColor } from './player-color';
+import { STREAM_DELIVERY_GRACE_MS } from './stream-timing';
 
 /** Host-owned broadcast state; no response or connection per chatter. */
 export class StreamBroadcastHost {
@@ -27,6 +28,7 @@ export class StreamBroadcastHost {
   private publisherDisposed = false;
   private completing?: Promise<void>;
   private preparations = new Set<Promise<void>>();
+  private recordingReceipts = new Map<string, number>();
   constructor(private game: StreamGame, private imageRoot: string, private send: (message: string) => Promise<unknown>,
     private failed: (error: unknown, key?: string) => void, private save: () => void, private joined: () => void = () => {}) {
     this.publisher = new StreamBroadcaster(game.session.id, send, failed, game.session.host.id);
@@ -88,7 +90,18 @@ export class StreamBroadcastHost {
     this.preparations.add(job);
     void job.catch(this.failed).finally(() => this.preparations.delete(job));
   }
-  async remember(round: number, userId: string, nonce: string, enqueue = true): Promise<void> {
+  remember(round: number, userId: string, nonce: string, enqueue = true): Promise<void> {
+    const recording = `${round}/${userId}`;
+    this.recordingReceipts.set(recording, (this.recordingReceipts.get(recording) ?? 0) + 1);
+    const job = this.recordReceipt(round, userId, nonce, enqueue).finally(() => {
+      const remaining = this.recordingReceipts.get(recording)! - 1;
+      if (remaining) this.recordingReceipts.set(recording, remaining);
+      else this.recordingReceipts.delete(recording);
+    });
+    this.prepare(job);
+    return job;
+  }
+  private async recordReceipt(round: number, userId: string, nonce: string, enqueue: boolean): Promise<void> {
     const key = await guessReceiptKey(this.game.session.rounds[round].id, userId, nonce);
     if (this.stopped) return;
     const receipts = this.receipts.get(round) ?? new Set<string>();
@@ -97,11 +110,13 @@ export class StreamBroadcastHost {
       this.game.receipts ??= {}; (this.game.receipts[round] ??= []).push(key);
     }
     this.receipts.set(round, receipts);
+    this.rejected.get(round)?.delete(key); this.rejectionReasons.delete(key);
     if (enqueue) { const pending = this.pending.get(round) ?? new Set<string>(); pending.add(key); this.pending.set(round, pending); }
   }
   async reject(round: number, userId: string, nonce: string, reason: GuessRejectionReason): Promise<void> {
     const key = await guessReceiptKey(this.game.session.rounds[round].id, userId, nonce);
     if (this.stopped || this.completing) return;
+    if (this.receipts.get(round)?.has(key)) return;
     const queue = this.rejected.get(round) ?? new Set<string>();
     if (queue.size >= 4096) return;
     queue.add(key); this.rejected.set(round, queue); this.rejectionReasons.set(key, reason);
@@ -176,7 +191,8 @@ export class StreamBroadcastHost {
         if (pending.size < 4096) pending.add(key); this.pending.set(round, pending);
       } else {
         const window = this.game.timing!.windows[round];
-        if (window?.closed && window.closesAt !== null && message.sentAt > window.closesAt + 5000) {
+        if (!this.recordingReceipts.has(`${round}/${message.player.id}`)
+          && window?.closed && window.closesAt !== null && message.sentAt > window.closesAt + STREAM_DELIVERY_GRACE_MS) {
           const keys = this.rejected.get(round) ?? new Set<string>(); if (keys.size < 4096) keys.add(key); this.rejected.set(round, keys);
         }
       }

@@ -30,6 +30,50 @@ function clock(f: Awaited<ReturnType<typeof fixture>>) {
   return { ready, advance: async (ms: number) => { await vi.advanceTimersByTimeAsync(ms); await ready(); } };
 }
 
+it('does not reject a received guess while its receipt is still being hashed', async () => {
+  const f = await fixture(), timer = clock(f);
+  await f.host.start(); await timer.ready(); await timer.advance(10_000);
+  f.game.timing!.windows[0] = { opensAt: streamNow, closesAt: streamNow + 4000, closed: true };
+  const nonce = '0123456789abcdef', key = await guessReceiptKey(f.game.session.rounds[0].id, '123', nonce);
+  const digest = crypto.subtle.digest.bind(crypto.subtle);
+  let release!: () => void;
+  const spy = vi.spyOn(crypto.subtle, 'digest').mockImplementationOnce((algorithm, data) => new Promise(resolve => {
+    release = () => { void digest(algorithm, data).then(resolve); };
+  }));
+  try {
+    const recording = f.host.remember(0, '123', nonce);
+    f.host.receiveRequest({ player: { id: '123', login: 'chatter', name: 'Chatter' }, id: 'check', sentAt: Date.now(),
+      text: `!noitaguessr_recover streamer ${gameCode(f.game.session.id, 'twitch')} 0 0:${key}` });
+    await timer.advance(2000);
+    expect(f.sent.some(message => message.text.includes('guess-rejected'))).toBe(false);
+    release(); await recording;
+    await f.host.reject(0, '123', nonce, 'unreceived');
+    await timer.advance(6000);
+    expect(f.sent.some(message => message.text.includes('guess-received r1'))).toBe(true);
+    expect(f.sent.some(message => message.text.includes('guess-rejected'))).toBe(false);
+  } finally { spy.mockRestore(); }
+});
+
+it('drains a final-round receipt even when its hash finishes after game completion starts', async () => {
+  const f = await fixture(), timer = clock(f);
+  await f.host.start(); await timer.ready(); await timer.advance(4000);
+  const digest = crypto.subtle.digest.bind(crypto.subtle);
+  let release!: () => void;
+  const spy = vi.spyOn(crypto.subtle, 'digest').mockImplementationOnce((algorithm, data) => new Promise(resolve => {
+    release = () => { void digest(algorithm, data).then(resolve); };
+  }));
+  try {
+    const recording = f.host.remember(9, '123', '0123456789abcdef');
+    f.game.stage = 'complete';
+    const completion = f.host.complete();
+    release(); await recording;
+    for (let i = 0; i < 10; i++) await timer.advance(2000);
+    await completion;
+    expect(f.sent.some(message => message.text.includes('guess-received r10'))).toBe(true);
+    expect(f.failure).not.toHaveBeenCalled();
+  } finally { spy.mockRestore(); }
+});
+
 it('answers a thousand receipt checks without resending clues or delaying a new round update', async () => {
   const f = await fixture(), timer = clock(f);
   const keys = await Promise.all(Array.from({ length: 1000 }, async (_, i) => {

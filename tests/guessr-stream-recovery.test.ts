@@ -116,6 +116,8 @@ it('keeps the last confirmed guess until its replacement arrives and preserves t
   expect(own.round(0)).toMatchObject({ pending: true, received: { point } });
   const replacement = await submit(3, streamAnswer); own.receipts(0, [replacement]);
   own.receipts(0, [first]); own.receipts(0, [lost], true);
+  // A stale "not received" response can arrive after the acceptance batch.
+  own.receipts(0, [replacement], true, 'unreceived');
   const reveal = await service.reveal(session.rounds[0].token, streamHost, streamNow + 100000); own.reveal(0, reveal);
   expect(game.participants[1].guesses[0]!.point).toEqual(streamAnswer);
   expect(own.round(0)).toMatchObject({ pending: false, received: { point: streamAnswer }, score: { score: 5000 } });

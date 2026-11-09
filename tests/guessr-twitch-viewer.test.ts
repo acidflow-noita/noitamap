@@ -107,6 +107,24 @@ describe('viewer Twitch sending', () => {
     await pending; expect(f.sends()).toHaveLength(2);
   });
 
+  it('sends a last-second guess through the normal queue within its allowance, without retries', async () => {
+    const f = fixture(); await f.connect();
+    await f.client.sendMessage('noitaguessr', '!noitaguessr_sync viewer - 0');
+    const pending = f.client.sendGuess('viewer', 3, { x: 1, y: 2 }, 4900, undefined, undefined, undefined, Date.now() + 3000);
+    await vi.advanceTimersByTimeAsync(1100); await pending;
+    expect(f.sends()).toHaveLength(2);
+  });
+
+  it('does not send a queued guess when the queue would overrun its allowance', async () => {
+    const f = fixture(); await f.connect();
+    await f.client.sendMessage('noitaguessr', '!noitaguessr_sync viewer - 0');
+    await expect(f.client.sendGuess('viewer', 3, { x: 1, y: 2 }, 4900, undefined, undefined, undefined, Date.now() + 500))
+      .rejects.toMatchObject({ code: 'round-closed' });
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(f.sends()).toHaveLength(1);
+    expect(f.client.getState().sending).toBe(false);
+  });
+
   it.each([
     [200, { data: [] }, 'channel-not-found', 'No Twitch account matches that username.'],
     [503, {}, 'channel', 'Twitch could not check this channel.'],

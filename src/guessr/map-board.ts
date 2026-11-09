@@ -5,7 +5,7 @@ import { PIXEL_MAP_DRAW_OPTIONS } from "../osd-pixel-rendering";
 import { frameMap, frameMarkers } from "./map-framing";
 import { bindAttribute, bindText } from "./i18n";
 import { twitchColor } from './player-color';
-import { MAP_PIN_PATH, MAP_PIN_TIP, GUESS_PIN_COLOR, ANSWER_PIN_COLOR,
+import { MAP_PIN_PATH, MAP_PIN_TIP, ANSWER_PIN_CENTER, GUESS_PIN_COLOR, ANSWER_PIN_COLOR,
   GUESS_PIN_HEIGHT, ANSWER_PIN_HEIGHT, PLAYER_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT } from './map-pin';
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -195,7 +195,8 @@ export class MapBoard {
       : this.view.width / Math.max(300, this.element.clientWidth);
     this.marks.querySelectorAll<SVGGElement>('[data-pin-height]').forEach((pin) => {
       const scale = unit * Number(pin.dataset.pinHeight) / 64;
-      pin.setAttribute('transform', `translate(${pin.dataset.x} ${pin.dataset.y}) scale(${scale}) translate(${-MAP_PIN_TIP.x} ${-MAP_PIN_TIP.y})`);
+      const anchor = pin.dataset.pinKind === 'answer' ? ANSWER_PIN_CENTER : MAP_PIN_TIP;
+      pin.setAttribute('transform', `translate(${pin.dataset.x} ${pin.dataset.y}) scale(${scale}) translate(${-anchor.x} ${-anchor.y})`);
     });
     this.marks.querySelectorAll("line").forEach((line) => {
       line.setAttribute("stroke-width", String(unit * 2));
@@ -402,6 +403,27 @@ export class MapBoard {
     group.setAttribute('fill', color);
     group.dataset.x = String(point.x); group.dataset.y = String(point.y); group.dataset.pinHeight = String(height);
     const title = document.createElementNS(SVG_NS, 'title'); bindText(title, label); group.append(title);
+    if (kind === 'answer') {
+      for (const [stroke, width] of [['#020618', '6'], ['#ffffff', '3.5'], [color, '2']] as const) {
+        const ring = document.createElementNS(SVG_NS, 'circle');
+        ring.setAttribute('cx', '32'); ring.setAttribute('cy', '32'); ring.setAttribute('r', '20');
+        ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', stroke); ring.setAttribute('stroke-width', width);
+        const ticks = document.createElementNS(SVG_NS, 'path');
+        ticks.setAttribute('d', 'M32 3V8M32 56V61M3 32H8M56 32H61');
+        ticks.setAttribute('fill', 'none'); ticks.setAttribute('stroke', stroke);
+        ticks.setAttribute('stroke-width', width); ticks.setAttribute('stroke-linecap', 'butt');
+        group.append(ring, ticks);
+      }
+      const dot = document.createElementNS(SVG_NS, 'circle');
+      dot.setAttribute('cx', '32'); dot.setAttribute('cy', '32'); dot.setAttribute('r', '5');
+      dot.setAttribute('fill', color); dot.setAttribute('stroke', '#ffffff'); dot.setAttribute('stroke-width', '1.5');
+      group.append(dot);
+      this.marks.append(group); return group;
+    }
+    // Keep the logo's centre readable over terrain or overlapping markers.
+    const centre = document.createElementNS(SVG_NS, 'circle');
+    centre.setAttribute('cx', '25.74'); centre.setAttribute('cy', '25.74'); centre.setAttribute('r', '9.36');
+    centre.setAttribute('fill', '#020618'); group.append(centre);
     for (const [stroke, width] of [['#020618', '6'], ['#ffffff', '2']] as const) {
       const path = document.createElementNS(SVG_NS, 'path');
       path.setAttribute('d', MAP_PIN_PATH); path.setAttribute('fill-rule', 'evenodd');
@@ -422,8 +444,8 @@ export class MapBoard {
       mark.addEventListener('click', () => highlight(player.id));
       this.playerMarks.set(player.id, mark); this.marks.append(mark); points.push(player.guess);
     }
-    // The larger green answer remains behind smaller player pins, so a perfect
-    // guess shows both colors at the same accurately anchored location.
+    // A perfect guess points into the solution target. Its lower ring remains
+    // visible beneath even a highlighted pin at the same exact coordinate.
     this.resultMarkers = points; this.fittedMarkers = this.resultMarkers; this.atHome = false; this.updateView();
   }
   highlightPlayer(id: string): void {

@@ -2,6 +2,9 @@ import type { StreamGame } from './stream-types';
 
 export const STREAM_DEFAULT_SECONDS = 90;
 export const STREAM_START_COUNTDOWN_MS = 3000;
+// Hidden tolerance for the send queue/API/EventSub notification. The visible
+// deadline never moves. Only Twitch's timestamp is used, never a claimed click time.
+export const STREAM_SUBMISSION_GRACE_MS = 2000;
 export const STREAM_DELIVERY_GRACE_MS = 5000;
 export const STREAM_RESULTS_HOLD_MS = 15000;
 export const STREAM_EARLY_CLOSE_MS = 5000;
@@ -90,7 +93,8 @@ export function chatRoundAccepts(game: StreamGame, round: number, sentAt: number
   const timing = game.timing, window = timing?.windows[round];
   if (!timing || !window || game.paused || game.reveals[round] || game.stage === 'complete') return false;
   if (sentAt < window.opensAt || sentAt > receivedAt + STREAM_DELIVERY_GRACE_MS) return false;
-  if (window.closesAt !== null && (sentAt > window.closesAt || receivedAt > window.closesAt + STREAM_DELIVERY_GRACE_MS)) return false;
+  if (window.closesAt !== null && (sentAt > window.closesAt + STREAM_SUBMISSION_GRACE_MS
+    || receivedAt > window.closesAt + STREAM_DELIVERY_GRACE_MS)) return false;
   return true;
 }
 export function suspendStreamTiming(game: StreamGame, now: number): void {

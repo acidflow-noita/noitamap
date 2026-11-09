@@ -76,6 +76,65 @@ function mount(url: string, initial: Partial<TwitchViewerState> = {}) {
 }
 
 describe('shared channel guess picker', () => {
+  it('keeps a last-second send on its original round through hashing, transition, confirmation and F5', async () => {
+    vi.stubGlobal('Blob', NodeBlob);
+    let now = Date.UTC(2026, 10, 9, 12);
+    const clock = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const id = '11111111-1111-4111-8111-111111111111', nextId = '22222222-2222-4222-8222-222222222222';
+    const url = `/guess/wuote/${gameCode(id, 'twitch')}/`, f = mount(url);
+    f.button('Sign in with Twitch').click(); await flush();
+    const transport = f.viewer.watchChat.mock.calls[0][1]; transport.status('live', 'Connected');
+    const deadline = now + 1000;
+    const state: LiveRoomView = { schema: 1, channel: 'wuote', gameId: id, hostId: '456', revision: 1, phase: 'guess',
+      online: true, paused: false, round: 3, roundId: id, clue: new URL(roundLink('/guess/?channel=wuote', 3, true)).hash.slice(6),
+      expiresAt: now + 999999, timing: { phase: 'play', startsAt: now - 29000, deadline, seconds: 30, hostRound: 2 } };
+    const deliver = async (payload: Parameters<typeof encodeStreamPacket>[1]) => {
+      for (const text of await encodeStreamPacket(id, payload)) transport.message({ player: { id: '456', login: 'wuote', name: 'WUOTE' },
+        id: crypto.randomUUID(), sentAt: now, text });
+    };
+    const digest = crypto.subtle.digest.bind(crypto.subtle);
+    let releaseHash!: () => void, acknowledge!: (id: string) => void;
+    let hashing: { mockRestore(): void } | undefined;
+    try {
+      await deliver({ type: 'state', state });
+      await vi.waitFor(() => expect(document.querySelector('.stream-toolbar-round .stream-round')!.textContent).toBe('Round 3 / 10'));
+      ui.pick(streamAnswer);
+      hashing = vi.spyOn(crypto.subtle, 'digest').mockImplementationOnce((algorithm, data) => new Promise(resolve => {
+        releaseHash = () => { void digest(algorithm, data).then(resolve); };
+      }));
+      f.viewer.sendGuess.mockImplementationOnce(() => new Promise(resolve => { acknowledge = resolve; }));
+      f.button('Send guess').click();
+      expect(f.viewer.sendGuess).not.toHaveBeenCalled();
+      now = deadline + 500;
+      await deliver({ type: 'state', state: { ...state, revision: 2, round: 4, roundId: nextId,
+        clue: new URL(roundLink('/guess/?channel=wuote', 4, true)).hash.slice(6),
+        timing: { ...state.timing!, startsAt: deadline + 3000, deadline: deadline + 33000, hostRound: 3 } } });
+      await vi.waitFor(() => expect(document.querySelector('.stream-toolbar-round .stream-round')!.textContent).toBe('Round 4 / 10'));
+      releaseHash();
+      await vi.waitFor(() => expect(f.viewer.sendGuess).toHaveBeenCalledOnce());
+      const sent = f.viewer.sendGuess.mock.calls[0] as unknown as Parameters<TwitchViewer['sendGuess']>;
+      expect(sent.slice(0, 5)).toEqual(['wuote', 3, streamAnswer, 5000, id]);
+      expect(sent[7]).toBe(deadline + 2000);
+      expect(f.main.querySelector('.stream-delivery')!.textContent).toBe('Round 3: Sending…');
+      acknowledge('sent-id');
+      await vi.waitFor(() => expect(f.main.querySelector('.stream-delivery')!.textContent).toBe('Round 3: Sent to Twitch. Waiting for the streamer’s confirmation.'));
+      const key = await guessReceiptKey(id, '123', Array.from(sent[5]!, b => b.toString(16).padStart(2, '0')).join(''));
+      await deliver({ type: 'reveal', round: 2, reveal: { roundId: id, answer: streamAnswer, area: streamArea } });
+      await vi.waitFor(() => expect(f.button('Round 3: …')).toBeDefined());
+      f.button('Round 3: …').click();
+      expect(f.main.textContent).toContain('Waiting for confirmation');
+      expect(f.main.textContent).not.toContain('No guess recorded by the streamer');
+      await deliver({ type: 'receipts', round: 2, keys: [key] });
+      await vi.waitFor(() => expect(f.main.querySelector('.stream-round-outcome .round-points')!.textContent).toBe('5,000 points'));
+      await deliver({ type: 'receipts', round: 2, keys: [key], rejected: true, reason: 'unreceived' });
+      await flush(); expect(f.main.querySelector('.stream-round-outcome .round-points')!.textContent).toBe('5,000 points');
+      f.leave();
+      const restored = mount(url, { savedUserId: '123', restoring: true });
+      expect(restored.main.textContent).toContain('5,000');
+      expect(fetch).not.toHaveBeenCalled(); expect(watchLiveRoom).not.toHaveBeenCalled();
+    } finally { hashing?.mockRestore(); clock.mockRestore(); }
+  });
+
   it('receives timed clues and receipt-confirmed scores through Twitch, then recovers them after F5 with no live Worker connection', async () => {
     vi.stubGlobal('Blob', NodeBlob);
     const id = '11111111-1111-4111-8111-111111111111';

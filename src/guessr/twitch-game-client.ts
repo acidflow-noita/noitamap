@@ -77,6 +77,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
   return {
     async receive(message: StreamChatMessage) {
       if (closed || message.player.login !== channel) return;
+      const receivedAt = Date.now();
       const match = /^!noitaguessr_state ([0-9a-z]{26}) /.exec(streamPacketText(message.text));
       const other = match && gameIdFromCode(match[1]);
       if (currentGame && other && other !== currentGame) {
@@ -84,7 +85,9 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
       }
       const packet = await reader.receive(message);
       if (closed || !packet || currentGame && packet.gameId !== currentGame) return;
-      const offset = packet.sentAt - Date.now();
+      // Decompression/validation time is local work, not clock skew. Sampling
+      // after awaiting it makes the displayed countdown run behind Twitch.
+      const offset = packet.sentAt - receivedAt;
       timeOffset = !hasClock || Math.abs(offset - timeOffset) > 10_000 ? offset : Math.max(timeOffset, offset); hasClock = true;
       currentGame = packet.gameId;
       const payload = packet.payload;
