@@ -1,5 +1,22 @@
 {
-  "Confirm account connection": "Konfirmasi koneksi akun",
-  "Account to connect": "Akun yang akan dihubungkan",
-  "Connect account": "Hubungkan akun"
+  "Confirm linking your accounts": "Konfirmasi penghubungan akun Anda",
+  "Account you want to link": "Akun yang ingin Anda hubungkan",
+  "Link this account": "Hubungkan akun ini",
+  "Start this account connection from your signed-in account.": "Mulailah proses penghubungan akun ini dari akun Anda yang sudah masuk.",
+  "Could not review this account connection.": "Tidak dapat meninjau koneksi akun ini.",
+  "Could not connect this account.": "Tidak dapat menghubungkan akun ini.",
+  "Could not start this account connection.": "Tidak dapat memulai koneksi akun ini.",
+  "Sign in again before connecting another account.": "Silakan masuk kembali sebelum menghubungkan akun lain.",
+  "Account connections are not available yet.": "Fitur koneksi akun belum tersedia.",
+  "Account connections are not configured yet.": "Koneksi akun belum dikonfigurasi.",
+  "The previous drawing workspace is still being restored": "Ruang kerja gambar sebelumnya masih dalam proses pemulihan",
+  "Refresh your session before connecting accounts.": "Segarkan sesi Anda sebelum menghubungkan akun.",
+  "Confirm the account connection first.": "Pastikan terlebih dahulu bahwa akun sudah terhubung.",
+  "This connection expired or belongs to a different session.": "Koneksi ini telah kedaluwarsa atau merupakan bagian dari sesi yang berbeda.",
+  "That account already has a different connection. Unlink it there before connecting here.": "Akun tersebut sudah terhubung ke akun lain. Putuskan hubungannya di sana terlebih dahulu sebelum menghubungkannya di sini.",
+  "Keep at least one connected sign-in method.": "Pastikan Anda memiliki setidaknya satu metode masuk yang terhubung.",
+  "Start this connection from the map.": "Mulailah koneksi ini dari peta.",
+  "Return to the site that started this connection.": "Kembali ke situs yang menjadi awal terjalinnya hubungan ini.",
+  "Could not disconnect this account.": "Tidak dapat memutuskan koneksi akun ini.",
+  "Twitch chat connection is temporarily unavailable.": "Koneksi obrolan Twitch sedang tidak tersedia untuk sementara waktu."
 }

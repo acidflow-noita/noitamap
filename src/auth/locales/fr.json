@@ -1,5 +1,22 @@
 {
-  "Confirm account connection": "Confirmer l’association du compte",
-  "Account to connect": "Compte à associer",
-  "Connect account": "Associer le compte"
+  "Confirm linking your accounts": "Confirmez l'association de vos comptes",
+  "Account you want to link": "Compte que vous souhaitez associer",
+  "Link this account": "Associer ce compte",
+  "Start this account connection from your signed-in account.": "Lancez cette connexion à partir de votre compte sur lequel vous êtes connecté.",
+  "Could not review this account connection.": "Impossible de vérifier cette connexion de compte.",
+  "Could not connect this account.": "Impossible de se connecter à ce compte.",
+  "Could not start this account connection.": "Impossible d'établir la connexion à ce compte.",
+  "Sign in again before connecting another account.": "Connectez-vous à nouveau avant d'associer un autre compte.",
+  "Account connections are not available yet.": "Les connexions de compte ne sont pas encore disponibles.",
+  "Account connections are not configured yet.": "Les connexions aux comptes ne sont pas encore configurées.",
+  "The previous drawing workspace is still being restored": "L'espace de travail de dessin précédent est toujours en cours de restauration",
+  "Refresh your session before connecting accounts.": "Actualisez votre session avant de lier vos comptes.",
+  "Confirm the account connection first.": "Vérifiez d'abord que le compte est bien connecté.",
+  "This connection expired or belongs to a different session.": "Cette connexion a expiré ou appartient à une autre session.",
+  "That account already has a different connection. Unlink it there before connecting here.": "Ce compte est déjà associé à un autre appareil. Veuillez le désassocier avant de le connecter ici.",
+  "Keep at least one connected sign-in method.": "Conservez au moins un moyen de connexion associé à votre compte.",
+  "Start this connection from the map.": "Commencez cette connexion à partir de la carte.",
+  "Return to the site that started this connection.": "Retournez sur le site à l'origine de cette connexion.",
+  "Could not disconnect this account.": "Impossible de déconnecter ce compte.",
+  "Twitch chat connection is temporarily unavailable.": "La connexion au chat Twitch est temporairement indisponible."
 }

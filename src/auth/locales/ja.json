@@ -1,5 +1,22 @@
 {
-  "Confirm account connection": "アカウントの連携を確認する",
-  "Account to connect": "接続するアカウント",
-  "Connect account": "アカウントを連携する"
+  "Confirm linking your accounts": "アカウントの連携を確認してください",
+  "Account you want to link": "連携したいアカウント",
+  "Link this account": "このアカウントをリンクする",
+  "Start this account connection from your signed-in account.": "ログイン済みのアカウントから、このアカウントの連携を開始してください。",
+  "Could not review this account connection.": "このアカウントの連携を確認できませんでした。",
+  "Could not connect this account.": "このアカウントに接続できませんでした。",
+  "Could not start this account connection.": "このアカウントの接続を開始できませんでした。",
+  "Sign in again before connecting another account.": "別のアカウントを連携する前に、もう一度ログインしてください。",
+  "Account connections are not available yet.": "アカウントの連携機能はまだ利用できません。",
+  "Account connections are not configured yet.": "アカウントの連携はまだ設定されていません。",
+  "The previous drawing workspace is still being restored": "以前の描画ワークスペースは現在も復元中です",
+  "Refresh your session before connecting accounts.": "アカウントを連携する前に、セッションを更新してください。",
+  "Confirm the account connection first.": "まず、アカウントの接続を確認してください。",
+  "This connection expired or belongs to a different session.": "この接続は期限切れになったか、別のセッションに属しています。",
+  "That account already has a different connection. Unlink it there before connecting here.": "そのアカウントにはすでに別の接続が設定されています。こちらに接続する前に、そちらでリンクを解除してください。",
+  "Keep at least one connected sign-in method.": "少なくとも1つの接続済みのログイン方法を維持してください。",
+  "Start this connection from the map.": "この接続は地図から開始してください。",
+  "Return to the site that started this connection.": "このつながりのきっかけとなったサイトに戻る。",
+  "Could not disconnect this account.": "このアカウントの接続を解除できませんでした。",
+  "Twitch chat connection is temporarily unavailable.": "Twitchのチャット接続が一時的に利用できません。"
 }

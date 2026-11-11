@@ -32,7 +32,7 @@ it('updates the confirmation labels on language change and requires a single exp
   await vi.waitFor(() => expect(document.querySelector('dialog[open]')).not.toBeNull());
   mocks.prefix = 'Translated: '; mocks.listeners.forEach(fn => fn());
   const button = document.querySelector('button.theme-primary') as HTMLButtonElement;
-  expect(button.textContent).toBe('Translated: Connect account');
+  expect(button.textContent).toBe('Translated: Link this account');
   button.dispatchEvent(new MouseEvent('click', { detail: 2 }));
   expect(document.querySelector('dialog[open]')).not.toBeNull();
   button.click(); expect(await decision).toBe(true);

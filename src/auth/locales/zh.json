@@ -1,5 +1,22 @@
 {
-  "Confirm account connection": "确认账户关联",
-  "Account to connect": "要连接的账户",
-  "Connect account": "关联账户"
+  "Confirm linking your accounts": "确认关联您的账户",
+  "Account you want to link": "要关联的账户",
+  "Link this account": "关联此账户",
+  "Start this account connection from your signed-in account.": "请从您已登录的账户开始进行此账户关联。",
+  "Could not review this account connection.": "无法审核此账户关联。",
+  "Could not connect this account.": "无法连接此账户。",
+  "Could not start this account connection.": "无法建立此帐户连接。",
+  "Sign in again before connecting another account.": "在连接另一个账户之前，请先重新登录。",
+  "Account connections are not available yet.": "目前尚不支持账户关联。",
+  "Account connections are not configured yet.": "尚未配置账户连接。",
+  "The previous drawing workspace is still being restored": "之前的绘图工作区仍在恢复中",
+  "Refresh your session before connecting accounts.": "在连接账户之前，请刷新当前会话。",
+  "Confirm the account connection first.": "请先确认账户连接。",
+  "This connection expired or belongs to a different session.": "此连接已过期，或属于另一个会话。",
+  "That account already has a different connection. Unlink it there before connecting here.": "该账户已关联了其他设备。请先在那里解除关联，然后再在此处进行关联。",
+  "Keep at least one connected sign-in method.": "请至少保留一种已关联的登录方式。",
+  "Start this connection from the map.": "从地图上开始建立此连接。",
+  "Return to the site that started this connection.": "返回建立此连接的网站。",
+  "Could not disconnect this account.": "无法解除此账户的绑定。",
+  "Twitch chat connection is temporarily unavailable.": "Twitch 聊天功能暂时无法使用。"
 }

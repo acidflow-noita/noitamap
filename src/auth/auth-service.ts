@@ -45,16 +45,19 @@ export interface TwitchChatSession {
 //   localStorage.setItem("noitamap_auth_worker", "http://localhost:8787")
 // then reload. Clear it (removeItem) to go back to the deployed dev worker.
 // The override only applies on localhost so it can never affect prod users.
-function resolveAuthWorkerUrl(): string {
-  const host = window.location.hostname;
+export function resolveAuthWorkerUrl(host = window.location.hostname): string {
   const isLocal = host === "localhost" || host === "127.0.0.1";
   if (isLocal) {
-    const override = localStorage.getItem("noitamap_auth_worker");
-    if (override) return override;
+    let override: string | null = null;
+    try { override = localStorage.getItem("noitamap_auth_worker"); } catch { /* Storage may be unavailable. */ }
+    if (override) try {
+      const url = new URL(override);
+      if (['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) && ['http:', 'https:'].includes(url.protocol)) return url.origin;
+    } catch { /* Ignore malformed local-only overrides. */ }
   }
-  return isLocal || host.includes("dev.")
-    ? "https://noitamap-auth-dev.wuote.workers.dev"
-    : "https://noitamap-auth.wuote.workers.dev";
+  return ['dynamic-map.noitamap.com', 'noitamap.com'].includes(host)
+    ? 'https://noitamap-auth.wuote.workers.dev'
+    : 'https://noitamap-auth-dev.wuote.workers.dev';
 }
 
 const AUTH_WORKER_URL = resolveAuthWorkerUrl();
@@ -131,7 +134,8 @@ class AuthService {
         if (!response.ok || !data.token) throw new Error(data.error || 'Could not connect this account.');
         this.storeSession(data);
       } catch (error) {
-        window.alert(error instanceof Error ? error.message : 'Could not connect this account.');
+        const { authSecurityMessage } = await import('./security-messages');
+        window.alert(await authSecurityMessage(error instanceof Error ? error.message : 'Could not connect this account.'));
       }
     }
 
@@ -291,7 +295,10 @@ class AuthService {
   async unlink(provider: 'patreon' | 'twitch'): Promise<void> {
     const response = await this.accountRequest('/auth/unlink', { provider });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Could not disconnect this account.');
+    if (!response.ok) {
+      const { authSecurityMessage } = await import('./security-messages');
+      throw new Error(await authSecurityMessage(data.error || '', 'Could not disconnect this account.'));
+    }
     this.clearSession();
   }
 
@@ -315,9 +322,11 @@ class AuthService {
   private async redirectToLogin(provider: 'patreon' | 'twitch', chat = false, announcements = false): Promise<void> {
     if (this.loginPending) return;
     this.loginPending = true;
+    let workspacePrepared = false;
     try {
       if (this.loginReturn.get('drawing')) throw new Error('The previous drawing workspace is still being restored');
       const returnUrl = beginBrowserLogin(await this.loginReturn.prepare());
+      workspacePrepared = true;
       if (this.state.authenticated) {
         if (!this.state.accountId) throw new Error('Sign in again before connecting another account.');
         const response = await this.accountRequest('/auth/link/start', { provider, redirect: returnUrl, chat, announcements });
@@ -335,7 +344,11 @@ class AuthService {
       this.loginReturn.discardUnreturned();
       cancelBrowserLogin();
       sessionStorage.removeItem(PENDING_LINK_KEY);
-      window.alert(error instanceof Error ? error.message : i18next.t('auth.workspaceSaveFailed', 'Could not save your workspace. Sign-in was cancelled. Please try again.'));
+      const { authSecurityMessage } = await import('./security-messages');
+      const message = error instanceof Error ? error.message : '';
+      window.alert(!workspacePrepared && !message.includes('still being restored')
+        ? String(i18next.t('auth.workspaceSaveFailed', 'Could not save your workspace. Sign-in was cancelled. Please try again.'))
+        : await authSecurityMessage(message, 'Could not start this account connection.'));
     } finally {
       this.loginPending = false;
     }
@@ -374,6 +387,8 @@ class AuthService {
   /**
    * Get stored JWT token
    */
+  getWorkerUrl(): string { return AUTH_WORKER_URL; }
+
   getToken(): string | null {
     return localStorage.getItem(JWT_KEY);
   }

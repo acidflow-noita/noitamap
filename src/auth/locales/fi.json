@@ -1,5 +1,22 @@
 {
-  "Confirm account connection": "Vahvista tilin yhdistäminen",
-  "Account to connect": "Yhdistettävä tili",
-  "Connect account": "Yhdistä tili"
+  "Confirm linking your accounts": "Vahvista tiliesi linkittäminen",
+  "Account you want to link": "Tili, jonka haluat liittää",
+  "Link this account": "Yhdistä tämä tili",
+  "Start this account connection from your signed-in account.": "Käynnistä tämän tilin yhdistäminen kirjautuneena tililtäsi.",
+  "Could not review this account connection.": "Tätä tilin liitosta ei voitu tarkistaa.",
+  "Could not connect this account.": "Tätä tiliä ei voitu yhdistää.",
+  "Could not start this account connection.": "Tämän tilin yhteyden muodostaminen epäonnistui.",
+  "Sign in again before connecting another account.": "Kirjaudu sisään uudelleen, ennen kuin liität toisen tilin.",
+  "Account connections are not available yet.": "Tilikytkennät eivät ole vielä käytettävissä.",
+  "Account connections are not configured yet.": "Tilikytkentöjä ei ole vielä määritetty.",
+  "The previous drawing workspace is still being restored": "Edellistä piirustustyötilaa palautetaan parhaillaan",
+  "Refresh your session before connecting accounts.": "Päivitä istuntosi ennen tilien yhdistämistä.",
+  "Confirm the account connection first.": "Varmista ensin, että tili on yhdistetty.",
+  "This connection expired or belongs to a different session.": "Tämä yhteys on vanhentunut tai kuuluu toiseen istuntoon.",
+  "That account already has a different connection. Unlink it there before connecting here.": "Tällä tilillä on jo toinen yhteys. Poista se sieltä ennen kuin muodostat yhteyden tänne.",
+  "Keep at least one connected sign-in method.": "Pidä käytössä vähintään yksi liitetty kirjautumistapa.",
+  "Start this connection from the map.": "Aloita tämä reitti kartalta.",
+  "Return to the site that started this connection.": "Palaa sivustolle, josta tämä yhteys alkoi.",
+  "Could not disconnect this account.": "Tätä tiliä ei voitu irrottaa.",
+  "Twitch chat connection is temporarily unavailable.": "Twitch-chatin yhteys ei ole hetkellisesti käytettävissä."
 }

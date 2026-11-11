@@ -1,5 +1,22 @@
 {
-  "Confirm account connection": "Подтвердите привязку аккаунта",
-  "Account to connect": "Привязываемый аккаунт",
-  "Connect account": "Привязать аккаунт"
+  "Confirm linking your accounts": "Подтвердите привязку ваших учетных записей",
+  "Account you want to link": "Учётная запись, которую вы хотите привязать",
+  "Link this account": "Связать эту учетную запись",
+  "Start this account connection from your signed-in account.": "Начните подключение этой учетной записи из своей учетной записи, в которую вы вошли.",
+  "Could not review this account connection.": "Не удалось проверить подключение к этой учетной записи.",
+  "Could not connect this account.": "Не удалось подключить эту учетную запись.",
+  "Could not start this account connection.": "Не удалось установить соединение с этой учетной записью.",
+  "Sign in again before connecting another account.": "Перед подключением другой учетной записи войдите в систему заново.",
+  "Account connections are not available yet.": "Подключение учетных записей пока недоступно.",
+  "Account connections are not configured yet.": "Подключения к учетным записям пока не настроены.",
+  "The previous drawing workspace is still being restored": "Рабочая область предыдущего чертежа всё ещё восстанавливается",
+  "Refresh your session before connecting accounts.": "Перед подключением учетных записей обновите сессию.",
+  "Confirm the account connection first.": "Сначала подтвердите подключение учетной записи.",
+  "This connection expired or belongs to a different session.": "Срок действия этого соединения истек или оно относится к другому сеансу.",
+  "That account already has a different connection. Unlink it there before connecting here.": "У этой учетной записи уже есть другое подключение. Сначала отключите её там, а потом подключитесь здесь.",
+  "Keep at least one connected sign-in method.": "Оставьте как минимум один способ входа с привязкой к устройству.",
+  "Start this connection from the map.": "Начните это соединение с карты.",
+  "Return to the site that started this connection.": "Вернуться на сайт, с которого началось это соединение.",
+  "Could not disconnect this account.": "Не удалось отвязать эту учетную запись.",
+  "Twitch chat connection is temporarily unavailable.": "Связь с чатом Twitch временно недоступна."
 }

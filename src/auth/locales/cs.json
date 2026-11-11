@@ -1,5 +1,22 @@
 {
-  "Confirm account connection": "Potvrdit propojení účtu",
-  "Account to connect": "Účet k propojení",
-  "Connect account": "Propojit účet"
+  "Confirm linking your accounts": "Potvrďte propojení svých účtů",
+  "Account you want to link": "Účet, který chcete propojit",
+  "Link this account": "Propojit tento účet",
+  "Start this account connection from your signed-in account.": "Proveďte propojení tohoto účtu ze svého přihlášeného účtu.",
+  "Could not review this account connection.": "Toto propojení účtu se nepodařilo ověřit.",
+  "Could not connect this account.": "Nepodařilo se připojit k tomuto účtu.",
+  "Could not start this account connection.": "Nepodařilo se navázat spojení s tímto účtem.",
+  "Sign in again before connecting another account.": "Před připojením dalšího účtu se prosím znovu přihlaste.",
+  "Account connections are not available yet.": "Propojení účtů zatím není k dispozici.",
+  "Account connections are not configured yet.": "Propojení účtů ještě není nakonfigurováno.",
+  "The previous drawing workspace is still being restored": "Obnovování předchozího pracovního prostoru pro kreslení stále probíhá",
+  "Refresh your session before connecting accounts.": "Před propojením účtů obnovte relaci.",
+  "Confirm the account connection first.": "Nejprve ověřte připojení k účtu.",
+  "This connection expired or belongs to a different session.": "Toto připojení vypršelo nebo patří k jiné relaci.",
+  "That account already has a different connection. Unlink it there before connecting here.": "Tento účet již má přiřazené jiné připojení. Než jej připojíte zde, odpojte jej tam.",
+  "Keep at least one connected sign-in method.": "Mějte k dispozici alespoň jeden způsob přihlášení s propojením.",
+  "Start this connection from the map.": "Toto spojení spusťte z mapy.",
+  "Return to the site that started this connection.": "Vraťte se na stránku, kde toto spojení vzniklo.",
+  "Could not disconnect this account.": "Tento účet se nepodařilo odpojit.",
+  "Twitch chat connection is temporarily unavailable.": "Připojení k chatu na Twitchi je dočasně nedostupné."
 }

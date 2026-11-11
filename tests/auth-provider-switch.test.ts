@@ -66,7 +66,7 @@ describe('authenticated provider connections', () => {
     prepare.mockRejectedValue(new Error('Workspace save failed'));
     await auth.connectTwitchChat();
     expect(fetcher).not.toHaveBeenCalled();
-    expect(window.alert).toHaveBeenCalledWith('Workspace save failed');
+    expect(window.alert).toHaveBeenCalledWith('Could not save your workspace. Sign-in was cancelled. Please try again.');
   });
 
   it('keeps Twitch access tokens in memory and returns null when consent is missing', async () => {

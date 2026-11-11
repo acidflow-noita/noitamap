@@ -1,5 +1,22 @@
 {
-  "Confirm account connection": "Accountkoppeling bevestigen",
-  "Account to connect": "Te koppelen account",
-  "Connect account": "Account koppelen"
+  "Confirm linking your accounts": "Bevestig het koppelen van je accounts",
+  "Account you want to link": "Account dat je wilt koppelen",
+  "Link this account": "Dit account koppelen",
+  "Start this account connection from your signed-in account.": "Start deze accountkoppeling vanuit het account waarmee je bent ingelogd.",
+  "Could not review this account connection.": "Deze accountkoppeling kon niet worden gecontroleerd.",
+  "Could not connect this account.": "Er kon geen verbinding worden gemaakt met dit account.",
+  "Could not start this account connection.": "Deze accountverbinding kon niet tot stand worden gebracht.",
+  "Sign in again before connecting another account.": "Meld je opnieuw aan voordat je een ander account koppelt.",
+  "Account connections are not available yet.": "Accountkoppelingen zijn nog niet beschikbaar.",
+  "Account connections are not configured yet.": "De accountverbindingen zijn nog niet geconfigureerd.",
+  "The previous drawing workspace is still being restored": "De vorige tekenwerkruimte wordt nog hersteld",
+  "Refresh your session before connecting accounts.": "Vernieuw je sessie voordat je accounts koppelt.",
+  "Confirm the account connection first.": "Controleer eerst of het account is gekoppeld.",
+  "This connection expired or belongs to a different session.": "Deze verbinding is verlopen of hoort bij een andere sessie.",
+  "That account already has a different connection. Unlink it there before connecting here.": "Dat account is al aan een ander apparaat gekoppeld. Maak de koppeling daar eerst ongedaan voordat je het hier koppelt.",
+  "Keep at least one connected sign-in method.": "Zorg ervoor dat je ten minste één gekoppelde aanmeldmethode hebt.",
+  "Start this connection from the map.": "Begin deze route vanaf de kaart.",
+  "Return to the site that started this connection.": "Ga terug naar de website waar deze verbinding is ontstaan.",
+  "Could not disconnect this account.": "Het is niet gelukt om de verbinding met dit account te verbreken.",
+  "Twitch chat connection is temporarily unavailable.": "De verbinding met de Twitch-chat is tijdelijk niet beschikbaar."
 }

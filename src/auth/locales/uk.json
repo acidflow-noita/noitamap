@@ -1,5 +1,22 @@
 {
-  "Confirm account connection": "Підтвердьте прив’язку облікового запису",
-  "Account to connect": "Обліковий запис для прив’язки",
-  "Connect account": "Прив’язати обліковий запис"
+  "Confirm linking your accounts": "Підтвердьте прив’язку своїх облікових записів",
+  "Account you want to link": "Обліковий запис, який ви хочете прив’язати",
+  "Link this account": "Прив’язати цей обліковий запис",
+  "Start this account connection from your signed-in account.": "Почніть підключення цього облікового запису, увійшовши у свій обліковий запис.",
+  "Could not review this account connection.": "Не вдалося перевірити це підключення облікового запису.",
+  "Could not connect this account.": "Не вдалося підключити цей обліковий запис.",
+  "Could not start this account connection.": "Не вдалося встановити з'єднання з цим обліковим записом.",
+  "Sign in again before connecting another account.": "Увійдіть ще раз, перш ніж підключити інший обліковий запис.",
+  "Account connections are not available yet.": "Функція підключення облікових записів поки що недоступна.",
+  "Account connections are not configured yet.": "Підключення облікових записів ще не налаштовано.",
+  "The previous drawing workspace is still being restored": "Робоча область попереднього креслення все ще відновлюється",
+  "Refresh your session before connecting accounts.": "Оновіть сесію перед тим, як підключити облікові записи.",
+  "Confirm the account connection first.": "Спочатку підтвердьте підключення облікового запису.",
+  "This connection expired or belongs to a different session.": "Цей з’єднання втратило чинність або належить до іншої сесії.",
+  "That account already has a different connection. Unlink it there before connecting here.": "Цей обліковий запис уже прив’язаний до іншого пристрою. Спершу від’єднайте його там, а потім під’єднайте тут.",
+  "Keep at least one connected sign-in method.": "Залишайте активним принаймні один спосіб входу.",
+  "Start this connection from the map.": "Почніть це з'єднання з карти.",
+  "Return to the site that started this connection.": "Поверніться на сайт, з якого почалося це з’єднання.",
+  "Could not disconnect this account.": "Не вдалося від'єднати цей обліковий запис.",
+  "Twitch chat connection is temporarily unavailable.": "Зв'язок із чатом Twitch тимчасово недоступний."
 }

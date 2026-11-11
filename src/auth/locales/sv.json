@@ -1,5 +1,22 @@
 {
-  "Confirm account connection": "Bekräfta kontoanslutningen",
-  "Account to connect": "Konto att ansluta till",
-  "Connect account": "Anslut konto"
+  "Confirm linking your accounts": "Bekräfta att du vill koppla ihop dina konton",
+  "Account you want to link": "Konto som du vill koppla samman",
+  "Link this account": "Koppla detta konto",
+  "Start this account connection from your signed-in account.": "Starta denna kontoanslutning från det konto du är inloggad på.",
+  "Could not review this account connection.": "Det gick inte att granska denna kontoanslutning.",
+  "Could not connect this account.": "Det gick inte att ansluta det här kontot.",
+  "Could not start this account connection.": "Det gick inte att starta anslutningen till detta konto.",
+  "Sign in again before connecting another account.": "Logga in igen innan du kopplar in ett annat konto.",
+  "Account connections are not available yet.": "Kontoanslutningar är ännu inte tillgängliga.",
+  "Account connections are not configured yet.": "Kontoanslutningarna har ännu inte konfigurerats.",
+  "The previous drawing workspace is still being restored": "Det tidigare ritningsarbetsområdet håller fortfarande på att återställas",
+  "Refresh your session before connecting accounts.": "Uppdatera din session innan du kopplar samman kontona.",
+  "Confirm the account connection first.": "Kontrollera först att kontot är anslutet.",
+  "This connection expired or belongs to a different session.": "Den här anslutningen har upphört att gälla eller hör till en annan session.",
+  "That account already has a different connection. Unlink it there before connecting here.": "Det kontot är redan kopplat till en annan enhet. Avkoppla det där innan du ansluter det här.",
+  "Keep at least one connected sign-in method.": "Se till att ha minst en ansluten inloggningsmetod.",
+  "Start this connection from the map.": "Starta denna anslutning från kartan.",
+  "Return to the site that started this connection.": "Gå tillbaka till den webbplats där denna anslutning inleddes.",
+  "Could not disconnect this account.": "Det gick inte att koppla bort det här kontot.",
+  "Twitch chat connection is temporarily unavailable.": "Anslutningen till Twitch-chatten är tillfälligt otillgänglig."
 }

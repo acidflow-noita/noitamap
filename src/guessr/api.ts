@@ -122,13 +122,7 @@ export class GameApi {
         403,
         "Ranked games and leaderboards are available with Pro.",
       );
-    const host = location.hostname;
-    const local = ["localhost", "127.0.0.1"].includes(host);
-    const authOrigin =
-      (local && localStorage.getItem("noitamap_auth_worker")) ||
-      (local || host.includes("dev.")
-        ? "https://noitamap-auth-dev.wuote.workers.dev"
-        : "https://noitamap-auth.wuote.workers.dev");
+    const authOrigin = auth.getWorkerUrl();
     const response = await fetch(authOrigin + "/auth/game-ticket", {
       method: "POST",
       headers: { Authorization: "Bearer " + auth.getToken() },

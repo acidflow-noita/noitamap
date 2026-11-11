@@ -1,5 +1,22 @@
 {
-  "Confirm account connection": "Confirm account connection",
-  "Account to connect": "Account to connect",
-  "Connect account": "Connect account"
+  "Confirm linking your accounts": "Confirm linking your accounts",
+  "Account you want to link": "Account you want to link",
+  "Link this account": "Link this account",
+  "Start this account connection from your signed-in account.": "Start this account connection from your signed-in account.",
+  "Could not review this account connection.": "Could not review this account connection.",
+  "Could not connect this account.": "Could not connect this account.",
+  "Could not start this account connection.": "Could not start this account connection.",
+  "Sign in again before connecting another account.": "Sign in again before connecting another account.",
+  "Account connections are not available yet.": "Account connections are not available yet.",
+  "Account connections are not configured yet.": "Account connections are not configured yet.",
+  "The previous drawing workspace is still being restored": "The previous drawing workspace is still being restored",
+  "Refresh your session before connecting accounts.": "Refresh your session before connecting accounts.",
+  "Confirm the account connection first.": "Confirm the account connection first.",
+  "This connection expired or belongs to a different session.": "This connection expired or belongs to a different session.",
+  "That account already has a different connection. Unlink it there before connecting here.": "That account already has a different connection. Unlink it there before connecting here.",
+  "Keep at least one connected sign-in method.": "Keep at least one connected sign-in method.",
+  "Start this connection from the map.": "Start this connection from the map.",
+  "Return to the site that started this connection.": "Return to the site that started this connection.",
+  "Could not disconnect this account.": "Could not disconnect this account.",
+  "Twitch chat connection is temporarily unavailable.": "Twitch chat connection is temporarily unavailable."
 }
