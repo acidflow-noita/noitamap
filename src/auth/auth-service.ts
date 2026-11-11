@@ -60,9 +60,7 @@ function resolveAuthWorkerUrl(): string {
 const AUTH_WORKER_URL = resolveAuthWorkerUrl();
 
 const JWT_KEY = "noitamap_jwt";
-// Long-lived refresh JWT (carries the provider refresh_token, encrypted by the
-// worker). Used to silently re-mint the access JWT so sessions survive past the
-// 24h access-token expiry without a re-login.
+// Rotating session reference. Provider credentials remain in the auth Worker.
 const REFRESH_KEY = "noitamap_refresh_jwt";
 const PENDING_LINK_KEY = 'noitamap_pending_account_link';
 
@@ -79,6 +77,7 @@ class AuthService {
   private listeners: Set<(state: AuthState) => void> = new Set();
   private loginReturn = new LoginReturn();
   private loginPending = false;
+  private refreshPending?: Promise<boolean>;
 
   registerLoginPreparation = this.loginReturn.register.bind(this.loginReturn);
   getLoginReturnState = this.loginReturn.get.bind(this.loginReturn);
@@ -123,7 +122,11 @@ class AuthService {
         sessionStorage.removeItem(PENDING_LINK_KEY);
         await this.checkAuth();
         if (!expectedAccount || this.state.accountId !== expectedAccount) throw new Error('Start this account connection from your signed-in account.');
-        const response = await this.accountRequest('/auth/link/complete', { linkToken });
+        const preview = await this.accountRequest('/auth/link/review', { linkToken });
+        if (!preview.ok) throw new Error('Could not review this account connection.');
+        const { confirmAccountLink } = await import('./confirm-link');
+        if (!await confirmAccountLink(await preview.json())) { await this.checkAuth(); this.resolveReady(this.state); return this.state; }
+        const response = await this.accountRequest('/auth/link/complete', { linkToken, confirmed: true });
         const data = await response.json();
         if (!response.ok || !data.token) throw new Error(data.error || 'Could not connect this account.');
         this.storeSession(data);
@@ -164,14 +167,14 @@ class AuthService {
           return this.state;
         }
         // Access token rejected (expired) — attempt silent renewal.
-        localStorage.removeItem(JWT_KEY);
+        if (localStorage.getItem(JWT_KEY) === storedToken) localStorage.removeItem(JWT_KEY);
         if (await this.tryRefresh()) return this.state;
         return this.setUnauthenticated();
       }
 
       // Worker error on /auth/check — try refresh as a fallback, else drop.
       if (await this.tryRefresh()) return this.state;
-      localStorage.removeItem(JWT_KEY);
+      if (response.status === 401 && localStorage.getItem(JWT_KEY) === storedToken) localStorage.removeItem(JWT_KEY);
       return this.setUnauthenticated();
     } catch (error) {
       console.error("Auth check failed:", error);
@@ -183,7 +186,14 @@ class AuthService {
    * Exchange the stored refresh JWT for a fresh access+refresh pair. Returns
    * true and updates state on success; false (and clears tokens) on failure.
    */
-  private async tryRefresh(): Promise<boolean> {
+  private tryRefresh(): Promise<boolean> {
+    const refresh = async () => navigator.locks
+      ? await navigator.locks.request('noitamap-session-refresh', () => this.refreshSession())
+      : await this.refreshSession();
+    return this.refreshPending ??= refresh().finally(() => { this.refreshPending = undefined; });
+  }
+
+  private async refreshSession(retry = true): Promise<boolean> {
     const refreshToken = localStorage.getItem(REFRESH_KEY);
     if (!refreshToken) return false;
     try {
@@ -191,7 +201,13 @@ class AuthService {
         method: "POST",
         headers: { Authorization: `Bearer ${refreshToken}` },
       });
-      if (!res.ok) return false;
+      if (res.status === 409 && retry && localStorage.getItem(REFRESH_KEY) !== refreshToken) return this.refreshSession(false);
+      if (!res.ok) {
+        if (res.status === 401 && localStorage.getItem(REFRESH_KEY) === refreshToken) {
+          localStorage.removeItem(JWT_KEY); localStorage.removeItem(REFRESH_KEY);
+        }
+        return false;
+      }
       const data = await res.json();
       if (!data.authenticated || !data.token) {
         // Refresh token is dead (revoked/expired) — clear it so we stop trying.
@@ -276,7 +292,7 @@ class AuthService {
     const response = await this.accountRequest('/auth/unlink', { provider });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Could not disconnect this account.');
-    this.storeSession(data);
+    this.clearSession();
   }
 
   private storeSession(data: { token: string; refresh_token?: string } & Parameters<AuthService['applyAuthData']>[0]): void {
@@ -329,6 +345,19 @@ class AuthService {
    * Logout - clear token and reset state
    */
   async logout(): Promise<void> {
+    const token = localStorage.getItem(REFRESH_KEY) || localStorage.getItem(JWT_KEY);
+    try {
+      if (token) {
+        const response = await fetch(`${AUTH_WORKER_URL}/auth/logout`, {
+          method: 'POST', headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000),
+        });
+        if (!response.ok) console.error('[Auth] Server logout was not confirmed.');
+      }
+    } catch { console.error('[Auth] Server logout was not confirmed.'); }
+    finally { this.clearSession(); }
+  }
+
+  private clearSession(): void {
     localStorage.removeItem(JWT_KEY);
     localStorage.removeItem(REFRESH_KEY);
     sessionStorage.removeItem(PENDING_LINK_KEY);

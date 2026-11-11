@@ -1,11 +1,14 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'esbuild';
 import { accountDatabase } from './helpers/auth-account-db';
 
 let worker: { fetch(request: Request, env: unknown): Promise<Response> };
 const secret = (value: string) => ({ get: async () => value });
+let accountDb: ReturnType<typeof accountDatabase>;
 const env = {
-  JWT_SECRET: secret('local-only-patreon-gift-test-signing-key'),
+  ACCOUNT_DB: undefined as ReturnType<typeof accountDatabase>['binding'] | undefined,
+  CREDENTIAL_ENCRYPTION_SECRET: secret('local-only-provider-encryption-key-for-tests'),
+  SESSION_SIGNING_SECRET: secret('local-only-patreon-gift-test-signing-key'),
   PATREON_CLIENT_ID: secret('test-patreon-client'),
   PATREON_CLIENT_SECRET: secret('test-patreon-secret'),
   PATREON_CAMPAIGN_ID: secret('configured-campaign'),
@@ -14,6 +17,8 @@ const env = {
   ALLOWED_ORIGINS: 'https://noitamap.test',
 };
 
+beforeEach(() => { accountDb = accountDatabase(); env.ACCOUNT_DB = accountDb.binding; vi.spyOn(console, 'log').mockImplementation(() => {}); });
+afterEach(() => { accountDb.sqlite.close(); vi.restoreAllMocks(); });
 beforeAll(async () => {
   const result = await build({ entryPoints: ['workers/noitamap-auth/src/index.ts'], bundle: true, write: false,
     format: 'iife', globalName: 'AuthTest', platform: 'neutral', target: 'es2022' });
@@ -71,7 +76,7 @@ function provider(identity: ReturnType<typeof giftIdentity>) {
 }
 
 async function login(bindings: unknown = env) {
-  const start = await worker.fetch(new Request('https://auth.test/auth/login?redirect=https://noitamap.test/guess/'), bindings);
+  const start = await worker.fetch(new Request('https://auth.test/auth/login?redirect=https://noitamap.test/guess/?auth_nonce=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'), bindings);
   expect(start.status).toBe(302);
   const state = new URL(start.headers.get('Location')!).searchParams.get('state')!;
   const callback = new URL('https://auth.test/auth/callback');
@@ -110,7 +115,7 @@ describe('Patreon gift Pro entitlement', () => {
     // The expanded identity response replaces the existing request, adding none.
     expect(calls).toHaveBeenCalledTimes(2);
     expect(await refresh(session.refresh)).toMatchObject({ authenticated: true, isSubscriber: true });
-    expect(calls).toHaveBeenCalledTimes(4);
+    expect(calls).toHaveBeenCalledTimes(2);
   });
 
   const rejected: [string, (identity: ReturnType<typeof giftIdentity>) => void][] = [
@@ -151,6 +156,7 @@ describe('Patreon gift Pro entitlement', () => {
     const session = await login();
     expect(await check(session.token)).toMatchObject({ isSubscriber: true });
     identity.included[0].relationships!.currently_entitled_tiers!.data = [];
+    accountDb.sqlite.prepare('UPDATE auth_identities SET checked_at=?').run(Date.now() - 7200000);
     expect(await refresh(session.refresh)).toMatchObject({ authenticated: true, isSubscriber: false });
   });
 

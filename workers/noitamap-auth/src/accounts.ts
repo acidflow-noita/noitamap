@@ -1,3 +1,4 @@
+import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types';
 /** Durable account links. Provider credentials are encrypted by the caller. */
 export type Provider = 'patreon' | 'twitch';
 export interface Identity {
@@ -93,7 +94,7 @@ export async function saveIdentity(db: D1Database, identity: VerifiedIdentity, t
 export async function unlinkIdentity(db: D1Database, account: Account, provider: Provider): Promise<Account | null> {
   // Both the count guard and version guard run in the same SQL statement.
   // A delete trigger revokes existing account sessions, including the removed
-  // provider's sessions; the caller receives a new session for a remaining one.
+  // provider's sessions; the caller signs in again through a remaining one.
   const removed = await db.prepare(`DELETE FROM auth_identities
     WHERE account_id = ? AND provider = ?
     AND EXISTS (SELECT 1 FROM auth_accounts WHERE id = ? AND version = ?)
@@ -106,25 +107,31 @@ export async function createLinkIntent(db: D1Database, intent: Omit<LinkIntent, 
   await db.batch([
     db.prepare('DELETE FROM auth_link_intents WHERE expires_at < ?').bind(Date.now()),
     db.prepare(`INSERT INTO auth_link_intents
-      (id, account_id, account_version, provider, chat, redirect_url, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+      (id, account_id, account_version, provider, chat, redirect_url, expires_at, session_format) VALUES (?, ?, ?, ?, ?, ?, ?, 2)`)
       .bind(intent.id, intent.account_id, intent.account_version, intent.provider, intent.chat, intent.redirect_url, intent.expires_at),
   ]);
 }
 
 export async function startLinkIntent(db: D1Database, id: string): Promise<LinkIntent | null> {
   return db.prepare(`UPDATE auth_link_intents SET started = 1
-    WHERE id = ? AND started = 0 AND expires_at > ? RETURNING *`).bind(id, Date.now()).first<LinkIntent>();
+    WHERE id = ? AND session_format = 2 AND started = 0 AND expires_at > ? RETURNING *`).bind(id, Date.now()).first<LinkIntent>();
 }
 
 export async function finishLinkOAuth(db: D1Database, id: string, candidate: string, completion: string): Promise<boolean> {
   const row = await db.prepare(`UPDATE auth_link_intents SET candidate = ?, completion = ?
-    WHERE id = ? AND started = 1 AND candidate IS NULL AND expires_at > ? RETURNING id`)
+    WHERE id = ? AND session_format = 2 AND started = 1 AND candidate IS NULL AND expires_at > ? RETURNING id`)
     .bind(candidate, completion, id, Date.now()).first();
   return !!row;
 }
 
 export async function consumeLinkIntent(db: D1Database, completion: string, account: Account): Promise<LinkIntent | null> {
   return db.prepare(`DELETE FROM auth_link_intents WHERE completion = ? AND account_id = ?
-    AND account_version = ? AND expires_at > ? RETURNING *`)
+    AND account_version = ? AND session_format = 2 AND expires_at > ? RETURNING *`)
+    .bind(completion, account.id, account.version, Date.now()).first<LinkIntent>();
+}
+
+export async function reviewLinkIntent(db: D1Database, completion: string, account: Account): Promise<LinkIntent | null> {
+  return db.prepare(`SELECT * FROM auth_link_intents WHERE completion=? AND account_id=?
+    AND account_version=? AND session_format=2 AND expires_at>? AND candidate IS NOT NULL`)
     .bind(completion, account.id, account.version, Date.now()).first<LinkIntent>();
 }

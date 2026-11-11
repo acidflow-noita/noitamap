@@ -3,7 +3,7 @@ import { build } from 'esbuild';
 import { accountDatabase } from './helpers/auth-account-db';
 import { verifyGameTicket } from '../workers/noitamap-guessr/src/tickets';
 
-let worker: { fetch(request: Request, env: unknown): Promise<Response> };
+let worker: { fetch(request: Request, env: unknown): Promise<Response>; scheduled(event: unknown, env: unknown): Promise<void> };
 const secret = (value: string) => ({ get: async () => value });
 const signingKey = 'local-only-account-link-test-secret-long-enough';
 const gameKey = 'local-only-separate-game-ticket-secret-long-enough';
@@ -21,7 +21,8 @@ beforeAll(async () => {
 });
 beforeEach(() => {
   db = accountDatabase();
-  env = { JWT_SECRET: secret(signingKey), ACCOUNT_DB: db.binding, GAME_SIGNING_SECRET: gameKey,
+  vi.spyOn(console, 'log').mockImplementation(() => {});
+  env = { SESSION_SIGNING_SECRET: secret(signingKey), CREDENTIAL_ENCRYPTION_SECRET: secret('local-only-separate-provider-credential-key'), ACCOUNT_DB: db.binding, GAME_SIGNING_SECRET: gameKey,
     PATREON_CLIENT_ID: secret('patreon-client'), PATREON_CLIENT_SECRET: secret('patreon-secret'),
     PATREON_CAMPAIGN_ID: secret('campaign'), CREATOR_USER_ID: secret('creator'),
     TWITCH_CLIENT_ID: secret('twitch-client'), TWITCH_CLIENT_SECRET: secret('twitch-secret'),
@@ -83,13 +84,13 @@ async function oauth(start: Response, person: string, cookie = true) {
   return { location, fragment: new URLSearchParams(location.hash.slice(1)) };
 }
 async function login(provider: 'patreon' | 'twitch', person = provider === 'patreon' ? 'patron' : 'twitch', chat = false, announcements = false) {
-  const start = await request(`/auth/${provider === 'twitch' ? 'twitch/login' : 'login'}?redirect=https://noitamap.test/guess/${chat ? '&chat=1' : ''}${announcements ? '&announcements=1' : ''}`);
+  const start = await request(`/auth/${provider === 'twitch' ? 'twitch/login' : 'login'}?redirect=https://noitamap.test/guess/?auth_nonce=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa${chat ? '&chat=1' : ''}${announcements ? '&announcements=1' : ''}`);
   const result = await oauth(start, person);
   expect(result.fragment.get('auth')).toBe('success');
   return { token: result.fragment.get('token')!, refresh: result.fragment.get('refresh_token')! };
 }
 async function beginLink(token: string, provider: string, chat = false, announcements = false) {
-  const begin = await request('/auth/link/start', token, { provider, chat, announcements, redirect: 'https://noitamap.test/guess/' });
+  const begin = await request('/auth/link/start', token, { provider, chat, announcements, redirect: 'https://noitamap.test/guess/?auth_nonce=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' });
   expect(begin.status).toBe(200);
   const { url } = await begin.json() as { url: string };
   return worker.fetch(new Request(url), env);
@@ -98,7 +99,7 @@ async function link(token: string, provider: string, person: string, chat = fals
   const result = await oauth(await beginLink(token, provider, chat), person);
   expect(result.fragment.get('auth')).toBe('linked');
   expect(result.fragment.has('token')).toBe(false);
-  return request('/auth/link/complete', token, { linkToken: result.fragment.get('link_token') });
+  return request('/auth/link/complete', token, { linkToken: result.fragment.get('link_token'), confirmed: true });
 }
 const check = async (token: string) => (await request('/auth/check', token)).json() as Promise<any>;
 
@@ -161,7 +162,7 @@ describe('durable linked Pro accounts', () => {
     const owner = await login('patreon');
     const other = await login('patreon', 'patron2');
     const result = await oauth(await beginLink(owner.token, 'twitch'), 'twitch');
-    const body = { linkToken: result.fragment.get('link_token') };
+    const body = { linkToken: result.fragment.get('link_token'), confirmed: true };
     expect((await request('/auth/link/complete', undefined, body)).status).toBe(401);
     expect((await request('/auth/link/complete', other.token, body)).status).toBe(409);
     expect((await request('/auth/link/complete', owner.token, body)).status).toBe(200);
@@ -181,23 +182,18 @@ describe('durable linked Pro accounts', () => {
   it('strips session credentials from a caller-supplied return URL before link completion', async () => {
     const owner = await login('patreon');
     const start = await request('/auth/link/start', owner.token, { provider: 'twitch',
-      redirect: 'https://noitamap.test/guess/?auth=success&token=injected&refresh_token=injected&link_token=injected&mode=stream' });
+      redirect: 'https://noitamap.test/guess/?auth_nonce=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&auth=success&token=injected&refresh_token=injected&link_token=injected&mode=stream' });
     const { url } = await start.json() as any;
     const returned = await oauth(await worker.fetch(new Request(url), env), 'twitch');
-    expect(returned.location.search).toBe('?mode=stream');
+    expect(returned.location.searchParams.get('mode')).toBe('stream');
+    expect([...returned.location.searchParams.keys()].sort()).toEqual(['auth_nonce', 'mode']);
     expect(returned.fragment.get('auth')).toBe('linked');
   });
 
-  it('upgrades legacy provider refresh JWTs into durable accounts without losing membership', async () => {
-    const database = env.ACCOUNT_DB;
+  it('does not fall back to stateless sessions without the account database', async () => {
     delete env.ACCOUNT_DB;
-    const legacy = await login('patreon');
-    expect((await check(legacy.token)).accountId).toBeUndefined();
-    env.ACCOUNT_DB = database;
-    const migrated = await (await request('/auth/refresh', legacy.refresh, {})).json() as any;
-    expect(migrated).toMatchObject({ authenticated: true, isSubscriber: true, provider: 'patreon' });
-    expect(typeof migrated.accountId).toBe('string');
-    expect((await link(migrated.token, 'twitch', 'twitch')).status).toBe(200);
+    const start = await request('/auth/login?redirect=https://noitamap.test/guess/?auth_nonce=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+    expect(start.status).toBe(503);
   });
 
   it('rejects replacing an existing provider identity and does not absorb another multi-provider account', async () => {
@@ -216,12 +212,13 @@ describe('durable linked Pro accounts', () => {
     const linked = await (await link(owner.token, 'twitch', 'twitch')).json() as any;
     const result = await request('/auth/unlink', linked.token, { provider: 'patreon' });
     const remaining = await result.json() as any;
-    expect(remaining).toMatchObject({ authenticated: true, provider: 'twitch', isSubscriber: false });
-    expect(remaining.linkedAccounts).toHaveLength(1);
+    expect(remaining).toEqual({ authenticated: false });
+    const signedInAgain = await login('twitch');
+    expect((await check(signedInAgain.token)).linkedAccounts).toHaveLength(1);
     expect(await check(linked.token)).toEqual({ authenticated: false });
     expect(await (await request('/auth/refresh', linked.refresh_token, {})).json()).toEqual({ authenticated: false });
-    expect((await request('/auth/unlink', remaining.token, { provider: 'twitch' })).status).toBe(409);
-    expect((await request('/auth/game-ticket', remaining.token, {})).status).toBe(403);
+    expect((await request('/auth/unlink', signedInAgain.token, { provider: 'twitch' })).status).toBe(409);
+    expect((await request('/auth/game-ticket', signedInAgain.token, {})).status).toBe(403);
   });
 
   it.each([
@@ -236,8 +233,8 @@ describe('durable linked Pro accounts', () => {
 
   it('fails closed when the configured Patreon campaign is missing', async () => {
     env.PATREON_CAMPAIGN_ID = secret('');
-    const patron = await login('patreon');
-    expect(await check(patron.token)).toMatchObject({ isSubscriber: false });
+    expect((await request('/auth/login?redirect=' + encodeURIComponent('https://noitamap.test/?auth_nonce=' + 'a'.repeat(64)))).status).toBe(500);
+    expect(providerFetch).not.toHaveBeenCalled();
   });
 
   it('rechecks cached membership on renewal, removing cancelled Pro and keeping provider IDs stable', async () => {
@@ -268,7 +265,7 @@ describe('explicit Twitch chat consent', () => {
     expect(authorize.searchParams.get('force_verify')).toBe('true');
     people.twitch.scope = scopes;
     const returned = await oauth(start, 'twitch');
-    const result = await request('/auth/link/complete', linked.token, { linkToken: returned.fragment.get('link_token') });
+    const result = await request('/auth/link/complete', linked.token, { linkToken: returned.fragment.get('link_token'), confirmed: true });
     const connected = await result.json() as any;
     expect(connected.isSubscriber).toBe(true);
     const response = await request('/auth/twitch/chat-session', connected.token);
@@ -279,10 +276,10 @@ describe('explicit Twitch chat consent', () => {
   });
 
   it.each([false, true])('keeps the same optional scope choice for a direct Twitch sign-in (%s)', async announcements => {
-    const start = await request(`/auth/twitch/login?chat=1&announcements=${announcements ? '1' : '0'}`);
+    const start = await request(`/auth/twitch/login?redirect=https://noitamap.test/guess/?auth_nonce=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&chat=1&announcements=${announcements ? '1' : '0'}`);
     const scope = new URL(start.headers.get('Location')!).searchParams.get('scope');
     expect(scope).toBe('user:read:chat user:write:chat' + (announcements ? ' moderator:manage:announcements' : ''));
-    const ordinary = await request('/auth/twitch/login?announcements=1');
+    const ordinary = await request('/auth/twitch/login?redirect=https://noitamap.test/guess/?auth_nonce=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&announcements=1');
     expect(new URL(ordinary.headers.get('Location')!).searchParams.get('scope')).toBe('');
   });
 
@@ -317,5 +314,68 @@ describe('explicit Twitch chat consent', () => {
     people.twitch.scope = [];
     await login('twitch');
     expect(db.sqlite.prepare("SELECT credentials FROM auth_identities WHERE provider = 'twitch'").get()!.credentials).toBe(old);
+  });
+});
+
+
+describe('session and return security boundaries', () => {
+  it('reviews identities without credentials and requires explicit confirmation before consuming a link', async () => {
+    const owner = await login('patreon');
+    const result = await oauth(await beginLink(owner.token, 'twitch'), 'twitch');
+    const linkToken = result.fragment.get('link_token');
+    const review = await request('/auth/link/review', owner.token, { linkToken });
+    expect(await review.json()).toEqual({ current: [{ provider: 'patreon', userId: 'patreon-1', name: 'PatronOne' }],
+      target: { provider: 'twitch', userId: '12345', name: 'mychannel' } });
+    expect((await request('/auth/link/complete', owner.token, { linkToken })).status).toBe(400);
+    expect((await check(owner.token)).linkedAccounts).toHaveLength(1);
+    expect((await request('/auth/link/complete', owner.token, { linkToken, confirmed: true })).status).toBe(200);
+  });
+  it('cannot upgrade access tokens to refresh tokens and invalidates both tokens on logout', async () => {
+    const owner = await login('patreon');
+    expect((await request('/auth/refresh', owner.token, {})).status).toBe(401);
+    const checked = await check(owner.token); expect(checked).not.toHaveProperty('refresh_token');
+    expect((await request('/auth/logout', owner.refresh, {})).status).toBe(204);
+    expect(await check(owner.token)).toEqual({ authenticated: false });
+    expect((await request('/auth/refresh', owner.refresh, {})).status).toBe(401);
+  });
+  it('rejects old signed sessions even when their key and account still exist', async () => {
+    const owner = await login('patreon');
+    const claims = JSON.parse(Buffer.from(owner.token.split('.')[1], 'base64url').toString());
+    delete claims.v; delete claims.sid; delete claims.aud;
+    const input = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url') + '.' + Buffer.from(JSON.stringify(claims)).toString('base64url');
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(signingKey), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const legacy = input + '.' + Buffer.from(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(input))).toString('base64url');
+    expect(await check(legacy)).toEqual({ authenticated: false });
+    expect((await request('/auth/refresh', legacy, {})).status).toBe(401);
+  });
+  it.each(['https://attacker.test/', 'https://noitamap.test/assets/evil.html', 'https://noitamap.test/guess/twitch-callback.html', 'https://noitamap.test/guess/'])('rejects unsafe or nonce-free OAuth return: %s', async redirect => {
+    if (!redirect.endsWith('/guess/')) redirect += '?auth_nonce=' + 'a'.repeat(64);
+    expect((await request('/auth/twitch/login?redirect=' + encodeURIComponent(redirect))).status).toBe(400);
+    expect(providerFetch).not.toHaveBeenCalled();
+  });
+  it('limits expensive operations in the existing invocation and keeps disabled dev environments closed', async () => {
+    env.AUTH_ENABLED = 'false'; expect((await request('/auth/check')).status).toBe(503);
+    env.AUTH_ENABLED = 'true'; env.AUTH_RATE_LIMIT = { limit: async () => ({ success: false }) };
+    expect((await request('/auth/check')).status).toBe(429); expect(providerFetch).not.toHaveBeenCalled();
+  });
+  it('accepts the one-time setup key only in a POST header and binds its cookie to the host', async () => {
+    expect((await request('/auth/twitch/broadcaster-setup', undefined, {})).status).toBe(404);
+    const setupKey = 'test-only-setup-key-with-at-least-thirty-two-characters'; env.TWITCH_SETUP_KEY = secret(setupKey);
+    expect((await request('/auth/twitch/broadcaster-setup?key=' + setupKey)).status).toBe(405);
+    expect((await request('/auth/twitch/broadcaster-setup?key=' + setupKey, undefined, {})).status).toBe(403);
+    const response = await worker.fetch(new Request('https://auth.test/auth/twitch/broadcaster-setup', { method: 'POST', headers: { 'X-Noitamap-Setup-Key': setupKey } }), env);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Set-Cookie')).toMatch(/^__Host-noitamap_oauth_state=/);
+    expect(response.headers.get('Set-Cookie')).toContain('Path=/');
+    expect(response.headers.get('Set-Cookie')).toContain('Secure');
+    expect(await response.text()).not.toContain(setupKey);
+  });
+  it('encrypts legacy broadcaster KV data during maintenance without returning credentials', async () => {
+    const state = { accessToken: 'private-access', accessTokenExpiresAt: Date.now() + 3600000, refreshToken: 'private-refresh' };
+    let stored = JSON.stringify(state); env.TWITCH_TOKEN_STORE = { get: async () => stored, put: async (_key: string, value: string) => { stored = value; } };
+    await worker.scheduled({}, env);
+    expect(stored).toMatch(/^c2\.1\./); expect(stored).not.toContain('private-refresh');
+    const { decryptCredential } = await import('../workers/noitamap-auth/src/crypto');
+    expect(JSON.parse((await decryptCredential(stored, { key: 'local-only-separate-provider-credential-key', id: '1' }))!)).toEqual(state);
   });
 });

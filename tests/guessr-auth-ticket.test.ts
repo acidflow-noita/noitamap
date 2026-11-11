@@ -1,4 +1,6 @@
-import { afterAll, beforeAll, describe, it, expect } from "vitest";
+import { accountDatabase } from './helpers/auth-account-db';
+import { authKey } from '../workers/noitamap-auth/src/crypto';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it, expect } from "vitest";
 import { build } from "esbuild";
 import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -9,6 +11,19 @@ let worker: { fetch(request: Request, env: unknown): Promise<Response> };
 let standalone: string;
 const loginKey = "local-auth-test-key-not-used-in-production",
   gameKey = "separate-game-test-key-not-used-in-production";
+let db: ReturnType<typeof accountDatabase>;
+const accountId = '11111111-1111-4111-8111-111111111111';
+const sessionId = '22222222-2222-4222-8222-222222222222';
+beforeEach(() => {
+  db = accountDatabase();
+  const now = Date.now();
+  db.sqlite.prepare('INSERT INTO auth_accounts(id) VALUES(?)').run(accountId);
+  db.sqlite.prepare('INSERT INTO auth_identities(provider,provider_user_id,account_id,username,nickname,login,is_follower,is_subscriber,checked_at,status,credentials) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
+    .run('twitch','42',accountId,'Explorer',null,'explorer',1,1,now,'active','unused');
+  db.sqlite.prepare('INSERT INTO auth_sessions(id,account_id,account_version,created_at,refreshed_at,expires_at) VALUES(?,?,?,?,?,?)')
+    .run(sessionId,accountId,1,now,now,now+86400000);
+});
+afterEach(() => db.sqlite.close());
 beforeAll(async () => {
   // Match copying only the auth folder: a sibling Guessr checkout cannot mask
   // an undeclared build dependency in this test.
@@ -37,10 +52,10 @@ async function access(
   const b64 = (value: unknown) =>
     Buffer.from(JSON.stringify(value)).toString("base64url");
   const data =
-    b64({ alg: "HS256", typ: "JWT" }) +
+    b64({ alg: "HS256", typ: "JWT", kid: "auth-v2" }) +
     "." +
     b64({
-      typ: "access",
+      typ: "access", v: 2, aud: "noitamap-auth", sid: sessionId, account_id: accountId, account_version: 1,
       sub: "42",
       username: "Explorer",
       nickname: null,
@@ -51,13 +66,8 @@ async function access(
       exp: now + 600,
       ...extra,
     });
-  const key = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(loginKey),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
+  db.sqlite.prepare('UPDATE auth_identities SET is_subscriber=?').run(Number(subscriber));
+  const key = await authKey(loginKey, 'access');
   return (
     data +
     "." +
@@ -80,7 +90,9 @@ async function call(
       },
     }),
     {
-      JWT_SECRET: { get: async () => loginKey },
+      SESSION_SIGNING_SECRET: { get: async () => loginKey },
+      CREDENTIAL_ENCRYPTION_SECRET: { get: async () => 'local-only-provider-encryption-key-for-tests' },
+      ACCOUNT_DB: db.binding,
       GAME_SIGNING_SECRET: key,
       ALLOWED_ORIGINS: "https://noitamap.com",
       WORKER_URL: "https://auth.test",
@@ -104,7 +116,7 @@ describe("separate game-ticket issuer", () => {
     expect(response.status).toBe(200);
     const data = (await response.json()) as any;
     expect(await verifyGameTicket(data.token, gameKey)).toMatchObject({
-      sub: "twitch:42",
+      sub: `account:${accountId}`,
       pro: true,
       aud: "noitamap-guessr",
       typ: "game",

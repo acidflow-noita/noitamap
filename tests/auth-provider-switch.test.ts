@@ -2,6 +2,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 
+vi.mock('../src/auth/confirm-link', () => ({ confirmAccountLink: async () => true }));
+
 let auth: typeof import('../src/auth/auth-service')['authService'];
 let prepare: ReturnType<typeof vi.fn>;
 let fetcher: ReturnType<typeof vi.fn>;
@@ -16,8 +18,8 @@ beforeEach(async () => {
     setItem: (key: string, value: string) => tabStorage.set(key, value), removeItem: (key: string) => tabStorage.delete(key) });
   window.history.replaceState({}, '', '/guess/');
   localStorage.setItem('noitamap_session_format', '2');
-  localStorage.setItem('noitamap_jwt', 'existing-account-access');
-  localStorage.setItem('noitamap_refresh_jwt', 'existing-account-refresh');
+  localStorage.setItem('noitamap_jwt', 'header.' + btoa(JSON.stringify({ v: 2, typ: 'access', aud: 'noitamap-auth', sid: '11111111-1111-4111-8111-111111111111' })) + '.signature');
+  localStorage.setItem('noitamap_refresh_jwt', 'header.' + btoa(JSON.stringify({ v: 2, typ: 'refresh', aud: 'noitamap-auth', sid: '11111111-1111-4111-8111-111111111111' })) + '.signature');
   const imported = await import('../src/auth/auth-service');
   auth = imported.authService;
   (auth as any).state = { authenticated: true, provider: 'patreon', accountId: 'account-1', isSubscriber: true };
@@ -38,10 +40,10 @@ describe('authenticated provider connections', () => {
     expect(prepare).toHaveBeenCalledOnce();
     const [url, init] = fetcher.mock.calls[0] as any;
     expect(url).toMatch(/\/auth\/link\/start$/);
-    expect(init.headers.Authorization).toBe('Bearer existing-account-access');
+    expect(init.headers.Authorization).toBe('Bearer ' + localStorage.getItem('noitamap_jwt'));
     expect(JSON.parse(init.body)).toMatchObject({ provider: 'twitch', chat: false });
     expect(new URL(JSON.parse(init.body).redirect).searchParams.get('auth_nonce')).toMatch(/^[a-f0-9]{64}$/);
-    expect(localStorage.getItem('noitamap_jwt')).toBe('existing-account-access');
+    expect(localStorage.getItem('noitamap_jwt')).toMatch(/^header\./);
     expect(auth.isSubscriber()).toBe(true);
     expect(window.confirm).not.toHaveBeenCalled();
     await vi.waitFor(() => expect(window.alert).toHaveBeenCalledWith('Account connections are not configured yet.'));
@@ -87,9 +89,10 @@ describe('authenticated provider connections', () => {
     fetcher.mockImplementation(async (url: string) => Response.json(url.endsWith('/auth/link/complete')
       ? { authenticated: true, token: 'linked-access', refresh_token: 'linked-refresh', accountId: 'account-1', provider: 'patreon', isSubscriber: true }
       : { authenticated: true, accountId: 'account-1', provider: 'patreon', isSubscriber: true }));
+    const original = localStorage.getItem('noitamap_jwt');
     await auth.init();
     expect(fetcher.mock.calls.filter(([url]) => url.endsWith('/auth/link/complete'))).toHaveLength(pending ? 1 : 0);
-    expect(localStorage.getItem('noitamap_jwt')).toBe(pending ? 'linked-access' : 'existing-account-access');
+    expect(localStorage.getItem('noitamap_jwt')).toBe(pending ? 'linked-access' : original);
     expect(location.search).toBe('');
     expect(location.hash).toBe('');
     expect(sessionStorage.getItem('noitamap_pending_account_link')).toBeNull();

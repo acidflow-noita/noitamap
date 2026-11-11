@@ -1,4 +1,5 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { accountDatabase } from './helpers/auth-account-db';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { build } from "esbuild";
 import { verifyGameTicket } from "../workers/noitamap-guessr/src/tickets";
 
@@ -6,14 +7,20 @@ let worker: { fetch(request: Request, env: unknown): Promise<Response> };
 const loginKey = "test-only-twitch-auth-signing-key-not-production";
 const gameKey = "test-only-separate-game-signing-key-not-production";
 const secret = (value: string) => ({ get: async () => value });
+let accountDb: ReturnType<typeof accountDatabase>;
 const env = {
-  JWT_SECRET: secret(loginKey),
+  ACCOUNT_DB: undefined as ReturnType<typeof accountDatabase>['binding'] | undefined,
+  CREDENTIAL_ENCRYPTION_SECRET: secret('local-only-provider-encryption-key-for-tests'),
+  SESSION_SIGNING_SECRET: secret(loginKey),
   GAME_SIGNING_SECRET: gameKey,
+  TWITCH_PRO_USER_IDS: '1001,1002',
   TWITCH_CLIENT_ID: secret("test-client"),
   TWITCH_CLIENT_SECRET: secret("test-client-secret"),
   ALLOWED_ORIGINS: "https://noitamap.test",
   WORKER_URL: "https://auth.test",
 };
+beforeEach(() => { accountDb = accountDatabase(); env.ACCOUNT_DB = accountDb.binding; vi.spyOn(console, 'log').mockImplementation(() => {}); });
+afterEach(() => { accountDb.sqlite.close(); vi.restoreAllMocks(); });
 beforeAll(async () => {
   const result = await build({
     entryPoints: ["workers/noitamap-auth/src/index.ts"],
@@ -30,10 +37,10 @@ beforeAll(async () => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-function provider(login: string, displayName = login) {
+function provider(login: string, displayName = login, id = '2001') {
   const identity = {
-    id: "verified-viewer-id",
-    login,
+    id,
+    login: login.toLowerCase(),
     display_name: displayName,
   };
   const fetch = vi.fn(
@@ -61,7 +68,7 @@ function provider(login: string, displayName = login) {
 async function login(bindings = env) {
   const start = await worker.fetch(
     new Request(
-      "https://auth.test/auth/twitch/login?redirect=https://noitamap.test/guess/",
+      "https://auth.test/auth/twitch/login?redirect=https://noitamap.test/guess/?auth_nonce=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     ),
     bindings,
   );
@@ -107,7 +114,7 @@ describe("owner-approved Twitch Pro access", () => {
   it.each(["wuote", "dunkorslam", "Wuote", "DunkOrSlam"])(
     "grants %s Pro on verified login, game-ticket issuance and silent refresh without broadcaster setup",
     async (name) => {
-      const { fetch } = provider(name, "Display name is not the entitlement");
+      const { fetch } = provider(name, 'Display name is not the entitlement', name.toLowerCase() === 'wuote' ? '1001' : '1002');
       const session = await login();
       expect(
         await (await request("/auth/check", session.token)).json(),
@@ -124,7 +131,7 @@ describe("owner-approved Twitch Pro access", () => {
       expect(ticketResponse.status).toBe(200);
       const ticket = (await ticketResponse.json()) as { token: string };
       expect(await verifyGameTicket(ticket.token, gameKey)).toMatchObject({
-        sub: "twitch:verified-viewer-id",
+        sub: expect.stringMatching(/^account:/),
         pro: true,
       });
       const renewed = (await (
@@ -167,25 +174,24 @@ describe("owner-approved Twitch Pro access", () => {
     },
   );
 
-  it("rechecks the verified identity on refresh instead of trusting the old grant", async () => {
-    const { identity } = provider("dunkorslam");
-    const session = await login();
-    identity.login = "ordinary-viewer";
-    expect(
-      await (await request("/auth/refresh", session.refresh, "POST")).json(),
-    ).toMatchObject({ isSubscriber: false });
-    identity.id = "different-account";
-    identity.login = "wuote";
-    expect(
-      await (await request("/auth/refresh", session.refresh, "POST")).json(),
-    ).toMatchObject({ authenticated: false });
+  it('keeps an explicit grant through rename but rejects reuse of that name by a different ID', async () => {
+    const { identity } = provider('dunkorslam', 'DunkOrSlam', '1002');
+    const session = await login(); identity.login = 'renamed-viewer';
+    accountDb.sqlite.prepare('UPDATE auth_identities SET checked_at=?').run(Date.now() - 7200000);
+    const renewed = await (await request('/auth/refresh', session.refresh, 'POST')).json() as any;
+    expect(renewed).toMatchObject({ isSubscriber: true });
+    identity.id = '99999'; identity.login = 'dunkorslam';
+    accountDb.sqlite.prepare('UPDATE auth_identities SET checked_at=?').run(Date.now() - 7200000);
+    expect(await (await request('/auth/refresh', renewed.refresh_token, 'POST')).json()).toMatchObject({ isSubscriber: false });
+    const newcomer = await login();
+    expect(await (await request('/auth/check', newcomer.token)).json()).toMatchObject({ isSubscriber: false });
   });
 
   it("retains the existing creator-ID grant for a renamed broadcaster", async () => {
     provider("renamed-creator");
     const session = await login({
       ...env,
-      TWITCH_BROADCASTER_ID: secret("verified-viewer-id"),
+      TWITCH_BROADCASTER_ID: secret("2001"),
     } as typeof env);
     expect(
       await (await request("/auth/check", session.token)).json(),

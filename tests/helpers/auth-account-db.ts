@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 export function accountDatabase() {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(readFileSync('workers/noitamap-auth/migrations/0001_linked_accounts.sql', 'utf8'));
+  sqlite.exec(readFileSync('workers/noitamap-auth/migrations/0002_sessions.sql', 'utf8'));
   const prepare = (sql: string) => {
     let values: SQLInputValue[] = [];
     return {

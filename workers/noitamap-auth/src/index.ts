@@ -1,10 +1,11 @@
+import { authKey, encryptCredential, decryptCredential, secretMatches, SESSION_FORMAT, SESSION_KEY_ID, type CredentialKeys } from './crypto';
+import { createLoginSession, readSessionAccount, rotateRefresh, revokeLoginSession, type LoginSession, type SessionClaims, type SessionAccount } from './sessions';
 import { signGameTicket } from './game-ticket';
-import { readAccount, saveIdentity, unlinkIdentity, createLinkIntent, startLinkIntent, finishLinkOAuth, consumeLinkIntent,
+import { readAccount, saveIdentity, unlinkIdentity, createLinkIntent, startLinkIntent, finishLinkOAuth, consumeLinkIntent, reviewLinkIntent,
   type Account, type Identity, type VerifiedIdentity, type Provider } from './accounts';
 
 /**
- * Patreon/Twitch OAuth with optional durable account links. Legacy provider
- * sessions continue to work while the account registry is being configured.
+ * Patreon/Twitch OAuth with durable account links and revocable v2 sessions.
  *
  * Environment Variables:
  * - PATREON_CLIENT_ID: OAuth Client ID
@@ -12,26 +13,33 @@ import { readAccount, saveIdentity, unlinkIdentity, createLinkIntent, startLinkI
  * - PATREON_CAMPAIGN_ID: The Campaign ID to check membership against
  * - WORKER_URL: The public URL of this worker (e.g., https://auth.noitamap.com)
  * - ALLOWED_ORIGINS: Comma-separated list of allowed origins
- * - JWT_SECRET: Secret for signing JWTs and HMAC state tokens
+ * - SESSION_SIGNING_SECRET: Session/state master, separated by HKDF purpose
+ * - CREDENTIAL_ENCRYPTION_SECRET: Independent provider-credential encryption key
  */
 
 // Secrets Store bindings return objects with .get(), plain vars are strings
-interface SecretStoreSecret {
-  get(): Promise<string>;
-}
+type SecretStoreSecret = string | { get(): Promise<string> };
 
 interface Env extends Partial<Pick<AccountRegistryBindings, 'ACCOUNT_DB'>> {
   // Secrets Store bindings
   PATREON_CLIENT_ID: SecretStoreSecret;
   PATREON_CLIENT_SECRET: SecretStoreSecret;
   PATREON_CAMPAIGN_ID: SecretStoreSecret;
-  JWT_SECRET: SecretStoreSecret;
+  SESSION_SIGNING_SECRET: SecretStoreSecret;
+  CREDENTIAL_ENCRYPTION_SECRET: SecretStoreSecret;
+  CREDENTIAL_KEY_ID?: string;
+  PREVIOUS_CREDENTIAL_ENCRYPTION_SECRET?: SecretStoreSecret;
+  PREVIOUS_CREDENTIAL_KEY_ID?: string;
+  LEGACY_CREDENTIAL_SECRET?: SecretStoreSecret;
   CREATOR_USER_ID: SecretStoreSecret;
   // Optional, separate game-only key, also configured on the Sage account's
-  // game Worker. Never share JWT_SECRET with that account.
+  // game Worker. Never share session or provider encryption keys with that account.
   GAME_SIGNING_SECRET?: SecretStoreSecret | string;
 
   // Plain environment variables (from wrangler.jsonc vars)
+  AUTH_ENABLED?: string;
+  AUTH_RATE_LIMIT?: RateLimit;
+  SESSION_RATE_LIMIT?: RateLimit;
   WORKER_URL: string;
   ALLOWED_ORIGINS: string;
 
@@ -46,6 +54,7 @@ interface Env extends Partial<Pick<AccountRegistryBindings, 'ACCOUNT_DB'>> {
   TWITCH_CLIENT_SECRET?: SecretStoreSecret;
   TWITCH_BROADCASTER_ID?: SecretStoreSecret;
   TWITCH_BROADCASTER_REFRESH_TOKEN?: SecretStoreSecret;
+  TWITCH_PRO_USER_IDS?: string;
   // Writable storage persists Twitch's rotated broadcaster credentials.
   TWITCH_TOKEN_STORE?: KVNamespace;
   // One-time shared-secret gate. Leave unbound after setup is complete.
@@ -55,6 +64,7 @@ interface Env extends Partial<Pick<AccountRegistryBindings, 'ACCOUNT_DB'>> {
 // Resolved secrets for use throughout request handling
 interface SessionSecrets {
   jwtSecret: string;
+  credentials: CredentialKeys;
 }
 
 interface Secrets extends SessionSecrets {
@@ -67,15 +77,18 @@ interface Secrets extends SessionSecrets {
 // -- Types --
 
 interface JWTPayload {
-  typ?: "access";
+  typ: "access";
+  v: 2;
+  aud: "noitamap-auth";
+  sid: string;
   sub: string; // user_id
   username: string;
   nickname: string | null;
   is_follower: boolean;
   is_subscriber: boolean;
-  provider?: "patreon" | "twitch";
-  account_id?: string;
-  account_version?: number;
+  provider: "patreon" | "twitch";
+  account_id: string;
+  account_version: number;
   iat: number;
   exp: number;
 }
@@ -127,63 +140,21 @@ interface PatreonIdentityResponse {
 
 // Short-lived access JWT (what auth-service.ts sends on every /auth/check).
 const JWT_EXPIRY_SECONDS = 24 * 60 * 60; // 24 hours
-// Long-lived refresh JWT. Carries the provider refresh_token AES-encrypted in
-// its payload so the client can silently re-mint an access JWT for months
-// without another OAuth round-trip. Worker stays stateless — no D1/KV.
-const REFRESH_JWT_EXPIRY_SECONDS = 90 * 24 * 60 * 60; // 90 days
+// Registered refresh sessions have a fixed 90-day lifetime and rotate on use.
 const STATE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_BEARER_TOKEN_LENGTH = 16 * 1024;
-const OAUTH_STATE_COOKIE = "noitamap_oauth_state";
+const OAUTH_STATE_COOKIE = "__Host-noitamap_oauth_state";
 
-// -- Refresh-token crypto (AES-GCM) --
-// The provider refresh_token is a bearer credential for the user's Patreon/
-// Twitch account, so it must NOT be readable from localStorage. We encrypt it
-// with a key derived from JWT_SECRET before embedding it in the refresh JWT;
-// only the worker can decrypt. AES-GCM gives us confidentiality + integrity.
+const encryptSecret = (value: string, secrets: SessionSecrets) => encryptCredential(value, secrets.credentials);
+const decryptSecret = (value: string, secrets: SessionSecrets) => decryptCredential(value, secrets.credentials);
 
-async function aesKey(secret: string): Promise<CryptoKey> {
-  // Derive a stable 256-bit key from JWT_SECRET via SHA-256.
-  const enc = new TextEncoder();
-  const hash = await crypto.subtle.digest("SHA-256", enc.encode(`refresh-enc:${secret}`));
-  return crypto.subtle.importKey("raw", hash, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
-}
-
-async function encryptSecret(plaintext: string, secret: string): Promise<string> {
-  const key = await aesKey(secret);
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    key,
-    new TextEncoder().encode(plaintext),
-  );
-  // iv.ciphertext, both base64url.
-  return `${base64url(iv)}.${base64url(ct)}`;
-}
-
-async function decryptSecret(blob: string, secret: string): Promise<string | null> {
-  try {
-    const [ivB64, ctB64] = blob.split(".");
-    if (!ivB64 || !ctB64) return null;
-    const key = await aesKey(secret);
-    const iv = base64urlToBytes(ivB64);
-    const ct = base64urlToBytes(ctB64);
-    const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
-    return new TextDecoder().decode(pt);
-  } catch {
-    return null;
-  }
-}
-
-// Refresh JWT payload: identifies the user + provider and carries the encrypted
-// provider refresh_token. Kept separate from the access JWTPayload so an access
-// token can never be replayed as a refresh token (different `typ`).
-interface RefreshPayload {
-  typ: "refresh";
+interface RefreshPayload extends SessionClaims {
+  typ: 'refresh';
+  v: 2;
+  aud: 'noitamap-auth';
+  rotation: number;
   sub: string;
-  provider: "patreon" | "twitch";
-  enc?: string; // legacy encrypted provider refresh credential
-  account_id?: string;
-  account_version?: number;
+  provider: Provider;
   iat: number;
   exp: number;
 }
@@ -204,30 +175,58 @@ function twitchChatScopes(chat: boolean, announcements = false): string {
 // -- Main Worker --
 
 async function resolveSessionSecrets(env: Env): Promise<SessionSecrets> {
-  return { jwtSecret: await env.JWT_SECRET.get() };
-}
-
-async function resolveSecrets(env: Env, existingJwtSecret?: string): Promise<Secrets> {
-  const [patreonClientId, patreonClientSecret, patreonCampaignId, jwtSecret, creatorUserId] = await Promise.all([
-    env.PATREON_CLIENT_ID.get(),
-    env.PATREON_CLIENT_SECRET.get(),
-    env.PATREON_CAMPAIGN_ID.get(),
-    existingJwtSecret ?? env.JWT_SECRET.get(),
-    env.CREATOR_USER_ID.get(),
+  const [jwtSecret, key, previousKey, legacyKey] = await Promise.all([
+    getSecret(env.SESSION_SIGNING_SECRET), getSecret(env.CREDENTIAL_ENCRYPTION_SECRET),
+    getSecret(env.PREVIOUS_CREDENTIAL_ENCRYPTION_SECRET), getSecret(env.LEGACY_CREDENTIAL_SECRET),
   ]);
-  return { patreonClientId, patreonClientSecret, patreonCampaignId, jwtSecret, creatorUserId };
+  const id = env.CREDENTIAL_KEY_ID || '1';
+  if (!jwtSecret || jwtSecret.length < 32 || !key || key.length < 32 || !/^[a-zA-Z0-9_-]{1,32}$/.test(id))
+    throw Error('Authentication keys are not configured.');
+  return { jwtSecret, credentials: { key, id, previousKey: previousKey ?? undefined, previousId: env.PREVIOUS_CREDENTIAL_KEY_ID, legacyKey: legacyKey ?? undefined } };
+}
+async function resolveSecrets(env: Env, existing?: SessionSecrets): Promise<Secrets> {
+  const [patreonClientId, patreonClientSecret, patreonCampaignId, session, creatorUserId] = await Promise.all([
+    getSecret(env.PATREON_CLIENT_ID), getSecret(env.PATREON_CLIENT_SECRET), getSecret(env.PATREON_CAMPAIGN_ID),
+    existing ?? resolveSessionSecrets(env), getSecret(env.CREATOR_USER_ID),
+  ]);
+  if (!patreonClientId || !patreonClientSecret || !patreonCampaignId || !creatorUserId) throw Error('Patreon is not configured.');
+  return { ...session, patreonClientId, patreonClientSecret, patreonCampaignId, creatorUserId };
+}
+function securityEvent(event: string, accountId?: string, provider?: string): void {
+  console.log(JSON.stringify({ event, ...(accountId ? { accountId } : {}), ...(provider ? { provider } : {}) }));
 }
 
 export default {
+  async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
+    if (env.AUTH_ENABLED === 'false' || !env.ACCOUNT_DB) return;
+    const now = Date.now();
+    await env.ACCOUNT_DB.batch([
+      env.ACCOUNT_DB.prepare('DELETE FROM auth_sessions WHERE id IN (SELECT id FROM auth_sessions WHERE expires_at<? OR revoked_at<? LIMIT 500)').bind(now, now - 86400000),
+      env.ACCOUNT_DB.prepare('DELETE FROM auth_link_intents WHERE expires_at<?').bind(now),
+    ]);
+    const secrets = await resolveSessionSecrets(env);
+    const rows = await env.ACCOUNT_DB.prepare("SELECT provider,provider_user_id,credentials FROM auth_identities WHERE credentials<>'' AND credentials NOT LIKE ? LIMIT 50")
+      .bind('c2.' + secrets.credentials.id + '.%').all<Pick<Identity, 'provider' | 'provider_user_id' | 'credentials'>>();
+    for (const row of rows.results) {
+      const plaintext = await decryptSecret(row.credentials, secrets);
+      if (plaintext) await env.ACCOUNT_DB.prepare('UPDATE auth_identities SET credentials=? WHERE provider=? AND provider_user_id=? AND credentials=?')
+        .bind(await encryptSecret(plaintext, secrets), row.provider, row.provider_user_id, row.credentials).run();
+    }
+    if (env.TWITCH_TOKEN_STORE) await readBroadcasterTokenState(env, secrets);
+    securityEvent('session_maintenance');
+  },
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin") || "";
     const allowedOrigin = getAllowedOrigin(origin, env);
 
     if (request.method === "OPTIONS") return handleCORS(allowedOrigin);
+    if (env.AUTH_ENABLED === 'false') return textResponse("Authentication is not configured for this environment.", 503, allowedOrigin);
     if (origin && !allowedOrigin) return textResponse("Forbidden", 403);
 
     try {
+      if (env.AUTH_RATE_LIMIT && !(await env.AUTH_RATE_LIMIT.limit({ key: url.pathname + ':' + (request.headers.get('CF-Connecting-IP') || 'unknown') })).success)
+        return rateLimited(allowedOrigin);
       switch (url.pathname) {
         case "/auth/login":
           if (request.method !== "GET") return methodNotAllowed("GET");
@@ -237,8 +236,9 @@ export default {
           return await handlePatreonCallback(request, env, await resolveSecrets(env));
         case "/auth/check":
           if (request.method !== "GET") return methodNotAllowed("GET", allowedOrigin);
-          return await handleAuthCheck(request, (await resolveSessionSecrets(env)).jwtSecret, allowedOrigin, env);
+          return await handleAuthCheck(request, await resolveSessionSecrets(env), allowedOrigin, env);
         case "/auth/link/start":
+        case "/auth/link/review":
         case "/auth/link/complete":
         case "/auth/unlink":
           if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
@@ -252,6 +252,9 @@ export default {
         case "/auth/game-ticket":
           if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
           return await handleGameTicket(request, env, (await resolveSessionSecrets(env)).jwtSecret, allowedOrigin);
+        case "/auth/logout":
+          if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
+          return await handleLogout(request, env, await resolveSessionSecrets(env), allowedOrigin);
         case "/auth/refresh":
           if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
           return await handleRefresh(request, env, await resolveSessionSecrets(env), allowedOrigin);
@@ -262,7 +265,7 @@ export default {
           if (request.method !== "GET") return methodNotAllowed("GET");
           return await handleTwitchCallback(request, env, await resolveSessionSecrets(env));
         case "/auth/twitch/broadcaster-setup":
-          if (request.method !== "GET") return methodNotAllowed("GET");
+          if (request.method !== "POST") return methodNotAllowed("POST");
           return await handleBroadcasterSetup(request, env, await resolveSessionSecrets(env));
         case "/auth/twitch/broadcaster-callback":
           if (request.method !== "GET") return methodNotAllowed("GET");
@@ -271,7 +274,7 @@ export default {
           return textResponse("Not Found", 404);
       }
     } catch (error) {
-      console.error("Worker Error:", error);
+      securityEvent('request_failed');
       return textResponse("Internal Server Error", 500, allowedOrigin);
     }
   },
@@ -282,6 +285,8 @@ export default {
 async function handlePatreonLogin(request: Request, env: Env, secrets: Secrets): Promise<Response> {
   const url = new URL(request.url);
   const redirectUrl = allowedRedirect(url.searchParams.get("redirect") || "", env);
+  if (!hasLoginNonce(redirectUrl)) return textResponse('Start sign-in from the map.', 400);
+  if (!env.ACCOUNT_DB) return textResponse('Authentication is not configured.', 503);
 
   const nonce = base64url(crypto.getRandomValues(new Uint8Array(32)));
   const state = await signState(
@@ -347,7 +352,8 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
       return redirectWithError(finalRedirectUrl, "identity_fetch_failed", request);
     }
 
-    if (env.ACCOUNT_DB) {
+    if (!env.ACCOUNT_DB) return textResponse('Account storage is not configured.', 503);
+    {
       return completeProviderOAuth(request, env, secrets, oauthState, {
         provider: 'patreon', provider_user_id: membership.userId,
         username: membership.username, nickname: membership.nickname, login: null,
@@ -355,52 +361,12 @@ async function handlePatreonCallback(request: Request, env: Env, secrets: Secret
         checked_at: Date.now(), status: 'active', credentials: await encryptSecret(JSON.stringify({
           accessToken: tokenData.access_token, refreshToken: tokenData.refresh_token,
           expiresAt: Date.now() + tokenData.expires_in * 1000, scopes: tokenData.scope?.split(' ') || [],
-        }), secrets.jwtSecret),
+        }), secrets),
       });
     }
 
-    // 4. Issue a short access JWT + a long refresh JWT. The refresh JWT carries
-    //    the Patreon refresh_token AES-encrypted, so the client re-mints access
-    //    tokens silently for 90 days (no re-login) while the worker stays
-    //    stateless.
-    const now = Math.floor(Date.now() / 1000);
-    const jwt = await signJWT(
-      {
-        typ: "access",
-        sub: membership.userId,
-        username: membership.username,
-        nickname: membership.nickname,
-        is_follower: membership.isFollower,
-        is_subscriber: membership.isSubscriber,
-        provider: "patreon",
-        iat: now,
-        exp: now + JWT_EXPIRY_SECONDS,
-      },
-      secrets.jwtSecret,
-    );
-    const refreshJwt = await signRefreshJWT(
-      {
-        typ: "refresh",
-        sub: membership.userId,
-        provider: "patreon",
-        enc: await encryptSecret(tokenData.refresh_token, secrets.jwtSecret),
-        iat: now,
-        exp: now + REFRESH_JWT_EXPIRY_SECONDS,
-      },
-      secrets.jwtSecret,
-    );
-
-    // 5. Redirect with tokens in the URL FRAGMENT, never the query string:
-    //    fragments are not sent to servers, so the JWTs stay out of Referer
-    //    headers, browser history sync, and edge/CDN access logs. The client
-    //    reads location.hash and scrubs it (auth-service.ts init()).
-    const redirectUrlObj = new URL(finalRedirectUrl);
-    const frag = new URLSearchParams({ auth: "success", token: jwt, refresh_token: refreshJwt });
-    redirectUrlObj.hash = frag.toString();
-
-    return redirectResponse(redirectUrlObj.toString(), clearOAuthStateCookie(request));
   } catch (err) {
-    console.error("Callback Exception:", err);
+    securityEvent('oauth_callback_failed', undefined, 'patreon');
     return redirectWithError(finalRedirectUrl, "server_error", request);
   }
 }
@@ -487,42 +453,35 @@ async function fetchPatreonMembership(accessToken: string, secrets: Secrets): Pr
   };
 }
 
-async function handleAuthCheck(request: Request, jwtSecret: string, allowedOrigin: string | null, env: Env): Promise<Response> {
-  const token = getBearerToken(request);
-  if (!token) return jsonResponse({ authenticated: false }, allowedOrigin);
-  const payload = await verifyJWT(token, jwtSecret);
-  if (!payload) {
-    return jsonResponse({ authenticated: false }, allowedOrigin);
+function hasLoginNonce(url: string): boolean {
+  return /^[a-f0-9]{64}$/.test(new URL(url).searchParams.get('auth_nonce') || '');
+}
+function rateLimited(origin: string | null): Response {
+  const response = jsonResponse({ error: 'Too many requests. Try again shortly.' }, origin, 429);
+  response.headers.set('Retry-After', '60'); return response;
+}
+async function sessionRateAllowed(env: Env, id: string): Promise<boolean> {
+  return !env.SESSION_RATE_LIMIT || (await env.SESSION_RATE_LIMIT.limit({ key: id })).success;
+}
+async function handleAuthCheck(request: Request, secrets: SessionSecrets, origin: string | null, env: Env): Promise<Response> {
+  const token = getBearerToken(request), payload = token ? await verifyJWT(token, secrets.jwtSecret) : null;
+  const account = payload ? await sessionAccount(env, payload) : null;
+  if (!payload || !account) return jsonResponse({ authenticated: false }, origin);
+  const data = accountData(account, payload.provider);
+  if (data.isSubscriber !== payload.is_subscriber || data.isFollower !== payload.is_follower) {
+    const updated = await issueAccessSession(account, secrets, account.session, payload.provider);
+    return jsonResponse({ ...data, token: updated.token }, origin);
   }
-
-  if (payload.account_id) {
-    const account = await sessionAccount(env, payload);
-    if (!account) return jsonResponse({ authenticated: false }, allowedOrigin);
-    const data = accountData(account, payload.provider);
-    return jsonResponse(data.isSubscriber !== payload.is_subscriber || data.isFollower !== payload.is_follower
-      ? await issueAccountSession(account, { jwtSecret }, payload.provider) : data, allowedOrigin);
-  }
-
-  return jsonResponse(
-    {
-      authenticated: true,
-      username: payload.username,
-      isFollower: payload.is_follower,
-      isSubscriber: payload.is_subscriber,
-      provider: payload.provider || "patreon",
-      linkingAvailable: !!env.ACCOUNT_DB,
-    },
-    allowedOrigin,
-  );
+  return jsonResponse(data, origin);
 }
 
 async function handleGameTicket(request: Request, env: Env, jwtSecret: string, allowedOrigin: string | null): Promise<Response> {
   const token = getBearerToken(request);
   const user = token ? await verifyJWT(token, jwtSecret) : null;
   if (!user) return jsonResponse({ error: 'Sign in to play ranked games.' }, allowedOrigin, 401);
-  const account = user.account_id ? await sessionAccount(env, user) : null;
-  if (user.account_id && !account) return jsonResponse({ error: 'Sign in again.' }, allowedOrigin, 401);
-  if (!(account ? accountData(account).isSubscriber : user.is_subscriber)) return jsonResponse({ error: 'Ranked games require Pro.' }, allowedOrigin, 403);
+  const account = await sessionAccount(env, user);
+  if (!account) return jsonResponse({ error: 'Sign in again.' }, allowedOrigin, 401);
+  if (!accountData(account).isSubscriber) return jsonResponse({ error: 'Ranked games require Pro.' }, allowedOrigin, 403);
   const binding = env.GAME_SIGNING_SECRET;
   const key = typeof binding === 'string' ? binding : await binding?.get();
   if (!key || key.length < 32) return jsonResponse({ error: 'Ranked games are not available yet.' }, allowedOrigin, 503);
@@ -530,197 +489,40 @@ async function handleGameTicket(request: Request, env: Env, jwtSecret: string, a
   // Pro may come from Patreon, but a linked Twitch identity supplies the public
   // game name. These fields are already loaded from the verified provider record.
   const name = twitch?.login ? twitch.nickname || twitch.username || twitch.login : user.nickname || user.username;
-  return jsonResponse(await signGameTicket(account ? `account:${account.id}` : `${user.provider || 'patreon'}:${user.sub}`,
+  return jsonResponse(await signGameTicket(`account:${account.id}`,
     name, key, twitch?.login ? { twitchUserId: twitch.provider_user_id, twitchLogin: twitch.login } : undefined), allowedOrigin);
 }
 
-/**
- * Silent session renewal (stops the 24h logout). The client POSTs its refresh
- * JWT as `Authorization: Bearer <refreshJwt>` when its access JWT has expired.
- * We decrypt the stored provider refresh_token, exchange it for a fresh provider
- * access token, RE-CHECK membership (so a cancelled sub loses Pro on the next
- * renewal), and return a new access+refresh pair. Stateless — no session store.
- */
-async function handleRefresh(request: Request, env: Env, secrets: SessionSecrets, allowedOrigin: string | null): Promise<Response> {
+/** Refresh a registered session exactly once; old stateless tokens never migrate. */
+async function handleRefresh(request: Request, env: Env, secrets: SessionSecrets, origin: string | null): Promise<Response> {
   const token = getBearerToken(request);
-  if (!token) return jsonResponse({ authenticated: false }, allowedOrigin);
-
-  const refresh = await verifyRefreshJWT(token, secrets.jwtSecret);
-  if (!refresh) return jsonResponse({ authenticated: false }, allowedOrigin);
-
-  if (refresh.account_id) {
-    const account = await sessionAccount(env, refresh);
-    if (!account) return jsonResponse({ authenticated: false }, allowedOrigin);
-    await refreshAccountMemberships(env, account, secrets);
-    const current = await sessionAccount(env, refresh);
-    return current ? jsonResponse(await issueAccountSession(current, secrets, refresh.provider), allowedOrigin)
-      : jsonResponse({ authenticated: false }, allowedOrigin);
+  const refresh = token ? await verifyRefreshJWT(token, secrets.jwtSecret) : null;
+  if (!origin || !refresh || !env.ACCOUNT_DB) return jsonResponse({ authenticated: false }, origin, 401);
+  if (!await sessionRateAllowed(env, refresh.sid)) return rateLimited(origin);
+  const account = await sessionAccount(env, refresh);
+  if (!account) return jsonResponse({ authenticated: false }, origin, 401);
+  const rotated = await rotateRefresh(env.ACCOUNT_DB, account.session, refresh.rotation);
+  if (rotated !== 'ok') {
+    if (rotated === 'revoked') securityEvent('refresh_reuse', account.id);
+    return jsonResponse({ authenticated: false }, origin, rotated === 'retry' ? 409 : 401);
   }
-
-  const providerRefreshToken = await decryptSecret(refresh.enc!, secrets.jwtSecret);
-  if (!providerRefreshToken) return jsonResponse({ authenticated: false }, allowedOrigin);
-
-  try {
-    if (refresh.provider === "patreon") {
-      const patreonSecrets = await resolveSecrets(env, secrets.jwtSecret);
-      return await refreshPatreon(providerRefreshToken, refresh.sub, patreonSecrets, allowedOrigin, env);
-    }
-    if (refresh.provider === "twitch") {
-      return await refreshTwitch(env, providerRefreshToken, refresh.sub, secrets, allowedOrigin);
-    }
-    return jsonResponse({ authenticated: false }, allowedOrigin);
-  } catch (err) {
-    console.error("Refresh exception:", err);
-    return jsonResponse({ authenticated: false }, allowedOrigin);
-  }
+  await refreshAccountMemberships(env, account, secrets);
+  const current = await sessionAccount(env, refresh);
+  if (!current || current.session.refresh_version !== refresh.rotation + 1) return jsonResponse({ authenticated: false }, origin, 401);
+  return jsonResponse(await issueAccountSession(env, current, secrets, refresh.provider, current.session), origin);
 }
-
-/** Issue a fresh access+refresh pair as JSON (used by both refresh paths). */
-async function issueSessionJson(
-  payload: { sub: string; username: string; nickname: string | null; is_follower: boolean; is_subscriber: boolean; provider: "patreon" | "twitch" },
-  providerRefreshToken: string,
-  secrets: SessionSecrets,
-  allowedOrigin: string | null,
-): Promise<Response> {
-  const now = Math.floor(Date.now() / 1000);
-  const token = await signJWT({ typ: "access", ...payload, iat: now, exp: now + JWT_EXPIRY_SECONDS }, secrets.jwtSecret);
-  const refresh_token = await signRefreshJWT(
-    {
-      typ: "refresh",
-      sub: payload.sub,
-      provider: payload.provider,
-      enc: await encryptSecret(providerRefreshToken, secrets.jwtSecret),
-      iat: now,
-      exp: now + REFRESH_JWT_EXPIRY_SECONDS,
-    },
-    secrets.jwtSecret,
-  );
-  return jsonResponse(
-    {
-      authenticated: true,
-      token,
-      refresh_token,
-      username: payload.username,
-      isFollower: payload.is_follower,
-      isSubscriber: payload.is_subscriber,
-      provider: payload.provider,
-      linkingAvailable: false,
-    },
-    allowedOrigin,
-  );
-}
-
-async function refreshPatreon(
-  providerRefreshToken: string,
-  expectedUserId: string,
-  secrets: Secrets,
-  allowedOrigin: string | null,
-  env: Env,
-): Promise<Response> {
-  const tokenRes = await fetch("https://www.patreon.com/api/oauth2/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: providerRefreshToken,
-      client_id: secrets.patreonClientId,
-      client_secret: secrets.patreonClientSecret,
-    }),
-  });
-  if (!tokenRes.ok) {
-    console.error("Patreon refresh failed:", tokenRes.status);
-    return jsonResponse({ authenticated: false }, allowedOrigin);
-  }
-  const tokenData = (await tokenRes.json()) as PatreonTokenResponse;
-  const membership = await fetchPatreonMembership(tokenData.access_token, secrets);
-  if (!membership || membership.userId !== expectedUserId) {
-    return jsonResponse({ authenticated: false }, allowedOrigin);
-  }
-
-  if (env.ACCOUNT_DB) {
-    const account = await saveIdentity(env.ACCOUNT_DB, {
-      provider: 'patreon', provider_user_id: membership.userId,
-      username: membership.username, nickname: membership.nickname, login: null,
-      is_follower: Number(membership.isFollower), is_subscriber: Number(membership.isSubscriber),
-      checked_at: Date.now(), status: 'active', credentials: await encryptSecret(JSON.stringify({
-        accessToken: tokenData.access_token, refreshToken: tokenData.refresh_token || providerRefreshToken,
-        expiresAt: Date.now() + tokenData.expires_in * 1000, scopes: tokenData.scope?.split(' ') || [],
-      }), secrets.jwtSecret),
-    });
-    return jsonResponse(await issueAccountSession(account, secrets, 'patreon'), allowedOrigin);
-  }
-
-  // Patreon rotates the refresh_token (single-use); store the new one, or fall
-  // back to the one we just used if a rotation wasn't returned.
-  return issueSessionJson(
-    {
-      sub: membership.userId,
-      username: membership.username,
-      nickname: membership.nickname,
-      is_follower: membership.isFollower,
-      is_subscriber: membership.isSubscriber,
-      provider: "patreon",
-    },
-    tokenData.refresh_token || providerRefreshToken,
-    secrets,
-    allowedOrigin,
-  );
-}
-
-async function refreshTwitch(
-  env: Env,
-  viewerRefreshToken: string,
-  expectedUserId: string,
-  secrets: SessionSecrets,
-  allowedOrigin: string | null,
-): Promise<Response> {
-  const twitch = await resolveTwitchSecrets(env);
-  if (!twitch) return jsonResponse({ authenticated: false }, allowedOrigin);
-
-  const tokenRes = await fetch(TWITCH_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: twitch.clientId,
-      client_secret: twitch.clientSecret,
-      grant_type: "refresh_token",
-      refresh_token: viewerRefreshToken,
-    }),
-  });
-  if (!tokenRes.ok) {
-    console.error("Twitch viewer refresh failed:", tokenRes.status);
-    return jsonResponse({ authenticated: false }, allowedOrigin);
-  }
-  const tokenData = (await tokenRes.json()) as ProviderTokens;
-  const viewer = await fetchTwitchUser(tokenData.access_token, twitch.clientId);
-  if (!viewer || viewer.id !== expectedUserId) {
-    return jsonResponse({ authenticated: false }, allowedOrigin);
-  }
-
-  const isSubscriber = await checkTwitchProAccess(env, twitch, viewer);
-  if (env.ACCOUNT_DB) {
-    const account = await saveIdentity(env.ACCOUNT_DB, await twitchIdentity(viewer, tokenData, isSubscriber, secrets, viewerRefreshToken));
-    return jsonResponse(await issueAccountSession(account, secrets, 'twitch'), allowedOrigin);
-  }
-  return issueSessionJson(
-    {
-      sub: viewer.id,
-      username: viewer.display_name || viewer.login || "Twitch user",
-      nickname: viewer.display_name || null,
-      is_follower: false,
-      is_subscriber: isSubscriber,
-      provider: "twitch",
-    },
-    tokenData.refresh_token || viewerRefreshToken,
-    secrets,
-    allowedOrigin,
-  );
+async function handleLogout(request: Request, env: Env, secrets: SessionSecrets, origin: string | null): Promise<Response> {
+  if (!origin) return textResponse('Forbidden', 403);
+  const token = getBearerToken(request);
+  const session = token ? await verifyJWT(token, secrets.jwtSecret) ?? await verifyRefreshJWT(token, secrets.jwtSecret) : null;
+  if (session && env.ACCOUNT_DB) { await revokeLoginSession(env.ACCOUNT_DB, session.sid, session.account_id); securityEvent('logout', session.account_id); }
+  return new Response(null, { status: 204, headers: responseHeaders(origin) });
 }
 
 // -- Helpers --
 
 // Linked accounts keep refresh credentials server-side. Access JWTs retain
-// is_subscriber so the existing Pro asset Worker and old clients still work.
+// is_subscriber for the versioned Pro asset contract.
 const MEMBERSHIP_MAX_AGE = 24 * 60 * 60 * 1000;
 const MEMBERSHIP_REFRESH_AFTER = 60 * 60 * 1000;
 interface ProviderTokens { access_token: string; refresh_token?: string; expires_in?: number; scope?: string[] }
@@ -733,14 +535,12 @@ async function twitchIdentity(viewer: TwitchUser, tokens: ProviderTokens, pro: b
     is_follower: 0, is_subscriber: Number(pro), checked_at: Date.now(), status: 'active',
     credentials: await encryptSecret(JSON.stringify({ accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token || oldRefresh, expiresAt: Date.now() + (tokens.expires_in || 3600) * 1000,
-      scopes: tokens.scope || [] }), secrets.jwtSecret),
+      scopes: tokens.scope || [] }), secrets),
   };
 }
 
-async function sessionAccount(env: Env, session: Pick<JWTPayload, 'account_id' | 'account_version'>): Promise<Account | null> {
-  if (!env.ACCOUNT_DB || !session.account_id) return null;
-  const account = await readAccount(env.ACCOUNT_DB, session.account_id);
-  return account?.version === session.account_version ? account : null;
+async function sessionAccount(env: Env, session: SessionClaims): Promise<SessionAccount | null> {
+  return env.ACCOUNT_DB ? readSessionAccount(env.ACCOUNT_DB, session) : null;
 }
 
 function accountData(account: Account, preferred?: Provider) {
@@ -758,19 +558,25 @@ function accountData(account: Account, preferred?: Provider) {
     isSubscriber: linkedAccounts.some(row => row.isSubscriber), isFollower: linkedAccounts.some(row => row.isFollower) };
 }
 
-async function issueAccountSession(account: Account, secrets: SessionSecrets, preferred?: Provider) {
+async function issueAccessSession(account: Account, secrets: SessionSecrets, session: LoginSession, preferred?: Provider) {
   const data = accountData(account, preferred);
   const primary = account.identities.find(row => row.provider === data.provider)!;
   const now = Math.floor(Date.now() / 1000);
   const newestGrant = Math.max(...account.identities.filter(row => row.status === 'active' && row.is_subscriber).map(row => row.checked_at));
-  // Never extend a membership beyond its last successful verification merely
-  // because a user signs in with the other provider or renews a session.
-  const expires = data.isSubscriber ? Math.min(now + JWT_EXPIRY_SECONDS, Math.floor((newestGrant + MEMBERSHIP_MAX_AGE) / 1000)) : now + JWT_EXPIRY_SECONDS;
-  const session = { sub: primary.provider_user_id, provider: primary.provider,
-    account_id: account.id, account_version: account.version, iat: now };
-  const token = await signJWT({ ...session, typ: 'access', exp: expires,
-    username: data.username, nickname: data.nickname, is_follower: data.isFollower, is_subscriber: data.isSubscriber }, secrets.jwtSecret);
-  const refresh_token = await signRefreshJWT({ ...session, typ: 'refresh', exp: now + REFRESH_JWT_EXPIRY_SECONDS }, secrets.jwtSecret);
+  const expires = Math.min(now + JWT_EXPIRY_SECONDS, Math.floor(session.expires_at / 1000),
+    data.isSubscriber ? Math.floor((newestGrant + MEMBERSHIP_MAX_AGE) / 1000) : Infinity);
+  const claims = { v: SESSION_FORMAT, aud: 'noitamap-auth' as const, sid: session.id,
+    sub: primary.provider_user_id, provider: primary.provider, account_id: account.id, account_version: account.version, iat: now } as const;
+  const token = await signJWT({ ...claims, typ: 'access', exp: expires, username: data.username,
+    nickname: data.nickname, is_follower: data.isFollower, is_subscriber: data.isSubscriber }, secrets.jwtSecret);
+  return { data, claims, token };
+}
+async function issueAccountSession(env: Env, account: Account, secrets: SessionSecrets, preferred?: Provider, existing?: LoginSession) {
+  const session = existing ?? await createLoginSession(env.ACCOUNT_DB!, account);
+  const { data, claims, token } = await issueAccessSession(account, secrets, session, preferred);
+  const refresh_token = await signRefreshJWT({ ...claims, typ: 'refresh', rotation: session.refresh_version,
+    exp: Math.floor(session.expires_at / 1000) }, secrets.jwtSecret);
+  if (!existing) securityEvent('login', account.id, data.provider);
   return { ...data, token, refresh_token };
 }
 
@@ -788,7 +594,7 @@ async function completeProviderOAuth(request: Request, env: Env, secrets: Sessio
   if (state.linkIntent) {
     const completion = base64url(crypto.getRandomValues(new Uint8Array(32)));
     const saved = await finishLinkOAuth(env.ACCOUNT_DB!, state.linkIntent,
-      await encryptSecret(JSON.stringify(identity), secrets.jwtSecret), completion);
+      await encryptSecret(JSON.stringify(identity), secrets), completion);
     if (!saved) return redirectWithError(target.href, 'invalid_link', request);
     // Do not attach or issue a session yet. Completion requires the ORIGINAL
     // browser's bearer session, defeating attacker-supplied OAuth link URLs.
@@ -797,7 +603,7 @@ async function completeProviderOAuth(request: Request, env: Env, secrets: Sessio
     const account = await saveIdentity(env.ACCOUNT_DB!, identity);
     await refreshAccountMemberships(env, account, secrets);
     const current = (await readAccount(env.ACCOUNT_DB!, account.id))!;
-    const session = await issueAccountSession(current, secrets, identity.provider);
+    const session = await issueAccountSession(env, current, secrets, identity.provider);
     target.hash = new URLSearchParams({ auth: 'success', token: session.token, refresh_token: session.refresh_token }).toString();
   }
   return redirectResponse(target.href, clearOAuthStateCookie(request));
@@ -829,21 +635,29 @@ async function handleAccountAction(request: Request, env: Env, secrets: SessionS
   if (!env.ACCOUNT_DB) return jsonResponse({ error: 'Account connections are not configured yet.' }, origin, 503);
   const token = getBearerToken(request);
   const session = token ? await verifyJWT(token, secrets.jwtSecret) : null;
+  if (session && !await sessionRateAllowed(env, session.sid)) return rateLimited(origin);
   const account = session ? await sessionAccount(env, session) : null;
   if (!session || !account) return jsonResponse({ error: 'Refresh your session before connecting accounts.' }, origin, 401);
   const body = await readAccountBody(request);
   if (!body) return jsonResponse({ error: 'Invalid request.' }, origin, 400);
   const path = new URL(request.url).pathname;
-  if (path === '/auth/link/complete') {
+  if (path === '/auth/link/complete' || path === '/auth/link/review') {
     if (typeof body.linkToken !== 'string') return jsonResponse({ error: 'Invalid connection.' }, origin, 400);
-    const intent = await consumeLinkIntent(env.ACCOUNT_DB, body.linkToken, account);
-    const candidate = intent?.candidate ? await decryptSecret(intent.candidate, secrets.jwtSecret) : null;
+    const reviewing = path.endsWith('/review');
+    if (!reviewing && body.confirmed !== true) return jsonResponse({ error: 'Confirm the account connection first.' }, origin, 400);
+    const intent = await (reviewing ? reviewLinkIntent : consumeLinkIntent)(env.ACCOUNT_DB, body.linkToken, account);
+    const candidate = intent?.candidate ? await decryptSecret(intent.candidate, secrets) : null;
     if (!candidate) return jsonResponse({ error: 'This connection expired or belongs to a different session.' }, origin, 409);
     try {
       const identity = JSON.parse(candidate) as VerifiedIdentity;
       if (identity.provider !== intent!.provider) throw new Error('invalid_provider');
+      if (reviewing) return jsonResponse({
+        current: account.identities.map(row => ({ provider: row.provider, userId: row.provider_user_id, name: row.nickname || row.username })),
+        target: { provider: identity.provider, userId: identity.provider_user_id, name: identity.nickname || identity.username },
+      }, origin);
       const linked = await saveIdentity(env.ACCOUNT_DB, identity, { id: account.id, version: account.version });
-      return jsonResponse(await issueAccountSession(linked, secrets, session.provider), origin);
+      securityEvent('link', account.id, identity.provider);
+      return jsonResponse(await issueAccountSession(env, linked, secrets, session.provider), origin);
     } catch {
       return jsonResponse({ error: 'That account already has a different connection. Unlink it there before connecting here.' }, origin, 409);
     }
@@ -853,9 +667,11 @@ async function handleAccountAction(request: Request, env: Env, secrets: SessionS
   if (path === '/auth/unlink') {
     const remaining = await unlinkIdentity(env.ACCOUNT_DB, account, provider);
     if (!remaining) return jsonResponse({ error: 'Keep at least one connected sign-in method.' }, origin, 409);
-    return jsonResponse(await issueAccountSession(remaining, secrets), origin);
+    securityEvent('unlink', remaining.id, provider);
+    return jsonResponse({ authenticated: false }, origin);
   }
   const redirect = typeof body.redirect === 'string' ? allowedRedirect(body.redirect, env) : origin;
+  if (!hasLoginNonce(redirect)) return jsonResponse({ error: 'Start this connection from the map.' }, origin, 400);
   if (new URL(redirect).origin !== origin) return jsonResponse({ error: 'Return to the site that started this connection.' }, origin, 400);
   const id = base64url(crypto.getRandomValues(new Uint8Array(32)));
   await createLinkIntent(env.ACCOUNT_DB, { id, account_id: account.id, account_version: account.version,
@@ -875,7 +691,7 @@ async function handleLinkContinue(request: Request, env: Env, secrets: SessionSe
   const state = await signState(JSON.stringify({ kind: intent.provider, redirectUrl: intent.redirect_url,
     nonce, expiresAt: intent.expires_at, linkIntent: intent.id, chat: intent.chat > 0 }), secrets.jwtSecret);
   const twitch = intent.provider === 'twitch' ? await resolveTwitchSecrets(env) : null;
-  const clientId = intent.provider === 'twitch' ? twitch?.clientId : (await resolveSecrets(env, secrets.jwtSecret)).patreonClientId;
+  const clientId = intent.provider === 'twitch' ? twitch?.clientId : (await resolveSecrets(env, secrets)).patreonClientId;
   if (!clientId) return redirectWithError(intent.redirect_url, 'provider_not_configured', request);
   const authorize = new URL(intent.provider === 'twitch' ? TWITCH_AUTHORIZE_URL : 'https://www.patreon.com/oauth2/authorize');
   authorize.search = new URLSearchParams({ client_id: clientId, response_type: 'code', state,
@@ -887,7 +703,7 @@ async function handleLinkContinue(request: Request, env: Env, secrets: SessionSe
 }
 
 async function readCredentials(identity: Identity, secrets: SessionSecrets): Promise<ProviderCredentials | null> {
-  const value = await decryptSecret(identity.credentials, secrets.jwtSecret);
+  const value = await decryptSecret(identity.credentials, secrets);
   if (!value) return null;
   try { return JSON.parse(value) as ProviderCredentials; } catch { return null; }
 }
@@ -908,7 +724,7 @@ async function refreshLinkedIdentity(env: Env, identity: Identity, secrets: Sess
     let credentials = await readCredentials(identity, secrets);
     if (!credentials) return;
     const twitch = identity.provider === 'twitch' ? await resolveTwitchSecrets(env) : null;
-    const patreon = identity.provider === 'patreon' ? await resolveSecrets(env, secrets.jwtSecret) : null;
+    const patreon = identity.provider === 'patreon' ? await resolveSecrets(env, secrets) : null;
     if (!twitch && !patreon) return;
     if (credentials.expiresAt <= Date.now() + 60000 || forceToken) {
       if (!credentials.refreshToken) return;
@@ -927,7 +743,7 @@ async function refreshLinkedIdentity(env: Env, identity: Identity, secrets: Sess
         scopes: Array.isArray(tokens.scope) ? tokens.scope : tokens.scope?.split(' ') || credentials.scopes };
       // Persist rotation BEFORE identity/membership I/O, so a temporary outage
       // cannot strand a single-use Patreon refresh credential.
-      await update('UPDATE auth_identities SET credentials = ?', [await encryptSecret(JSON.stringify(credentials), secrets.jwtSecret)]);
+      await update('UPDATE auth_identities SET credentials = ?', [await encryptSecret(JSON.stringify(credentials), secrets)]);
     }
     const viewer = twitch ? await fetchTwitchUser(credentials.accessToken, twitch.clientId) : null;
     const patron = patreon ? await fetchPatreonMembership(credentials.accessToken, patreon) : null;
@@ -937,7 +753,7 @@ async function refreshLinkedIdentity(env: Env, identity: Identity, secrets: Sess
       await update("UPDATE auth_identities SET status = 'reconnect', is_subscriber = 0, credentials = ''", []);
       return;
     }
-    const pro = viewer ? await checkTwitchProAccess(env, twitch!, viewer) : patron!.isSubscriber;
+    const pro = viewer ? await checkTwitchProAccess(env, twitch!, viewer, secrets) : patron!.isSubscriber;
     await update(`UPDATE auth_identities SET username = ?, nickname = ?, login = ?, is_follower = ?, is_subscriber = ?, checked_at = ?`,
       [viewer?.display_name || viewer?.login || patron!.username, viewer?.display_name || patron?.nickname || null,
         viewer?.login || null, Number(patron?.isFollower || false), Number(pro), Date.now()]);
@@ -1006,7 +822,13 @@ function allowedRedirect(redirectUrl: string, env: Env): string {
   if (!redirectUrl) return fallback;
   try {
     const u = new URL(redirectUrl);
-    if (!allowed.includes(u.origin)) return fallback;
+    if (!allowed.includes(u.origin) || u.username || u.password) return fallback;
+    const page = u.pathname === '/' || u.pathname === '/index.html' || u.pathname === '/guess/' || u.pathname === '/guess/index.html'
+      || /^\/guess\/[a-z0-9_]{1,25}\/?$/i.test(u.pathname)
+      || /^\/guess\/[a-z0-9_]{1,25}\/[0-9abcdefghjkmnpqrstvwxyz]{26}\/?$/i.test(u.pathname)
+      || /^\/guess\/stream\/[a-z0-9_]{1,25}\/?$/i.test(u.pathname)
+      || /^\/guess\/results\/[a-f0-9-]{36}\/?$/i.test(u.pathname);
+    if (!page) return fallback;
     // A link return must never import an attacker-supplied legacy session from
     // its query string before completing the authenticated connection.
     for (const name of ['auth', 'token', 'refresh_token', 'link_token', 'auth_error']) u.searchParams.delete(name);
@@ -1033,7 +855,7 @@ function handleCORS(allowedOrigin: string | null): Response {
   if (!allowedOrigin) return textResponse("Forbidden", 403);
   const headers = responseHeaders(allowedOrigin);
   headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
+  headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Noitamap-Setup-Key");
   headers.set("Access-Control-Max-Age", "86400");
   return new Response(null, { status: 204, headers });
 }
@@ -1064,7 +886,7 @@ function getBearerToken(request: Request): string | null {
 
 function oauthStateCookie(nonce: string, request: Request, maxAge = Math.ceil(STATE_EXPIRY_MS / 1000)): string {
   const secure = new URL(request.url).protocol === "https:" ? "; Secure" : "";
-  return `${OAUTH_STATE_COOKIE}=${nonce}; Path=/auth; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
+  return `${secure ? OAUTH_STATE_COOKIE : "noitamap_oauth_state_local"}=${nonce}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
 }
 
 function clearOAuthStateCookie(request: Request): string {
@@ -1091,7 +913,7 @@ async function verifyOAuthState(
   if (!payload) return null;
   try {
     const parsed = JSON.parse(payload) as OAuthState;
-    const cookieNonce = requestCookie(request, OAUTH_STATE_COOKIE);
+    const cookieNonce = requestCookie(request, new URL(request.url).protocol === "https:" ? OAUTH_STATE_COOKIE : "noitamap_oauth_state_local");
     const now = Date.now();
     if (
       parsed.kind !== kind ||
@@ -1137,9 +959,7 @@ function redirectToError(env: Env, error: string, request?: Request): Response {
 
 async function signState(payload: string, secret: string): Promise<string> {
   const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
-    "sign",
-  ]);
+  const key = await authKey(secret, "oauth-state");
   const payloadB64 = base64url(enc.encode(payload));
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(payloadB64));
   return `${payloadB64}.${base64url(sig)}`;
@@ -1152,9 +972,7 @@ async function verifyState(state: string, secret: string): Promise<string | null
 
   const enc = new TextEncoder();
   try {
-    const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
-      "verify",
-    ]);
+    const key = await authKey(secret, "oauth-state");
     const sigStr = sigB64.replace(/-/g, "+").replace(/_/g, "/");
     const binSig = atob(sigStr);
     const sigBytes = new Uint8Array(binSig.length);
@@ -1194,12 +1012,19 @@ function base64urlToBytes(b64url: string): Uint8Array {
 // so an access token can't be replayed here and vice-versa.
 async function signRefreshJWT(payload: RefreshPayload, secret: string): Promise<string> {
   const enc = new TextEncoder();
-  const headerB64 = base64url(enc.encode(JSON.stringify({ alg: "HS256", typ: "JWT" })));
+  const headerB64 = base64url(enc.encode(JSON.stringify({ alg: "HS256", typ: "JWT", kid: SESSION_KEY_ID })));
   const payloadB64 = base64url(enc.encode(JSON.stringify(payload)));
   const input = `${headerB64}.${payloadB64}`;
-  const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const key = await authKey(secret, "refresh");
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(input));
   return `${input}.${base64url(sig)}`;
+}
+
+function validSessionClaims(payload: JWTPayload | RefreshPayload): boolean {
+  return payload.v === SESSION_FORMAT && payload.aud === 'noitamap-auth'
+    && typeof payload.sid === 'string' && /^[a-f0-9-]{36}$/.test(payload.sid)
+    && typeof payload.account_id === 'string' && /^[a-f0-9-]{36}$/.test(payload.account_id)
+    && Number.isInteger(payload.account_version) && payload.account_version > 0;
 }
 
 async function verifyRefreshJWT(token: string, secret: string): Promise<RefreshPayload | null> {
@@ -1210,7 +1035,7 @@ async function verifyRefreshJWT(token: string, secret: string): Promise<RefreshP
   const enc = new TextEncoder();
   try {
     if (!validJwtHeader(headerB64)) return null;
-    const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    const key = await authKey(secret, "refresh");
     const valid = await crypto.subtle.verify("HMAC", key, base64urlToBytes(sigB64), enc.encode(`${headerB64}.${payloadB64}`));
     if (!valid) return null;
     const payload = JSON.parse(new TextDecoder().decode(base64urlToBytes(payloadB64))) as RefreshPayload;
@@ -1220,8 +1045,7 @@ async function verifyRefreshJWT(token: string, secret: string): Promise<RefreshP
       typeof payload.sub !== "string" ||
       !payload.sub ||
       (payload.provider !== "patreon" && payload.provider !== "twitch") ||
-      !(typeof payload.account_id === 'string' && payload.account_id && Number.isInteger(payload.account_version)
-        || typeof payload.enc === 'string' && payload.enc) ||
+      !validSessionClaims(payload) || !Number.isInteger(payload.rotation) || payload.rotation < 0 ||
       !Number.isFinite(payload.iat) ||
       !Number.isFinite(payload.exp) ||
       payload.iat > now + 60 ||
@@ -1237,21 +1061,19 @@ async function verifyRefreshJWT(token: string, secret: string): Promise<RefreshP
 
 async function signJWT(payload: JWTPayload, secret: string): Promise<string> {
   const enc = new TextEncoder();
-  const header = { alg: "HS256", typ: "JWT" };
+  const header = { alg: "HS256", typ: "JWT", kid: SESSION_KEY_ID };
   const headerB64 = base64url(enc.encode(JSON.stringify(header)));
   const payloadB64 = base64url(enc.encode(JSON.stringify(payload)));
   const input = `${headerB64}.${payloadB64}`;
 
-  const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
-    "sign",
-  ]);
+  const key = await authKey(secret, "access");
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(input));
   return `${input}.${base64url(sig)}`;
 }
 
 function validJwtHeader(headerB64: string): boolean {
   const header = JSON.parse(new TextDecoder().decode(base64urlToBytes(headerB64))) as Record<string, unknown>;
-  return header.alg === "HS256" && header.typ === "JWT";
+  return header.alg === "HS256" && header.typ === "JWT" && header.kid === SESSION_KEY_ID;
 }
 
 async function verifyJWT(token: string, secret: string): Promise<JWTPayload | null> {
@@ -1264,23 +1086,21 @@ async function verifyJWT(token: string, secret: string): Promise<JWTPayload | nu
 
   try {
     if (!validJwtHeader(headerB64)) return null;
-    const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
-      "verify",
-    ]);
+    const key = await authKey(secret, "access");
     const valid = await crypto.subtle.verify("HMAC", key, base64urlToBytes(sigB64), enc.encode(input));
     if (!valid) return null;
 
     const payload = JSON.parse(new TextDecoder().decode(base64urlToBytes(payloadB64))) as JWTPayload;
     const now = Date.now() / 1000;
     if (
-      (payload.typ !== undefined && payload.typ !== "access") ||
+      payload.typ !== "access" || !validSessionClaims(payload) ||
       typeof payload.sub !== "string" ||
       !payload.sub ||
       typeof payload.username !== "string" ||
       !(payload.nickname === null || typeof payload.nickname === "string") ||
       typeof payload.is_follower !== "boolean" ||
       typeof payload.is_subscriber !== "boolean" ||
-      (payload.provider !== undefined && payload.provider !== "patreon" && payload.provider !== "twitch") ||
+      (payload.provider !== "patreon" && payload.provider !== "twitch") ||
       !Number.isFinite(payload.iat) ||
       !Number.isFinite(payload.exp) ||
       payload.iat > now + 60 ||
@@ -1311,9 +1131,7 @@ const TWITCH_AUTHORIZE_URL = "https://id.twitch.tv/oauth2/authorize";
 const TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token";
 const TWITCH_USERS_URL = "https://api.twitch.tv/helix/users";
 const TWITCH_SUBS_URL = "https://api.twitch.tv/helix/subscriptions";
-// Explicit owner-approved grants. Match only the canonical login returned by
-// Twitch for the authenticated token owner, never a display name or client input.
-const TWITCH_PRO_EXCEPTIONS = new Set(["wuote", "dunkorslam"]);
+// Owner-approved grants use stable, provider-verified user IDs. Names are presentation only.
 
 interface TwitchSecrets {
   clientId: string;
@@ -1332,6 +1150,7 @@ let broadcasterTokenRefresh: Promise<string | null> | null = null;
 
 /** Resolve a Secrets Store binding to its string, or null if absent/unreadable. */
 async function getSecret(binding?: SecretStoreSecret): Promise<string | null> {
+  if (typeof binding === "string") return binding || null;
   if (!binding || typeof binding.get !== "function") return null;
   try {
     return await binding.get();
@@ -1356,6 +1175,8 @@ async function handleTwitchLogin(request: Request, env: Env, secrets: SessionSec
 
   const url = new URL(request.url);
   const redirectUrl = allowedRedirect(url.searchParams.get("redirect") || "", env);
+  if (!hasLoginNonce(redirectUrl)) return textResponse('Start sign-in from the map.', 400);
+  if (!env.ACCOUNT_DB) return textResponse('Authentication is not configured.', 503);
   const chat = url.searchParams.get('chat') === '1';
   if (chat && !env.ACCOUNT_DB) return textResponse('Account connections are not configured', 503);
 
@@ -1419,54 +1240,16 @@ async function handleTwitchCallback(request: Request, env: Env, secrets: Session
     if (!viewer) return redirectWithError(finalRedirectUrl, "identity_fetch_failed", request);
 
     // 3. Explicit Pro grants, then subscription check via the broadcaster token.
-    const isSubscriber = await checkTwitchProAccess(env, twitch, viewer);
+    const isSubscriber = await checkTwitchProAccess(env, twitch, viewer, secrets);
 
-    if (env.ACCOUNT_DB) {
+    if (!env.ACCOUNT_DB) return textResponse('Account storage is not configured.', 503);
+    {
       if (oauthState.chat && !viewerTokens.scope?.includes('user:read:chat')) return redirectWithError(finalRedirectUrl, 'chat_permission_required', request);
       return completeProviderOAuth(request, env, secrets, oauthState, await twitchIdentity(viewer, viewerTokens, isSubscriber, secrets));
     }
 
-    // 4. Issue the same JWT shape as Patreon; is_subscriber is the unified gate.
-    //    Also a refresh JWT (encrypted viewer refresh_token) so the session
-    //    renews silently like Patreon's — no 24h re-login.
-    const now = Math.floor(Date.now() / 1000);
-    const jwt = await signJWT(
-      {
-        typ: "access",
-        sub: viewer.id,
-        username: viewer.display_name || viewer.login || "Twitch user",
-        nickname: viewer.display_name || null,
-        is_follower: false,
-        is_subscriber: isSubscriber,
-        provider: "twitch",
-        iat: now,
-        exp: now + JWT_EXPIRY_SECONDS,
-      },
-      secrets.jwtSecret,
-    );
-
-    // Same fragment delivery as the Patreon callback — tokens never in the
-    // query string (Referer/log leakage).
-    const out = new URL(finalRedirectUrl);
-    const frag = new URLSearchParams({ auth: "success", token: jwt });
-    if (viewerTokens.refresh_token) {
-      const refreshJwt = await signRefreshJWT(
-        {
-          typ: "refresh",
-        sub: viewer.id,
-          provider: "twitch",
-          enc: await encryptSecret(viewerTokens.refresh_token, secrets.jwtSecret),
-          iat: now,
-          exp: now + REFRESH_JWT_EXPIRY_SECONDS,
-        },
-        secrets.jwtSecret,
-      );
-      frag.set("refresh_token", refreshJwt);
-    }
-    out.hash = frag.toString();
-    return redirectResponse(out.toString(), clearOAuthStateCookie(request));
   } catch (err) {
-    console.error("Twitch callback exception:", err);
+    securityEvent('oauth_callback_failed', undefined, 'twitch');
     return redirectWithError(finalRedirectUrl, "server_error", request);
   }
 }
@@ -1496,8 +1279,8 @@ async function fetchTwitchUser(accessToken: string, clientId: string): Promise<T
  * without broadcaster setup; other viewers need the subscription check or the
  * existing broadcaster-ID grant.
  */
-async function checkTwitchProAccess(env: Env, twitch: TwitchSecrets, viewer: TwitchUser): Promise<boolean> {
-  if (TWITCH_PRO_EXCEPTIONS.has(viewer.login.toLowerCase())) return true;
+async function checkTwitchProAccess(env: Env, twitch: TwitchSecrets, viewer: TwitchUser, secrets: SessionSecrets): Promise<boolean> {
+  if ((env.TWITCH_PRO_USER_IDS ?? '564553302,241636').split(',').some(id => /^\d{1,30}$/.test(id.trim()) && id.trim() === viewer.id)) return true;
   const viewerId = viewer.id;
   const broadcasterId = await getSecret(env.TWITCH_BROADCASTER_ID);
   if (!broadcasterId) return false; // dormant until the broadcaster id is set
@@ -1506,7 +1289,7 @@ async function checkTwitchProAccess(env: Env, twitch: TwitchSecrets, viewer: Twi
   // before the refresh-token grant is done.
   if (viewerId === broadcasterId) return true;
 
-  const broadcasterToken = await getBroadcasterAccessToken(env, twitch);
+  const broadcasterToken = await getBroadcasterAccessToken(env, twitch, secrets);
   if (!broadcasterToken) return false;
 
   const url = new URL(TWITCH_SUBS_URL);
@@ -1527,12 +1310,14 @@ async function checkTwitchProAccess(env: Env, twitch: TwitchSecrets, viewer: Twi
   return Array.isArray(data.data) && data.data.length > 0;
 }
 
-async function readBroadcasterTokenState(env: Env): Promise<BroadcasterTokenState | null> {
+async function readBroadcasterTokenState(env: Env, secrets: SessionSecrets): Promise<BroadcasterTokenState | null> {
   if (!env.TWITCH_TOKEN_STORE) return null;
   try {
     const raw = await env.TWITCH_TOKEN_STORE.get(TWITCH_BROADCASTER_TOKEN_KEY);
-    if (!raw) return null;
-    const state = JSON.parse(raw) as BroadcasterTokenState;
+    if (!raw || raw.length > 32768) return null;
+    const plaintext = raw.startsWith('{') ? raw : await decryptSecret(raw, secrets);
+    if (!plaintext) return null;
+    const state = JSON.parse(plaintext) as BroadcasterTokenState;
     if (
       typeof state.accessToken !== "string" ||
       !Number.isFinite(state.accessTokenExpiresAt) ||
@@ -1541,32 +1326,33 @@ async function readBroadcasterTokenState(env: Env): Promise<BroadcasterTokenStat
     ) {
       return null;
     }
+    if (!raw.startsWith('c2.' + secrets.credentials.id + '.')) await writeBroadcasterTokenState(env, state, secrets);
     return state;
   } catch (error) {
-    console.error("Twitch broadcaster token storage read failed:", error);
+    securityEvent('broadcaster_store_read_failed');
     return null;
   }
 }
 
-async function writeBroadcasterTokenState(env: Env, state: BroadcasterTokenState): Promise<boolean> {
+async function writeBroadcasterTokenState(env: Env, state: BroadcasterTokenState, secrets: SessionSecrets): Promise<boolean> {
   if (!env.TWITCH_TOKEN_STORE) return false;
   try {
-    await env.TWITCH_TOKEN_STORE.put(TWITCH_BROADCASTER_TOKEN_KEY, JSON.stringify(state));
+    await env.TWITCH_TOKEN_STORE.put(TWITCH_BROADCASTER_TOKEN_KEY, await encryptSecret(JSON.stringify(state), secrets));
     broadcasterTokenCache = state;
     return true;
   } catch (error) {
-    console.error("Twitch broadcaster token storage write failed:", error);
+    securityEvent('broadcaster_store_write_failed');
     return false;
   }
 }
 
-async function getBroadcasterAccessToken(env: Env, twitch: TwitchSecrets): Promise<string | null> {
+async function getBroadcasterAccessToken(env: Env, twitch: TwitchSecrets, secrets: SessionSecrets): Promise<string | null> {
   const now = Date.now();
   if (broadcasterTokenCache && broadcasterTokenCache.accessTokenExpiresAt > now + 60_000) {
     return broadcasterTokenCache.accessToken;
   }
 
-  const stored = await readBroadcasterTokenState(env);
+  const stored = await readBroadcasterTokenState(env, secrets);
   if (stored?.accessToken && stored.accessTokenExpiresAt > now + 60_000) {
     broadcasterTokenCache = stored;
     return stored.accessToken;
@@ -1603,7 +1389,7 @@ async function getBroadcasterAccessToken(env: Env, twitch: TwitchSecrets): Promi
       accessTokenExpiresAt: Date.now() + Math.max(60, tokenData.expires_in || 3600) * 1000,
       refreshToken: tokenData.refresh_token || refreshToken,
     };
-    if (!(await writeBroadcasterTokenState(env, state))) {
+    if (!(await writeBroadcasterTokenState(env, state, secrets))) {
       // A rotated token that cannot be persisted would strand the next refresh.
       if (state.refreshToken !== refreshToken) return null;
       broadcasterTokenCache = state;
@@ -1619,10 +1405,9 @@ async function getBroadcasterAccessToken(env: Env, twitch: TwitchSecrets): Promi
 }
 
 // -- One-time broadcaster grant --------------------------------------------
-// wuote hits /auth/twitch/broadcaster-setup once (optionally ?key=<setup key>),
-// authorizes channel:read:subscriptions, and the callback prints the
-// broadcaster_id + refresh_token to paste into the Secrets Store as
-// NOITAMAP_TWITCH_BROADCASTER_ID / NOITAMAP_TWITCH_BROADCASTER_REFRESH_TOKEN.
+// An explicitly enabled setup POST takes its key only in a header. Follow
+// its returned authorization URL in the same browser; the callback persists
+// encrypted credentials and never returns the refresh token.
 
 async function handleBroadcasterSetup(request: Request, env: Env, secrets: SessionSecrets): Promise<Response> {
   const twitch = await resolveTwitchSecrets(env);
@@ -1631,8 +1416,8 @@ async function handleBroadcasterSetup(request: Request, env: Env, secrets: Sessi
   // Keep this sensitive route disabled unless an explicit one-time key exists.
   const setupKey = await getSecret(env.TWITCH_SETUP_KEY);
   if (!setupKey) return textResponse("Not Found", 404);
-  const provided = new URL(request.url).searchParams.get("key");
-  if (provided !== setupKey) return textResponse("Forbidden", 403);
+  const provided = request.headers.get("X-Noitamap-Setup-Key") || "";
+  if (!await secretMatches(setupKey, provided)) return textResponse("Forbidden", 403);
 
   const nonce = base64url(crypto.getRandomValues(new Uint8Array(32)));
   const state = await signState(
@@ -1648,7 +1433,9 @@ async function handleBroadcasterSetup(request: Request, env: Env, secrets: Sessi
   authUrl.searchParams.set("force_verify", "true");
   authUrl.searchParams.set("state", state);
 
-  return redirectResponse(authUrl.toString(), oauthStateCookie(nonce, request));
+  const response = jsonResponse({ url: authUrl.toString() }, getAllowedOrigin(request.headers.get('Origin') || '', env));
+  response.headers.set('Set-Cookie', oauthStateCookie(nonce, request));
+  return response;
 }
 
 async function handleBroadcasterCallback(request: Request, env: Env, secrets: SessionSecrets): Promise<Response> {
@@ -1691,13 +1478,13 @@ async function handleBroadcasterCallback(request: Request, env: Env, secrets: Se
     accessToken: tokenData.access_token,
     accessTokenExpiresAt: Date.now() + Math.max(60, tokenData.expires_in || 3600) * 1000,
     refreshToken: tokenData.refresh_token,
-  });
+  }, secrets);
   if (!stored) return textResponse("failed to persist broadcaster token", 502);
 
   const body = [
     "Twitch broadcaster grant OK.",
     `Broadcaster: ${broadcaster.display_name} (${broadcaster.id})`,
-    "The rotating broadcaster credentials were stored in Workers KV.",
+    "The rotating broadcaster credentials were encrypted and stored in Workers KV.",
     "Remove the TWITCH_SETUP_KEY binding and redeploy to disable setup.",
   ].join("\n");
 

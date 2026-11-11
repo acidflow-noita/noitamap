@@ -4,6 +4,16 @@
   var url = new URL(window.location.href);
   var fragment = new URLSearchParams(url.hash.slice(1));
   var returned;
+  function sessionToken(value, type) {
+    try {
+      if (!value || value.length > 16384) return null;
+      var parts = value.split('.');
+      if (parts.length !== 3) return null;
+      var payload = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')), function (c) { return c.charCodeAt(0); })));
+      return payload.v === 2 && payload.aud === 'noitamap-auth' && payload.typ === type
+        && typeof payload.sid === 'string' && /^[a-f0-9-]{36}$/.test(payload.sid) ? payload : null;
+    } catch (_) { return null; }
+  }
   try {
     if (localStorage.getItem("noitamap_session_format") !== "2") {
       localStorage.removeItem("noitamap_jwt");
@@ -11,6 +21,11 @@
       sessionStorage.removeItem("noitamap_pending_account_link");
       sessionStorage.removeItem("noitamap_login_nonce_v2");
       localStorage.setItem("noitamap_session_format", "2");
+    }
+    var oldAccess = localStorage.getItem('noitamap_jwt');
+    var oldRefresh = localStorage.getItem('noitamap_refresh_jwt');
+    if (oldAccess && !sessionToken(oldAccess, 'access') || oldRefresh && !sessionToken(oldRefresh, 'refresh')) {
+      localStorage.removeItem('noitamap_jwt'); localStorage.removeItem('noitamap_refresh_jwt');
     }
     var pending = JSON.parse(sessionStorage.getItem("noitamap_login_nonce_v2") || "null");
     var nonce = url.searchParams.get("auth_nonce");
@@ -23,7 +38,8 @@
       var token = fragment.get("token");
       var refresh = fragment.get("refresh_token");
       var link = fragment.get("link_token");
-      if (fragment.get("auth") === "success" && token && token.length <= 16384 && refresh && refresh.length <= 16384) {
+      var accessClaims = sessionToken(token, 'access'), refreshClaims = sessionToken(refresh, 'refresh');
+      if (fragment.get("auth") === "success" && accessClaims && refreshClaims && accessClaims.sid === refreshClaims.sid) {
         localStorage.setItem("noitamap_jwt", token);
         localStorage.setItem("noitamap_refresh_jwt", refresh);
         returned = { success: true };
