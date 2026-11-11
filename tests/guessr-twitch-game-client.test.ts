@@ -11,19 +11,23 @@ const state: LiveRoomView = { schema: 1, gameId: id, channel: 'streamer', hostId
   timing: { phase: 'warmup', startsAt: now + 3000, deadline: now + 93000, hostRound: 1, seconds: 90, revealed: 0 } };
 const clients: ReturnType<typeof watchTwitchGame>[] = [];
 const store = new Map<string, string>();
+const tabStore = new Map<string, string>();
 beforeEach(() => {
-  store.clear(); vi.spyOn(Date, 'now').mockReturnValue(now);
+  store.clear(); tabStore.clear();
+  vi.stubGlobal('sessionStorage', { getItem: (key: string) => tabStore.get(key) ?? null, setItem: (key: string, value: string) => tabStore.set(key, value) });
+  vi.spyOn(Date, 'now').mockReturnValue(now);
   vi.stubGlobal('location', { hostname: 'noitamap.test' });
   vi.stubGlobal('localStorage', { getItem: (key: string) => store.get(key) ?? null, setItem: (key: string, value: string) => store.set(key, value) });
   vi.stubGlobal('fetch', vi.fn(() => { throw Error('Unexpected Cloudflare request'); }));
 });
 afterEach(() => { clients.splice(0).forEach(c => c.dispose()); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
-function fixture() {
+function fixture(joined = true, game = id, userId = '123') {
   const sendMessage = vi.fn(async () => 'sync-id');
-  const viewer = { getState: () => ({ connected: true, userId: '123' }), sendMessage } as unknown as TwitchViewer;
+  const viewer = { getState: () => ({ connected: true, userId }), sendMessage } as unknown as TwitchViewer;
   const handlers = { state: vi.fn(), status: vi.fn(), reveal: vi.fn(), receipts: vi.fn(),
     recovery: vi.fn<Parameters<typeof watchTwitchGame>[3]['recovery']>(() => ({ missing: 0, receipts: [] })) };
-  const client = watchTwitchGame(viewer, 'streamer', id, handlers); clients.push(client);
+  const client = watchTwitchGame(viewer, 'streamer', game, handlers); clients.push(client);
+  if (joined) client.join();
   return { client, sendMessage, handlers };
 }
 const message = (text: string, login = 'streamer', sender = '100') => ({ id: crypto.randomUUID(), text,
@@ -158,4 +162,19 @@ it('applies an explicit game-ended event without needing a clue and retains it a
   f.client.dispose(); const restored = fixture(); restored.client.transport('live', 'Connected'); restored.client.retry();
   expect(restored.handlers.state).toHaveBeenCalledWith(expect.objectContaining({ ended: true }));
   expect(restored.sendMessage).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+});
+
+
+it('requires a deliberate Join before any Twitch post and binds consent to this game and player', () => {
+  const first = fixture(false); first.client.transport('live', 'Connected');
+  first.client.retry(); first.client.requestRecovery();
+  expect(first.client.hasJoined()).toBe(false); expect(first.sendMessage).not.toHaveBeenCalled();
+  first.client.join(); expect(first.sendMessage).toHaveBeenCalledOnce();
+  first.client.dispose();
+  const restored = fixture(false); restored.client.transport('live', 'Connected');
+  expect(restored.client.hasJoined()).toBe(true); expect(restored.sendMessage).toHaveBeenCalledOnce();
+  const otherGame = fixture(false, '22222222-2222-4222-8222-222222222222'); otherGame.client.transport('live', 'Connected');
+  expect(otherGame.sendMessage).not.toHaveBeenCalled();
+  const otherPlayer = fixture(false, id, '456'); otherPlayer.client.transport('live', 'Connected');
+  expect(otherPlayer.sendMessage).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
 });

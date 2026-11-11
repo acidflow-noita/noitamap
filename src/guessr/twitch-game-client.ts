@@ -23,6 +23,18 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
 }) {
   let closed = false, currentGame = expectedGame, revision = -1, connected = false, lastRequest = 0;
   let needsState = true;
+  let consentedUserId: string | null = null;
+  const consentKey = () => currentGame ? 'noitamap-guessr-joined-v2:' + channel + ':' + currentGame : null;
+  const hasJoined = () => {
+    const id = viewer.getState().userId;
+    if (!id || !viewer.getState().connected) return false;
+    if (consentedUserId === id) return true;
+    try { return !!consentKey() && sessionStorage.getItem(consentKey()!) === id; } catch { return false; }
+  };
+  const rememberJoin = () => {
+    if (!consentedUserId || !consentKey()) return;
+    try { sessionStorage.setItem(consentKey()!, consentedUserId); } catch { /* This open tab still retains consent. */ }
+  };
   let timeOffset = 0, hasClock = false;
   let latest: LiveRoomView | undefined;
   let watchdog: ReturnType<typeof setTimeout> | undefined, requestTimer: ReturnType<typeof setTimeout> | undefined;
@@ -30,7 +42,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
   const reader = new StreamPacketReader(channel, expectedGame, local);
   const watch = () => {
     clearTimeout(watchdog);
-    if (latest?.ended || latest?.phase === 'complete' || latest?.timing?.phase === 'lobby' || latest?.timing?.deadline === null) return;
+    if (!hasJoined() || latest?.ended || latest?.phase === 'complete' || latest?.timing?.phase === 'lobby' || latest?.timing?.deadline === null) return;
     const delay = latest?.timing?.deadline ? Math.max(10_000, latest.timing.deadline - Date.now() - timeOffset + 15_000) : 15_000;
     watchdog = setTimeout(() => {
       if (closed) return;
@@ -40,7 +52,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
   };
   const request = () => {
     clearTimeout(requestTimer); requestTimer = undefined;
-    if (closed || latest?.ended || latest?.phase === 'complete' || !connected || !viewer.getState().connected) return;
+    if (closed || !hasJoined() || latest?.ended || latest?.phase === 'complete' || !connected || !viewer.getState().connected) return;
     const recovery = handlers.recovery();
     // A delayed check may have been answered by a broadcast while waiting for
     // the send budget. Never turn it into another join/resync request.
@@ -75,6 +87,12 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
       { latest = cached; handlers.state(cached.ended || cached.phase === 'complete' ? cached : { ...cached, online: false, paused: true }); }
   } catch { /* No cache is required to join. */ }
   return {
+    hasJoined,
+    join() {
+      const state = viewer.getState();
+      if (closed || !state.connected || !state.userId) return;
+      consentedUserId = state.userId; rememberJoin(); needsState = true; request(); watch();
+    },
     async receive(message: StreamChatMessage) {
       if (closed || message.player.login !== channel) return;
       const receivedAt = Date.now();
@@ -89,7 +107,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
       // after awaiting it makes the displayed countdown run behind Twitch.
       const offset = packet.sentAt - receivedAt;
       timeOffset = !hasClock || Math.abs(offset - timeOffset) > 10_000 ? offset : Math.max(timeOffset, offset); hasClock = true;
-      currentGame = packet.gameId;
+      currentGame = packet.gameId; rememberJoin();
       const payload = packet.payload;
       if (payload.type === 'state') {
         if (payload.state.revision < revision) return;

@@ -27,13 +27,15 @@ const USERS_URL = 'https://api.twitch.tv/helix/users';
 const SEND_URL = 'https://api.twitch.tv/helix/chat/messages';
 const VALIDATE_INTERVAL = 60 * 60 * 1000;
 const AUTH_TIMEOUT = 5 * 60 * 1000;
-const STORAGE_KEY = 'noitamap-guessr-twitch-v1:';
+const STORAGE_KEY = 'noitamap-guessr-twitch-tab-v2:';
+const LEGACY_KEY = 'noitamap-guessr-twitch-v1:';
+const IDENTITY_KEY = 'noitamap-guessr-twitch-identity-v2:';
 
 /** Read-only result presentation, including after token expiry. This neither
  * authenticates a viewer nor starts token validation or a chat connection. */
 export function savedTwitchViewerId(clientId = import.meta.env.VITE_GUESSR_TWITCH_CLIENT_ID ?? DEFAULT_TWITCH_CLIENT_ID): string | undefined {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY + clientId);
+    const raw = localStorage.getItem(IDENTITY_KEY + clientId);
     if (!raw || raw.length > 4096) return undefined;
     const saved = JSON.parse(raw);
     return typeof saved?.userId === 'string' && /^\d{1,30}$/.test(saved.userId) ? saved.userId : undefined;
@@ -101,26 +103,53 @@ export class TwitchViewer {
   private sends: { at: number; channel: string }[] = [];
 
   constructor(private options: TwitchViewerOptions = {}) {
-    this.clientId = options.clientId ?? import.meta.env.VITE_GUESSR_TWITCH_CLIENT_ID ?? DEFAULT_TWITCH_CLIENT_ID;
+    this.clientId = options.clientId ?? import.meta.env.VITE_GUESSR_TWITCH_CLIENT_ID
+      ?? (location.hostname === 'dynamic-map.noitamap.com' ? DEFAULT_TWITCH_CLIENT_ID : '');
     this.redirectUri = new URL(TWITCH_VIEWER_CALLBACK, window.location.origin).href;
     this.configured = /^[a-zA-Z0-9]{1,128}$/.test(this.clientId)
       && (location.protocol === 'https:' || location.protocol === 'http:'
         && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname));
+    this.purgeLegacyCredentials();
+    this.state.savedUserId = savedTwitchViewerId(this.clientId) ?? null;
     this.ready = this.restoreSaved();
   }
 
+  private async revoke(token: string, clientId = this.clientId): Promise<void> {
+    if (!/^[a-zA-Z0-9]{1,2048}$/.test(token) || !/^[a-zA-Z0-9]{1,128}$/.test(clientId)) return;
+    try {
+      const response = await (this.options.fetch ?? fetch)('https://id.twitch.tv/oauth2/revoke', {
+        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ client_id: clientId, token }), credentials: 'omit',
+        referrerPolicy: 'no-referrer', redirect: 'error', keepalive: true, signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok && response.status !== 400) console.error('[Twitch] Token revocation was not confirmed.');
+    } catch { console.error('[Twitch] Token revocation was not confirmed.'); }
+  }
+  private purgeLegacyCredentials(): void {
+    try {
+      const keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)).filter((key): key is string => !!key?.startsWith(LEGACY_KEY));
+      for (const key of keys) {
+        const raw = localStorage.getItem(key); localStorage.removeItem(key);
+        try {
+          const saved = raw && raw.length < 4096 ? JSON.parse(raw) : null;
+          if (typeof saved?.token === 'string') void this.revoke(saved.token, key.slice(LEGACY_KEY.length));
+        } catch { /* Invalid old storage is simply removed. */ }
+      }
+    } catch { /* Storage may be unavailable. Never import an old credential. */ }
+  }
   private forgetSaved(): void {
-    try { localStorage.removeItem(STORAGE_KEY + this.clientId); } catch { /* Storage can be unavailable. */ }
+    try { sessionStorage.removeItem(STORAGE_KEY + this.clientId); } catch { /* Storage can be unavailable. */ }
   }
   private remember(credentials: Credentials): void {
-    try { localStorage.setItem(STORAGE_KEY + this.clientId, JSON.stringify(credentials)); }
+    try { sessionStorage.setItem(STORAGE_KEY + this.clientId, JSON.stringify(credentials));
+      localStorage.setItem(IDENTITY_KEY + this.clientId, JSON.stringify({ userId: credentials.userId })); }
     catch { /* A blocked/full store still permits this tab to use Twitch. */ }
   }
   private async restoreSaved(): Promise<void> {
     if (!this.configured) return;
     let saved: Credentials;
     try {
-      const raw = localStorage.getItem(STORAGE_KEY + this.clientId);
+      const raw = sessionStorage.getItem(STORAGE_KEY + this.clientId);
       if (!raw) return;
       if (raw.length > 4096) throw Error();
       saved = JSON.parse(raw);
@@ -462,6 +491,12 @@ export class TwitchViewer {
     this.update({ connected: false, userId: null, savedUserId: null, login: null, expiresAt: null, displayName: undefined, color: undefined });
   }
   disconnect(forget = true): void {
+    let revoked = this.#credentials?.token;
+    if (forget && !revoked) try {
+      const raw = sessionStorage.getItem(STORAGE_KEY + this.clientId);
+      const saved = raw && raw.length < 4096 ? JSON.parse(raw) : null;
+      if (typeof saved?.token === 'string') revoked = saved.token;
+    } catch { /* Corrupt storage has no token to revoke. */ }
     this.generation++;
     const pending = this.pending;
     this.pending = null;
@@ -469,6 +504,10 @@ export class TwitchViewer {
     for (const controller of this.controllers) controller.abort();
     this.controllers.clear();
     this.clearCredentials(forget);
+    if (forget) {
+      try { localStorage.removeItem(IDENTITY_KEY + this.clientId); } catch { /* Optional public identity. */ }
+      if (revoked) void this.revoke(revoked);
+    }
     this.update({ connecting: false, restoring: false, sending: false, error: null });
   }
   dispose(): void { this.disposed = true; this.disconnect(false); this.listeners.clear(); }

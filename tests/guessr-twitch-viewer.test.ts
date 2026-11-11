@@ -15,6 +15,7 @@ beforeEach(() => {
     const values = new Map<string, string>();
     vi.stubGlobal(name, { getItem: vi.fn((key: string) => values.get(key) ?? null),
       setItem: vi.fn((key: string, value: string) => { values.set(key, value); }),
+      key: (index: number) => [...values.keys()][index] ?? null, clear: () => values.clear(),
       removeItem: vi.fn((key: string) => { values.delete(key); }), get length() { return values.size; } });
   }
 });
@@ -26,7 +27,7 @@ afterEach(() => {
 
 it('identifies a saved result viewer without authenticating, validating a token or changing storage', () => {
   const fetch = vi.fn(() => { throw Error('Read-only identity must not contact Twitch'); }); vi.stubGlobal('fetch', fetch);
-  const key = 'noitamap-guessr-twitch-v1:client123';
+  const key = 'noitamap-guessr-twitch-identity-v2:client123';
   localStorage.setItem(key, JSON.stringify({ userId: '987654', expiresAt: 1 }));
   vi.mocked(localStorage.setItem).mockClear();
   expect(savedTwitchViewerId('client123')).toBe('987654');
@@ -41,6 +42,7 @@ function fixture() {
   const popup = { closed: false, close: vi.fn() };
   const open = vi.fn<(url: string, name: string, features: string) => typeof popup | null>(() => popup);
   const request = vi.fn<typeof fetch>(async (url) => {
+    if (String(url).endsWith('/revoke')) return new Response(null, { status: 200 });
     if (String(url).endsWith('/validate')) return json(identity);
     if (String(url).includes('/helix/users?')) return json({ data: [{ id: '456', login: new URL(String(url)).searchParams.get('login') }] });
     if (String(url).endsWith('/helix/chat/messages')) return json({ data: [{ is_sent: true, message_id: 'sent-id' }] });
@@ -90,8 +92,9 @@ describe('viewer Twitch sending', () => {
     expect(f.sends()).toHaveLength(0);
     expect(f.client.getState()).toMatchObject({ connected: true, login: 'viewer', userId: '123' });
     expect(JSON.stringify(f.client.getState())).not.toContain(token);
-    expect(JSON.parse(localStorage.getItem('noitamap-guessr-twitch-v1:client123')!)).toMatchObject({ token, userId: '123' });
-    expect(sessionStorage.setItem).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')!)).toMatchObject({ token, userId: '123' });
+    expect(localStorage.getItem('noitamap-guessr-twitch-identity-v2:client123')).not.toContain(token);
+    expect(localStorage.getItem('noitamap-guessr-twitch-v1:client123')).toBeNull();
   });
 
   it('sends the selected round and rounded pin to the shared transport, bound to the signed-in sender', async () => {
@@ -242,7 +245,7 @@ describe('viewer Twitch sending', () => {
     expect(next.getState()).toMatchObject({ connected: true, login: 'viewer', restoring: false });
     expect(popup).not.toHaveBeenCalled(); expect(f.sends()).toHaveLength(0);
     next.disconnect();
-    expect(localStorage.getItem('noitamap-guessr-twitch-v1:client123')).toBeNull();
+    expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')).toBeNull();
   });
 
   it('retains a read-only saved identity for score recovery when Twitch is unreachable', async () => {
@@ -263,7 +266,7 @@ describe('viewer Twitch sending', () => {
     const next = new TwitchViewer({ clientId: 'client123', fetch: f.request, popup }); clients.push(next);
     await next.ready;
     expect(next.getState().connected).toBe(false);
-    expect(localStorage.getItem('noitamap-guessr-twitch-v1:client123')).toBeNull();
+    expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')).toBeNull();
     expect(popup).not.toHaveBeenCalled(); expect(f.sends()).toHaveLength(0);
   });
 
@@ -274,7 +277,7 @@ describe('viewer Twitch sending', () => {
     const next = new TwitchViewer({ clientId: 'client123', fetch: f.request }); clients.push(next);
     next.disconnect(); finish(json(f.identity)); await next.ready;
     expect(next.getState().connected).toBe(false);
-    expect(localStorage.getItem('noitamap-guessr-twitch-v1:client123')).toBeNull();
+    expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')).toBeNull();
   });
 
   it('uses the same validated account to send a normal chat message', async () => {
@@ -289,4 +292,33 @@ describe('viewer Twitch sending', () => {
       { rounds: 10, bounds: { x: -10000, y: -10000, width: 20000, height: 20000 } }))
       .toMatchObject({ round: 2, x: 100, y: 200, maximum: 4500, userId: '123' });
   });
+});
+
+
+it('removes and revokes old persistent tokens without importing them into the current tab', async () => {
+  localStorage.setItem('noitamap-guessr-twitch-v1:client123', JSON.stringify({ token, userId: '123', expiresAt: Date.now() + 3600000 }));
+  const f = fixture(); await f.client.ready;
+  expect(f.client.getState().connected).toBe(false);
+  expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')).toBeNull();
+  expect(localStorage.getItem('noitamap-guessr-twitch-v1:client123')).toBeNull();
+  expect(f.request).toHaveBeenCalledOnce();
+  const [url, init] = f.request.mock.calls[0]; expect(url).toBe('https://id.twitch.tv/oauth2/revoke');
+  expect(new URLSearchParams(init!.body as URLSearchParams).get('token')).toBe(token);
+  expect(f.sends()).toHaveLength(0);
+});
+it('revokes on explicit sign-out but preserves a current-tab connection through disposal/F5', async () => {
+  const f = fixture(); await f.connect(); f.client.dispose();
+  expect(f.request.mock.calls.some(([url]) => String(url).endsWith('/revoke'))).toBe(false);
+  const next = new TwitchViewer({ clientId: 'client123', fetch: f.request }); clients.push(next); await next.ready;
+  next.disconnect(); await Promise.resolve();
+  expect(f.request.mock.calls.filter(([url]) => String(url).endsWith('/revoke'))).toHaveLength(1);
+  expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')).toBeNull();
+  expect(savedTwitchViewerId('client123')).toBeUndefined();
+});
+it('cannot restore a connection in a fresh tab from the public saved identity', async () => {
+  const f = fixture(); await f.connect(); f.client.dispose(); sessionStorage.clear();
+  f.request.mockClear();
+  const next = new TwitchViewer({ clientId: 'client123', fetch: f.request }); clients.push(next); await next.ready;
+  expect(next.getState()).toMatchObject({ connected: false, savedUserId: '123' });
+  expect(f.request).not.toHaveBeenCalled();
 });

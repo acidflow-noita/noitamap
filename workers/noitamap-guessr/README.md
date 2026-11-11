@@ -853,3 +853,25 @@ A native rate-limit binding caps anonymous demo requests per source IP and
 Cloudflare location without D1 counter writes or new Worker calls. This reduces
 avoidable CPU/data work, but requests that reach a Worker still count toward
 its invocation quota. Production CORS allows only dynamic-map.noitamap.com.
+
+
+## Chatter consent and token storage
+
+Opening a game invitation does not post a Twitch join or recovery message.
+The signed-in chatter explicitly chooses **Join game** in the map panel first.
+Consent is scoped to that game and Twitch user in the current tab. F5 can recover
+an approved game without another click; another game or account needs consent.
+This adds no Cloudflare requests. Join and recovery messages use the existing
+Twitch transport, never the streamer's channel.
+
+Chatter Twitch access tokens are in `sessionStorage`, never `localStorage`.
+Only the non-secret Twitch user ID is remembered for result personalization.
+Old persistent tokens are removed and sent directly to Twitch for revocation;
+they are not migrated into the tab. Explicit Sign out also requests revocation.
+A blocked/offline Twitch request cannot guarantee remote revocation, but local
+credentials are still cleared. F5/disposal retains the tab token, and closing
+the tab ends that stored connection. Browser session restoration policies are
+controlled by the browser. No auth Worker bridge or extra polling is used.
+
+Local/preview sites must explicitly configure an isolated Twitch app through
+`VITE_GUESSR_TWITCH_CLIENT_ID`. Only dynamic-map defaults to the production app.

@@ -124,7 +124,9 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const map = node('div', 'map-board'), actions = node('div', 'stream-guess-actions');
   const signIn = node('div', 'stream-signin');
   const signInError = node('p', 'stream-signin-error'); signInError.setAttribute('role', 'status');
-  signIn.append(connect, signInError);
+  const joinGame = button('Join game', () => { feed?.join(); refresh(); }, 'primary');
+  bindText(joinGame, () => tr('Join {{channel}}’s game', { channel }));
+  joinGame.hidden = true; signIn.append(connect, joinGame, signInError);
   const budget = maximumIndicator(); budget.classList.add('stream-maximum'); budget.hidden = true;
   const budgetBar = node('div', 'panel-bar stream-budget-bar'); budgetBar.hidden = true;
   budgetBar.append(budget); mapPanel.prepend(budgetBar);
@@ -141,7 +143,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const result = node('a', 'small secondary', 'View results'); result.hidden = true;
   const isHost = () => !!live?.hostId && live.hostId === viewer.getState().userId;
   const gameNow = () => feed?.now() ?? Date.now();
-  const canGuess = () => reviewedRound === null && navigator.onLine !== false && !!snapshot && !isHost() && (!!legacyPayload || !!live && connectionState === 'connected'
+  const canGuess = () => (!twitchUpdates || !!feed?.hasJoined()) && reviewedRound === null && navigator.onLine !== false && !!snapshot && !isHost() && (!!legacyPayload || !!live && connectionState === 'connected'
     && live.online && !live.paused && live.phase === 'guess' && (!live.timing || gameNow() >= live.timing.startsAt
       && (live.timing.deadline === null || gameNow() < live.timing.deadline)));
   const send = button('Send guess', async () => {
@@ -390,8 +392,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     personal.identify(live?.gameId ?? requestedGame, state.userId ?? state.savedUserId ?? null);
     if (twitchUpdates && live?.phase === 'complete' && !state.connected) connection.insertBefore(connect, disconnect);
     else if (connect.parentElement !== signIn) signIn.prepend(connect);
-    signIn.hidden = state.connected || reviewedRound !== null;
-    map.hidden = !state.connected && reviewedRound === null;
+    const joined = !twitchUpdates || !!feed?.hasJoined();
+    signIn.hidden = state.connected && joined || reviewedRound !== null;
+    map.hidden = (!state.connected || !joined) && reviewedRound === null;
+    joinGame.hidden = !state.connected || joined;
     signInError.textContent = actionError || (state.error ? twitchMessageText(state.error) : '');
     signInError.hidden = !signInError.textContent;
     if (snapshot) round.textContent = tr('Round {{value1}} / {{value2}}', { value1: formatGuessrNumber(snapshot.round), value2: formatGuessrNumber(STREAM_ROUNDS) });
@@ -442,7 +446,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       } else countdown?.remove();
     }
     const disabledReason = live?.ended ? 'The streamer ended this game.' : !state.connected ? 'Sign in with Twitch'
-      : isHost() ? 'You are the streamer. Submit your guess in the streamer tab.' : !channel ? 'Open the game link shared by your streamer.'
+      : !joined ? 'Join game' : isHost() ? 'You are the streamer. Submit your guess in the streamer tab.' : !channel ? 'Open the game link shared by your streamer.'
       : live?.timing?.phase === 'lobby' ? 'Waiting for the streamer to start the game.'
       : !legacyPayload && connectionState !== 'connected' ? 'The NoitaGuessr game connection is unavailable'
       : !snapshot ? 'Waiting for the streamer to start a round'
@@ -457,7 +461,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (disabledReason !== sendReason) { sendReason = disabledReason; sendHelp.update(); }
     if (!sending && !actionError && !own?.submitted && !previousDelivery && disabledReason) bindText(delivery, disabledReason);
     const needsReceipt = twitchUpdates && deliveryOwn?.pending && Date.now() - lastSendAt > 15_000;
-    retry.hidden = !!legacyPayload || live?.ended || live?.phase === 'complete' || !['stopped', 'retrying'].includes(connectionState) && !needsReceipt;
+    retry.hidden = !joined || !!legacyPayload || live?.ended || live?.phase === 'complete' || !['stopped', 'retrying'].includes(connectionState) && !needsReceipt;
     bindText(retry, needsReceipt && connectionState !== 'stopped' ? 'Check delivery' : 'Reconnect');
     if (!legacyPayload && connectionState === 'connected') {
       bindText(roomStatus, live?.ended ? 'The streamer ended this game.' : live?.timing?.phase === 'lobby' ? 'Waiting for the streamer to start the game.' : !live || live.phase === 'waiting' ? 'No active NoitaGuessr game'

@@ -31,7 +31,7 @@ const config: ImageGameConfig = {
 };
 let dispose: (() => void) | undefined;
 beforeEach(() => {
-  vi.clearAllMocks(); const values = new Map<string, string>();
+  vi.clearAllMocks(); sessionStorage.clear(); const values = new Map<string, string>();
   vi.stubGlobal('localStorage', { getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key), clear: () => values.clear() });
   vi.stubGlobal('fetch', vi.fn(() => { throw Error('Unexpected network request'); }));
@@ -72,6 +72,19 @@ function mount(url: string, initial: Partial<TwitchViewerState> = {}) {
 }
 
 describe('shared channel guess picker', () => {
+  it('shows an explicit Join control and sends nothing merely from opening a game link while signed in', async () => {
+    const game = '33333333-3333-4333-8333-333333333333';
+    const f = mount(`/guess/wuote/${gameCode(game, 'twitch')}/`, { connected: true, login: 'chatter', userId: '123' });
+    const transport = f.viewer.watchChat.mock.calls[0][1]; transport.status('live', 'Connected');
+    await flush();
+    expect(f.viewer.sendMessage).not.toHaveBeenCalled(); expect(f.viewer.sendGuess).not.toHaveBeenCalled();
+    const join = f.button('Join wuote’s game'); expect(join.hidden).toBe(false);
+    expect(join.closest('.stream-signin')!.hasAttribute('hidden')).toBe(false);
+    join.click(); await flush();
+    expect(f.viewer.sendMessage).toHaveBeenCalledOnce();
+    expect(f.viewer.sendMessage.mock.calls[0][0]).toBe('noitaguessr');
+    expect(f.viewer.sendGuess).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+  });
   it('keeps a last-second send on its original round through hashing, transition, confirmation and F5', async () => {
     vi.stubGlobal('Blob', NodeBlob);
     let now = Date.UTC(2026, 10, 9, 12);
@@ -79,6 +92,7 @@ describe('shared channel guess picker', () => {
     const id = '11111111-1111-4111-8111-111111111111', nextId = '22222222-2222-4222-8222-222222222222';
     const url = `/guess/wuote/${gameCode(id, 'twitch')}/`, f = mount(url);
     f.button('Sign in with Twitch').click(); await flush();
+    f.button('Join wuote’s game')?.click(); await flush();
     const transport = f.viewer.watchChat.mock.calls[0][1]; transport.status('live', 'Connected');
     const deadline = now + 1000;
     const state: LiveRoomView = { schema: 1, channel: 'wuote', gameId: id, hostId: '456', revision: 1, phase: 'guess',
@@ -139,6 +153,7 @@ describe('shared channel guess picker', () => {
     expect(f.button('Gift Pro to wuote').hidden).toBe(true);
     expect(f.main.querySelector<HTMLElement>('.stream-pro-status')!.dataset.proStatus).toBe('active');
     f.button('Sign in with Twitch').click(); await flush();
+    f.button('Join wuote’s game')?.click(); await flush();
     const transport = f.viewer.watchChat.mock.calls[0][1]; transport.status('live', 'Connected');
 
     const state: LiveRoomView = { schema: 1, channel: 'wuote', gameId: id, hostId: '456', revision: 1, phase: 'guess',
@@ -196,6 +211,7 @@ describe('shared channel guess picker', () => {
     const id = '11111111-1111-4111-8111-111111111111';
     const f = mount(`/guess/wuote/${gameCode(id, 'twitch')}/`);
     f.button('Sign in with Twitch').click(); await flush();
+    f.button('Join wuote’s game')?.click(); await flush();
     const transport = f.viewer.watchChat.mock.calls[0][1]; transport.status('live', 'Connected');
     const state: LiveRoomView = { schema: 1, channel: 'wuote', gameId: id, hostId: '456', revision: 1, phase: 'reveal',
       online: true, paused: false, round: 10, roundId: id, clue: new URL(roundLink('/guess/?channel=wuote', 10, true)).hash.slice(6),
@@ -232,6 +248,7 @@ describe('shared channel guess picker', () => {
       'Playing as {{player}}': 'Du spielst als {{player}}', 'Connected': 'Verbunden' }, true, true);
     const f = mount(roundLink('/guess/?channel=wuote', 2, true)); await flush();
     f.button('Sign in with Twitch').click(); await flush();
+    f.button('Join wuote’s game')?.click(); await flush();
     const chat = f.main.querySelector('.stream-connection-bar')!;
     const handlers = f.viewer.watchChat.mock.calls[0][1];
     handlers.status('live', 'Chat connected. Latest valid guess received before you submit counts.');
@@ -267,6 +284,7 @@ describe('shared channel guess picker', () => {
     expect(f.button('Send guess').disabled).toBe(true);
     ui.pick({ x: -3152, y: 874 });
     f.button('Sign in with Twitch').click(); await flush();
+    f.button('Join wuote’s game')?.click(); await flush();
     expect(f.viewer.watchChat).toHaveBeenCalledWith('noitaguessr', expect.any(Object));
     expect(f.viewer.sendGuess).not.toHaveBeenCalled();
     const layout = [...f.main.children];
@@ -293,6 +311,7 @@ describe('shared channel guess picker', () => {
     expect(ui.show).toHaveBeenCalledWith(camera);
     expect(document.querySelector('.stream-toolbar-round .stream-round')!.textContent).toBe('Round 3 / 10');
     ui.pick({ x: 0, y: 0 }); f.button('Sign in with Twitch').click(); await flush();
+    f.button('Join wuote’s game')?.click(); await flush();
     f.button('Send guess').click(); await flush();
     expect(f.viewer.sendGuess).toHaveBeenCalledWith('wuote', 3, { x: 0, y: 0 });
     expect(fetch).not.toHaveBeenCalled();
@@ -310,6 +329,7 @@ describe('shared channel guess picker', () => {
   it('shows token expiry and permits a different connected user to submit the same pin', async () => {
     const f = mount(roundLink());
     ui.pick({ x: 0, y: 0 }); f.button('Sign in with Twitch').click(); await flush();
+    f.button('Join wuote’s game')?.click(); await flush();
     f.button('Send guess').click(); await flush();
     f.update({ connected: false, userId: null, error: 'Twitch sign-in expired. Connect again.' });
     expect(f.main.querySelector('.stream-signin-error')!.textContent).toContain('expired');
@@ -323,6 +343,7 @@ describe('shared channel guess picker', () => {
     expect(f.main.textContent).toContain('Waiting for a round');
     expect(f.main.textContent).not.toContain('Round 1');
     ui.pick({ x: 0, y: 0 }); f.button('Sign in with Twitch').click(); await flush();
+    f.button('Join wuote’s game')?.click(); await flush();
     expect(f.button('Send guess').disabled).toBe(true);
     expect(ui.show).not.toHaveBeenCalled();
     expect(f.viewer.sendGuess).not.toHaveBeenCalled();
@@ -356,6 +377,7 @@ describe('shared channel guess picker', () => {
     control('Zoom in').click(); await flush();
     expect(f.main.querySelector('.stream-maximum')!.textContent).toContain('4,500');
     ui.pick({ x: 10, y: 20 }); f.button('Sign in with Twitch').click(); await flush();
+    f.button('Join wuote’s game')?.click(); await flush();
     f.button('Send guess').click(); await flush();
     expect(f.viewer.sendGuess).toHaveBeenCalledExactlyOnceWith('wuote', 2, { x: 10, y: 20 }, 4500);
   });
