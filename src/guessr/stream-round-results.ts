@@ -3,6 +3,7 @@ import { streamStandings } from './stream-state';
 import type { StreamGame } from './stream-types';
 import { bindText, formatGuessrNumber, guessrGameTerm, guessrLocale, onGuessrLanguageChanged, tr } from './i18n';
 import { playerColor } from './player-color';
+import { streamHostName } from './stream-display-name';
 
 export function streamRoundResults(main: HTMLElement, game: StreamGame, index: number, actions: HTMLElement): () => void {
   const reveal = game.reveals[index], config = game.session.config;
@@ -26,7 +27,9 @@ export function streamRoundResults(main: HTMLElement, game: StreamGame, index: n
     if (selected) rows.get(selected)?.classList.remove('selected');
     selected = id; rows.get(id)?.classList.add('selected'); board.highlightPlayer(id);
   };
-  const players = streamStandings(game.participants, game.reveals.slice(0, index + 1));
+  const hostName = streamHostName(game.session.host, game.participants.find(player => player.id === game.session.host.id));
+  const players = streamStandings(game.participants, game.reveals.slice(0, index + 1))
+    .map(player => player.id === game.session.host.id ? { ...player, name: hostName } : player);
   const roundOrder = [...players].sort((a, b) => b.rounds[index].score - a.rounds[index].score || a.rank - b.rank);
   const ranks = new Map<string, number>();
   roundOrder.forEach((p, i) => ranks.set(p.id, i && p.rounds[index].score === roundOrder[i - 1].rounds[index].score

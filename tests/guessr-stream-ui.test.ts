@@ -538,6 +538,7 @@ it('groups result navigation and shows green punctuation-free copy feedback besi
     advanceStreamRound(game, streamNow + 3);
   }
   game.published = true;
+  game.session.host.name = 'Patron'; game.participants[0].name = 'Patron';
   localStorage.setItem(STREAM_SESSION_KEY, JSON.stringify(game)); history.replaceState(null, '', '/guess/stream/');
   const writeText = vi.fn(async () => {});
   Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
@@ -546,6 +547,8 @@ it('groups result navigation and shows green punctuation-free copy feedback besi
   expect(button('Back').closest('.page-heading')).not.toBeNull();
   expect(button('Back').parentElement!.firstElementChild).toBe(button('Back'));
   expect(button('Start another game').parentElement!.classList.contains('action-row')).toBe(true);
+  expect(document.querySelector('.stream-publication a')!.textContent).toBe('streamer’s results');
+  expect(document.querySelector('h1')!.textContent).toBe('streamer’s results');
   button('Copy result link').click(); for (let i = 0; i < 5; i++) await Promise.resolve();
   expect(writeText).toHaveBeenCalledWith(location.origin + '/guess/results/' + game.session.id + '/');
   expect(mocks.notice).toHaveBeenCalledWith('Copied', 'success');

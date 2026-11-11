@@ -527,8 +527,11 @@ async function handleGameTicket(request: Request, env: Env, jwtSecret: string, a
   const key = typeof binding === 'string' ? binding : await binding?.get();
   if (!key || key.length < 32) return jsonResponse({ error: 'Ranked games are not available yet.' }, allowedOrigin, 503);
   const twitch = account?.identities.find(row => row.provider === 'twitch' && row.status === 'active');
+  // Pro may come from Patreon, but a linked Twitch identity supplies the public
+  // game name. These fields are already loaded from the verified provider record.
+  const name = twitch?.login ? twitch.nickname || twitch.username || twitch.login : user.nickname || user.username;
   return jsonResponse(await signGameTicket(account ? `account:${account.id}` : `${user.provider || 'patreon'}:${user.sub}`,
-    user.nickname || user.username, key, twitch?.login ? { twitchUserId: twitch.provider_user_id, twitchLogin: twitch.login } : undefined), allowedOrigin);
+    name, key, twitch?.login ? { twitchUserId: twitch.provider_user_id, twitchLogin: twitch.login } : undefined), allowedOrigin);
 }
 
 /**

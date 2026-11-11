@@ -4,6 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import i18next from '../src/i18n';
 import { initializeGuessrTranslations } from '../src/guessr/i18n';
 import { streamResultHtml, streamResultsView } from '../src/guessr/stream-results';
+import { streamHostName, streamResultNames } from '../src/guessr/stream-display-name';
 import type { StreamResult } from '../src/guessr/stream-types';
 
 const result: StreamResult = {
@@ -31,6 +32,39 @@ afterEach(async () => {
   document.body.replaceChildren();
   if (i18next.isInitialized) await i18next.changeLanguage('en');
   vi.unstubAllGlobals();
+});
+
+it('shows the saved Twitch login in old Patron-labelled results and offline exports without changing their data', () => {
+  vi.stubGlobal('fetch', vi.fn(() => { throw Error('Name repair must not request a profile'); }));
+  const old = structuredClone(result); old.host.name = 'Patron'; old.players[0].name = 'Patron';
+  const view = streamResultsView(old);
+  expect(view.querySelector('h1')!.textContent).toBe('streamer’s results');
+  expect(view.querySelector('.stream-host-row')!.children[1].textContent).toBe('streamer, Streamer');
+  const filter = view.querySelector('input')!;
+  filter.value = 'streamer'; filter.dispatchEvent(new Event('input'));
+  expect(view.querySelectorAll('tbody tr')).toHaveLength(1);
+  const offline = new JSDOM(streamResultHtml(old), { runScripts: 'dangerously' });
+  try { expect(offline.window.document.querySelector('tr.host')!.children[1].textContent).toBe('streamer, Streamer'); }
+  finally { offline.window.close(); }
+  const exported = streamResultNames(old);
+  expect(exported.host.name).toBe('streamer'); expect(exported.players[0].name).toBe('streamer');
+  expect(exported.players[0].rounds).toBe(old.players[0].rounds);
+  expect(exported.players[0].score).toBe(old.players[0].score);
+  expect(old.host.name).toBe('Patron'); expect(old.players[0].name).toBe('Patron');
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+it('keeps real Twitch display names, including a channel actually named Patron and any chatter name', () => {
+  expect(streamResultNames(result)).toBe(result);
+  const patronChannel = structuredClone(result); patronChannel.host = { ...patronChannel.host, login: 'patron', name: 'Patron' };
+  patronChannel.players[0] = { ...patronChannel.players[0], login: 'patron', name: 'Patron' };
+  patronChannel.players[1].name = 'Patron';
+  expect(streamResultNames(patronChannel)).toBe(patronChannel);
+  const old = structuredClone(result); old.host.name = 'Patron'; old.players[0].name = 'MyChannel';
+  old.players[1].name = 'Patron';
+  const fixed = streamResultNames(old);
+  expect(fixed.host.name).toBe('MyChannel'); expect(fixed.players[1].name).toBe('Patron');
+  expect(streamHostName(old.host, old.players[1])).toBe('streamer');
 });
 
 it('keeps result filtering and sorting while translating labels, numbers, and player suffixes', async () => {

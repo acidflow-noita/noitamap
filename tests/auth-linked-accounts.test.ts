@@ -10,7 +10,7 @@ const gameKey = 'local-only-separate-game-ticket-secret-long-enough';
 let db: ReturnType<typeof accountDatabase>;
 let env: Record<string, unknown>;
 let providerFetch: ReturnType<typeof vi.fn>;
-type Person = { id: string; login: string; subscriber: boolean; scope: string[]; campaign?: string; patronStatus?: string; amount?: number };
+type Person = { id: string; login: string; displayName?: string; subscriber: boolean; scope: string[]; campaign?: string; patronStatus?: string; amount?: number };
 let people: Record<string, Person>;
 let validation: Record<string, unknown> | null;
 
@@ -54,7 +54,7 @@ beforeEach(() => {
         currently_entitled_amount_cents: person.amount ?? (person.subscriber ? 100 : 0),
       }, relationships: { campaign: { data: { id: person.campaign || 'campaign', type: 'campaign' } } } }],
     });
-    if (url.pathname === '/helix/users') return Response.json({ data: [{ id: person.id, login: person.login, display_name: person.login }] });
+    if (url.pathname === '/helix/users') return Response.json({ data: [{ id: person.id, login: person.login, display_name: person.displayName ?? person.login }] });
     if (url.pathname === '/oauth2/validate') return Response.json(validation || {
       client_id: 'twitch-client', user_id: person.id, login: person.login, scopes: person.scope, expires_in: 3500,
     });
@@ -118,7 +118,7 @@ describe('durable linked Pro accounts', () => {
     await check(linked.token); await check(linked.token);
     const ticket = await (await request('/auth/game-ticket', linked.token, {})).json() as any;
     expect(await verifyGameTicket(ticket.token, gameKey)).toMatchObject({
-      sub: `account:${before.accountId}`, twitchUserId: '12345', twitchLogin: 'mychannel', pro: true,
+      sub: `account:${before.accountId}`, name: 'mychannel', twitchUserId: '12345', twitchLogin: 'mychannel', pro: true,
     });
     expect(providerFetch).toHaveBeenCalledTimes(calls);
     const decoded = JSON.parse(Buffer.from(linked.token.split('.')[1], 'base64url').toString());
@@ -129,6 +129,22 @@ describe('durable linked Pro accounts', () => {
     expect(JSON.stringify(JSON.parse(Buffer.from(linked.refresh_token.split('.')[1], 'base64url').toString()))).not.toContain('refresh-patron');
     const signedInWithTwitch = await login('twitch');
     expect(await check(signedInWithTwitch.token)).toMatchObject({ accountId: before.accountId, isSubscriber: true });
+  });
+
+  it.each(['', 'PatreonAlias'])('uses the linked Twitch display name while keeping Patreon Pro (vanity: %s)', async vanity => {
+    people.patron.login = vanity;
+    people.twitch.displayName = 'MyChannel';
+    const patron = await login('patreon');
+    const standaloneTicket = await (await request('/auth/game-ticket', patron.token, {})).json() as { token: string };
+    expect(await verifyGameTicket(standaloneTicket.token, gameKey)).toMatchObject({ name: vanity || 'Patron', pro: true });
+    const linked = await (await link(patron.token, 'twitch', 'twitch')).json() as { token: string; accountId: string };
+    const calls = providerFetch.mock.calls.length;
+    const ticket = await (await request('/auth/game-ticket', linked.token, {})).json() as { token: string };
+    expect(await verifyGameTicket(ticket.token, gameKey)).toMatchObject({
+      sub: `account:${linked.accountId}`, name: 'MyChannel', twitchUserId: '12345', twitchLogin: 'mychannel', pro: true,
+    });
+    expect(providerFetch).toHaveBeenCalledTimes(calls);
+    expect(await check(linked.token)).toMatchObject({ provider: 'patreon', isSubscriber: true });
   });
 
   it('merges independently signed-in single-provider accounts only after both ownership proofs', async () => {

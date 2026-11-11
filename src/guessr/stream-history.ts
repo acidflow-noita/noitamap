@@ -1,5 +1,6 @@
 import { StreamApi } from './stream-api';
 import { StreamResultArchive, type ArchivedStreamResult } from './stream-result-archive';
+import { streamHostName } from './stream-display-name';
 import { bindText, formatGuessrNumber, guessrLocale } from './i18n';
 import { localizedError } from './messages';
 import { guessRouteUrl } from './routes';
@@ -105,7 +106,8 @@ export async function streamHistorySection(main: HTMLElement, channel?: string):
     try {
       const entries = await archive.list(); archived = entries;
       local = entries.filter(entry => !channel || entry.result.host.login.toLowerCase() === channel).map(entry => ({
-        id: entry.result.id, finishedAt: entry.result.finishedAt, hostName: entry.result.host.name,
+        id: entry.result.id, finishedAt: entry.result.finishedAt,
+        hostName: streamHostName(entry.result.host, entry.result.players.find(player => player.id === entry.result.host.id)),
         channel: entry.result.host.login, players: entry.result.players.length,
         published: entry.published, pending: !entry.published && !!entry.pendingToken,
       }));

@@ -2,6 +2,7 @@ import { bindAttribute, bindText, formatGuessrNumber, guessrLocale, tr } from ".
 import type { StreamResult } from "./stream-types";
 import { pageHeading } from './page-heading';
 import { playerColor } from './player-color';
+import { streamResultNames } from './stream-display-name';
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -14,6 +15,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return element;
 }
 export function streamResultsView(result: StreamResult, viewerId?: string, onBack?: () => void): HTMLElement {
+  result = streamResultNames(result);
   const section = el("section"),
     hero = el("div", "", "finish-hero");
   const host = result.players.find((p) => p.id === result.host.id)!;
@@ -157,6 +159,7 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
 /** A single file with embedded data, styling, filtering and sorting; no network,
  * framework, login, API credentials or session tokens are needed to read it. */
 export function streamResultHtml(result: StreamResult): string {
+  result = streamResultNames(result);
   const host = result.players.find(player => player.id === result.host.id)!;
   const json = (value: unknown) => JSON.stringify(value).replaceAll('<', '\\u003c')
     .replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029');
@@ -183,6 +186,7 @@ export function downloadStreamResult(
   result: StreamResult,
   format: "html" | "json",
 ): void {
+  result = streamResultNames(result);
   const data =
     format === "html"
       ? streamResultHtml(result)

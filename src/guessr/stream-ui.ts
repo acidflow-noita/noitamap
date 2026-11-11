@@ -49,6 +49,7 @@ import { streamRoundResults } from './stream-round-results';
 import { confirmQuitGame } from './quit-game';
 import { playerColor } from './player-color';
 import { StreamResultArchive, type ArchivedStreamResult } from './stream-result-archive';
+import { streamHostName } from './stream-display-name';
 
 const SHARE_ANNOUNCEMENTS_KEY = 'noitamap-guessr-share-announcements';
 
@@ -1242,7 +1243,8 @@ export class StreamUI {
     message.id = 'stream-publish-message'; message.setAttribute('role', 'status');
     const copy = copyAction('Copy result link', () => guessRouteUrl('stream-result', location.origin, { result: entry.result.id }).href, this.hooks.toast);
     const retry = action('Retry publishing', () => { void publish(); });
-    const historyLink = el('a', () => tr('{{player}}’s results', { player: entry.result.host.name }), 'btn btn-outline theme-secondary');
+    const hostName = streamHostName(entry.result.host, entry.result.players.find(player => player.id === entry.result.host.id));
+    const historyLink = el('a', () => tr('{{player}}’s results', { player: hostName }), 'btn btn-outline theme-secondary');
     historyLink.href = guessRouteUrl('history', location.origin, { channel: entry.result.host.login }).href;
     const actions = actionRow(copy, retry, historyLink);
     panel.append(message, actions);

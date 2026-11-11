@@ -32,6 +32,15 @@ function pendingResult(gameId = id, channel = 'wuote'): ArchivedStreamResult {
     players: [{ id: '1', login: channel, name: channel.toUpperCase(), score: 0, rank: 1,
       rounds: Array.from({ length: 10 }, () => ({ score: 0, areaScore: 0, positionScore: 0 })) }] } };
 }
+it('uses the saved Twitch identity for a legacy Patron-labelled local history entry', async () => {
+  const entry = pendingResult(); entry.result.host.name = 'Patron'; entry.result.players[0].name = 'Patron';
+  vi.spyOn(StreamResultArchive.prototype, 'list').mockResolvedValue([entry]);
+  const main = document.createElement('main'); document.body.append(main);
+  await streamHistorySection(main);
+  expect(main.querySelector('a[href$="/guess/wuote/"]')!.textContent).toBe('wuote');
+  expect(entry.result.host.name).toBe('Patron');
+  expect(request).not.toHaveBeenCalled();
+});
 it('keeps unpublished channel games accessible and deduplicates them once publication is confirmed', async () => {
   vi.spyOn(StreamResultArchive.prototype, 'list').mockResolvedValue([pendingResult(), pendingResult('33333333-3333-4333-8333-333333333333', 'other')]);
   const save = vi.spyOn(StreamResultArchive.prototype, 'save').mockResolvedValue();
