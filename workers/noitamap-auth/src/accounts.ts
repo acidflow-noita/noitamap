@@ -77,7 +77,12 @@ export async function saveIdentity(db: D1Database, identity: VerifiedIdentity, t
     .bind(identity.provider, identity.provider_user_id, id, identity.username, identity.nickname, identity.login,
       identity.is_follower, identity.is_subscriber, identity.checked_at, identity.status, identity.credentials,
       id, target?.version ?? null, target?.version ?? null));
-  await db.batch(statements);
+  if (target) statements.push(db.prepare(`UPDATE auth_accounts SET version = version + 1
+    WHERE id = ? AND version = ? AND EXISTS (SELECT 1 FROM auth_identities
+      WHERE account_id = ? AND provider = ? AND provider_user_id = ?)`)
+    .bind(id, target.version, id, identity.provider, identity.provider_user_id));
+  const saved = await db.batch(statements);
+  if (target && saved[saved.length - 1].meta.changes !== 1) throw new Error('link_session_changed');
   const account = await readAccount(db, id);
   if (!account || !account.identities.some(row => row.provider === identity.provider && row.provider_user_id === identity.provider_user_id)) {
     throw new Error('link_session_changed');

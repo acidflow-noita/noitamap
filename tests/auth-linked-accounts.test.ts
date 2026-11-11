@@ -153,7 +153,8 @@ describe('durable linked Pro accounts', () => {
     const response = await link(patron.token, 'twitch', 'twitch');
     expect(response.status).toBe(200);
     expect(await check(twitch.token)).toEqual({ authenticated: false });
-    expect((await check(patron.token)).linkedAccounts).toHaveLength(2);
+    expect(await check(patron.token)).toEqual({ authenticated: false });
+    expect((await check((await response.json() as any).token)).linkedAccounts).toHaveLength(2);
   });
 
   it('requires the original authenticated account to complete a link and rejects replay', async () => {
@@ -164,7 +165,7 @@ describe('durable linked Pro accounts', () => {
     expect((await request('/auth/link/complete', undefined, body)).status).toBe(401);
     expect((await request('/auth/link/complete', other.token, body)).status).toBe(409);
     expect((await request('/auth/link/complete', owner.token, body)).status).toBe(200);
-    expect((await request('/auth/link/complete', owner.token, body)).status).toBe(409);
+    expect((await request('/auth/link/complete', owner.token, body)).status).toBe(401);
     expect((await check(other.token)).linkedAccounts).toHaveLength(1);
   });
 
@@ -201,11 +202,11 @@ describe('durable linked Pro accounts', () => {
 
   it('rejects replacing an existing provider identity and does not absorb another multi-provider account', async () => {
     const first = await login('patreon');
-    expect((await link(first.token, 'twitch', 'twitch')).status).toBe(200);
-    expect((await link(first.token, 'twitch', 'twitch2')).status).toBe(409);
+    const linked = await (await link(first.token, 'twitch', 'twitch')).json() as any;
+    expect((await link(linked.token, 'twitch', 'twitch2')).status).toBe(409);
     const second = await login('patreon', 'patron2');
     expect((await link(second.token, 'twitch', 'twitch')).status).toBe(409);
-    expect((await check(first.token)).linkedAccounts[1].userId).toBe('12345');
+    expect((await check(linked.token)).linkedAccounts[1].userId).toBe('12345');
     expect((await check(second.token)).linkedAccounts).toHaveLength(1);
   });
 

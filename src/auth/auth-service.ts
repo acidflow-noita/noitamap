@@ -4,6 +4,7 @@
 
 import i18next from "../i18n";
 import { LoginReturn } from './login-return';
+import { beginBrowserLogin, cancelBrowserLogin, consumeBrowserLogin } from './browser-login';
 
 export interface AuthState {
   authenticated: boolean;
@@ -99,50 +100,15 @@ class AuthService {
     });
   }
 
-  /**
-   * Initialize auth state from URL params or stored token.
-   *
-   * Current Workers return credentials in the URL fragment. The legacy query
-   * format remains accepted during deployment rollout; both forms are scrubbed
-   * from the address bar immediately after they are read.
-   */
+  /** Credentials are scrubbed and nonce-checked by the blocking bootstrap. */
   async init(): Promise<AuthState> {
     const cleanUrl = new URL(window.location.href);
     let shouldUpdateUrl = false;
-
-    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    const urlParams = new URLSearchParams(window.location.search);
-    const fromHash = hashParams.get('auth') === 'linked' || hashParams.get('auth') === 'success';
-    const authResult = fromHash ? hashParams.get('auth') : urlParams.get('auth');
-    const tokenFromUrl = fromHash ? hashParams.get("token") : urlParams.get("token");
-    const refreshFromUrl = fromHash ? hashParams.get("refresh_token") : urlParams.get("refresh_token");
-    const errorFromUrl = urlParams.get("auth_error");
-    const linkToken = hashParams.get('auth') === 'linked' ? hashParams.get('link_token') : null;
-
-    if (errorFromUrl) {
-      console.error("Auth Error:", errorFromUrl);
-      cleanUrl.searchParams.delete("auth_error");
-      shouldUpdateUrl = true;
+    const returned = consumeBrowserLogin();
+    const linkToken = returned?.linkToken;
+    if (returned?.error) {
+      console.error('Auth Error:', returned.error);
       sessionStorage.removeItem(PENDING_LINK_KEY);
-    }
-
-    if (authResult === "success" && tokenFromUrl) {
-      localStorage.setItem(JWT_KEY, tokenFromUrl);
-      if (refreshFromUrl) localStorage.setItem(REFRESH_KEY, refreshFromUrl);
-      else localStorage.removeItem(REFRESH_KEY);
-      if (fromHash) {
-        cleanUrl.hash = "";
-      } else {
-        cleanUrl.searchParams.delete("auth");
-        cleanUrl.searchParams.delete("token");
-        cleanUrl.searchParams.delete("refresh_token");
-      }
-      shouldUpdateUrl = true;
-    }
-    if (linkToken) {
-      cleanUrl.hash = '';
-      for (const name of ['auth', 'token', 'refresh_token', 'link_token']) cleanUrl.searchParams.delete(name);
-      shouldUpdateUrl = true;
     }
 
     if (this.loginReturn.arrive(cleanUrl)) shouldUpdateUrl = true;
@@ -335,11 +301,9 @@ class AuthService {
     this.loginPending = true;
     try {
       if (this.loginReturn.get('drawing')) throw new Error('The previous drawing workspace is still being restored');
-      const returnUrl = await this.loginReturn.prepare();
+      const returnUrl = beginBrowserLogin(await this.loginReturn.prepare());
       if (this.state.authenticated) {
-        // Older signed provider sessions are upgraded through their existing
-        // encrypted refresh token, proving ownership before a durable link.
-        if (!this.state.accountId && !await this.tryRefresh()) throw new Error('Sign in again before connecting another account.');
+        if (!this.state.accountId) throw new Error('Sign in again before connecting another account.');
         const response = await this.accountRequest('/auth/link/start', { provider, redirect: returnUrl, chat, announcements });
         const data = await response.json();
         if (!response.ok || !data.url) throw new Error(data.error || 'Could not start this account connection.');
@@ -353,6 +317,7 @@ class AuthService {
     } catch (error) {
       console.error('[Auth] Could not start sign-in:', error);
       this.loginReturn.discardUnreturned();
+      cancelBrowserLogin();
       sessionStorage.removeItem(PENDING_LINK_KEY);
       window.alert(error instanceof Error ? error.message : i18next.t('auth.workspaceSaveFailed', 'Could not save your workspace. Sign-in was cancelled. Please try again.'));
     } finally {
