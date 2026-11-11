@@ -11,7 +11,8 @@
  *    yesterday's bake to previous-daily-*, bake + deploy today's to daily-*).
  *
  * Required secrets (in Secrets Store 291b9519666945a1a56adbb686c62d76):
- *   CF_API_TOKEN  — dedicated API token restricted to daily-seed-serve
+ *   NOITAMAP_SEED_DEPLOY_TOKEN — dedicated API token restricted to daily-seed-serve
+ *                              (exposed through the CF_API_TOKEN binding)
  *   CF_ACCOUNT_ID — Cloudflare account ID
  *   GITLAB_BIOME_BAKER_TRIGGER_TOKEN — GitLab pipeline trigger token for the
  *                   biome-baker project (83006723)
