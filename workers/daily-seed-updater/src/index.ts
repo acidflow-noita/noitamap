@@ -11,7 +11,7 @@
  *    yesterday's bake to previous-daily-*, bake + deploy today's to daily-*).
  *
  * Required secrets (in Secrets Store 291b9519666945a1a56adbb686c62d76):
- *   CF_API_TOKEN  — API token with Workers Scripts:Edit on the account
+ *   CF_API_TOKEN  — dedicated API token restricted to daily-seed-serve
  *   CF_ACCOUNT_ID — Cloudflare account ID
  *   GITLAB_BIOME_BAKER_TRIGGER_TOKEN — GitLab pipeline trigger token for the
  *                   biome-baker project (83006723)
@@ -39,8 +39,9 @@ const GITLAB_REF = "main";
 /** Parse the seed from Nolla's semicolon-delimited response. */
 function parseSeed(text: string): number | null {
   const parts = text.split(";");
-  const seed = parseInt(parts[1], 10);
-  return isNaN(seed) ? null : seed;
+  const value = parts[1]?.trim() || '';
+  const seed = /^\d{1,10}$/.test(value) ? Number(value) : NaN;
+  return Number.isSafeInteger(seed) && seed >= 0 && seed <= 4294967295 ? seed : null;
 }
 
 /**
@@ -52,8 +53,7 @@ async function fetchPublishedCurrentSeed(): Promise<number | null> {
   try {
     const resp = await fetch(PUBLIC_SEED_URL, { cf: { cacheTtl: 0 } as any });
     if (!resp.ok) return null;
-    const seed = parseInt((await resp.text()).trim(), 10);
-    return isNaN(seed) ? null : seed;
+    return parseSeed('seed;' + (await resp.text()).trim());
   } catch {
     return null;
   }
@@ -124,8 +124,7 @@ async function deployStaticAssets(
     }),
   });
   if (!sessionResp.ok) {
-    const text = await sessionResp.text();
-    throw new Error(`Asset upload session failed (${sessionResp.status}): ${text}`);
+    throw new Error(`Asset upload session failed (HTTP ${sessionResp.status}).`);
   }
   const sessionData = (await sessionResp.json()) as {
     result: { jwt: string; buckets: string[][] };
@@ -154,8 +153,7 @@ async function deployStaticAssets(
       body: formData,
     });
     if (!uploadResp.ok) {
-      const text = await uploadResp.text();
-      throw new Error(`Asset upload failed (${uploadResp.status}): ${text}`);
+      throw new Error(`Asset upload failed (HTTP ${uploadResp.status}).`);
     }
     const uploadData = (await uploadResp.json()) as { result?: { jwt?: string } };
     if (uploadData.result?.jwt) {
@@ -178,8 +176,7 @@ async function deployStaticAssets(
     body: deployForm,
   });
   if (!deployResp.ok) {
-    const text = await deployResp.text();
-    throw new Error(`Worker deploy failed (${deployResp.ok ? "OK" : deployResp.status}): ${text}`);
+    throw new Error(`Worker deploy failed (HTTP ${deployResp.status}).`);
   }
 
   console.log(`Deployed daily-seed-serve with seed: ${seed}`);
@@ -207,7 +204,7 @@ async function triggerBake(env: Env, seed: number): Promise<void> {
       console.log(`Triggered bake pipeline #${id}: ${web_url}`);
       return;
     }
-    lastError = `HTTP ${resp.status}: ${await resp.text()}`;
+    lastError = `HTTP ${resp.status}`;
     console.warn(`Bake trigger attempt ${attempt}/3 failed: ${lastError}`);
     if (attempt < 3) await new Promise((r) => setTimeout(r, 2000 * attempt));
   }
@@ -236,9 +233,6 @@ async function assetHash(contentBase64: string, extension: string): Promise<stri
 }
 
 async function runUpdate(env: Env): Promise<string> {
-  // Resolve secrets from Secrets Store
-  const [apiToken, accountId] = await Promise.all([env.CF_API_TOKEN.get(), env.CF_ACCOUNT_ID.get()]);
-
   // 0. Read whatever current_seed.txt the static worker is currently serving.
   //    That value becomes "previous" after we deploy today's fresh one. Done
   //    in parallel with the Nolla fetch so the daily update stays snappy.
@@ -249,77 +243,34 @@ async function runUpdate(env: Env): Promise<string> {
 
   // 1. Parse Nolla response
   if (!resp.ok) {
-    const msg = `Nolla fetch failed: ${resp.status} ${resp.statusText}`;
+    const msg = `Nolla fetch failed (HTTP ${resp.status}).`;
     console.error(msg);
     throw new Error(msg);
   }
   const text = await resp.text();
   const seed = parseSeed(text);
   if (seed === null) {
-    const msg = `Failed to parse seed from: ${text}`;
+    const msg = "Invalid daily seed response";
     console.error(msg);
     throw new Error(msg);
   }
   console.log(`Fetched daily seed: ${seed} (previous published: ${previousSeed ?? "<none>"})`);
 
-  // 2. Deploy to the static seed worker (publishes current + previous)
+  // A duplicate cron invocation must not overwrite yesterday's seed or spend
+  // another deployment. Failed GitLab triggers can be retried in GitLab itself.
+  if (seed === previousSeed) return `Seed unchanged: ${seed}`;
+  const [apiToken, accountId] = await Promise.all([env.CF_API_TOKEN.get(), env.CF_ACCOUNT_ID.get()]);
+  if (!/^[a-f0-9]{32}$/.test(accountId) || env.SEED_WORKER_NAME !== 'daily-seed-serve')
+    throw new Error('Invalid deployment target configuration.');
   await deployStaticAssets(seed, previousSeed, apiToken, accountId, env.SEED_WORKER_NAME);
-
-  // 3. Queue the daily bake. Skipped when the published seed already matched
-  //    (manual /update re-run): the run that actually flipped the seed
-  //    triggered the pipeline for it.
-  if (seed !== previousSeed) {
-    await triggerBake(env, seed);
-    return `Deployed seed: ${seed} (previous: ${previousSeed ?? "<none>"}); bake triggered`;
-  }
-  return `Deployed seed: ${seed} (unchanged); bake not re-triggered`;
+  await triggerBake(env, seed);
+  return `Deployed seed: ${seed}; bake triggered`;
 }
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
-
-    // Add CORS headers to all responses
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Cache-Control",
-      "Access-Control-Max-Age": "86400",
-    };
-
-    // Handle preflight requests
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
-    }
-
-    let response: Response;
-    if (url.pathname === "/update") {
-      try {
-        const result = await runUpdate(env);
-        response = new Response(result, { status: 200 });
-      } catch (err: any) {
-        response = new Response(err.message, { status: 500 });
-      }
-    } else {
-      // Default to serving assets (including current_seed.txt)
-      try {
-        response = await (env as any).ASSETS.fetch(request);
-      } catch (e) {
-        // Fallback for local dev if ASSETS is not bound correctly
-        response = new Response("Not Found", { status: 404 });
-      }
-    }
-
-    // Wrap the response with CORS headers
-    // Note: We create a new Response because some headers might be immutable
-    const newHeaders = new Headers(response.headers);
-    Object.entries(corsHeaders).forEach(([k, v]) => newHeaders.set(k, v));
-
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: newHeaders,
-    });
+  // No public HTTP invocation can access deployment credentials or start work.
+  fetch(): Response {
+    return new Response('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
   },
 
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {

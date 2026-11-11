@@ -44,3 +44,9 @@
 
 /task/
 /build_data/telescope-scenes/
+
+# Private key output and local diagnostic logs.
+tmp.txt
+*.log
+*.private.pem
+*.private.jwk

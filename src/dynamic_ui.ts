@@ -180,7 +180,7 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   nerdBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i><span class="d-none xl:d-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
   nerdBtn.addEventListener("click", () => {
     const seed = new URLSearchParams(window.location.search).get("se");
-    nerdBtn.href = seed ? `${NERD_MODE_URL}?seed=${seed}` : NERD_MODE_URL;
+    nerdBtn.href = seed ? `${NERD_MODE_URL}?seed=${encodeURIComponent(seed)}` : NERD_MODE_URL;
   });
   toolbarItems.push(nerdBtn);
 

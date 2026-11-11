@@ -3,13 +3,18 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-06-01",
   "observability": {
-    "enabled": false,
+    "enabled": true,
+    "logs": { "enabled": true, "invocation_logs": false },
+    "traces": { "enabled": false },
   },
   // Cron trigger: 00:01 UTC daily. Seed changes at midnight UTC.
   "triggers": {
     "crons": ["1 0 * * *"],
   },
-  // No routes — this worker is never exposed via HTTP.
+  // Both defaults must be disabled explicitly; no public HTTP endpoint.
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [],
   "vars": {
     "SEED_WORKER_NAME": "daily-seed-serve",
   },
@@ -20,7 +25,7 @@
     {
       "binding": "CF_API_TOKEN",
       "store_id": "291b9519666945a1a56adbb686c62d76",
-      "secret_name": "CF_API_TOKEN",
+      "secret_name": "NOITAMAP_SEED_DEPLOY_TOKEN",
     },
     {
       "binding": "CF_ACCOUNT_ID",
