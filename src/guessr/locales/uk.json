@@ -576,5 +576,10 @@
   "Could not load results. Please retry.": "Не вдалося завантажити результати. Спробуйте ще раз.",
   "Answers are temporarily unavailable. Please try again later.": "Відповіді тимчасово недоступні. Спробуйте ще раз пізніше.",
   "Player’s map marker": "Маркер гравця на карті",
-  "Green: correct location. Blue: player’s map marker.": "Зелений: правильне місцезнаходження. Синій: маркер гравця на карті."
+  "Green: correct location. Blue: player’s map marker.": "Зелений: правильне місцезнаходження. Синій: маркер гравця на карті.",
+  "Same score as {{player}}": "Такий самий результат, як у {{player}}",
+  "Players with lower scores than yours": "Гравці, у яких результат нижчий за ваш",
+  "Versus": "Проти",
+  "You scored more points than {{player}} (difference: {{score}})": "Ти набрав більше очок, ніж {{player}} (різниця: {{score}})",
+  "You scored fewer points than {{player}} (difference: {{score}})": "Ти набрав менше очок, ніж {{player}} (різниця: {{score}})"
 }

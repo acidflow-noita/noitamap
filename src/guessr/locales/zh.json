@@ -558,5 +558,10 @@
   "Could not load results. Please retry.": "无法加载结果。请重试。",
   "Answers are temporarily unavailable. Please try again later.": "目前无法提供答案。请稍后再试。",
   "Player’s map marker": "玩家地图标记",
-  "Green: correct location. Blue: player’s map marker.": "绿色：正确位置。蓝色：玩家的地图标记。"
+  "Green: correct location. Blue: player’s map marker.": "绿色：正确位置。蓝色：玩家的地图标记。",
+  "Same score as {{player}}": "与{{player}}得分相同",
+  "Players with lower scores than yours": "得分低于你的玩家",
+  "Versus": "Versus",
+  "You scored more points than {{player}} (difference: {{score}})": "你的得分比 {{player}} 高（分差：{{score}}）",
+  "You scored fewer points than {{player}} (difference: {{score}})": "你的得分比 {{player}} 少（分差：{{score}}）"
 }

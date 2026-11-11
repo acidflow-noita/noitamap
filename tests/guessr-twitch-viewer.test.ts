@@ -2,7 +2,7 @@
 import { parseGuessCommand } from '../src/guessr/guess-command';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { TwitchViewer, TWITCH_VIEWER_MESSAGE } from '../src/guessr/twitch-viewer';
+import { TwitchViewer, TWITCH_VIEWER_MESSAGE, savedTwitchViewerId } from '../src/guessr/twitch-viewer';
 
 const clients: TwitchViewer[] = [];
 const token = 'viewerToken123';
@@ -22,6 +22,18 @@ afterEach(() => {
   clients.splice(0).forEach(client => client.dispose());
   vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals();
   document.body.replaceChildren();
+});
+
+it('identifies a saved result viewer without authenticating, validating a token or changing storage', () => {
+  const fetch = vi.fn(() => { throw Error('Read-only identity must not contact Twitch'); }); vi.stubGlobal('fetch', fetch);
+  const key = 'noitamap-guessr-twitch-v1:client123';
+  localStorage.setItem(key, JSON.stringify({ userId: '987654', expiresAt: 1 }));
+  vi.mocked(localStorage.setItem).mockClear();
+  expect(savedTwitchViewerId('client123')).toBe('987654');
+  expect(fetch).not.toHaveBeenCalled(); expect(localStorage.setItem).not.toHaveBeenCalled();
+  localStorage.setItem(key, '{'); expect(savedTwitchViewerId('client123')).toBeUndefined();
+  localStorage.setItem(key, JSON.stringify({ userId: '<script>' })); expect(savedTwitchViewerId('client123')).toBeUndefined();
+  localStorage.removeItem(key); expect(savedTwitchViewerId('client123')).toBeUndefined();
 });
 
 function fixture() {

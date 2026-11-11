@@ -28,7 +28,7 @@ import {
   type StreamResult,
 } from "./stream-types";
 import { TwitchChatConnection, type TwitchChatStatus, type TwitchChatCredentials } from "./twitch-chat";
-import { TwitchViewer } from "./twitch-viewer";
+import { TwitchViewer, savedTwitchViewerId } from "./twitch-viewer";
 import { TwitchAnnouncementError, canShareGameLink } from './twitch-announcement';
 import { hoverHelp } from './hover-help';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
@@ -1213,6 +1213,7 @@ export class StreamUI {
       ...(!this.game.published ? { pendingToken: this.game.session.token } : {}),
       ...(this.game.session.localChat ? { localChannel: this.game.session.host.login } : {}) };
     const view = streamResultsView(result, undefined, this.exit);
+    this.hooks.cleanupClue(view.destroy);
     main.append(view);
     this.resultPublication(view, entry, this.game);
     const rounds = el("div", "", "stream-round-links");
@@ -1342,7 +1343,9 @@ export class StreamUI {
       if (!entry) entry = { result: await this.api.result(id), published: true };
       if (!main.isConnected) return;
       loading.remove(); heading.remove();
-      const view = streamResultsView(entry.result, undefined, this.exit);
+      const viewerId = this.viewer?.getState().userId ?? savedTwitchViewerId();
+      const view = streamResultsView(entry.result, viewerId, this.exit);
+      this.hooks.cleanupClue(view.destroy);
       main.append(view); this.resultPublication(view, entry);
       this.downloadActions(main, entry.result);
 

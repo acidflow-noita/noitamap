@@ -576,5 +576,10 @@
   "Could not load results. Please retry.": "Nedařilo se načíst výsledky. Zkuste to prosím znovu.",
   "Answers are temporarily unavailable. Please try again later.": "Odpovědi nejsou momentálně k dispozici. Zkuste to prosím později.",
   "Player’s map marker": "Značka hráče na mapě",
-  "Green: correct location. Blue: player’s map marker.": "Zelená: správná poloha. Modrá: značka hráče na mapě."
+  "Green: correct location. Blue: player’s map marker.": "Zelená: správná poloha. Modrá: značka hráče na mapě.",
+  "Same score as {{player}}": "Stejný výsledek jako {{player}}",
+  "Players with lower scores than yours": "Hráči s nižším skóre než vy",
+  "Versus": "Versus",
+  "You scored more points than {{player}} (difference: {{score}})": "Získal jsi více bodů než {{player}} (rozdíl: {{score}})",
+  "You scored fewer points than {{player}} (difference: {{score}})": "Získal jsi méně bodů než {{player}} (rozdíl: {{score}})"
 }

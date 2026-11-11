@@ -3,6 +3,7 @@ import type { StreamResult } from "./stream-types";
 import { pageHeading } from './page-heading';
 import { playerColor } from './player-color';
 import { streamResultNames } from './stream-display-name';
+import { streamResultShare } from './stream-share';
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -14,7 +15,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
   element.className = className;
   return element;
 }
-export function streamResultsView(result: StreamResult, viewerId?: string, onBack?: () => void): HTMLElement {
+export function streamResultsView(result: StreamResult, viewerId?: string, onBack?: () => void): HTMLElement & { destroy: () => void } {
   result = streamResultNames(result);
   const section = el("section"),
     hero = el("div", "", "finish-hero");
@@ -39,6 +40,8 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
       () => viewerId && !own ? tr('The streamer did not record a guess from this account.') : tr('{{score}}, {{rounds}}, Equal scores share a rank.', { score: tr('{{points}} points', { points: formatGuessrNumber(featured.score), count: featured.score }), rounds: tr('{{rounds}} rounds', { rounds: formatGuessrNumber(result.rounds.length), count: result.rounds.length }) }),
     ),
   );
+  const share = streamResultShare(result, viewerId);
+  if (share) hero.append(share.element);
   section.append(hero);
   section.append(
     el(
@@ -154,7 +157,7 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   }
   filter.addEventListener("input", render);
   render();
-  return section;
+  return Object.assign(section, { destroy: () => share?.destroy() });
 }
 /** A single file with embedded data, styling, filtering and sorting; no network,
  * framework, login, API credentials or session tokens are needed to read it. */

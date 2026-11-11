@@ -63,6 +63,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   let progress: ClueProgress | null = null, roundKey = '';
   let submitted: { playerId: string; point: Point } | null = null;
   let drawnOutcome = '', drawnResults = '';
+  let clearResults: (() => void) | undefined;
   let live: LiveRoomView | null = null, connectionState: RoomConnection = 'connecting', connectionDetail = 'Connecting to the NoitaGuessr game…';
   let room: ReturnType<typeof watchLiveRoom> | undefined, roomEpoch = 0;
   let refresh = () => {};
@@ -201,6 +202,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const guessKey = () => point ? `${viewer.getState().userId}/${channel}/${live?.roundId ?? snapshot?.round}/${Math.round(point.x)}/${Math.round(point.y)}/${progress ? maximumScore(progress) : ''}` : '';
   const setRound = (payload: string | null, identity: string) => {
     if (identity === roundKey && (!!payload === !!snapshot)) return;
+    clearResults?.(); clearResults = undefined;
     viewport?.destroy(); viewport = undefined; clearControls?.(); clearControls = undefined;
     snapshot = undefined; progress = null; point = null; submitted = null; lastSent = ''; actionError = ''; roundKey = identity;
     reviewedRound = null;
@@ -264,7 +266,9 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       const key = `${live.gameId}/${playerId ?? ''}`;
       if (drawnResults !== key) {
         drawnResults = key;
+        clearResults?.();
         const summary = streamResultsView(expandStreamResult(live.result!), playerId ?? undefined);
+        clearResults = summary.destroy;
         const open = node('a', 'secondary', 'Open results page');
         open.href = guessRouteUrl('stream-result', location.origin, { result: live.resultId ?? live.gameId! }).href;
         const links = node('div', 'action-row'); links.append(open);
@@ -475,7 +479,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   startRoom(); refresh();
   const ticks = twitchUpdates ? setInterval(refresh, 250) : undefined;
   return () => {
-    closed = true; room?.dispose(); unsubscribe(); unsubscribeLanguage(); chat.dispose(); board.destroy(); viewport?.destroy(); clearControls?.();
+    closed = true; room?.dispose(); unsubscribe(); unsubscribeLanguage(); chat.dispose(); board.destroy(); viewport?.destroy(); clearControls?.(); clearResults?.();
     clearInterval(ticks);
     window.removeEventListener('offline', refresh); window.removeEventListener('online', refresh);
     sendHelp.dispose(); connection.remove(); round.remove(); roomStatus.remove();

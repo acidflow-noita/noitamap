@@ -103,7 +103,7 @@ it('updates image language and discards stale renders after a language switch or
   open(); await vi.waitFor(() => expect(mocks.render).toHaveBeenCalledOnce());
   await i18next.changeLanguage('de');
   await vi.waitFor(() => expect(button('PNG herunterladen').disabled).toBe(false));
-  const preview = document.querySelector<HTMLImageElement>('.daily-share-preview img')!, url = preview.src;
+  const preview = document.querySelector<HTMLImageElement>('.result-share-preview img')!, url = preview.src;
   expect(preview.alt).toContain('45.000');
   resolveOld(png()); await Promise.resolve();
   expect(preview.src).toBe(url);

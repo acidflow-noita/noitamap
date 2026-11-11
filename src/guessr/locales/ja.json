@@ -558,5 +558,10 @@
   "Could not load results. Please retry.": "結果を読み込めませんでした。もう一度お試しください。",
   "Answers are temporarily unavailable. Please try again later.": "現在、回答はご利用いただけません。後ほど再度お試しください。",
   "Player’s map marker": "プレイヤーのマップマーカー",
-  "Green: correct location. Blue: player’s map marker.": "緑：正しい位置。青：プレイヤーのマップマーカー。"
+  "Green: correct location. Blue: player’s map marker.": "緑：正しい位置。青：プレイヤーのマップマーカー。",
+  "Same score as {{player}}": "{{player}}と同じ得点",
+  "Players with lower scores than yours": "あなたよりもスコアが低いプレイヤー",
+  "Versus": "対決",
+  "You scored more points than {{player}} (difference: {{score}})": "あなたは{{player}}よりも多くのポイントを獲得しました（差：{{score}}）",
+  "You scored fewer points than {{player}} (difference: {{score}})": "あなたの得点は{{player}}より少なかった（差：{{score}}）"
 }

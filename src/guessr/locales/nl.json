@@ -558,5 +558,10 @@
   "Could not load results. Please retry.": "De resultaten konden niet worden geladen. Probeer het nog eens.",
   "Answers are temporarily unavailable. Please try again later.": "De antwoorden zijn tijdelijk niet beschikbaar. Probeer het later nog eens.",
   "Player’s map marker": "Kaartmarkering van de speler",
-  "Green: correct location. Blue: player’s map marker.": "Groen: juiste locatie. Blauw: de markering van de speler op de kaart."
+  "Green: correct location. Blue: player’s map marker.": "Groen: juiste locatie. Blauw: de markering van de speler op de kaart.",
+  "Same score as {{player}}": "Dezelfde score als {{player}}",
+  "Players with lower scores than yours": "Spelers met lagere scores dan die van jou",
+  "Versus": "Versus",
+  "You scored more points than {{player}} (difference: {{score}})": "Je hebt meer punten gescoord dan {{player}} (verschil: {{score}})",
+  "You scored fewer points than {{player}} (difference: {{score}})": "Je hebt minder punten gescoord dan {{player}} (verschil: {{score}})"
 }

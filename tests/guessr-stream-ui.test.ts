@@ -28,7 +28,7 @@ vi.mock('../src/guessr/stream-api', () => ({ StreamApi: class {
   clock = async () => ({ now: Date.now() });
 } }));
 vi.mock('../src/guessr/stream-picker', () => ({ mountStreamPicker: () => { mocks.picker(); return () => {}; } }));
-vi.mock('../src/guessr/twitch-viewer', () => ({ TwitchViewer: class {
+vi.mock('../src/guessr/twitch-viewer', () => ({ savedTwitchViewerId: () => undefined, TwitchViewer: class {
   ready = Promise.resolve(); getState() { return { connected: true, userId: '123', login: 'streamer' }; }
   watchChat = mocks.watchChat;
   postGameLink = mocks.post;

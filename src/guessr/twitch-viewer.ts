@@ -29,6 +29,17 @@ const VALIDATE_INTERVAL = 60 * 60 * 1000;
 const AUTH_TIMEOUT = 5 * 60 * 1000;
 const STORAGE_KEY = 'noitamap-guessr-twitch-v1:';
 
+/** Read-only result presentation, including after token expiry. This neither
+ * authenticates a viewer nor starts token validation or a chat connection. */
+export function savedTwitchViewerId(clientId = import.meta.env.VITE_GUESSR_TWITCH_CLIENT_ID ?? DEFAULT_TWITCH_CLIENT_ID): string | undefined {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY + clientId);
+    if (!raw || raw.length > 4096) return undefined;
+    const saved = JSON.parse(raw);
+    return typeof saved?.userId === 'string' && /^\d{1,30}$/.test(saved.userId) ? saved.userId : undefined;
+  } catch { return undefined; }
+}
+
 export interface TwitchViewerState {
   connected: boolean;
   connecting: boolean;

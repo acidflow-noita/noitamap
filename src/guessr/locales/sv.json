@@ -558,5 +558,10 @@
   "Could not load results. Please retry.": "Det gick inte att ladda resultaten. Försök igen.",
   "Answers are temporarily unavailable. Please try again later.": "Svaren är tillfälligt otillgängliga. Försök igen senare.",
   "Player’s map marker": "Spelarens kartmarkör",
-  "Green: correct location. Blue: player’s map marker.": "Grönt: rätt plats. Blått: spelarens kartmarkör."
+  "Green: correct location. Blue: player’s map marker.": "Grönt: rätt plats. Blått: spelarens kartmarkör.",
+  "Same score as {{player}}": "Samma poäng som {{player}}",
+  "Players with lower scores than yours": "Spelare med lägre poäng än du",
+  "Versus": "Versus",
+  "You scored more points than {{player}} (difference: {{score}})": "Du fick fler poäng än {{player}} (skillnad: {{score}})",
+  "You scored fewer points than {{player}} (difference: {{score}})": "Du fick färre poäng än {{player}} (skillnad: {{score}})"
 }

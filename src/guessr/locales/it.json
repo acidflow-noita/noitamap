@@ -567,5 +567,10 @@
   "Could not load results. Please retry.": "Impossibile caricare i risultati. Riprovare.",
   "Answers are temporarily unavailable. Please try again later.": "Le risposte non sono disponibili al momento. Riprova più tardi.",
   "Player’s map marker": "Indicatore sulla mappa del giocatore",
-  "Green: correct location. Blue: player’s map marker.": "Verde: posizione corretta. Blu: indicatore del giocatore sulla mappa."
+  "Green: correct location. Blue: player’s map marker.": "Verde: posizione corretta. Blu: indicatore del giocatore sulla mappa.",
+  "Same score as {{player}}": "Stesso punteggio di {{player}}",
+  "Players with lower scores than yours": "Giocatori con punteggi inferiori al tuo",
+  "Versus": "Versus",
+  "You scored more points than {{player}} (difference: {{score}})": "Hai totalizzato più punti di {{player}} (differenza: {{score}})",
+  "You scored fewer points than {{player}} (difference: {{score}})": "Hai totalizzato meno punti di {{player}} (differenza: {{score}})"
 }

@@ -558,5 +558,10 @@
   "Could not load results. Please retry.": "Hasil tidak dapat dimuat. Silakan coba lagi.",
   "Answers are temporarily unavailable. Please try again later.": "Jawaban saat ini tidak tersedia. Silakan coba lagi nanti.",
   "Player’s map marker": "Penanda peta pemain",
-  "Green: correct location. Blue: player’s map marker.": "Hijau: lokasi yang benar. Biru: penanda peta pemain."
+  "Green: correct location. Blue: player’s map marker.": "Hijau: lokasi yang benar. Biru: penanda peta pemain.",
+  "Same score as {{player}}": "Skornya sama dengan {{player}}",
+  "Players with lower scores than yours": "Pemain yang nilainya lebih rendah daripada nilai Anda",
+  "Versus": "Versus",
+  "You scored more points than {{player}} (difference: {{score}})": "Kamu mendapatkan poin lebih banyak daripada {{player}} (selisih: {{score}})",
+  "You scored fewer points than {{player}} (difference: {{score}})": "Kamu mendapat poin lebih sedikit daripada {{player}} (selisih: {{score}})"
 }

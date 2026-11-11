@@ -558,5 +558,10 @@
   "Could not load results. Please retry.": "Could not load results. Please retry.",
   "Answers are temporarily unavailable. Please try again later.": "Answers are temporarily unavailable. Please try again later.",
   "Player’s map marker": "Player’s map marker",
-  "Green: correct location. Blue: player’s map marker.": "Green: correct location. Blue: player’s map marker."
+  "Green: correct location. Blue: player’s map marker.": "Green: correct location. Blue: player’s map marker.",
+  "Same score as {{player}}": "Tied with {{player}}",
+  "Players with lower scores than yours": "Chatters outscored",
+  "Versus": "VS",
+  "You scored more points than {{player}} (difference: {{score}})": "Beat {{player}} by {{score}}",
+  "You scored fewer points than {{player}} (difference: {{score}})": "Behind {{player}} by {{score}}"
 }

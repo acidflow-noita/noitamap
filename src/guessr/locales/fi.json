@@ -558,5 +558,10 @@
   "Could not load results. Please retry.": "Tuloksia ei voitu ladata. Yritä uudelleen.",
   "Answers are temporarily unavailable. Please try again later.": "Vastauksia ei ole tällä hetkellä saatavilla. Yritä myöhemmin uudelleen.",
   "Player’s map marker": "Pelaajan karttamerkki",
-  "Green: correct location. Blue: player’s map marker.": "Vihreä: oikea sijainti. Sininen: pelaajan karttamerkki."
+  "Green: correct location. Blue: player’s map marker.": "Vihreä: oikea sijainti. Sininen: pelaajan karttamerkki.",
+  "Same score as {{player}}": "Sama pistemäärä kuin {{player}}:llä",
+  "Players with lower scores than yours": "Pelaajat, joiden pisteet ovat alhaisemmat kuin sinun",
+  "Versus": "Versus",
+  "You scored more points than {{player}} (difference: {{score}})": "Sait enemmän pisteitä kuin {{player}} (ero: {{score}})",
+  "You scored fewer points than {{player}} (difference: {{score}})": "Sait vähemmän pisteitä kuin {{player}} (ero: {{score}})"
 }

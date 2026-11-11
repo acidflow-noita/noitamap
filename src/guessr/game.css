@@ -855,11 +855,11 @@ header.page-heading {
   color: var(--text-muted);
   font-size: 0.875rem;
 }
-.finish-hero:has(> .daily-share-open) {
+.finish-hero:has(> .result-share-open) {
   position: relative;
   padding-inline-end: max(32%, 13rem);
 }
-.finish-hero > .daily-share-open {
+.finish-hero > .result-share-open {
   position: absolute;
   inset-inline-end: clamp(1.5rem, 3vw, 3rem);
   inset-block-start: 50%;
@@ -867,16 +867,22 @@ header.page-heading {
   max-inline-size: 28%;
   white-space: normal;
 }
-.daily-share-dialog { --bs-dialog-width: 52rem; }
-.daily-share-preview { aspect-ratio: 5 / 3; position: relative; background: var(--bg); border-radius: var(--radius-panel); overflow: hidden; }
-.daily-share-preview > img, .daily-share-preview > .placeholder { inline-size: 100%; block-size: 100%; object-fit: contain; }
-.daily-share-preview > [hidden] { display: none; }
-.daily-share-feedback { min-block-size: 2.8em; margin: .75rem 0 0; color: var(--text-muted); font-size: .875rem; }
-.daily-share-dialog .dialog-footer { flex-wrap: wrap; }
-.daily-share-dialog .dialog-footer > .btn { white-space: normal; }
+.result-share-dialog { --bs-dialog-width: 52rem; }
+.result-share-preview { aspect-ratio: 5 / 3; position: relative; background: var(--bg); border-radius: var(--radius-panel); overflow: hidden; }
+.result-share-preview > img, .result-share-preview > .placeholder { inline-size: 100%; block-size: 100%; object-fit: contain; }
+.result-share-preview > [hidden] { display: none; }
+.result-share-feedback { min-block-size: 2.8em; margin: .75rem 0 0; color: var(--text-muted); font-size: .875rem; }
+.result-share-dialog .dialog-footer { flex-wrap: wrap; }
+.result-share-dialog .dialog-footer > .btn { white-space: normal; }
+.result-share-player { display: flex; align-items: center; gap: var(--game-gutter); margin-block-end: var(--game-gutter); }
+.result-share-player > .combobox { position: relative; min-inline-size: 0; }
+.result-share-player .combobox-toggle { max-inline-size: min(24rem, 65vw); }
+.result-share-player .combobox-value { overflow: hidden; text-overflow: ellipsis; }
+.result-share-player .menu { max-block-size: min(20rem, 50dvh); overflow-y: auto; min-inline-size: min(20rem, 80vw); }
+.result-share-player .combobox-search-input { position: sticky; top: 0; z-index: 1; }
 @media (max-width: 40rem) {
-  .finish-hero:has(> .daily-share-open) { padding-inline-end: clamp(1.5rem, 3vw, 3rem); }
-  .finish-hero > .daily-share-open { position: static; transform: none; max-inline-size: 100%; }
+  .finish-hero:has(> .result-share-open) { padding-inline-end: clamp(1.5rem, 3vw, 3rem); }
+  .finish-hero > .result-share-open { position: static; transform: none; max-inline-size: 100%; }
 }
 .finish-actions {
   display: flex;

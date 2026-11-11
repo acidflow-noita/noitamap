@@ -576,5 +576,10 @@
   "Could not load results. Please retry.": "Не удалось загрузить результаты. Пожалуйста, повторите попытку.",
   "Answers are temporarily unavailable. Please try again later.": "Ответы временно недоступны. Пожалуйста, попробуйте позже.",
   "Player’s map marker": "Маркер игрока на карте",
-  "Green: correct location. Blue: player’s map marker.": "Зелёный: правильное местоположение. Синий: маркер игрока на карте."
+  "Green: correct location. Blue: player’s map marker.": "Зелёный: правильное местоположение. Синий: маркер игрока на карте.",
+  "Same score as {{player}}": "Тот же результат, что и у {{player}}",
+  "Players with lower scores than yours": "Игроки, у которых результат ниже вашего",
+  "Versus": "Против",
+  "You scored more points than {{player}} (difference: {{score}})": "Вы набрали больше очков, чем {{player}} (разница: {{score}})",
+  "You scored fewer points than {{player}} (difference: {{score}})": "Вы набрали меньше очков, чем {{player}} (разница: {{score}})"
 }
