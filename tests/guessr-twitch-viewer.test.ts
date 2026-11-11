@@ -228,7 +228,7 @@ describe('viewer Twitch sending', () => {
     vi.stubGlobal('opener', { postMessage: message });
     history.replaceState(null, '', '/guess/twitch-callback.html#access_token=' + token + '&state=nonce');
     document.body.innerHTML = '<p id="status"></p>';
-    const callback = readFileSync('public/guess/twitch-callback.html', 'utf8').match(/<script>([\s\S]*?)<\/script>/)![1];
+    const callback = readFileSync('public/guess/twitch-callback.html', 'utf8').match(/<script\b[^>]*>([\s\S]*?)<\/script>/)![1];
     window.eval(callback);
     expect(location.hash).toBe(''); expect(location.search).toBe('');
     expect(message).toHaveBeenCalledExactlyOnceWith({ type: TWITCH_VIEWER_MESSAGE, state: 'nonce', accessToken: token, error: null }, location.origin);

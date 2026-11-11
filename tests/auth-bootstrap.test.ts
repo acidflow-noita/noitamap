@@ -57,6 +57,6 @@ it('preserves unrelated map/drawing fragments and runs before analytics in both 
   expect(location.hash).toBe('#drawing-payload');
   for (const path of ['index.html', 'guess/index.html']) {
     const html = readFileSync(path, 'utf8');
-    expect(html.match(/<script\b[^>]*>/)?.[0]).toBe('<script src="/auth-bootstrap.js">');
+    expect(html.match(/<script\b[^>]*>/)?.[0]).toBe('<script data-cfasync="false" src="/auth-bootstrap.js">');
   }
 });

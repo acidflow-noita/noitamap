@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { build } from "vite";
 import { deliveryPlugin } from "../build_scripts/vite-delivery";
+import { createHash } from 'node:crypto';
+import { contentSecurityPolicy } from '../build_scripts/security-headers';
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -45,6 +47,27 @@ async function compile(root: string, input = "index.html") {
 }
 
 describe("production delivery output", () => {
+  it('hashes the callback and embeds auth cleanup before other executable scripts', async () => {
+    const root = await fixture();
+    const bootstrap = 'window.bootstrapRan = true;', callback = 'window.callbackRan = true;';
+    await writeFile(join(root, 'index.html'), '<!doctype html><html><head><script data-cfasync="false" src="/auth-bootstrap.js"></script></head><body><script type="module" src="/main.js"></script></body></html>');
+    await writeFile(join(root, 'public/auth-bootstrap.js'), bootstrap);
+    await mkdir(join(root, 'public/guess'));
+    await writeFile(join(root, 'public/guess/twitch-callback.html'), `<script data-cfasync="false">${callback}</script>`);
+    await compile(root);
+    const html = await readFile(join(root, 'dist/index.html'), 'utf8'), headers = await readFile(join(root, 'dist/_headers'), 'utf8');
+    expect(html).toContain('<script data-cfasync="false">' + bootstrap + '</script>');
+    expect(html).not.toContain('src="/auth-bootstrap.js');
+    expect(headers).toContain("'sha256-" + createHash('sha256').update(bootstrap).digest('base64') + "'");
+    expect(html.indexOf(bootstrap)).toBeLessThan(html.indexOf('type="module"'));
+    expect(headers).toContain("'sha256-" + createHash('sha256').update(callback).digest('base64') + "'");
+    expect(headers).toContain("script-src-attr 'none'"); expect(headers).not.toContain("'unsafe-eval'");
+    expect(headers).not.toContain('static.cloudflareinsights.com');
+    expect(headers).toContain('https://www.googletagmanager.com');
+  });
+  it('fails a build-time policy check when a new untrusted executable CDN is introduced', () => {
+    expect(() => contentSecurityPolicy(['<script src="https://cdn.example/unpinned.js"></script>'])).toThrow('Untrusted external script');
+  });
   it('retains delivery policy when the independent game page is added', async () => {
     const root = await fixture();
     await mkdir(join(root, 'guess'));
@@ -75,7 +98,10 @@ describe("production delivery output", () => {
     const policy = "/*\n  Cache-Control: no-cache\n";
     const root = await fixture(policy);
     await compile(root);
-    expect(await readFile(join(root, "dist/_headers"), "utf8")).toBe(policy);
+    const headers = await readFile(join(root, "dist/_headers"), "utf8");
+    expect(headers).toContain(policy);
+    expect(headers).not.toContain('max-age=31536000');
+    expect(headers).toContain('Content-Security-Policy:');
   });
 
   it("leaves native bake and custom JavaScript entry builds alone", async () => {

@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en" data-bs-theme="dark">
   <head>
-    <script src="/auth-bootstrap.js"></script>
+    <script data-cfasync="false" src="/auth-bootstrap.js"></script>
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DNR100WX23"></script>
-    <script>
+    <script data-cfasync="false" async src="https://www.googletagmanager.com/gtag/js?id=G-DNR100WX23"></script>
+    <script data-cfasync="false">
       window.dataLayer = window.dataLayer || [];
       function gtag() {
         dataLayer.push(arguments);
@@ -37,8 +37,7 @@
     <meta name="msapplication-config" content="assets/favicon/browserconfig.xml" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="icon" href="assets/favicon/favicon.ico" type="image/x-icon" />
-    <link rel="preconnect" href="https://rsms.me/" />
-    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="/fonts/inter-4.1/inter.css" />
     <!-- Preconnect to the daily-bake CF Static Assets workers so the TLS
          handshake is done before main.ts asks for manifests/tiles. Saves
          ~100-300ms on cold loads. The seed-source worker is hit even earlier
@@ -60,7 +59,7 @@
          arbitrary seed — so we kick off all six. The cost on a non-daily page
          is six tiny manifest.json fetches that go unused; manifests are <1 KB
          each on the wire, so the bandwidth hit is negligible. -->
-    <script>
+    <script data-cfasync="false">
       (function () {
         try {
           // Skip when ?nb=1 disables the baked fast path (bake page uses this
@@ -89,12 +88,13 @@
         } catch (e) {}
       })();
     </script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/openseadragon@6.1.0/build/openseadragon/openseadragon.min.js"
+    <script data-cfasync="false"
+      src="/vendor/openseadragon-6.1.0/openseadragon.min.js"
+      integrity="sha384-RtVkTb3ZH0ZIA7wIEiVlzQhdHcUSKxdyHKpwwd9jk9mOnYCdZONy6+f4CN4XYDvb"
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="/vendor/bootstrap-icons-1.13.1/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="/src/styles.css" />
 
     <!-- Facebook Meta Tags -->

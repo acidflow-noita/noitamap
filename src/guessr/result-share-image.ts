@@ -40,11 +40,11 @@ let font: Promise<void> | undefined;
 function loadFont(): Promise<void> {
   return font ??= (async () => {
     if (typeof FontFace === 'undefined' || !document.fonts) return;
-    // Same cacheable font as the site's rsms.me/inter/inter.css. A separate face
+    // Same locally hosted Inter 4.1 variable font as the site. A separate face
     // applies OpenType digits to Canvas without changing the site's shared face.
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const face = new FontFace('NoitaGuessrExport', 'url(https://rsms.me/inter/font-files/InterVariable.woff2?v=4.1)',
+      const face = new FontFace('NoitaGuessrExport', 'url(/fonts/inter-4.1/InterVariable.woff2)',
         { weight: '100 900', featureSettings: FEATURES });
       await Promise.race([face.load(), new Promise<never>((_, reject) => {
         timeout = setTimeout(() => reject(new Error('Font loading timed out')), 4000);

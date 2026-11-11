@@ -1,6 +1,7 @@
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { Plugin, ResolvedConfig } from "vite";
+import { contentSecurityPolicy } from './security-headers.ts';
 
 // Build inputs / duplicate metadata. Runtime translations use locales and
 // telescope's data/translations.csv; sprite metadata uses generated JS chunks.
@@ -29,6 +30,14 @@ export function deliveryPlugin(): Plugin {
         inputs.every(input => input.endsWith('.html')) &&
         inputs.some(input => resolve(config.root, input) === resolve(config.root, "index.html"));
     },
+    async transformIndexHtml(html) {
+      if (!enabled || !html.includes('src="/auth-bootstrap.js"')) return html;
+      const script = await readFile(resolve(config.root, 'public/auth-bootstrap.js'), 'utf8');
+      // Cleanup must not depend on another request succeeding. The generated
+      // CSP hashes these exact bytes; Rocket Loader must leave their order alone.
+      return html.replace(/<script\b[^>]*\bsrc="\/auth-bootstrap\.js"[^>]*>\s*<\/script>/,
+        `<script data-cfasync="false">${script}</script>`);
+    },
     async writeBundle(options, bundle) {
       if (!enabled || !bundle["index.html"]) return;
       const outDir = resolve(config.root, options.dir || config.build.outDir);
@@ -45,9 +54,19 @@ export function deliveryPlugin(): Plugin {
       // applying a most-specific-rule-wins policy.
       if (/^\s*Cache-Control\s*:/im.test(headers)) {
         this.warn("Existing _headers cache policy retained; configure /build/* caching there if desired.");
-        return;
+      } else {
+        headers += `\n# Vite fingerprinted outputs only.\n${IMMUTABLE_PATH}\n  Cache-Control: public, max-age=31536000, immutable\n`;
       }
-      await writeFile(headersPath, `${headers.trimEnd()}${headers.trim() ? "\n\n" : ""}# Vite fingerprinted outputs only; public assets keep Pages revalidation.\n${IMMUTABLE_PATH}\n  Cache-Control: public, max-age=31536000, immutable\n`);
+      if (/^\s*Content-Security-Policy(?:-Report-Only)?\s*:/im.test(headers))
+        throw Error('Review the existing CSP before combining it with the generated security policy.');
+      const documents = Object.values(bundle).filter(file => file.type === 'asset' && file.fileName.endsWith('.html'))
+        .map(file => 'source' in file ? typeof file.source === 'string' ? file.source : new TextDecoder().decode(file.source) : '');
+      // Public copies are not Rollup assets. The OAuth callback must keep its
+      // synchronous scrub/postMessage script under the same origin-wide policy.
+      try { documents.push(await readFile(resolve(outDir, 'guess/twitch-callback.html'), 'utf8')); }
+      catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+      headers += `\n/*\n  Cache-Control: no-transform\n  Content-Security-Policy: ${contentSecurityPolicy(documents)}\n  Referrer-Policy: no-referrer\n  X-Content-Type-Options: nosniff\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n/auth-bootstrap.js\n  Cache-Control: no-cache\n`;
+      await writeFile(headersPath, headers.trimStart());
     },
   };
 }

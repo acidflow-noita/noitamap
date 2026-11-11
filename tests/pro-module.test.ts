@@ -18,7 +18,7 @@ async function compileLoader(
   localAvailable: boolean,
   localCode?: string,
 ) {
-  const localId = "\0test-local-pro";
+  const localId = "\0test-local-pro", releaseId = "\0test-verified-pro";
   const warnings: string[] = [];
   const logger = createLogger("warn");
   logger.warn = logger.warnOnce = (message) => {
@@ -39,6 +39,7 @@ async function compileLoader(
       {
         name: "test-local-pro",
         resolveId(id) {
+          if (id === "./pro-release") return releaseId;
           if (id === "virtual:noitamap-pro") {
             return localAvailable
               ? localId
@@ -46,6 +47,7 @@ async function compileLoader(
           }
         },
         load(id) {
+          if (id === releaseId || id.endsWith('/src/pro-release.ts')) return "export const loadVerifiedProModule = (...args) => globalThis.__testVerifiedProLoader(...args);";
           if (id === localId) {
             return (
               localCode ??
@@ -79,13 +81,9 @@ async function compileLoader(
 }
 
 function mockHostedBundle(code = hostedCode) {
-  const fetchMock = vi.fn().mockResolvedValue(new Response(code));
-  vi.stubGlobal("fetch", fetchMock);
-  const create = vi
-    .spyOn(URL, "createObjectURL")
-    .mockReturnValue(dataUrl(code));
-  const revoke = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
-  return { fetchMock, create, revoke };
+  const fetchMock = vi.fn(async () => import(/* @vite-ignore */ dataUrl(code)));
+  vi.stubGlobal('__testVerifiedProLoader', fetchMock);
+  return { fetchMock };
 }
 
 afterEach(() => {
@@ -114,7 +112,7 @@ describe("Pro module selection", () => {
     "loads $source Pro with DEV=$dev and local source=$localAvailable",
     async ({ dev, localAvailable, source }) => {
       const { loadProModule } = await compileLoader(dev, localAvailable);
-      const { fetchMock, create, revoke } = mockHostedBundle();
+      const { fetchMock } = mockHostedBundle();
       const hooks = { loaded: [] as string[] };
       const module = await loadProModule();
       await module.init(hooks as unknown as NoitamapProHooks);
@@ -122,17 +120,11 @@ describe("Pro module selection", () => {
 
       if (source === "local") {
         expect(fetchMock).not.toHaveBeenCalled();
-        expect(create).not.toHaveBeenCalled();
       } else {
         expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
-          "https://noitamap-pro.acidflow.stream/pro.js?v=pro-loader-test",
-          { cache: "no-cache" },
+          'https://noitamap-pro.acidflow.stream/pro.manifest.json',
+          expect.objectContaining({ keyId: 'pro-release-v1', key: expect.objectContaining({ kty: 'EC', crv: 'P-256' }) }),
         );
-        expect(create).toHaveBeenCalledTimes(1);
-        const blob = create.mock.calls[0][0] as Blob;
-        expect(blob.type).toBe("application/javascript");
-        expect(await blob.text()).toBe(hostedCode);
-        expect(revoke).toHaveBeenCalledExactlyOnceWith(dataUrl(hostedCode));
       }
     },
   );
@@ -153,20 +145,18 @@ describe("Pro module selection", () => {
 
   it("reports real hosted HTTP failures instead of loading the unavailable placeholder", async () => {
     const { loadProModule } = await compileLoader(true, false);
-    const { fetchMock, create } = mockHostedBundle();
-    fetchMock.mockResolvedValue(new Response("Unavailable", { status: 503 }));
+    const { fetchMock } = mockHostedBundle();
+    fetchMock.mockRejectedValue(new Error("Pro resource unavailable (HTTP 503)."));
     await expect(loadProModule()).rejects.toThrow(
-      "Failed to fetch Pro bundle: HTTP 503",
+      "Pro resource unavailable (HTTP 503).",
     );
-    expect(create).not.toHaveBeenCalled();
   });
 
-  it("propagates a hosted module failure and still releases the Blob URL", async () => {
+  it("propagates verified module failures without an unsigned fallback", async () => {
     const { loadProModule } = await compileLoader(true, false);
     const code =
       "throw new Error('broken hosted Pro'); export async function init() {}";
-    const { revoke } = mockHostedBundle(code);
+    mockHostedBundle(code);
     await expect(loadProModule()).rejects.toThrow("broken hosted Pro");
-    expect(revoke).toHaveBeenCalledExactlyOnceWith(dataUrl(code));
   });
 });

@@ -1,0 +1,9 @@
+{
+  "keyId": "pro-release-v1",
+  "key": {
+    "kty": "EC",
+    "x": "52Tz3_a_coLHU169zlyAjutwhxK8QmhuH4d1L8dt58I",
+    "y": "UKVyxz5u2cHjtXHixxXNSFV8x0U-IMgRKomOmjWyZwI",
+    "crv": "P-256"
+  }
+}
