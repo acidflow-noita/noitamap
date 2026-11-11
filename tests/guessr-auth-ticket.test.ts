@@ -1,12 +1,21 @@
-import { beforeAll, describe, it, expect } from "vitest";
+import { afterAll, beforeAll, describe, it, expect } from "vitest";
 import { build } from "esbuild";
-import { verifyGameTicket } from "../workers/noitamap-guessr/src/tickets";
+import { cp, mkdtemp, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { signGameTicket as gameSigner, verifyGameTicket } from "../workers/noitamap-guessr/src/tickets";
+import { signGameTicket as authSigner } from '../workers/noitamap-auth/src/game-ticket';
 let worker: { fetch(request: Request, env: unknown): Promise<Response> };
+let standalone: string;
 const loginKey = "local-auth-test-key-not-used-in-production",
   gameKey = "separate-game-test-key-not-used-in-production";
 beforeAll(async () => {
+  // Match copying only the auth folder: a sibling Guessr checkout cannot mask
+  // an undeclared build dependency in this test.
+  standalone = await mkdtemp(join(tmpdir(), 'noitamap-auth-isolated-test-'));
+  await cp('workers/noitamap-auth/src', join(standalone, 'src'), { recursive: true });
   const result = await build({
-    entryPoints: ["workers/noitamap-auth/src/index.ts"],
+    entryPoints: [join(standalone, 'src/index.ts')],
     bundle: true,
     write: false,
     format: "iife",
@@ -18,6 +27,7 @@ beforeAll(async () => {
     result.outputFiles[0].text + "\nreturn TestAuthWorker.default;",
   )();
 });
+afterAll(async () => { if (standalone) await rm(standalone, { recursive: true, force: true }); });
 async function access(
   subscriber: boolean,
   extra: Record<string, unknown> = {},
@@ -78,6 +88,17 @@ async function call(
   );
 }
 describe("separate game-ticket issuer", () => {
+  it.each([
+    ['patreon:42', 'Patron', undefined],
+    ['account:linked', '配信者', { twitchUserId: '12345', twitchLogin: 'mychannel' }],
+    ['twitch:12345', 'A'.repeat(60), { twitchUserId: '12345', twitchLogin: 'mychannel' }],
+  ] as const)('keeps standalone signing compatible for %s', async (sub, name, identity) => {
+    const now = Date.UTC(2026, 10, 10, 12);
+    const auth = await authSigner(sub, name, gameKey, identity ?? now, now);
+    expect(auth).toEqual(await gameSigner(sub, name, gameKey, identity ?? now, now));
+    expect(await verifyGameTicket(auth.token, gameKey, now)).toMatchObject({ sub, name: name.slice(0, 48), pro: true });
+    expect(await verifyGameTicket(auth.token, loginKey, now)).toBeNull();
+  });
   it("issues a game-only identity for a verified Pro session", async () => {
     const response = await call(await access(true));
     expect(response.status).toBe(200);

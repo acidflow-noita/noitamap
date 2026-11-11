@@ -1,4 +1,4 @@
-import { signGameTicket } from '../../noitamap-guessr/src/tickets';
+import { signGameTicket } from './game-ticket';
 import { readAccount, saveIdentity, unlinkIdentity, createLinkIntent, startLinkIntent, finishLinkOAuth, consumeLinkIntent,
   type Account, type Identity, type VerifiedIdentity, type Provider } from './accounts';
 
