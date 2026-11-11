@@ -14,7 +14,7 @@
     "STREAM_IMAGE_ROOT": "https://guessr-tiles.sage-data.xyz/images",
     "STREAM_REFERENCE_ROOT": "https://guessr-map.sage-data.xyz/map_files/",
     "DAILY_ASSET_HOSTS": "noitaguessr-tiles.pages.dev,noitaguessr-map.pages.dev",
-    "ALLOWED_ORIGINS": "https://dynamic-map.noitamap.com,http://localhost:5173,http://127.0.0.1:5173",
+    "ALLOWED_ORIGINS": "https://dynamic-map.noitamap.com",
     "DAILY_REQUEST_BUDGET": "10000",
   },
   "d1_databases": [
@@ -25,10 +25,11 @@
       "migrations_dir": "migrations",
     },
   ],
-  "durable_objects": {
-    "bindings": [{ "name": "LIVE_ROOMS", "class_name": "LiveRoom" }],
-  },
-  "migrations": [{ "tag": "live-rooms-v1", "new_sqlite_classes": ["LiveRoom"] }],
+  "migrations": [
+    { "tag": "live-rooms-v1", "new_sqlite_classes": ["LiveRoom"] },
+    { "tag": "retire-live-rooms-v2", "deleted_classes": ["LiveRoom"] }
+  ],
+  "ratelimits": [{ "name": "PUBLIC_GAME_RATE_LIMIT", "namespace_id": "111103", "simple": { "limit": 120, "period": 60 } }],
   "assets": {
     "directory": "../../task/guessr/private/worker-assets",
     "binding": "ASSETS",

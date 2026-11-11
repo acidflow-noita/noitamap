@@ -11,7 +11,7 @@ import { TwitchViewer, twitchMessageText } from './twitch-viewer';
 import { decodeViewerClue } from './viewer-clue';
 import { viewerChatPanel } from './viewer-chat-panel';
 import { supportedCamera } from './clue-camera';
-import { watchLiveRoom, type RoomConnection } from './live-room-client';
+import type { RoomConnection } from './live-room-types';
 import { watchTwitchGame } from './twitch-game-client';
 import { StreamViewerHistory } from './stream-viewer-history';
 import { guessReceiptKey, guessRejectionText } from './stream-wire';
@@ -40,7 +40,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const url = new URL(location.href);
   const candidate = readGuessRoute(url).channel || '';
   let requestedGame = readGuessRoute(url).game;
-  const twitchUpdates = readGuessRoute(url).transport === 'twitch';
+  const twitchUpdates = !new URLSearchParams(url.hash.slice(1)).has('clue');
   const personal = new StreamViewerHistory(config.bounds);
   personal.identify(requestedGame, viewer.getState().userId ?? viewer.getState().savedUserId ?? null);
   let feed: ReturnType<typeof watchTwitchGame> | undefined;
@@ -65,7 +65,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   let drawnOutcome = '', drawnResults = '';
   let clearResults: (() => void) | undefined;
   let live: LiveRoomView | null = null, connectionState: RoomConnection = 'connecting', connectionDetail = 'Connecting to the NoitaGuessr game…';
-  let room: ReturnType<typeof watchLiveRoom> | undefined, roomEpoch = 0;
+  let room: ReturnType<typeof watchTwitchGame> | undefined, roomEpoch = 0;
   let refresh = () => {};
   const saveProgress = () => {
     if (!progress) return;
@@ -363,7 +363,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         if (closed || epoch !== roomEpoch) return;
         connectionState = state; connectionDetail = detail; chat.setGameConnection(state, detail); refresh();
       },
-    } satisfies Parameters<typeof watchLiveRoom>[1];
+    } satisfies Pick<Parameters<typeof watchTwitchGame>[3], 'state' | 'status'>;
     if (twitchUpdates) {
       feed = watchTwitchGame(viewer, channel, requestedGame, { ...handlers,
         recovery: () => personal.recovery(live?.timing?.revealed ?? 0),
@@ -383,7 +383,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       });
       room = feed;
       const transport = chat.transportState(); feed.transport(transport.status, transport.detail);
-    } else room = watchLiveRoom(channel, handlers);
+    }
   };
   refresh = () => {
     const state = viewer.getState();

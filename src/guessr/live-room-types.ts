@@ -1,3 +1,4 @@
+export type RoomConnection = 'connecting' | 'connected' | 'retrying' | 'stopped' | 'offline';
 import type { StreamPublishedResult, StreamRoundOutcome } from './stream-types.ts';
 import type { AreaDifficulty } from './area-rules.ts';
 

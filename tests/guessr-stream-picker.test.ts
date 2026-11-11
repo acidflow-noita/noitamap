@@ -7,7 +7,6 @@ import type { TwitchViewer, TwitchViewerState } from '../src/guessr/twitch-viewe
 import type { ImageGameConfig } from '../src/guessr/image-game';
 import type { Point } from '../src/guessr/rules';
 import type { LiveRoomView } from '../src/guessr/live-room-types';
-import { watchLiveRoom } from '../src/guessr/live-room-client';
 import type { StreamPublishedResult } from '../src/guessr/stream-types';
 import i18next from '../src/i18n';
 import { initializeGuessrTranslations } from '../src/guessr/i18n';
@@ -26,9 +25,6 @@ vi.mock('../src/guessr/map-board', () => ({ MapBoard: class {
 vi.mock('../src/guessr/clue-viewport', () => ({ ClueViewport: class {
   show = ui.show; destroy = ui.destroy;
 } }));
-vi.mock('../src/guessr/live-room-client', () => ({
-  watchLiveRoom: vi.fn(() => ({ retry: vi.fn(), dispose: vi.fn() })),
-}));
 const config: ImageGameConfig = {
   version: 'guessr-images-' + '1'.repeat(32), overview: '/overview.webp',
   bounds: { x: -17920, y: -31744, width: 36352, height: 73728 }, map: {} as ImageGameConfig['map'],
@@ -131,7 +127,7 @@ describe('shared channel guess picker', () => {
       f.leave();
       const restored = mount(url, { savedUserId: '123', restoring: true });
       expect(restored.main.textContent).toContain('5,000');
-      expect(fetch).not.toHaveBeenCalled(); expect(watchLiveRoom).not.toHaveBeenCalled();
+      expect(fetch).not.toHaveBeenCalled();
     } finally { hashing?.mockRestore(); clock.mockRestore(); }
   });
 
@@ -144,7 +140,7 @@ describe('shared channel guess picker', () => {
     expect(f.main.querySelector<HTMLElement>('.stream-pro-status')!.dataset.proStatus).toBe('active');
     f.button('Sign in with Twitch').click(); await flush();
     const transport = f.viewer.watchChat.mock.calls[0][1]; transport.status('live', 'Connected');
-    expect(watchLiveRoom).not.toHaveBeenCalled();
+
     const state: LiveRoomView = { schema: 1, channel: 'wuote', gameId: id, hostId: '456', revision: 1, phase: 'guess',
       online: true, paused: false, round: 1, roundId: id, clue: new URL(roundLink('/guess/?channel=wuote', 1, true)).hash.slice(6),
       expiresAt: Date.now() + 999999, timing: { phase: 'warmup', startsAt: Date.now() - 1000, deadline: Date.now() + 90000, seconds: 90, hostRound: 1 } };
@@ -193,7 +189,7 @@ describe('shared channel guess picker', () => {
     const restored = mount(url, { savedUserId: '123', restoring: true });
     expect(restored.main.textContent).toContain('5,000');
     expect(restored.button('Send guess').disabled).toBe(true);
-    expect(watchLiveRoom).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+     expect(fetch).not.toHaveBeenCalled();
   });
   it('does not restart a chatter countdown when the streamer begins round ten, and remembers the published game', async () => {
     vi.stubGlobal('Blob', NodeBlob);
@@ -215,115 +211,6 @@ describe('shared channel guess picker', () => {
     state.phase = 'complete'; state.revision++; state.resultId = id;
     await deliver(); await vi.waitFor(() => expect(localStorage.getItem('noitamap-guessr-published-history')).toContain(id));
     expect(JSON.parse(localStorage.getItem('noitamap-guessr-published-history')!)).toHaveLength(1);
-    expect(fetch).not.toHaveBeenCalled(); expect(watchLiveRoom).not.toHaveBeenCalled();
-  });
-
-  it('never switches a game-specific link to another game hosted by the same channel', async () => {
-    const f = mount('/guess/wuote/00000000000000000000000001/');
-    const handlers = vi.mocked(watchLiveRoom).mock.calls[0][1];
-    const state: LiveRoomView = {
-      schema: 1, channel: 'wuote', gameId: '00000000-0000-0000-0000-000000000001',
-      roundId: '22222222-2222-4222-8222-222222222222', revision: 1, phase: 'guess', online: true, paused: false,
-      round: 1, clue: new URL(roundLink('/guess/?channel=wuote', 1, true)).hash.slice(6), expiresAt: Date.now() + 99999,
-    };
-    handlers.state(state); handlers.status('connected', '');
-    f.button('Sign in with Twitch').click(); await flush(); ui.pick({ x: 10, y: 20 });
-    expect(f.button('Send guess').disabled).toBe(false);
-    handlers.state({ ...state, revision: 2, gameId: '00000000-0000-0000-0000-000000000002' });
-    expect(f.button('Send guess').disabled).toBe(true);
-    expect(f.main.textContent).toContain('This game is no longer active.');
-    expect(location.pathname).toBe('/guess/wuote/00000000000000000000000001/');
-    expect(f.main.querySelector<HTMLAnchorElement>('.stream-guess-actions a')!.href)
-      .toContain('/guess/results/00000000-0000-0000-0000-000000000001/');
-    expect(f.viewer.sendGuess).not.toHaveBeenCalled();
-  });
-  it('shows combined connection health without polling or moving the indicator', async () => {
-    const f = mount('/guess/stream/wuote/');
-    f.button('Sign in with Twitch').click(); await flush();
-    const room = vi.mocked(watchLiveRoom).mock.calls[0][1];
-    const chat = f.viewer.watchChat.mock.calls[0][1];
-    const light = f.main.querySelector<HTMLElement>('.stream-chat-state')!;
-    const parent = light.parentElement;
-    chat.status('live', 'Connected');
-    expect(light.dataset.connection).toBe('connecting');
-    room.status('connected', '');
-    expect(light.dataset.connection).toBe('connected');
-    expect(light.getAttribute('aria-description')).toContain('Connected to the game.');
-    room.status('retrying', 'Reconnecting to the NoitaGuessr game…');
-    expect(light.dataset.connection).toBe('reconnecting');
-    expect(light.getAttribute('aria-description')).toContain('Reconnecting to the NoitaGuessr game');
-    room.status('stopped', 'NoitaGuessr game connection unavailable. Try reconnecting.');
-    expect(light.dataset.connection).toBe('disconnected');
-    expect(light.parentElement).toBe(parent);
-    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
-    try {
-      window.dispatchEvent(new Event('offline'));
-      expect(light.dataset.connection).toBe('network-issues');
-      expect(light.getAttribute('aria-label')).toBe('Network issues');
-      expect(light.getAttribute('aria-description')).toContain('You are offline.');
-      expect(f.button('Send guess').disabled).toBe(true);
-      expect(light.parentElement).toBe(parent);
-      expect(fetch).not.toHaveBeenCalled();
-    } finally { online.mockRestore(); }
-  });
-  it('keeps transport failures separate from streamer selection and permits switching games without signing out', async () => {
-    const f = mount('/guess/stream/missing_streamer/');
-    expect(f.main.querySelector('.stream-chat-state')!.getAttribute('aria-label')).toBe('Twitch sign-in required');
-    f.button('Sign in with Twitch').click(); await flush();
-    const oldRoom = vi.mocked(watchLiveRoom).mock.results[0].value;
-    const oldRoomHandlers = vi.mocked(watchLiveRoom).mock.calls[0][1];
-    const oldChatStop = f.viewer.watchChat.mock.results[0].value;
-    const oldChatHandlers = f.viewer.watchChat.mock.calls[0][1];
-    oldChatHandlers.status('reconnecting', 'Reconnecting to chat…');
-    const status = f.main.querySelector<HTMLElement>('.stream-chat-state')!;
-    expect(status.getAttribute('aria-label')).toBe('Reconnecting…');
-    expect(status.getAttribute('aria-description')).toContain('Reconnecting to chat');
-    expect(status.hasAttribute('title')).toBe(false);
-    expect(f.button('Gift Pro to missing_streamer').hidden).toBe(false);
-    f.button('Exit game').click();
-    expect(oldRoom.dispose).toHaveBeenCalledOnce();
-    expect(oldChatStop).toHaveBeenCalledOnce();
-    expect(f.viewer.disconnect).not.toHaveBeenCalled();
-    expect(f.viewer.getState().connected).toBe(true);
-    expect(f.leave).toHaveBeenCalledOnce();
-    oldChatHandlers.status('live', 'Connected');
-    oldRoomHandlers.status('connected', '');
-    expect(status.isConnected).toBe(false);
-    const next = mount('/guess/stream/dunkorslam/');
-    expect(watchLiveRoom).toHaveBeenCalledTimes(2);
-    const gift = next.button('Gift Pro to dunkorslam');
-    expect(gift.classList.contains('btn-patron')).toBe(true);
-    expect(gift.hidden).toBe(true);
-    expect(gift.getAttribute('aria-description')).toContain('Gift dunkorslam a subscription to wuote’s Twitch channel.');
-  });
-
-  it('keeps Pro admission and hides gifting throughout the game without subscription requests', () => {
-    vi.useFakeTimers();
-    const f = mount('/guess/stream/streamer/');
-    const handlers = vi.mocked(watchLiveRoom).mock.calls[0][1];
-    const badge = f.main.querySelector<HTMLElement>('.stream-pro-status')!;
-    expect(badge.dataset.proStatus).toBe('unknown');
-    expect(badge.hidden).toBe(true);
-    const state: LiveRoomView = { schema: 1, channel: 'streamer', hostId: '456', gameId: '11111111-1111-4111-8111-111111111111', revision: 1,
-      phase: 'waiting', online: true, paused: false, round: 0, roundId: null, clue: null, expiresAt: null,
-      hostPro: 'active', hostProVerifiedUntil: Date.now() + 1000 };
-    handlers.state({ ...state, revision: 0, gameId: null, hostPro: 'unknown', hostProVerifiedUntil: undefined });
-    expect(badge.hidden).toBe(true);
-    handlers.state(state);
-    expect(badge.textContent).toBe('Pro');
-    expect(badge.hidden).toBe(false);
-    expect(badge.tagName).toBe('SPAN');
-    expect(f.button('Gift Pro to streamer').hidden).toBe(true);
-    vi.advanceTimersByTime(500);
-    handlers.state({ ...state, revision: 2, hostProVerifiedUntil: Date.now() + 2000 });
-    vi.advanceTimersByTime(600);
-    expect(badge.dataset.proStatus).toBe('active');
-    vi.advanceTimersByTime(1400);
-    handlers.state({ ...state, revision: 3, hostPro: 'unknown', hostProVerifiedUntil: undefined });
-    expect(badge.textContent).toBe('Pro');
-    expect(badge.getAttribute('aria-description')).toContain('confirmed for this game');
-    expect(f.button('Gift Pro to streamer').hidden).toBe(true);
-    expect(watchLiveRoom).toHaveBeenCalledTimes(1);
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -372,99 +259,6 @@ describe('shared channel guess picker', () => {
     expect(f.viewer.sendGuess).toHaveBeenCalledExactlyOnceWith('wuote', 2, { x: 10, y: 20 }, 4600);
     expect(fetch).not.toHaveBeenCalled();
   });
-
-  it('reveals the recorded pin, answer and earned score, then shows final standings without a result request', async () => {
-    const f = mount('/guess/stream/wuote/');
-    const handlers = vi.mocked(watchLiveRoom).mock.calls[0][1];
-    const state: LiveRoomView = {
-      schema: 1, channel: 'wuote', hostId: '456', gameId: '11111111-1111-4111-8111-111111111111',
-      roundId: '22222222-2222-4222-8222-222222222222', revision: 1,
-      phase: 'guess', online: true, paused: false, round: 1,
-      difficultyTier: 'normal',
-      clue: new URL(roundLink('/guess/?channel=wuote', 1, true)).hash.slice(6), expiresAt: Date.now() + 99999,
-    };
-    handlers.state(state); handlers.status('connected', ''); await flush();
-    expect(f.main.querySelector('[data-clue-difficulty]')!.textContent).toBe('Normal');
-    expect(f.main.querySelector('[data-clue-maximum]')!.textContent).toBe('Up to 5,000 points');
-    expect(f.main.querySelector<HTMLElement>('.stream-budget-bar')!.hidden).toBe(false);
-    f.button('Sign in with Twitch').click(); await flush(); ui.pick({ x: 10, y: 20 });
-    f.button('Send guess').click(); await flush();
-    expect(f.main.querySelector<HTMLElement>('.stream-round-outcome')!.hidden).toBe(true);
-    ui.pick({ x: 15000, y: 14000 }); // An unsubmitted edit must not replace the scored blue marker.
-    const outcome = { roundId: state.roundId!, answer: { x: 512, y: 512 }, label: 'Coal Pits', difficultyTier: 'normal' as const,
-      players: [{ id: '123', guess: { x: 10, y: 20 }, score: 4500, areaScore: 1000, positionScore: 3500, distance: 703 }] };
-    handlers.state({ ...state, phase: 'reveal', revision: 2, outcome }); await flush();
-    expect(f.main.querySelector<HTMLElement>('.stream-round-outcome')!.hidden).toBe(false);
-    expect(f.main.querySelector('.stream-round-outcome .round-points')!.textContent).toBe('4,500 points');
-    expect(f.main.querySelector<HTMLElement>('.stream-budget-bar')!.hidden).toBe(true);
-    expect(f.main.querySelector('.stream-reveal-distance')!.textContent).toBe('1.4 chunks away');
-    expect(ui.markers).toHaveBeenLastCalledWith({ x: 10, y: 20 }, outcome.answer);
-    const chat = f.main.querySelector('.stream-chat');
-    const result: StreamPublishedResult = {
-      schema: 1, format: 'compact-scores-v1', id: state.gameId!, version: config.version, createdAt: 1, finishedAt: 2,
-      host: { id: '456', login: 'wuote', name: 'Streamer' },
-      rounds: Array.from({ length: 10 }, (_, i) => ({ id: String(i), answer: outcome.answer, name: 'Coal Pits', difficultyTier: 'normal' })),
-      players: [
-        { id: '123', login: 'chatter', name: 'Chatter', score: 45000, rank: 1, rounds: Array.from({ length: 10 }, () => [1000, 3500]) },
-        { id: '456', login: 'wuote', name: 'Streamer', score: 30000, rank: 2, rounds: Array.from({ length: 10 }, () => [1000, 2000]) },
-      ],
-    };
-    handlers.state({ ...state, phase: 'complete', revision: 3, outcome, resultId: result.id, result }); await flush();
-    const panel = f.main.querySelector<HTMLElement>('.stream-viewer-results')!;
-    expect(panel.hidden).toBe(false); expect(panel.textContent).toContain('Your result');
-    expect(panel.textContent).toContain('45,000 points'); expect(panel.textContent).toContain('Rank 1 of 2');
-    expect(panel.querySelectorAll('tbody tr')).toHaveLength(2);
-    expect(panel.querySelector('a')!.href).toBe(location.origin + '/guess/results/' + state.gameId + '/');
-    expect(f.main.querySelector('.stream-chat')).toBe(chat);
-    expect(watchLiveRoom).toHaveBeenCalledTimes(1); expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it('explains when the connected chatter is the actual host instead of silently accepting a duplicate player', async () => {
-    const f = mount('/guess/stream/wuote/');
-    const handlers = vi.mocked(watchLiveRoom).mock.calls[0][1];
-    handlers.state({ schema: 1, channel: 'wuote', hostId: '123', gameId: '11111111-1111-4111-8111-111111111111',
-      roundId: '22222222-2222-4222-8222-222222222222', revision: 1, phase: 'guess', online: true, paused: false,
-      round: 1, clue: new URL(roundLink('/guess/?channel=wuote', 1, true)).hash.slice(6), expiresAt: Date.now() + 99999 });
-    handlers.status('connected', ''); f.button('Sign in with Twitch').click(); await flush(); ui.pick({ x: 10, y: 20 });
-    expect(f.button('Send guess').disabled).toBe(true);
-    expect(f.button('Send guess').getAttribute('aria-description')).toContain('streamer tab');
-    expect(f.viewer.sendGuess).not.toHaveBeenCalled();
-  });
-  it('keeps one channel link and chat connection while live rounds advance, closes late guesses and restores current clue for late joins', async () => {
-    const f = mount('/guess/?channel=wuote');
-    const handlers = vi.mocked(watchLiveRoom).mock.calls[0][1];
-    const payload = new URL(roundLink('/guess/?channel=wuote', 1, true)).hash.slice(6);
-    const state: LiveRoomView = {
-      schema: 1, channel: 'wuote', gameId: '11111111-1111-4111-8111-111111111111',
-      roundId: '22222222-2222-4222-8222-222222222222',
-      revision: 1, phase: 'guess', online: true, paused: false, round: 1, clue: payload, expiresAt: Date.now() + 99999,
-    };
-    handlers.state(state); handlers.status('connected', ''); await flush();
-    expect(document.querySelector('.stream-toolbar-round .stream-round')!.textContent).toBe('Round 1 / 10');
-    ui.pick({ x: 10, y: 20 }); f.button('Sign in with Twitch').click(); await flush();
-    f.button('Send guess').click(); await flush();
-    expect(f.viewer.sendGuess).toHaveBeenCalledWith('wuote', 1, { x: 10, y: 20 }, 5000, state.roundId);
-    ui.pick({ x: 11, y: 22 });
-    handlers.state({ ...state, revision: 2, phase: 'reveal' });
-    expect(f.button('Send guess').disabled).toBe(true);
-    f.button('Send guess').click(); expect(f.viewer.sendGuess).toHaveBeenCalledTimes(1);
-    const second = { ...state, revision: 3, round: 2, roundId: '33333333-3333-4333-8333-333333333333',
-      clue: new URL(roundLink('/guess/?channel=wuote', 2, true)).hash.slice(6) };
-    handlers.state(second); await flush();
-    expect(document.querySelector('.stream-toolbar-round .stream-round')!.textContent).toBe('Round 2 / 10');
-    expect(f.button('Send guess').disabled).toBe(true); // Old pin cannot carry into the new round.
-    expect(f.viewer.watchChat).toHaveBeenCalledTimes(1);
-    expect(watchLiveRoom).toHaveBeenCalledTimes(1);
-    expect(new URL(location.href).hash).toBe('');
-    ui.pick({ x: 30, y: 40 });
-    handlers.status('retrying', 'Reconnecting…');
-    expect(f.button('Send guess').disabled).toBe(true);
-    handlers.state(second); handlers.status('connected', '');
-    expect(f.button('Send guess').disabled).toBe(false);
-    f.button('Send guess').click(); await flush();
-    expect(f.viewer.sendGuess).toHaveBeenLastCalledWith('wuote', 2, { x: 30, y: 40 }, 5000, second.roundId);
-    expect(fetch).not.toHaveBeenCalled();
-  });
   it('uses one account and a persistent submission status without replacing controls or showing popovers', async () => {
     const f = mount(roundLink('/guess/?channel=Wuote'));
     expect(f.main.querySelector('iframe')).toBeNull();
@@ -509,7 +303,7 @@ describe('shared channel guess picker', () => {
     expect(f.main.querySelector('iframe')).toBeNull();
     expect(f.main.querySelector('input[name=channel]')).toBeNull();
     expect(f.main.textContent).toContain('Open the game link shared by your streamer.');
-    expect(watchLiveRoom).not.toHaveBeenCalled();
+
     f.button('Back').click(); expect(f.leave).toHaveBeenCalledOnce();
   });
 

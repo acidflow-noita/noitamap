@@ -57,16 +57,20 @@ export class StreamApi {
     return this.request("/reveal", { token, submissions });
   }
   advance(gameId: string, roundId: string): Promise<LiveRoomView> {
-    return this.request("/advance", { gameId, roundId });
+    if (!this.local) return Promise.reject(new Error("This game transport has been retired."));
+    return this.localRequest("/advance", { gameId, roundId });
   }
   pulse(gameId: string): Promise<LiveRoomView> {
-    return this.request("/pulse", { gameId });
+    if (!this.local) return Promise.reject(new Error("This game transport has been retired."));
+    return this.localRequest("/pulse", { gameId });
   }
   pause(gameId: string, paused: boolean): Promise<LiveRoomView> {
-    return this.request("/pause", { gameId, paused });
+    if (!this.local) return Promise.reject(new Error("This game transport has been retired."));
+    return this.localRequest("/pause", { gameId, paused });
   }
   quit(gameId: string): Promise<LiveRoomView> {
-    return this.request("/quit", { gameId });
+    if (!this.local) return Promise.reject(new Error("This game transport has been retired."));
+    return this.localRequest("/quit", { gameId });
   }
   publish(
     input: StreamPublishInput,

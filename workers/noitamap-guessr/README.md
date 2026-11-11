@@ -69,8 +69,7 @@ searchable/sortable table and downloadable HTML/JSON results.
 Each shared game uses `/guess/<channel>/<game-code>/`. The code preserves the
 entire UUID and identifies the transport version without a database lookup.
 It stays unchanged across rounds, F5 and OAuth returns. A link cannot silently
-join a different game from the same streamer. Previously shared legacy links
-remain readable while existing games finish.
+join a different game from the same streamer. The retired Cloudflare socket transport is no longer accepted.
 
 The host's round results show every submitted pin, fit the map to all pins and
 the solution, and provide sortable round/total scores. Hovering or selecting a
@@ -501,45 +500,18 @@ submitting rounds; zoom and movement load static images with opaque names.
 The local service is part of the Vite plugin, so no Worker/D1 setup is required
 for the new demo. It blocks direct HTTP access to `task/guessr/private/`.
 
-Start a stream at `http://localhost:5173/guess/stream/`, then use **Copy game
-link** once. Connect Twitch, start a new game, then open its copied link in a second tab
-(for wuote: `http://localhost:5173/guess/stream/wuote/`):
-the first clue arrives automatically, and closing/advancing rounds updates it
-without sharing another URL. Start a new game after upgrading from the old
-snapshot-link build; old active sessions have no registered live room.
-Sign in with Twitch from the page header, place a pin, and press Send guess
-inside the map panel. Consent alone sends nothing;
-each send is an explicit action using the viewer's own Twitch account. This
-does not require Noitamap login or Pro. The local host receives real chat after connecting Twitch; choosing Offline
-testing instead uses simulated messages. Existing simulated games keep their
-original mode and cannot recover previously unrecorded chat messages.
+Start a stream at `http://localhost:5173/guess/stream/`. Connect the isolated
+Twitch test app and create a game. Its unique invitation is shared to the
+streamer's channel. Round updates, guesses and receipts use the `noitaguessr`
+Twitch channel, directly from each browser. No Cloudflare viewer socket exists.
+Offline testing remains a Vite-only simulation; it is not a production route.
+Clue images use the existing static Pages assets. Saved clue navigation,
+submission receipts and revealed scores survive refresh in browser storage.
 
-The production link is `/guess/stream/wuote/`, with no clue payload or fragment.
-One read-only WebSocket receives the current clue and round status, including
-when joining late, and stays connected across games. Future clues/answers and host tokens are never broadcast. On round closure,
-the answer and scored host roster arrive through this same connection. Each
-chatter sees their recorded pin, actual location, distance and earned points.
-Completed standings are pushed automatically, including to late joiners, with
-a shareable results page; HTML/JSON downloads remain optional. The images remain the existing static Pages
-assets. Chatters use the demo's zoom/travel/return controls; these do not call
-the game Worker. The round, coordinates, allowance and round UUID are encoded together as a
-compact runic payload; scoring also retains the existing shared
-host ceiling. Zooming back in or returning to visited locations never refunds
-spent points. The viewer's current camera, pin, costs and confirmed submission
-are saved locally across reloads.
-Every viewer starts at the same puzzle origin and explores independently.
-The round is centered in the header. The map keeps mouse/trackpad navigation
-without separate zoom buttons. Legacy snapshot URLs still display their image, but live sessions accept only
-the encoded payload with the current round ID. The runic encoding and copy-error
-checksum are intentional obfuscation, not encryption or authentication.
-Assistance remains client-reported, as agreed for this casual game.
-
-Before returning an answer, the service persists the room's closed state. The
-host also closes locally before making that request. Old/closed/future round
-guesses and a previous game's matching round number cannot alter scores; live
-commands must carry the current server-issued round UUID. This is a casual game:
-the host's locally collected standings and client-reported assistance are not a
-server-attested anti-cheat system.
+The host checks sender identity, round identity, replay nonces and deadlines in
+the existing Twitch collector. Assistance and final standings remain
+host-reported, as agreed for this casual game. They are not server-attested
+competitive results.
 
 ### Twitch game request budget
 
@@ -556,9 +528,11 @@ For one new ten-round game, regardless of whether 1 or 1,000 chatters join:
 Host clock recovery, authentication, preflights and explicit retries are additional.
 Opening the published full standings makes a result read; it is not automatically
 polled. New sessions do not use a Durable Object or per-round database work.
-Publication inserts one final result record. Existing legacy sessions may keep
-using their previous coordinator until finished; its bindings remain for that
-transition and do not require a migration for this release.
+Publication inserts one final result record. The security release removes the
+LiveRoom export, binding, HTTP/WebSocket endpoints and public socket client.
+Deploying its `retire-live-rooms-v2` migration permanently deletes the retired
+Durable Object namespace and its old beta room data. D1 results are separate.
+There is no fallback to this transport and no migration of old active games.
 
 Host broadcasts are capped at 14 messages per rolling 30 seconds, spaced at least
 1.8 seconds apart. The sender budget survives reloads. Repeated synchronization
@@ -606,8 +580,7 @@ receipt from the streamer's collector. An uncertain send is not retried automati
 `noitaguessr` is transport only. Pro eligibility is still an active subscription
 to wuote, an active Patreon membership, or an existing verified exception.
 No new Worker call or database write is made for receiving/validating a guess.
-The existing live-room state connection remains separate; this change does not
-yet replace its broadcast/reconnect path. The packet's random nonce also makes
+The packet's random nonce makes
 fresh submissions distinct without exposing coordinates or the point allowance.
 The implementation uses Twitch's [browser OAuth flow](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#implicit-grant-flow),
 [Send Chat Message API](https://dev.twitch.tv/docs/api/reference/#send-chat-message),
@@ -870,3 +843,13 @@ npx tsc --project workers/noitamap-guessr/tsconfig.json
 
 Browser/UI review is performed manually by the owner. Unit and HTTP checks do
 not validate production Daily publishing or a real Twitch OAuth/EventSub session.
+
+
+## Security release: public demo resources
+
+The prepared puzzle source retains only bounded validated immutable bytes between
+requests. Binding I/O and response promises stay within their own invocation.
+A native rate-limit binding caps anonymous demo requests per source IP and
+Cloudflare location without D1 counter writes or new Worker calls. This reduces
+avoidable CPU/data work, but requests that reach a Worker still count toward
+its invocation quota. Production CORS allows only dynamic-map.noitamap.com.

@@ -202,6 +202,7 @@ export class StreamUI {
       ) as StreamGame;
       if (
         saved?.schema === 1 &&
+        (this.api.local || saved.session?.transport === 'twitch') &&
         saved.session?.version === hooks.config.version &&
         typeof saved.session.token === "string" &&
         /^[a-f0-9-]{36}$/.test(saved.session.id) &&
@@ -261,7 +262,7 @@ export class StreamUI {
     if (wasHosting && this.game?.stage === "guess") {
       if (this.game.timing) suspendStreamTiming(this.game, streamTime(this.game));
       else this.game.paused = true;
-      if (this.game.session.live && !this.game.timing)
+      if (this.api.local && this.game.session.live && !this.game.timing)
         void this.api.pause(this.game.session.id, true).catch(() => {});
     }
     if (wasHosting) this.save();
@@ -286,7 +287,7 @@ export class StreamUI {
       if (this.broadcast) await this.broadcast.close(true);
       this.broadcast = undefined;
       this.hostRelease?.(); this.hostRelease = undefined;
-      if (game.session.live && !game.timing) await this.api.quit(game.session.id);
+      if (this.api.local && game.session.live && !game.timing) await this.api.quit(game.session.id);
       // Another tab may have saved a different game while the request ran.
       const raw = localStorage.getItem(STREAM_SESSION_KEY);
       let saved: StreamGame | undefined;
@@ -874,7 +875,7 @@ export class StreamUI {
     if (this.game?.timing) { this.startTick(); return; }
     clearTimeout(this.pulseTimer);
     const game = this.game;
-    if (!game?.session.live || game.stage === 'complete' || !this.mounted) return;
+    if (!this.api.local || !game?.session.live || game.stage === 'complete' || !this.mounted) return;
     // Exactly one host request per minute, independent of audience size.
     this.pulseTimer = setTimeout(async () => {
       if (!this.mounted || this.game !== game) return;
@@ -914,7 +915,7 @@ export class StreamUI {
         this.stopLocalChat?.(); this.stopLocalChat = undefined;
         // Keep recovery paused until the Twitch receiver is actually connected.
         this.game.paused = true;
-      } else if (this.game.session.live) {
+      } else if (this.api.local && this.game.session.live) {
         const room = await this.api.pulse(this.game.session.id);
         this.updateProStatus(room);
         reconcileLiveRound(this.game, room);
@@ -932,7 +933,7 @@ export class StreamUI {
     this.busy = true;
     const game = this.game;
     try {
-      if (!game.timing) await this.api.advance(game.session.id, game.session.rounds[game.round].id);
+      if (this.api.local && !game.timing) await this.api.advance(game.session.id, game.session.rounds[game.round].id);
       advanceStreamRound(game); this.roomHealthy = true; this.save();
       if (game.stage !== 'complete') this.broadcast?.publishState();
       this.busy = false; this.render();

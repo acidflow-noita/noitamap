@@ -6,7 +6,7 @@ import { guessRouteUrl } from './routes';
 import { twitchMessageText } from './twitch-viewer';
 import { gameApiOrigin } from './api';
 import { hoverHelp } from './hover-help';
-import type { RoomConnection } from './live-room-client';
+import type { RoomConnection } from './live-room-types';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import type { StreamChatMessage } from './stream-state';
 

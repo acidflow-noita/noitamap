@@ -23,7 +23,7 @@ it('resumes one D1 attempt, refuses to restart it after completion and still ret
   const bindings = { ...env, GAME_ENABLED: 'true', GAME_SIGNING_SECRET: 'test-only-key-at-least-thirty-two-characters' } as Env;
   const ticket = await signGameTicket('twitch:test-player', 'Player', bindings.GAME_SIGNING_SECRET, now);
   const call = (path: string, body?: unknown) => handle(new Request('https://api.test' + path, {
-    method: body === undefined ? 'GET' : 'POST', headers: { Origin: 'http://localhost:5173',
+    method: body === undefined ? 'GET' : 'POST', headers: { Origin: 'https://dynamic-map.noitamap.com',
       Authorization: `Bearer ${ticket.token}`, 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   }), bindings, now);
@@ -38,11 +38,11 @@ it('resumes one D1 attempt, refuses to restart it after completion and still ret
   expect(await env.DB.prepare('SELECT COUNT(*) AS total FROM attempts').first('total')).toBe(1);
   const counters = await env.DB.prepare('SELECT * FROM usage_limits ORDER BY key').all();
   const publicCall = (suffix = '') => handle(new Request('https://api.test/api/daily/results/daily-attempt' + suffix,
-    { headers: { Origin: 'http://localhost:5173' } }), { ...bindings, GAME_ENABLED: 'false' }, now);
+    { headers: { Origin: 'https://dynamic-map.noitamap.com' } }), { ...bindings, GAME_ENABLED: 'false' }, now);
   const summary = await publicCall();
   expect(summary.status).toBe(200);
   expect(summary.headers.get('Cache-Control')).toBe('public, max-age=300');
-  expect(summary.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
+  expect(summary.headers.get('Access-Control-Allow-Origin')).toBe('https://dynamic-map.noitamap.com');
   expect(await summary.json()).toEqual({ id: 'daily-attempt', day, status: 'complete', totalRounds: 10, score: 43210,
     results: Array.from({ length: 10 }, (_, ordinal) => ({ ordinal, guess: null })) });
   expect(await (await publicCall('/answers')).json()).toMatchObject({ id: 'daily-attempt', status: 'complete', score: 43210 });

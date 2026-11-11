@@ -1,5 +1,4 @@
 import { packStreamPublish } from "../src/guessr/stream-codec";
-import { liveRoomGame } from "../src/guessr/live-room-game";
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import { streamRoute } from "../workers/noitamap-guessr/src/streams";
@@ -25,7 +24,6 @@ import {
   streamNow,
   streamSecret,
   streamSource,
-  memoryLiveRooms,
 } from "./helpers/guessr-stream";
 const cleanups: (() => void)[] = [];
 afterEach(() => cleanups.splice(0).forEach((fn) => fn()));
@@ -53,7 +51,6 @@ async function fixture() {
     GAME_SIGNING_SECRET: streamSecret,
     STREAM_SIGNING_SECRET: streamSecret,
     STREAM_ENABLED: "true",
-    LIVE_ROOMS: memoryLiveRooms(streamNow + 1000),
     STREAM_IMAGE_ROOT: "/images",
     GAME_ENABLED: "false",
     ALLOWED_ORIGINS: "https://dynamic-map.noitamap.com",
@@ -85,7 +82,7 @@ async function fixture() {
     );
   async function completed() {
     const session = (await (
-      await call("/sessions", {})
+      await call("/sessions", { transport: "twitch" })
     ).json()) as StreamSession;
     const game = newStreamGame(session, streamNow + 1000);
     for (let i = 0; i < session.rounds.length; i++) {
@@ -96,7 +93,6 @@ async function fixture() {
           await call("/reveal", { token: session.rounds[i].token })
         ).json(),
       );
-      expect((await call("/advance", { gameId: session.id, roundId: session.rounds[i].id })).status).toBe(200);
       advanceStreamRound(game, streamNow + 1000);
     }
     return packStreamPublish({
@@ -109,7 +105,7 @@ async function fixture() {
 }
 describe("single-document stream publication", () => {
   it('runs a Twitch game with no live object or per-round database work, then writes one final result', async () => {
-    const f = await fixture(); f.env.LIVE_ROOMS = undefined;
+    const f = await fixture();
     const start = await f.call('/sessions', { transport: 'twitch' });
     expect(start.status).toBe(201);
     const session = await start.json() as StreamSession;
@@ -132,62 +128,19 @@ describe("single-document stream publication", () => {
     expect(stored.players.find((p: { id: string }) => p.id === '888').color).toBe('#FF4500');
     expect((await f.call('/reveal', { token: session.rounds[0].token }, null)).status).toBe(401);
   });
-  it('quits the authenticated current game idempotently without an answer or result write', async () => {
+  it.each(['/advance', '/pulse', '/pause', '/quit', '/rooms/wuote'])('retires %s before any auth, source or database work', async path => {
     const f = await fixture();
-    const session = await (await f.call('/sessions', {})).json() as StreamSession;
-    expect((await f.call('/quit', { gameId: session.id }, null)).status).toBe(401);
-    const other = await signGameTicket('account:other', 'Other', streamSecret, streamHost, streamNow);
-    expect((await f.call('/quit', { gameId: session.id }, other.token)).status).toBe(403);
-    const response = await f.call('/quit', { gameId: session.id });
-    expect(response.status).toBe(200);
-    const closed = await response.json() as any;
-    expect(closed).toMatchObject({ phase: 'waiting', gameId: null, clue: null });
-    expect(JSON.stringify(closed)).not.toContain('answer');
-    expect(await (await f.call('/quit', { gameId: session.id })).json()).toEqual(closed);
-    expect((await f.call('/pulse', { gameId: session.id })).status).toBe(410);
-    expect((await f.call('/advance', { gameId: session.id, roundId: session.rounds[0].id })).status).toBe(410);
-    expect((await f.call('/reveal', { token: session.rounds[0].token })).status).toBe(410);
+    expect((await f.call(path, path.startsWith('/rooms/') ? undefined : {}, null)).status).toBe(404);
+    expect(f.calls()).toBe(0);
+  });
+  it('requires explicit Twitch transport and trusts only verified host entitlement', async () => {
+    const f = await fixture();
+    expect((await f.call('/sessions', {})).status).toBe(400);
+    const session = await (await f.call('/sessions', { transport: 'twitch', hostProVerifiedUntil: streamNow + 86400000 })).json() as StreamSession;
+    expect(session.hostProVerifiedUntil).toBe(streamNow + 1200000);
     expect(f.calls()).toBe(0);
   });
 
-  it('takes host Pro expiry only from the verified ticket and refreshes through the existing pulse', async () => {
-    const f = await fixture();
-    const session = await (await f.call('/sessions', { hostProVerifiedUntil: streamNow + 86_400_000 })).json() as StreamSession;
-    expect(session.hostProVerifiedUntil).toBe(streamNow + 1_200_000);
-    expect(liveRoomGame({ ...session, localChat: true }, '/images').hostProVerifiedUntil).toBeUndefined();
-    const initial = await (await f.call('/pulse', { gameId: session.id, hostProVerifiedUntil: streamNow + 86_400_000 })).json() as any;
-    expect(initial).toMatchObject({ hostPro: 'active', hostProVerifiedUntil: session.hostProVerifiedUntil });
-    const renewed = await signGameTicket(streamHost.sub, streamHost.name, streamSecret, streamHost, streamNow + 1000);
-    const refreshed = await (await f.call('/pulse', { gameId: session.id }, renewed.token)).json() as any;
-    expect(refreshed.hostProVerifiedUntil).toBe(renewed.expiresAt);
-    expect(refreshed.revision).toBe(initial.revision + 1);
-    const repeated = await (await f.call('/pulse', { gameId: session.id }, renewed.token)).json() as any;
-    expect(repeated.revision).toBe(refreshed.revision);
-    expect(f.calls()).toBe(0);
-  });
-
-  it("closes the live room before returning an answer and rejects future or stale round tokens", async () => {
-    const f = await fixture();
-    const session = await (await f.call('/sessions', {})).json() as StreamSession;
-    expect(session.live).toBe(true);
-    const initial = await (await f.call('/pulse', { gameId: session.id })).json();
-    expect(JSON.stringify(initial)).not.toContain('answer');
-    expect((await f.call('/reveal', { token: session.rounds[1].token })).status).toBe(409);
-    const submissions = [{ player: { id: '101', login: 'chatter', name: 'Chatter' }, guess: streamAnswer, maximum: 2300 }];
-    expect((await f.call('/reveal', { token: session.rounds[0].token, submissions: [...submissions, ...submissions] })).status).toBe(400);
-    const response = await f.call('/reveal', { token: session.rounds[0].token, submissions });
-    expect(response.status).toBe(200);
-    const room = await (await f.call('/pulse', { gameId: session.id })).json() as any;
-    expect(room).toMatchObject({ phase: 'reveal', roundId: session.rounds[0].id });
-    expect(room.outcome).toMatchObject({ answer: streamAnswer, players: [{ id: '101', score: 2300, distance: 0 }] });
-    await f.call('/reveal', { token: session.rounds[0].token, submissions: [] });
-    const retry = await (await f.call('/pulse', { gameId: session.id })).json() as any;
-    expect(retry.outcome).toEqual(room.outcome);
-    expect(JSON.stringify(room)).not.toContain(session.token);
-    await f.call('/advance', { gameId: session.id, roundId: session.rounds[0].id });
-    expect((await f.call('/reveal', { token: session.rounds[0].token })).status).toBe(409);
-    expect(f.calls()).toBe(0); // Neither viewer guesses nor live transitions use D1.
-  });
   it("declines over-cap publication before storage without truncating the submitted players", async () => {
     const f = await fixture(),
       input = await f.completed();
@@ -208,11 +161,6 @@ describe("single-document stream publication", () => {
     const published = await f.call("/results", input);
     expect(published.status).toBe(201);
     const data = (await published.json()) as { id: string };
-    expect((await f.call('/quit', { gameId: data.id })).status).toBe(409);
-    const room = await (await f.call('/pulse', { gameId: data.id })).json() as any;
-    expect(room.phase).toBe('complete');
-    expect(room.result).toMatchObject({ id: data.id, format: 'compact-scores-v1' });
-    expect(room.result.players).toHaveLength(1);
     expect((await f.call("/results", input)).status).toBe(200);
     expect(
       f.sqlite.prepare("SELECT COUNT(*) AS n FROM stream_results").get(),
@@ -400,4 +348,17 @@ describe("single-document stream publication", () => {
     }
     expect(f.calls()).toBe(0);
   });
+});
+
+
+it('rejects excessive anonymous demo calls before reading puzzle assets or D1', async () => {
+  const f = await fixture();
+  let assets = 0;
+  f.env.SOLO_ENABLED = 'true'; f.env.ASSETS.fetch = async () => { assets++; return new Response(''); };
+  f.env.PUBLIC_GAME_RATE_LIMIT = { limit: async () => ({ success: false }) };
+  const response = await handle(new Request('https://api.test/api/games/start', {
+    method: 'POST', headers: { Origin: 'https://dynamic-map.noitamap.com' },
+  }), f.env, streamNow);
+  expect(response.status).toBe(429); expect(response.headers.get('Retry-After')).toBe('60');
+  expect(assets).toBe(0); expect(f.calls()).toBe(0);
 });

@@ -53,6 +53,14 @@ const hex = Array.from({ length: 256 }, (_, n) =>
 const secureRandom = () =>
   crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
 
+export interface PreparedSourceCache {
+  catalog?: PreparedGameCatalog;
+  grid?: Uint8Array;
+  samplers: Map<string, { data: DataView; bytes: number }>;
+  samplerBytes: number;
+}
+export const createPreparedSourceCache = (): PreparedSourceCache => ({ samplers: new Map(), samplerBytes: 0 });
+
 /** Resolved immutable bytes may be cached across requests; pending binding I/O
  * is deliberately not shared across Worker invocation lifetimes. */
 export function createPreparedRoundSource(
@@ -60,11 +68,9 @@ export function createPreparedRoundSource(
   imageRoot: string,
   referenceRoot: string,
   random: () => number = secureRandom,
+  cache: PreparedSourceCache = createPreparedSourceCache(),
 ) {
-  let catalog: PreparedGameCatalog | undefined;
-  let grid: Uint8Array | undefined;
-  const samplers = new Map<string, { data: DataView; bytes: number }>();
-  let samplerBytes = 0;
+  const samplers = cache.samplers;
 
   async function bytes(path: string, maximum: number): Promise<ArrayBuffer> {
     const response = await readAsset(prefix + path);
@@ -82,7 +88,7 @@ export function createPreparedRoundSource(
   }
 
   async function loadCatalog(): Promise<PreparedGameCatalog> {
-    if (catalog) return catalog;
+    if (cache.catalog) return cache.catalog;
     const next = JSON.parse(
       new TextDecoder().decode(await bytes("catalog.json", 1024 * 1024)),
     ) as PreparedGameCatalog;
@@ -116,14 +122,14 @@ export function createPreparedRoundSource(
       )
     )
       throw new Error("Prepared area sampling data is invalid.");
-    catalog = next;
+    cache.catalog = next;
     return next;
   }
 
   async function loadGrid(
     c: PreparedGameCatalog["capture"],
   ): Promise<Uint8Array> {
-    if (grid) return grid;
+    if (cache.grid) return cache.grid;
     const columns = Math.ceil(c.width / c.tileSize),
       rows = Math.ceil(c.height / c.tileSize);
     const next = new Uint8Array(
@@ -137,7 +143,7 @@ export function createPreparedRoundSource(
       header.getUint32(8, true) !== rows
     )
       throw new Error("Prepared image grid is invalid.");
-    grid = next;
+    cache.grid = next;
     return next;
   }
 
@@ -171,15 +177,15 @@ export function createPreparedRoundSource(
       const existing = samplers.get(area.starts);
       if (existing) return existing.data;
       while (
-        samplerBytes + buffer.byteLength > 8 * 1024 * 1024 &&
+        cache.samplerBytes + buffer.byteLength > 8 * 1024 * 1024 &&
         samplers.size
       ) {
         const key = samplers.keys().next().value!;
-        samplerBytes -= samplers.get(key)!.bytes;
+        cache.samplerBytes -= samplers.get(key)!.bytes;
         samplers.delete(key);
       }
       samplers.set(area.starts, { data, bytes: buffer.byteLength });
-      samplerBytes += buffer.byteLength;
+      cache.samplerBytes += buffer.byteLength;
     }
     return data;
   }

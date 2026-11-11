@@ -232,3 +232,22 @@ describe("prepared private Worker rounds", () => {
     await expect(bad.sampleRounds(100)).rejects.toThrow("round count");
   });
 });
+
+
+it('reuses bounded immutable data across Worker requests without sharing pending binding I/O', async () => {
+  const { preparedSource } = await import('../workers/noitamap-guessr/src/prepared-source');
+  const f = await fixture(), requests: string[] = [];
+  const assets = { fetch: async (request: Request) => {
+    const path = new URL(request.url).pathname; requests.push(path);
+    return new Response(await readFile(join(f.options.outputDirectory, path)));
+  } };
+  const env = { ASSETS: assets, STREAM_IMAGE_ROOT: '/images', STREAM_REFERENCE_ROOT: '/reference/' };
+  const first = preparedSource(env as Parameters<typeof preparedSource>[0]);
+  await first.sampleRounds(2); const loaded = requests.length;
+  expect(loaded).toBeGreaterThan(2);
+  const second = preparedSource(env as Parameters<typeof preparedSource>[0]);
+  expect(second).not.toBe(first);
+  await second.sampleRounds(2); expect(requests).toHaveLength(loaded);
+  const isolated = preparedSource({ ...env, ASSETS: { fetch: assets.fetch } } as Parameters<typeof preparedSource>[0]);
+  await isolated.config(); expect(requests).toHaveLength(loaded + 1);
+});

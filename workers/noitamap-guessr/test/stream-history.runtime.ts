@@ -15,10 +15,10 @@ it('reads bounded public history through the deployed handler and D1 without upd
       host: { login: 'wuote', name: 'WUOTE' }, finishedAt, players: [{ name: 'WUOTE' }],
     })).run();
   const response = await handle(new Request('https://api.test/api/streams/history/wuote', {
-    headers: { Origin: 'http://localhost:5173' },
+    headers: { Origin: 'https://dynamic-map.noitamap.com' },
   }), { ...env, STREAM_ENABLED: 'true', GAME_SIGNING_SECRET: 'test-only-key-at-least-thirty-two-characters' } as Env);
   expect(response.status).toBe(200);
-  expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
+  expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://dynamic-map.noitamap.com');
   expect(await response.json()).toEqual({ games: [{ id, finishedAt, players: 1, hostName: 'WUOTE' }] });
   const plan = await env.DB.prepare("EXPLAIN QUERY PLAN SELECT id FROM stream_results WHERE json_extract(result_json, '$.host.login')=? ORDER BY created_at DESC, id DESC LIMIT 21").bind('wuote').all();
   expect(JSON.stringify(plan.results)).toContain('stream_results_channel_history');

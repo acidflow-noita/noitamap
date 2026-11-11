@@ -6,8 +6,7 @@ import {
 } from "../../../src/guessr/rules";
 import { verifyGameTicket, type GameIdentity } from "./tickets";
 import { streamRoute } from "./streams";
-import type { LiveRoomNamespace } from "../../../src/guessr/live-room-types";
-import { createPreparedRoundSource } from "../../../src/guessr/prepared-rounds";
+import { preparedSource } from "./prepared-source";
 import {
   SoloGameService,
   soloGameRoute,
@@ -40,7 +39,7 @@ export interface Env {
   STREAM_REFERENCE_ROOT?: string;
   DAILY_PUBLISH_SECRET?: string;
   DAILY_ASSET_HOSTS?: string;
-  LIVE_ROOMS?: LiveRoomNamespace;
+  PUBLIC_GAME_RATE_LIMIT?: { limit(input: { key: string }): Promise<{ success: boolean }> };
 }
 interface Challenge {
   id: string;
@@ -323,12 +322,11 @@ async function route(
         { error: "Demo rounds are not available on this site yet." },
         503,
       );
-    const source = createPreparedRoundSource(
-      (path) => env.ASSETS.fetch(new Request("https://private.invalid" + path)),
-      env.STREAM_IMAGE_ROOT || "https://guessr-tiles.sage-data.xyz/images",
-      env.STREAM_REFERENCE_ROOT ||
-        "https://guessr-map.sage-data.xyz/map_files/",
-    );
+    if (env.PUBLIC_GAME_RATE_LIMIT && !(await env.PUBLIC_GAME_RATE_LIMIT.limit({ key: request.headers.get('CF-Connecting-IP') || 'unknown' })).success) {
+      const response = json({ error: 'Too many requests. Please try again later.' }, 429);
+      response.headers.set('Retry-After', '60'); return response;
+    }
+    const source = preparedSource(env);
     return (
       (await soloGameRoute(
         request,

@@ -2,7 +2,7 @@ import { StreamPacketReader, streamPacketText, type GuessRejectionReason } from 
 import type { StreamChatMessage } from './stream-state';
 import type { StreamReveal } from './stream-types';
 import type { LiveRoomView } from './live-room-types';
-import type { RoomConnection } from './live-room-client';
+import type { RoomConnection } from './live-room-types';
 import type { TwitchChatStatus } from './twitch-chat';
 import type { TwitchViewer } from './twitch-viewer';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
