@@ -68,6 +68,10 @@ describe("production delivery output", () => {
   it('fails a build-time policy check when a new untrusted executable CDN is introduced', () => {
     expect(() => contentSecurityPolicy(['<script src="https://cdn.example/unpinned.js"></script>'])).toThrow('Untrusted external script');
   });
+  it('hashes inline scripts using the browser’s normalized HTML line endings', () => {
+    const policy = contentSecurityPolicy(['<script>\r\nwindow.ready = true;\r\n</script>']);
+    expect(policy).toContain(createHash('sha256').update('\nwindow.ready = true;\n').digest('base64'));
+  });
   it('retains delivery policy when the independent game page is added', async () => {
     const root = await fixture();
     await mkdir(join(root, 'guess'));

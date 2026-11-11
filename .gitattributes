@@ -2,3 +2,6 @@
 * text=auto eol=lf
 *.bat text eol=crlf
 *.cmd text eol=crlf
+
+# Preserve the bytes matched by the vendored script integrity attribute.
+public/vendor/openseadragon-6.1.0/openseadragon.min.js -text

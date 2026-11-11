@@ -9,7 +9,7 @@ export function contentSecurityPolicy(html: string[]): string {
     if (source) {
       if (/^(?:https?:)?\/\//i.test(source[2]) && !source[2].startsWith('https://www.googletagmanager.com/gtag/js?'))
         throw Error('Untrusted external script in emitted HTML. Bundle or self-host it before release.');
-    } else if (match[2].trim()) hashes.add("'sha256-" + createHash('sha256').update(match[2]).digest('base64') + "'");
+    } else if (match[2].trim()) hashes.add("'sha256-" + createHash('sha256').update(match[2].replace(/\r\n?/g, '\n')).digest('base64') + "'");
   }
   const policy = [
     "default-src 'self'",
