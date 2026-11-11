@@ -567,5 +567,14 @@
   "Preparing image…": "Подготовка изображения…",
   "Could not create the image. Try again.": "Не удалось создать изображение. Попробуйте ещё раз.",
   "Could not copy the image. Download the PNG instead.": "Не удалось скопировать изображение. Вместо этого скачайте файл в формате PNG.",
-  "Could not share the image. Download the PNG instead.": "Не удалось поделиться изображением. Вместо этого скачайте файл в формате PNG."
+  "Could not share the image. Download the PNG instead.": "Не удалось поделиться изображением. Вместо этого скачайте файл в формате PNG.",
+  "View answers": "Посмотреть ответы",
+  "Viewing answers prevents you from playing or continuing this game in this browser.": "Просмотр ответов не позволит вам играть или продолжить игру в этом браузере.",
+  "You viewed the answers. You can no longer play this game in this browser.": "Вы просмотрели ответы. В этом браузере больше нельзя играть в эту игру.",
+  "No results were found for this link.": "По этой ссылке результаты не найдены.",
+  "The player has not finished this game yet.": "Игрок ещё не закончил эту игру.",
+  "Could not load results. Please retry.": "Не удалось загрузить результаты. Пожалуйста, повторите попытку.",
+  "Answers are temporarily unavailable. Please try again later.": "Ответы временно недоступны. Пожалуйста, попробуйте позже.",
+  "Player’s map marker": "Маркер игрока на карте",
+  "Green: correct location. Blue: player’s map marker.": "Зелёный: правильное местоположение. Синий: маркер игрока на карте."
 }

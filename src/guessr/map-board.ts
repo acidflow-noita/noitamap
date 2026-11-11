@@ -369,7 +369,7 @@ export class MapBoard {
     this.point = next;
     this.onGuess(next);
   };
-  setMarkers(guess: Point | null, answer?: Point): void {
+  setMarkers(guess: Point | null, answer?: Point, guessLabel = 'Your guess'): void {
     this.playerMarks.clear(); this.highlightedPlayer = undefined;
     this.point = guess;
     this.resultMarkers = answer ? (guess ? [guess, answer] : [answer]) : null;
@@ -391,7 +391,7 @@ export class MapBoard {
     }
     if (answer)
       this.addPin(answer, ANSWER_PIN_COLOR, 'Actual location', ANSWER_PIN_HEIGHT, 'answer');
-    if (guess) this.addPin(guess, GUESS_PIN_COLOR, 'Your guess', GUESS_PIN_HEIGHT, 'guess');
+    if (guess) this.addPin(guess, GUESS_PIN_COLOR, guessLabel, GUESS_PIN_HEIGHT, 'guess');
     if (answer) {
       this.atHome = false;
       this.updateView();

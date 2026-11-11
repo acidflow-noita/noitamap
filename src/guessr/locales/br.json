@@ -567,5 +567,14 @@
   "Preparing image…": "Preparando a imagem…",
   "Could not create the image. Try again.": "Não foi possível criar a imagem. Tente novamente.",
   "Could not copy the image. Download the PNG instead.": "Não foi possível copiar a imagem. Baixe o arquivo PNG.",
-  "Could not share the image. Download the PNG instead.": "Não foi possível compartilhar a imagem. Baixe o arquivo PNG."
+  "Could not share the image. Download the PNG instead.": "Não foi possível compartilhar a imagem. Baixe o arquivo PNG.",
+  "View answers": "Ver respostas",
+  "Viewing answers prevents you from playing or continuing this game in this browser.": "Visualizar as respostas impede que você jogue ou continue este jogo neste navegador.",
+  "You viewed the answers. You can no longer play this game in this browser.": "Você viu as respostas. Não é mais possível jogar este jogo neste navegador.",
+  "No results were found for this link.": "Não foram encontrados resultados para este link.",
+  "The player has not finished this game yet.": "O jogador ainda não terminou este jogo.",
+  "Could not load results. Please retry.": "Não foi possível carregar os resultados. Tente novamente.",
+  "Answers are temporarily unavailable. Please try again later.": "As respostas estão temporariamente indisponíveis. Por favor, tente novamente mais tarde.",
+  "Player’s map marker": "Marcador do jogador no mapa",
+  "Green: correct location. Blue: player’s map marker.": "Verde: localização correta. Azul: marcador do jogador no mapa."
 }

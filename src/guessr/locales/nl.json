@@ -549,5 +549,14 @@
   "Preparing image…": "Afbeelding wordt geladen…",
   "Could not create the image. Try again.": "De afbeelding kon niet worden aangemaakt. Probeer het nog eens.",
   "Could not copy the image. Download the PNG instead.": "De afbeelding kon niet worden gekopieerd. Download in plaats daarvan het PNG-bestand.",
-  "Could not share the image. Download the PNG instead.": "De afbeelding kon niet worden gedeeld. Download in plaats daarvan het PNG-bestand."
+  "Could not share the image. Download the PNG instead.": "De afbeelding kon niet worden gedeeld. Download in plaats daarvan het PNG-bestand.",
+  "View answers": "Bekijk de antwoorden",
+  "Viewing answers prevents you from playing or continuing this game in this browser.": "Als je de antwoorden bekijkt, kun je dit spel in deze browser niet spelen of voortzetten.",
+  "You viewed the answers. You can no longer play this game in this browser.": "Je hebt de antwoorden bekeken. Je kunt dit spel niet meer spelen in deze browser.",
+  "No results were found for this link.": "Er zijn geen resultaten gevonden voor deze link.",
+  "The player has not finished this game yet.": "De speler heeft dit spel nog niet uitgespeeld.",
+  "Could not load results. Please retry.": "De resultaten konden niet worden geladen. Probeer het nog eens.",
+  "Answers are temporarily unavailable. Please try again later.": "De antwoorden zijn tijdelijk niet beschikbaar. Probeer het later nog eens.",
+  "Player’s map marker": "Kaartmarkering van de speler",
+  "Green: correct location. Blue: player’s map marker.": "Groen: juiste locatie. Blauw: de markering van de speler op de kaart."
 }

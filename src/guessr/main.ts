@@ -44,8 +44,10 @@ import { createLobby, type LobbyOptions } from "./lobby";
 import { instructionSteps } from './stepper';
 import { pageHeading } from './page-heading';
 import { restoreDailyView, saveDailyView } from './daily-progress';
-import { dailyResultsTable } from './daily-results';
+import { dailyResultsTable, dailyScoreTable } from './daily-results';
 import { dailyResultShare } from './daily-share';
+import { hasViewedDailyAnswers, rememberDailyAnswers, ANSWERS_VIEWED_MESSAGE, VIEW_ANSWERS_WARNING } from './daily-answer-view';
+import { hoverHelp } from './hover-help';
 import { loadingPlaceholders, clueLoadingPlaceholder } from './loading-placeholders';
 import { iconLabel, type ControlIcon } from './control-icons';
 import { ACTIVE_MODE_KEY, readDailyResume, rememberDailyResume, forgetDailyResume } from './resume-progress';
@@ -53,10 +55,12 @@ import { StreamUI } from "./stream-ui";
 import { streamHistorySection } from './stream-history';
 import {
   GameApi,
+  ApiError,
   gameApiOrigin,
   gameAuth,
   type RankedState,
   type DailyStatus,
+  type DailyResultSummary,
 } from "./api";
 
 const root = document.getElementById("guess-app")!;
@@ -73,6 +77,8 @@ let view:
   "home";
 let streamUI: StreamUI | undefined;
 let ranked: RankedState | null = null;
+let rankedReadOnly = false;
+let publicDaily: DailyResultSummary | null = null;
 let rankedGuess: Point | null = null;
 let rankedClue: ClueProgress = newClueProgress();
 let api: GameApi | undefined;
@@ -259,7 +265,7 @@ function home(): void {
     quit: () => quitDemo('practice', session!.id),
   });
   const daily = readDailyResume(storage);
-  if (daily) candidates.push({
+  if (daily && !hasViewedDailyAnswers(daily.day, storage)) candidates.push({
     mode: 'daily', modeLabel: 'Daily', continueLabel: 'Continue daily',
     currentRound: daily.round + 1, totalRounds: daily.totalRounds, completedRounds: daily.completedRounds,
     action: () => rankedLobby(daily.id, daily.day),
@@ -1101,17 +1107,43 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
   view = "ranked";
   setPane("ranked");
   ranked = null;
+  rankedReadOnly = false;
+  publicDaily = null;
   if (!resumeId) {
     const url = new URL(location.href);
     url.searchParams.delete("a");
     historyReplace(url);
   }
   const main = shell();
-  const dailyTitle = node('h1', '', msg('Daily'));
+  const dailyTitle = node('h1', '', msg(resumeId ? 'Daily result' : 'Daily'));
   const title = node('div', 'daily-page-title');
-  title.append(dailyTitle, node('span', 'badge pro animation-pop', msg('Pro')));
+  title.append(dailyTitle);
+  if (!resumeId) title.append(node('span', 'badge pro animation-pop', msg('Pro')));
   main.append(pageHeading(title, button(msg('Back'), home)));
   const version = generation;
+  // Shared links show scores before checking membership. An unfinished attempt
+  // can still be resumed through the existing owner-only play route.
+  if (resumeId && gameApiOrigin()) {
+    api ??= new GameApi(gameApiOrigin()!);
+    const loading = loadingPlaceholders(); main.append(loading);
+    try {
+      const summary = await api.publicResult<DailyResultSummary>(resumeId);
+      if (version === generation) renderPublicDaily(summary);
+      return;
+    } catch (error) {
+      if (version !== generation) return;
+      // Older Worker deployments authenticate this unknown route. Retain the
+      // existing owner view until the public-result endpoint is deployed.
+      if (!(error instanceof ApiError && (error.status === 409 || error.status === 401))) {
+        loading.remove();
+        const panel = messagePanel(main, msg('Daily result'), msg(error instanceof ApiError && error.status === 404
+          ? 'No results were found for this link.' : 'Could not load results. Please retry.'));
+        panel.append(button(msg('Retry'), () => rankedLobby(resumeId, day), 'secondary'));
+        return;
+      }
+    }
+    loading.remove();
+  }
   const service = await rankedAccess(main);
   if (!service || version !== generation) return;
   try {
@@ -1150,12 +1182,16 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
         day.dateTime = a.day; date.append(day);
         const points = node('td', 'numeric score', msg(() => a.score === undefined ? '—' : formatGuessrNumber(a.score)));
         const action = node('td', 'result-action');
-        action.append(button(a.complete ? msg('View results') : msg('Continue daily'), async () => {
+        const resume = button(a.complete ? msg('View results') : msg('Continue daily'), async () => {
+          if (!a.complete && hasViewedDailyAnswers(a.day, storage)) { showDailyAnswersBlock(a.day); return; }
           try {
             const result = await service.request<RankedState>('/api/attempts/' + a.id);
             if (version === generation) openRanked(result);
           } catch (e) { if (version === generation) toast(msg(() => localizedError(e))); }
-        }, 'small secondary'));
+        }, 'small secondary');
+        resume.disabled = !a.complete && hasViewedDailyAnswers(a.day, storage);
+        if (resume.disabled) bindAttribute(resume, 'aria-description', ANSWERS_VIEWED_MESSAGE);
+        action.append(resume);
         row.append(date, points, action); body.append(row);
       }
       table.append(thead, body); wrap.append(table); historyPanel.append(wrap);
@@ -1174,48 +1210,105 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
       panel = node("section", "panel daily-start");
     const completed = status.attemptStatus === 'complete'
       || !!status.attemptId && !!past.attempts.find(a => a.id === status.attemptId)?.complete;
+    const blocked = !completed && hasViewedDailyAnswers(c.day, storage);
     const details = node('div', 'daily-start-meta');
     const date = node('time', 'daily-start-date', msg(() => new Date(c.day + 'T00:00:00Z').toLocaleDateString(guessrLocale(), { dateStyle: 'long', timeZone: 'UTC' })));
     date.dateTime = c.day;
     details.append(date, node('span', 'muted', msg('{{rounds}} rounds', () => ({ rounds: formatGuessrNumber(c.totalRounds), count: c.totalRounds }))));
     panel.append(
       details,
-      node('p', completed ? 'daily-already-played' : '', msg(completed
+      node('p', completed || blocked ? 'daily-already-played' : '', msg(blocked ? ANSWERS_VIEWED_MESSAGE : completed
         ? c.day === utcDay() ? 'You’ve already played today’s Daily.' : 'You’ve already played this Daily.'
         : 'No time limit. Your progress saves automatically.')),
     );
-    panel.append(
-      button(
-        status.attemptId ? completed ? msg("View results") : msg("Continue daily") : msg("Start daily"),
-        async () => {
-          if (busy) return;
-          busy = true;
-          try {
-            const a = status.attemptId
-              ? await service.request<RankedState>(
-                  "/api/attempts/" + status.attemptId,
-                )
-              : await service.request<RankedState>("/api/attempts", {
-                  body: { challengeId: c.id },
-                });
-            if (version === generation) openRanked(a);
-          } catch (e) {
-            toast(msg(() => localizedError(e)));
-          } finally {
-            busy = false;
-          }
-        },
-        "primary",
-      ),
+    const start = button(
+      status.attemptId ? completed ? msg("View results") : msg("Continue daily") : msg("Start daily"),
+      async () => {
+        if (busy) return;
+        if (!completed && hasViewedDailyAnswers(c.day, storage)) { showDailyAnswersBlock(c.day); return; }
+        busy = true;
+        try {
+          const a = status.attemptId
+            ? await service.request<RankedState>(
+                "/api/attempts/" + status.attemptId,
+              )
+            : await service.request<RankedState>("/api/attempts", {
+                body: { challengeId: c.id },
+              });
+          if (version === generation) openRanked(a);
+        } catch (e) {
+          toast(msg(() => localizedError(e)));
+        } finally {
+          busy = false;
+        }
+      },
+      "primary",
     );
+    start.disabled = blocked;
+    panel.append(start);
     main.insertBefore(panel, main.querySelector(".panel"));
   } catch (e) {
     if (version === generation)
       messagePanel(main, msg("Daily unavailable"), msg(() => localizedError(e)));
   }
 }
-function openRanked(state: RankedState, reviewRound?: number): void {
-  rememberDailyResume(state, storage);
+function showDailyAnswersBlock(day: string): void {
+  const bookmark = readDailyResume(storage);
+  if (bookmark?.day === day) forgetDailyResume(bookmark.id, storage);
+  ranked = null;
+  const main = shell();
+  main.append(pageHeading(node('h1', '', msg('Daily')), button(msg('Back'), home)));
+  messagePanel(main, msg('Daily'), msg(ANSWERS_VIEWED_MESSAGE));
+}
+function renderPublicDaily(summary: DailyResultSummary): void {
+  publicDaily = summary;
+  ranked = null;
+  view = 'ranked';
+  const url = guessRouteUrl('ranked', location.href);
+  url.searchParams.set('a', summary.id);
+  historyReplace(url);
+  forgetDailyResume(summary.id, storage);
+  const main = shell(), version = generation;
+  main.append(pageHeading(node('h1', '', msg('Daily result')), button(msg('Back to daily'), rankedLobby)));
+  const hero = node('section', 'finish-hero');
+  const date = node('time', '', msg(() => new Date(summary.day + 'T00:00:00Z').toLocaleDateString(guessrLocale(), { dateStyle: 'long', timeZone: 'UTC' })));
+  date.dateTime = summary.day;
+  hero.append(date, node('div', 'total', msg(() => formatGuessrNumber(summary.score))),
+    node('p', '', msg('out of {{value1}}', () => ({ value1: formatGuessrNumber(summary.totalRounds * 5000) }))));
+  const share = dailyResultShare(summary);
+  if (share) hero.append(share.element);
+  const actions = node('div', 'finish-actions daily-result-actions'), feedback = node('p', 'error');
+  feedback.setAttribute('role', 'status'); feedback.hidden = true;
+  const reveal = button(msg('View answers'), async () => {
+    if (reveal.disabled) return;
+    reveal.disabled = true; reveal.setAttribute('aria-busy', 'true'); feedback.hidden = true;
+    try {
+      const answers = await api!.publicResult<RankedState>(summary.id, true);
+      if (version !== generation) return;
+      if (answers.status !== 'complete' || answers.id !== summary.id || answers.day !== summary.day) throw Error('Invalid Daily result.');
+      rememberDailyAnswers(summary.day, storage);
+      const bookmark = readDailyResume(storage);
+      if (bookmark?.day === summary.day) forgetDailyResume(bookmark.id, storage);
+      openRanked(answers, undefined, true);
+    } catch {
+      if (version === generation) {
+        setText(feedback, msg('Answers are temporarily unavailable. Please try again later.'));
+        feedback.hidden = false;
+      }
+    } finally {
+      reveal.disabled = false; reveal.removeAttribute('aria-busy');
+    }
+  }, 'secondary');
+  reveal.classList.add('daily-view-answers');
+  const warning = hoverHelp(reveal, () => tr(VIEW_ANSWERS_WARNING));
+  actions.append(reveal);
+  main.append(hero, dailyScoreTable(summary), actions, feedback);
+  clearClue = () => { warning.dispose(); share?.destroy(); };
+}
+function openRanked(state: RankedState, reviewRound?: number, readOnly = false): void {
+  if (state.status === 'active' && hasViewedDailyAnswers(state.day, storage)) { showDailyAnswersBlock(state.day); return; }
+  if (!readOnly) rememberDailyResume(state, storage);
+  rankedReadOnly = readOnly;
   ranked = state;
   rankedGuess = null;
   rankedClue = newClueProgress();
@@ -1269,7 +1362,8 @@ function renderRanked(): void {
     );
     const share = dailyResultShare(ranked);
     if (share) hero.append(share.element);
-    main.append(pageHeading(node("h1", "", ranked.title), button(msg("Back to daily"), rankedLobby)), hero);
+    main.append(pageHeading(node("h1", "", msg('Daily result')), rankedReadOnly && publicDaily
+      ? button(msg('Back to results'), () => renderPublicDaily(publicDaily!)) : button(msg("Back to daily"), rankedLobby)), hero);
     const results = dailyResultsTable(ranked, reviewRanked);
     main.append(results.element);
     clearClue = () => { share?.destroy(); results.destroy(); };
@@ -1304,6 +1398,7 @@ function renderRanked(): void {
   main.append(actions);
 }
 async function submitRanked(skip: boolean): Promise<void> {
+  if (ranked?.status === 'active' && hasViewedDailyAnswers(ranked.day, storage)) { showDailyAnswersBlock(ranked.day); return; }
   if (
     !api ||
     !ranked ||
@@ -1397,7 +1492,7 @@ function reviewRanked(ordinal: number, continueGame = false): void {
         button(msg('Retry image'), () => reviewRanked(ordinal, continueGame), 'small secondary'));
     });
   } else void rankedImage(clue, r.image, 1);
-  board?.setMarkers(guess, r.answer);
+  board?.setMarkers(guess, r.answer, rankedReadOnly ? 'Player’s map marker' : 'Your guess');
   showMapResult(
     main,
     r.name,
@@ -1408,7 +1503,7 @@ function reviewRanked(ordinal: number, continueGame = false): void {
   );
   const actions = node("div", "game-actions");
   actions.append(
-    node("p", "", msg("Green: correct location. Blue: your guess.")),
+    node("p", "", msg(rankedReadOnly ? 'Green: correct location. Blue: player’s map marker.' : "Green: correct location. Blue: your guess.")),
     button(
       continueGame ? ranked?.status === "complete" ? msg("View results") : msg("Next round") : msg("Back to results"),
       renderRanked,

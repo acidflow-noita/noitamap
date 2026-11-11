@@ -1,4 +1,10 @@
-import type { RankedState } from './api';
+export interface DailyShareSource {
+  status: string;
+  totalRounds: number;
+  day: string;
+  score?: number;
+  results?: readonly { ordinal: number; guess: { score: number } | null }[];
+}
 
 export interface DailyShareData {
   readonly day: string;
@@ -10,7 +16,7 @@ export const DAILY_SHARE_MAXIMUM = 50_000;
 
 /** An explicit allowlist: never give the renderer the attempt, identity, seed,
  * clue URLs, coordinates or location names from a full result response. */
-export function dailyShareData(state: RankedState): DailyShareData | null {
+export function dailyShareData(state: DailyShareSource): DailyShareData | null {
   if (state.status !== 'complete' || state.totalRounds !== 10 || state.results?.length !== 10) return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(state.day)) return null;
   const date = new Date(`${state.day}T00:00:00Z`);

@@ -1,7 +1,6 @@
 import Dialog from 'bootstrap/js/dist/dialog.js';
 import { downloadBlob } from '../image-export';
-import type { RankedState } from './api';
-import { dailyShareData, dailyShareFilename, type DailyShareData } from './daily-share-data';
+import { dailyShareData, dailyShareFilename, type DailyShareData, type DailyShareSource } from './daily-share-data';
 import { bindAttribute, bindText, guessrLocale, onGuessrLanguageChanged, tr } from './i18n';
 import { buttonNotice } from './button-notice';
 
@@ -136,7 +135,7 @@ function showShareDialog(data: DailyShareData, trigger: HTMLElement): () => void
 }
 
 /** Reopening a saved completed Daily uses exactly the same loaded result. */
-export function dailyResultShare(state: RankedState): { element: HTMLButtonElement; destroy: () => void } | null {
+export function dailyResultShare(state: DailyShareSource): { element: HTMLButtonElement; destroy: () => void } | null {
   const data = dailyShareData(state);
   if (!data) return null;
   const element = action('Share result', 'share');

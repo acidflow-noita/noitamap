@@ -81,6 +81,55 @@ async function fixture() {
   };
   return { ...database, env, call, start, ticket };
 }
+describe('public Daily results', () => {
+  it('serves an explicit score allowlist without auth, question reads, rate writes or account changes', async () => {
+    const f = await fixture(), a = await f.start();
+    for (let round = 0; round < 10; round++) await f.call(`/api/attempts/${a.id}/guess`, {
+      round, guess: round === 9 ? null : { x: round * 50, y: round * 100 }, requestId: `public-score-request-${round}`,
+    });
+    const changes = f.sqlite.prepare('SELECT total_changes() AS n').get();
+    const prepare = vi.spyOn(f.db, 'prepare');
+    const response = await f.call(`/api/daily/results/${a.id}`, undefined, now, null);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=300');
+    const result: any = await response.json();
+    expect(Object.keys(result).sort()).toEqual(['id', 'day', 'status', 'totalRounds', 'score', 'results'].sort());
+    expect(result).toMatchObject({ id: a.id, day: '2026-10-12', status: 'complete', totalRounds: 10, score: 45000 });
+    expect(result.results).toHaveLength(10);
+    expect(result.results[0]).toEqual({ ordinal: 0, guess: { score: 5000, area_score: null, position_score: null } });
+    expect(result.results[9].guess.score).toBe(0);
+    expect(prepare.mock.calls).toHaveLength(2);
+    expect(prepare.mock.calls.map(([sql]) => sql).join(' ')).not.toMatch(/questions|usage_limits|user_id|display_name/);
+    expect(f.sqlite.prepare('SELECT total_changes() AS n').get()).toEqual(changes);
+    expect(JSON.stringify(result)).not.toMatch(/answer|seed|biome|clue|image|request_id|twitch|Explorer|Private/);
+  });
+  it('reveals only completed attempts, supports public legacy images and preserves private play guards', async () => {
+    const f = await fixture(), a = await f.start(), base = `/api/daily/results/${a.id}`;
+    for (const suffix of ['', '/answers', '/image/0'])
+      expect((await f.call(base + suffix, undefined, now, null)).status).toBe(409);
+    expect((await f.call('/api/daily/results/missing', undefined, now, null)).status).toBe(404);
+    expect((await f.call(base, {}, now, null)).status).toBe(405);
+    await f.call(`/api/attempts/${a.id}/quit`, {});
+    const writes = f.sqlite.prepare('SELECT total_changes() AS n').get();
+    const summary: any = await (await f.call(base, undefined, now, null)).json();
+    expect(summary.results.every((r: any) => r.guess === null)).toBe(true);
+    const answers = await f.call(base + '/answers', undefined, now, null);
+    expect(answers.status).toBe(200);
+    const result: any = await answers.json();
+    expect(result.results).toHaveLength(10);
+    expect(result.results[0]).toMatchObject({ answer: { x: 0, y: 0 }, image: base + '/image/0', name: 'Private answer 0' });
+    const image = await f.call(base + '/image/0', undefined, now, null);
+    expect(image.status).toBe(200); expect(image.headers.get('Content-Type')).toBe('image/webp');
+    expect(await image.text()).toBe('image');
+    expect(f.sqlite.prepare('SELECT total_changes() AS n').get()).toEqual(writes);
+    expect((await f.call(`/api/attempts/${a.id}`, undefined, now, null)).status).toBe(401);
+    expect((await f.call('/api/attempts', { challengeId: 'daily-test' }, now, null)).status).toBe(401);
+    expect((await f.call(`/api/attempts/${a.id}/guess`, {}, now, null)).status).toBe(401);
+    // Disabling new games must not disable saved result viewing.
+    f.env.GAME_ENABLED = 'false';
+    expect((await f.call(base, undefined, now, null)).status).toBe(200);
+  });
+});
 describe("ranked game authority", () => {
   it('includes the current puzzle difficulty while keeping its area and answer private', async () => {
     const f = await fixture();

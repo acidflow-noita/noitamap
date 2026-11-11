@@ -549,5 +549,14 @@
   "Preparing image…": "Preparing image…",
   "Could not create the image. Try again.": "Could not create the image. Try again.",
   "Could not copy the image. Download the PNG instead.": "Could not copy the image. Download the PNG instead.",
-  "Could not share the image. Download the PNG instead.": "Could not share the image. Download the PNG instead."
+  "Could not share the image. Download the PNG instead.": "Could not share the image. Download the PNG instead.",
+  "View answers": "View answers",
+  "Viewing answers prevents you from playing or continuing this game in this browser.": "Viewing answers prevents you from playing or continuing this game in this browser.",
+  "You viewed the answers. You can no longer play this game in this browser.": "You viewed the answers. You can no longer play this game in this browser.",
+  "No results were found for this link.": "No results were found for this link.",
+  "The player has not finished this game yet.": "The player has not finished this game yet.",
+  "Could not load results. Please retry.": "Could not load results. Please retry.",
+  "Answers are temporarily unavailable. Please try again later.": "Answers are temporarily unavailable. Please try again later.",
+  "Player’s map marker": "Player’s map marker",
+  "Green: correct location. Blue: player’s map marker.": "Green: correct location. Blue: player’s map marker."
 }

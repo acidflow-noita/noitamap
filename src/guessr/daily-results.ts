@@ -1,10 +1,39 @@
-import type { RankedState } from './api';
+import type { DailyResultSummary, RankedState } from './api';
 import { ClueViewport } from './clue-viewport';
 import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, tr } from './i18n';
 import { localizedDistance } from './messages';
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, className = ''): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag); node.className = className; return node;
+}
+function numberCell(value: number | null | undefined, score = false): HTMLTableCellElement {
+  const cell = element('td', score ? 'numeric score' : 'numeric');
+  bindText(cell, () => value === null || value === undefined ? '—' : formatGuessrNumber(value)); return cell;
+}
+function subtotal(results: NonNullable<RankedState['results']> | DailyResultSummary['results'], key: 'area_score' | 'position_score'): number | null {
+  return results.some(result => result.guess && typeof result.guess[key] !== 'number')
+    ? null : results.reduce((sum, result) => sum + (result.guess?.[key] ?? 0), 0);
+}
+
+/** Score-only sharing must not construct previews or start image requests. */
+export function dailyScoreTable(state: DailyResultSummary): HTMLElement {
+  const wrap = element('div', 'table-wrap'), table = element('table', 'table daily-results-table');
+  const caption = element('caption', 'sr-only'); bindText(caption, 'Daily result');
+  const thead = element('thead'), head = element('tr'), body = element('tbody');
+  for (const label of ['Round', 'Area', 'Proximity', 'Points']) {
+    const cell = element('th', 'numeric'); cell.scope = 'col'; bindText(cell, label); head.append(cell);
+  }
+  thead.append(head);
+  for (const result of [...state.results].sort((a, b) => a.ordinal - b.ordinal)) {
+    const row = element('tr');
+    row.append(numberCell(result.ordinal + 1), numberCell(result.guess?.area_score),
+      numberCell(result.guess?.position_score), numberCell(result.guess?.score ?? 0, true));
+    body.append(row);
+  }
+  const foot = element('tfoot'), totals = element('tr'), label = element('th'); label.scope = 'row'; bindText(label, 'Total');
+  totals.append(label, numberCell(subtotal(state.results, 'area_score')), numberCell(subtotal(state.results, 'position_score')), numberCell(state.score, true));
+  foot.append(totals); table.append(caption, thead, body, foot); wrap.append(table);
+  return wrap;
 }
 
 /** Reuses the exact starting crop and prepared Pages images. No new game/API
@@ -22,10 +51,6 @@ export function dailyResultsTable(state: RankedState, review: (ordinal: number) 
   thead.append(head); table.append(caption, thead);
   const body = element('tbody'), previews: ClueViewport[] = [];
   const results = [...state.results ?? []].sort((a, b) => a.ordinal - b.ordinal);
-  const numberCell = (value: number | null | undefined, score = false) => {
-    const cell = element('td', score ? 'numeric score' : 'numeric');
-    bindText(cell, () => value === null || value === undefined ? '—' : formatGuessrNumber(value)); return cell;
-  };
   for (const result of results) {
     const row = element('tr'), location = element('td'), identity = element('div', 'result-location');
     const preview = element('div', 'result-preview'), clue = element('div', 'clue loading');
@@ -57,9 +82,7 @@ export function dailyResultsTable(state: RankedState, review: (ordinal: number) 
   }
   const foot = element('tfoot'), totals = element('tr'), totalLabel = element('th'); totalLabel.colSpan = 3; totalLabel.scope = 'row';
   bindText(totalLabel, 'Total');
-  const subtotal = (key: 'area_score' | 'position_score') => results.some(result => result.guess && typeof result.guess[key] !== 'number')
-    ? null : results.reduce((sum, result) => sum + (result.guess?.[key] ?? 0), 0);
-  totals.append(totalLabel, numberCell(subtotal('area_score')), numberCell(subtotal('position_score')),
+  totals.append(totalLabel, numberCell(subtotal(results, 'area_score')), numberCell(subtotal(results, 'position_score')),
     numberCell(state.score ?? results.reduce((sum, result) => sum + (result.guess?.score ?? 0), 0), true), element('td'));
   foot.append(totals); table.append(body, foot); wrap.append(table);
   return { element: wrap, destroy: () => previews.forEach(preview => preview.destroy()) };

@@ -549,5 +549,14 @@
   "Preparing image…": "Mempersiapkan gambar…",
   "Could not create the image. Try again.": "Tidak dapat membuat gambar. Silakan coba lagi.",
   "Could not copy the image. Download the PNG instead.": "Gambar tidak dapat disalin. Silakan unduh file PNG-nya.",
-  "Could not share the image. Download the PNG instead.": "Gambar tidak dapat dibagikan. Silakan unduh file PNG-nya."
+  "Could not share the image. Download the PNG instead.": "Gambar tidak dapat dibagikan. Silakan unduh file PNG-nya.",
+  "View answers": "Lihat jawaban",
+  "Viewing answers prevents you from playing or continuing this game in this browser.": "Melihat jawaban akan membuat Anda tidak bisa memainkan atau melanjutkan permainan ini di peramban ini.",
+  "You viewed the answers. You can no longer play this game in this browser.": "Kamu sudah melihat jawabannya. Kamu tidak bisa lagi memainkan game ini di browser ini.",
+  "No results were found for this link.": "Tidak ditemukan hasil untuk tautan ini.",
+  "The player has not finished this game yet.": "Pemain tersebut belum menyelesaikan permainan ini.",
+  "Could not load results. Please retry.": "Hasil tidak dapat dimuat. Silakan coba lagi.",
+  "Answers are temporarily unavailable. Please try again later.": "Jawaban saat ini tidak tersedia. Silakan coba lagi nanti.",
+  "Player’s map marker": "Penanda peta pemain",
+  "Green: correct location. Blue: player’s map marker.": "Hijau: lokasi yang benar. Biru: penanda peta pemain."
 }

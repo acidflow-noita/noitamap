@@ -549,5 +549,14 @@
   "Preparing image…": "Förbereder bild…",
   "Could not create the image. Try again.": "Det gick inte att skapa bilden. Försök igen.",
   "Could not copy the image. Download the PNG instead.": "Det gick inte att kopiera bilden. Ladda ner PNG-filen istället.",
-  "Could not share the image. Download the PNG instead.": "Det gick inte att dela bilden. Ladda ner PNG-filen istället."
+  "Could not share the image. Download the PNG instead.": "Det gick inte att dela bilden. Ladda ner PNG-filen istället.",
+  "View answers": "Visa svaren",
+  "Viewing answers prevents you from playing or continuing this game in this browser.": "Om du tittar på svaren kan du inte spela eller fortsätta spelet i den här webbläsaren.",
+  "You viewed the answers. You can no longer play this game in this browser.": "Du har tittat på svaren. Du kan inte längre spela det här spelet i den här webbläsaren.",
+  "No results were found for this link.": "Inga resultat hittades för den här länken.",
+  "The player has not finished this game yet.": "Spelaren har inte avslutat det här spelet än.",
+  "Could not load results. Please retry.": "Det gick inte att ladda resultaten. Försök igen.",
+  "Answers are temporarily unavailable. Please try again later.": "Svaren är tillfälligt otillgängliga. Försök igen senare.",
+  "Player’s map marker": "Spelarens kartmarkör",
+  "Green: correct location. Blue: player’s map marker.": "Grönt: rätt plats. Blått: spelarens kartmarkör."
 }

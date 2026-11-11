@@ -883,6 +883,7 @@ header.page-heading {
   gap: var(--game-gutter);
   flex-wrap: wrap;
 }
+.daily-result-actions { margin-block-start: var(--game-gutter); }
 .table-wrap {
   overflow-x: auto;
   margin-top: 1rem;

@@ -217,7 +217,8 @@ async function attempt(
     .first<Attempt>();
   return value ?? fail(404, "Attempt not found.");
 }
-async function state(env: Env, a: Attempt, c: Challenge, now: number) {
+async function state(env: Env, a: Pick<Attempt, 'id' | 'next_round' | 'score' | 'elapsed_ms'>, c: Challenge, now: number,
+  imageBase = `/api/attempts/${a.id}/image`) {
   const finished = a.next_round === DAILY_ROUNDS;
   const revealed = true;
   const guesses = (
@@ -242,7 +243,7 @@ async function state(env: Env, a: Attempt, c: Challenge, now: number) {
       name: q.name,
       biome: q.biome,
       seed: q.seed,
-      image: `/api/attempts/${a.id}/image/${q.ordinal}`,
+      image: `${imageBase}/${q.ordinal}`,
       ...(q.clue_json ? { clue: JSON.parse(q.clue_json), difficultyTier: JSON.parse(q.area_json!).difficultyTier } : {}),
       guess: guesses.find((g) => g.ordinal === q.ordinal) ?? null,
     }));
@@ -271,6 +272,38 @@ async function state(env: Env, a: Attempt, c: Challenge, now: number) {
     submitted: guesses.map((g) => g.ordinal),
     ...(revealed ? { score: a.score, elapsedMs: a.elapsed_ms, results } : {}),
   };
+}
+/** Completed results are public reads. Viewing scores never reads questions,
+ * issues a ticket, updates rate counters or changes an attempt. */
+async function publicDailyResult(request: Request, env: Env, match: RegExpMatchArray, now: number): Promise<Response> {
+  if (request.method !== 'GET') fail(405, 'Method not allowed.');
+  const a = await env.DB.prepare(
+    'SELECT a.id,a.challenge_id,a.next_round,a.score,a.elapsed_ms,c.day FROM attempts a JOIN challenges c ON c.id=a.challenge_id WHERE a.id=? AND c.enabled=1',
+  ).bind(match[1]).first<Pick<Attempt, 'id' | 'challenge_id' | 'next_round' | 'score' | 'elapsed_ms'> & { day: string }>();
+  if (!a) fail(404, 'No results were found for this link.');
+  if (a.next_round !== DAILY_ROUNDS) fail(409, 'The player has not finished this game yet.');
+  let response: Response;
+  if (match[2] === 'answers') {
+    response = json(await state(env, a, await challenge(env, a.challenge_id), now, `/api/daily/results/${a.id}/image`));
+  } else if (match[3] !== undefined) {
+    const q = await env.DB.prepare('SELECT asset_key FROM questions WHERE challenge_id=? AND ordinal=?')
+      .bind(a.challenge_id, Number(match[3])).first<Pick<Question, 'asset_key'>>();
+    if (!q || !/^[a-f0-9]{32,64}\.webp$/.test(q.asset_key)) fail(404, 'Image unavailable.');
+    const asset = await env.ASSETS.fetch(new Request('https://assets.invalid/' + q.asset_key));
+    if (!asset.ok) fail(503, 'Answers are temporarily unavailable. Please try again later.');
+    response = new Response(asset.body, { headers: { 'Content-Type': 'image/webp' } });
+  } else {
+    const guesses = (await env.DB.prepare('SELECT ordinal,score,area_score,position_score FROM guesses WHERE attempt_id=? ORDER BY ordinal')
+      .bind(a.id).all<Pick<Guess, 'ordinal' | 'score' | 'area_score' | 'position_score'>>()).results;
+    response = json({ id: a.id, day: a.day, status: 'complete', totalRounds: DAILY_ROUNDS, score: a.score,
+      results: Array.from({ length: DAILY_ROUNDS }, (_, ordinal) => {
+        const g = guesses.find(guess => guess.ordinal === ordinal);
+        return { ordinal, guess: g ? { score: g.score, area_score: g.area_score ?? null, position_score: g.position_score ?? null } : null };
+      }),
+    });
+  }
+  response.headers.set('Cache-Control', 'public, max-age=300');
+  return response;
 }
 async function route(
   request: Request,
@@ -309,6 +342,8 @@ async function route(
       service: "noitamap-guessr",
       enabled: env.GAME_ENABLED === "true",
     });
+  const publicResult = path.match(/^\/api\/daily\/results\/([\w-]{1,100})(?:\/(answers)|\/image\/([0-9]))?$/);
+  if (publicResult) return publicDailyResult(request, env, publicResult, now);
   if (!path.startsWith("/api/")) return json({ error: "Not found." }, 404);
   if (env.GAME_ENABLED !== "true")
     fail(503, "Ranked games are not available yet. Practice is ready to play.");

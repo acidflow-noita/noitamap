@@ -36,4 +36,15 @@ it('resumes one D1 attempt, refuses to restart it after completion and still ret
   expect(await restart.json()).toEqual({ error: 'You’ve already played this Daily.' });
   expect(await (await call('/api/attempts/daily-attempt')).json()).toMatchObject({ id: 'daily-attempt', status: 'complete', score: 43210 });
   expect(await env.DB.prepare('SELECT COUNT(*) AS total FROM attempts').first('total')).toBe(1);
+  const counters = await env.DB.prepare('SELECT * FROM usage_limits ORDER BY key').all();
+  const publicCall = (suffix = '') => handle(new Request('https://api.test/api/daily/results/daily-attempt' + suffix,
+    { headers: { Origin: 'http://localhost:5173' } }), { ...bindings, GAME_ENABLED: 'false' }, now);
+  const summary = await publicCall();
+  expect(summary.status).toBe(200);
+  expect(summary.headers.get('Cache-Control')).toBe('public, max-age=300');
+  expect(summary.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
+  expect(await summary.json()).toEqual({ id: 'daily-attempt', day, status: 'complete', totalRounds: 10, score: 43210,
+    results: Array.from({ length: 10 }, (_, ordinal) => ({ ordinal, guess: null })) });
+  expect(await (await publicCall('/answers')).json()).toMatchObject({ id: 'daily-attempt', status: 'complete', score: 43210 });
+  expect((await env.DB.prepare('SELECT * FROM usage_limits ORDER BY key').all()).results).toEqual(counters.results);
 });

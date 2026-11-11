@@ -60,7 +60,7 @@ it('quits the demo only after confirmation and keeps completed history', async (
 
 it('resumes the most recently played daily and forfeits it without deleting an older demo', async () => {
   saved.set(ACTIVE_MODE_KEY, 'daily');
-  saved.set(DAILY_RESUME_KEY, JSON.stringify({ id: 'daily-1', day: '2026-10-22', round: 2, totalRounds: 5, completedRounds: 2 }));
+  saved.set(DAILY_RESUME_KEY, JSON.stringify({ id: 'daily-1', day: '2026-10-22', round: 2, totalRounds: 10, completedRounds: 2 }));
   app.api.mockResolvedValue({ status: 'complete' });
   await import('../src/guessr/main');
   expect(button('Continue daily')).toBeDefined();
@@ -77,7 +77,7 @@ it('resumes the most recently played daily and forfeits it without deleting an o
 
 it('retains the daily bookmark if the quit request fails', async () => {
   saved.set(ACTIVE_MODE_KEY, 'daily');
-  saved.set(DAILY_RESUME_KEY, JSON.stringify({ id: 'daily-1', day: '2026-10-22', round: 0, totalRounds: 5, completedRounds: 0 }));
+  saved.set(DAILY_RESUME_KEY, JSON.stringify({ id: 'daily-1', day: '2026-10-22', round: 0, totalRounds: 10, completedRounds: 0 }));
   app.api.mockRejectedValue(Error('Offline'));
   await import('../src/guessr/main'); button('Exit game').click();
   await expect(app.confirm.mock.calls[0][0]()).rejects.toThrow('Offline');

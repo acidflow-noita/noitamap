@@ -549,5 +549,14 @@
   "Preparing image…": "画像を読み込んでいます…",
   "Could not create the image. Try again.": "画像を作成できませんでした。もう一度お試しください。",
   "Could not copy the image. Download the PNG instead.": "画像をコピーできませんでした。代わりにPNGファイルをダウンロードしてください。",
-  "Could not share the image. Download the PNG instead.": "画像を共有できませんでした。代わりにPNGファイルをダウンロードしてください。"
+  "Could not share the image. Download the PNG instead.": "画像を共有できませんでした。代わりにPNGファイルをダウンロードしてください。",
+  "View answers": "回答を見る",
+  "Viewing answers prevents you from playing or continuing this game in this browser.": "解答を表示すると、このブラウザではこのゲームをプレイしたり、続行したりできなくなります。",
+  "You viewed the answers. You can no longer play this game in this browser.": "回答を確認しました。このブラウザでは、このゲームをプレイできなくなりました。",
+  "No results were found for this link.": "このリンクに関する結果は見つかりませんでした。",
+  "The player has not finished this game yet.": "このプレイヤーはまだこのゲームをクリアしていません。",
+  "Could not load results. Please retry.": "結果を読み込めませんでした。もう一度お試しください。",
+  "Answers are temporarily unavailable. Please try again later.": "現在、回答はご利用いただけません。後ほど再度お試しください。",
+  "Player’s map marker": "プレイヤーのマップマーカー",
+  "Green: correct location. Blue: player’s map marker.": "緑：正しい位置。青：プレイヤーのマップマーカー。"
 }

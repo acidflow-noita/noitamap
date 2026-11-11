@@ -549,5 +549,14 @@
   "Preparing image…": "Kuva ladataan…",
   "Could not create the image. Try again.": "Kuvaa ei voitu luoda. Yritä uudelleen.",
   "Could not copy the image. Download the PNG instead.": "Kuvaa ei voitu kopioida. Lataa sen sijaan PNG-tiedosto.",
-  "Could not share the image. Download the PNG instead.": "Kuvaa ei voitu jakaa. Lataa sen sijaan PNG-tiedosto."
+  "Could not share the image. Download the PNG instead.": "Kuvaa ei voitu jakaa. Lataa sen sijaan PNG-tiedosto.",
+  "View answers": "Katso vastaukset",
+  "Viewing answers prevents you from playing or continuing this game in this browser.": "Vastausten katsominen estää sinua pelaamasta tai jatkamasta tätä peliä tässä selaimessa.",
+  "You viewed the answers. You can no longer play this game in this browser.": "Olet katsonut vastaukset. Et voi enää pelata tätä peliä tällä selaimella.",
+  "No results were found for this link.": "Tälle linkille ei löytynyt tuloksia.",
+  "The player has not finished this game yet.": "Pelaaja ei ole vielä päättänyt tätä peliä.",
+  "Could not load results. Please retry.": "Tuloksia ei voitu ladata. Yritä uudelleen.",
+  "Answers are temporarily unavailable. Please try again later.": "Vastauksia ei ole tällä hetkellä saatavilla. Yritä myöhemmin uudelleen.",
+  "Player’s map marker": "Pelaajan karttamerkki",
+  "Green: correct location. Blue: player’s map marker.": "Vihreä: oikea sijainti. Sininen: pelaajan karttamerkki."
 }

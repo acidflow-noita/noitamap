@@ -65,6 +65,18 @@ export interface Leaderboard {
   pending: boolean;
   rows: { name: string; score: number; elapsedMs: number; games: number }[];
 }
+/** Public scores deliberately contain no locations, clue URLs or account data. */
+export interface DailyResultSummary {
+  id: string;
+  day: string;
+  status: 'complete';
+  totalRounds: number;
+  score: number;
+  results: {
+    ordinal: number;
+    guess: { score: number; area_score: number | null; position_score: number | null } | null;
+  }[];
+}
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -157,11 +169,22 @@ export class GameApi {
     }
     return data as T;
   }
+  async publicResult<T>(id: string, answers = false): Promise<T> {
+    if (!/^[\w-]{1,100}$/.test(id)) throw new ApiError(404, 'No results were found for this link.');
+    const response = await fetch(`${this.origin}/api/daily/results/${id}${answers ? '/answers' : ''}`, {
+      credentials: 'omit', signal: AbortSignal.timeout(15000),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new ApiError(response.status, data.error || 'Could not load results. Please retry.');
+    return data as T;
+  }
   async image(path: string, signal?: AbortSignal): Promise<Blob> {
-    if (!/^\/api\/attempts\/[\w-]+\/image\/[0-9]$/.test(path))
+    const publicImage = /^\/api\/daily\/results\/[\w-]{1,100}\/image\/[0-9]$/.test(path);
+    if (!publicImage && !/^\/api\/attempts\/[\w-]+\/image\/[0-9]$/.test(path))
       throw new Error("Invalid round image");
     const response = await fetch(this.origin + path, {
-      headers: { Authorization: "Bearer " + (await this.getTicket()) },
+      credentials: 'omit',
+      headers: publicImage ? {} : { Authorization: "Bearer " + (await this.getTicket()) },
       signal: signal
         ? AbortSignal.any([signal, AbortSignal.timeout(15000)])
         : AbortSignal.timeout(15000),

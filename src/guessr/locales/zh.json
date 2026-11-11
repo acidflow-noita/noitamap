@@ -549,5 +549,14 @@
   "Preparing image…": "正在加载图片……",
   "Could not create the image. Try again.": "无法创建图片。请重试。",
   "Could not copy the image. Download the PNG instead.": "无法复制该图片。请下载 PNG 文件。",
-  "Could not share the image. Download the PNG instead.": "无法分享该图片。请下载 PNG 文件。"
+  "Could not share the image. Download the PNG instead.": "无法分享该图片。请下载 PNG 文件。",
+  "View answers": "查看答案",
+  "Viewing answers prevents you from playing or continuing this game in this browser.": "查看答案后，您将无法在此浏览器中玩或继续玩此游戏。",
+  "You viewed the answers. You can no longer play this game in this browser.": "您已查看了答案。您无法再在此浏览器中玩这款游戏了。",
+  "No results were found for this link.": "未找到与该链接相关的结果。",
+  "The player has not finished this game yet.": "该玩家尚未完成本局游戏。",
+  "Could not load results. Please retry.": "无法加载结果。请重试。",
+  "Answers are temporarily unavailable. Please try again later.": "目前无法提供答案。请稍后再试。",
+  "Player’s map marker": "玩家地图标记",
+  "Green: correct location. Blue: player’s map marker.": "绿色：正确位置。蓝色：玩家的地图标记。"
 }

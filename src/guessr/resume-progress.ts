@@ -1,4 +1,5 @@
 import type { RankedState } from './api';
+import { DAILY_ROUNDS } from './daily-pack';
 
 export const ACTIVE_MODE_KEY = 'noitamap-guessr-active-mode-v1';
 export const DAILY_RESUME_KEY = 'noitamap-guessr-daily-resume-v1';
@@ -11,7 +12,7 @@ export function readDailyResume(storage: Pick<Storage, 'getItem'>): DailyResume 
     const value = JSON.parse(storage.getItem(DAILY_RESUME_KEY) || 'null');
     return value && typeof value.id === 'string' && /^[\w-]{1,100}$/.test(value.id)
       && typeof value.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.day)
-      && Number.isInteger(value.totalRounds) && value.totalRounds >= 1 && value.totalRounds <= 5
+      && value.totalRounds === DAILY_ROUNDS
       && Number.isInteger(value.round) && value.round >= 0 && value.round < value.totalRounds
       && Number.isInteger(value.completedRounds) && value.completedRounds >= 0 && value.completedRounds <= value.totalRounds
       ? value : null;
