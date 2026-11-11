@@ -2,10 +2,10 @@ import type { LiveRoomView } from './live-room-types';
 import Popover from 'bootstrap/js/dist/popover.js';
 import { onGuessrLanguageChanged, tr } from './i18n';
 
-type ProProof = Pick<LiveRoomView, 'hostPro' | 'hostProVerifiedUntil'> & { gameId?: string | null };
+type ProProof = Pick<LiveRoomView, 'hostPro' | 'hostProVerifiedUntil' | 'hostId'> & { gameId?: string | null };
 // Display mirrors the verified Twitch grants in the auth Worker. This never
 // authorizes hosting; the Worker still verifies the signed-in identity.
-export const hasKnownStreamerPro = (channel: string) => ['wuote', 'dunkorslam'].includes(channel.toLowerCase());
+export const hasKnownStreamerPro = (userId?: string) => ['564553302', '241636'].includes(userId || '');
 
 /** Hosting already requires Pro. This badge describes that game's admission,
  * not a live membership lookup or the lifetime of an authentication ticket. */
@@ -16,7 +16,7 @@ export function streamerProStatus(options: { local?: boolean; channel?: string }
   const popup = new Popover(badge, { trigger: 'hover focus', placement: 'bottom', container: 'body',
     content: () => explanation, html: false, animation: false });
   const paint = () => {
-    const known = !!options.channel && hasKnownStreamerPro(options.channel);
+    const known = hasKnownStreamerPro(proof.hostId);
     const local = options.local && !known;
     const active = known || !local && !!proof.gameId;
     badge.hidden = !proof.gameId && !known;

@@ -6,7 +6,7 @@ import { readFile, mkdir, writeFile, mkdtemp, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { resolve, join, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
-import { randomBytes, createHmac, createHash } from "node:crypto";
+import { randomBytes, randomUUID, createHmac, createHash, generateKeyPairSync, hkdfSync } from "node:crypto";
 import { build } from "esbuild";
 import { createServer as viteServer } from "vite";
 import { privateOutput } from "./private-output.mjs";
@@ -30,6 +30,9 @@ export async function startPreview({
   const root = await mkdtemp(join(previewRoot, "session-"));
   const gameKey = randomBytes(32).toString("hex"),
     loginKey = randomBytes(32).toString("hex");
+  const ticketPair = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+  const ticketPrivate = JSON.stringify(ticketPair.privateKey.export({ format: 'jwk' }));
+  const ticketPublic = JSON.stringify(ticketPair.publicKey.export({ format: 'jwk' }));
   const compiled = await build({
     entryPoints: ["workers/noitamap-guessr/src/index.ts"],
     bundle: true,
@@ -87,9 +90,10 @@ export async function startPreview({
     modules: true,
     script: compiled.outputFiles[0].text,
     compatibilityDate: "2026-10-08",
-    d1Databases: ["DB"],
+    d1Databases: ["DB", "ACCOUNT_DB"],
     bindings: {
       GAME_SIGNING_SECRET: gameKey,
+      GAME_TICKET_PUBLIC_KEY: ticketPublic,
       GAME_ENABLED: "true",
       ALLOWED_ORIGINS: origin,
       DAILY_REQUEST_BUDGET: "10000",
@@ -184,7 +188,7 @@ export async function startPreview({
         .run();
       for (const [i, q] of questions.entries())
         await db
-          .prepare("INSERT INTO guesses VALUES(?,?,?,?,?,?,?,?,?,?)")
+          .prepare("INSERT INTO guesses(attempt_id,ordinal,request_id,request_hash,x,y,score,distance,elapsed_ms,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)")
           .bind(
             attempt,
             i,
@@ -199,9 +203,18 @@ export async function startPreview({
           )
           .run();
     }
+    const accountDb = await mf.getD1Database('ACCOUNT_DB'), accountId = randomUUID(), sessionId = randomUUID();
+    for (const migration of ['0001_linked_accounts.sql', '0002_sessions.sql']) {
+      const sql = await readFile('workers/noitamap-auth/migrations/' + migration, 'utf8');
+      const statements = sql.replace(/^\s*--.*$/gm, '').trim().split(/;\s*(?=(?:CREATE|ALTER|DROP|PRAGMA)\b|$)/).filter(s => s.trim());
+      for (const statement of statements) await accountDb.prepare(statement).run();
+    }
+    await accountDb.prepare('INSERT INTO auth_accounts(id) VALUES(?)').bind(accountId).run();
+    await accountDb.prepare("INSERT INTO auth_identities(provider,provider_user_id,account_id,username,nickname,login,is_follower,is_subscriber,checked_at,status,credentials) VALUES('twitch','123',?,'Local explorer',NULL,'local_explorer',1,1,?,'active','')").bind(accountId,now).run();
+    await accountDb.prepare('INSERT INTO auth_sessions(id,account_id,account_version,created_at,refreshed_at,expires_at) VALUES(?,?,1,?,?,?)').bind(sessionId,accountId,now,now,now+86400000).run();
     const seconds = Math.floor(now / 1000),
       payload = {
-        typ: "access",
+        typ: "access", v: 2, aud: "noitamap-auth", sid: sessionId, account_id: accountId, account_version: 1,
         sub: "preview",
         username: "Local explorer",
         nickname: null,
@@ -212,7 +225,7 @@ export async function startPreview({
         exp: seconds + 86400,
       };
     const tokenInput =
-      Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString(
+      Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT", kid: "auth-v2" })).toString(
         "base64url",
       ) +
       "." +
@@ -220,7 +233,7 @@ export async function startPreview({
     const loginToken =
       tokenInput +
       "." +
-      createHmac("sha256", loginKey).update(tokenInput).digest("base64url");
+      createHmac("sha256", hkdfSync("sha256", loginKey, "noitamap-auth-v2", "access", 32)).update(tokenInput).digest("base64url");
     auth = httpServer(async (req, res) => {
       try {
         const buffers = [];
@@ -233,8 +246,10 @@ export async function startPreview({
             : { body: Buffer.concat(buffers) }),
         });
         const response = await authWorker.fetch(request, {
-          JWT_SECRET: { get: async () => loginKey },
-          GAME_SIGNING_SECRET: gameKey,
+          SESSION_SIGNING_SECRET: loginKey,
+          CREDENTIAL_ENCRYPTION_SECRET: gameKey,
+          ACCOUNT_DB: accountDb,
+          GAME_TICKET_PRIVATE_KEY: ticketPrivate,
           ALLOWED_ORIGINS: origin,
           WORKER_URL: "http://localhost",
         });
@@ -266,7 +281,7 @@ export async function startPreview({
               .replace("</head>", `<script>${script}</script></head>`)
               .replace(
                 "<body>",
-                '<body><aside style="padding:8px;text-align:center;background:var(--surface-1,#0f172a);color:var(--text-muted,#94a3b8);font:13px system-ui">Local preview · Sample account · Nothing is published</aside>',
+                '<body><aside style="padding:8px;text-align:center;background:var(--surface-1,#0f172a);color:var(--text-muted,#94a3b8);font:13px system-ui">Local preview , Sample account , Nothing is published</aside>',
               );
           },
         },

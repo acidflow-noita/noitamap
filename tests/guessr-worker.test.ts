@@ -1,9 +1,10 @@
+import { testGameKeys } from './helpers/game-ticket-keys';
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { handle, type Env } from "../workers/noitamap-guessr/src/index";
 import {
   signGameTicket,
   verifyGameTicket,
-} from "../workers/noitamap-guessr/src/tickets";
+} from "./helpers/game-ticket-keys";
 import { gameDatabase } from "./helpers/guessr-database";
 const secret = "local-test-only-game-signing-key-0123456789",
   now = Date.UTC(2026, 9, 12, 12),
@@ -49,7 +50,7 @@ async function fixture() {
           new Response("image", { headers: { "Content-Type": "image/webp" } }),
       ),
     },
-    GAME_SIGNING_SECRET: secret,
+    GAME_SIGNING_SECRET: secret, GAME_TICKET_PUBLIC_KEY: (await testGameKeys(secret)).publicKey,
     ALLOWED_ORIGINS: origin,
     GAME_ENABLED: "true",
   };

@@ -9,7 +9,7 @@ import {
   STREAM_MAX_DOCUMENT_BYTES,
   type StreamPublishWireInput,
 } from "../../../src/guessr/stream-types";
-import { verifyGameTicket } from "./tickets";
+import { verifyGameTicket, verifyResultManagementTicket } from "./tickets";
 import type { Env } from "./index";
 import { encodeStoredResult, storedResultResponse, STREAM_STORAGE_BUDGET_BYTES, STREAM_RESULT_OVERHEAD_BYTES, type StoredResultBody } from './result-storage';
 
@@ -66,7 +66,7 @@ async function hostIdentity(
   const user = authorization.startsWith("Bearer ")
     ? await verifyGameTicket(
         authorization.slice(7),
-        env.GAME_SIGNING_SECRET || "",
+        env.GAME_TICKET_PUBLIC_KEY || "",
         now,
       )
     : null;
@@ -83,6 +83,7 @@ async function hostIdentity(
     twitchUserId: user.twitchUserId,
     twitchLogin: user.twitchLogin,
     hostProVerifiedUntil: user.exp * 1000,
+    ticketIssuedAt: user.iat * 1000,
   };
 }
 interface StoredResult {
@@ -107,6 +108,28 @@ export async function streamRoute(
         "Stream hosting is not available on this site yet. The guess picker and downloaded results remain available.",
       );
     const path = new URL(request.url).pathname;
+    const deleteMatch = /^\/api\/streams\/results\/([a-f0-9-]{36})\/delete$/.exec(path);
+    if (deleteMatch) {
+      if (!idPattern.test(deleteMatch[1])) throw new ImageGameError(404, 'Result not found.');
+      if (request.method !== 'POST') throw new ImageGameError(405, 'Method not allowed.');
+      const bearer = request.headers.get('Authorization')?.match(/^Bearer (\S+)$/)?.[1] ?? '';
+      const manager = await verifyResultManagementTicket(bearer, env.GAME_TICKET_PUBLIC_KEY || '', now);
+      if (!manager) throw new ImageGameError(401, 'Sign in to manage your results.');
+      if (env.PUBLIC_GAME_RATE_LIMIT && !(await env.PUBLIC_GAME_RATE_LIMIT.limit({ key: 'remove:' + manager.sub })).success) {
+        const response = json({ error: 'Too many requests. Please try again later.' }, 429);
+        response.headers.set('Retry-After', '60'); return response;
+      }
+      const id = deleteMatch[1];
+      const record = await env.DB.prepare('SELECT owner,host_id FROM stream_results WHERE id=? UNION ALL SELECT owner,host_id FROM stream_result_removals WHERE id=? LIMIT 1')
+        .bind(id, id).first<{ owner: string; host_id: string }>();
+      if (!record || record.owner !== manager.sub && record.host_id !== manager.twitchUserId && manager.twitchUserId !== '564553302')
+        throw new ImageGameError(404, 'Result not found.');
+      await env.DB.batch([
+        env.DB.prepare('INSERT INTO stream_result_removals(id,owner,host_id,deleted_at) VALUES(?,?,?,?) ON CONFLICT(id) DO NOTHING').bind(id, record.owner, record.host_id, now),
+        env.DB.prepare('DELETE FROM stream_results WHERE id=?').bind(id),
+      ]);
+      return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
+    }
     const historyMatch = /^\/api\/streams\/history\/([a-z0-9_]{1,25})$/.exec(path);
     if (historyMatch && request.method === 'GET') {
       const cursor = new URL(request.url).searchParams.get('before');
@@ -117,7 +140,7 @@ export async function streamRoute(
         json_extract(result_json, '$.finishedAt') AS finishedAt,
         COALESCE(json_extract(result_json, '$.playerCount'), json_array_length(result_json, '$.players')) AS players,
         json_extract(result_json, '$.host.name') AS hostName
-        FROM stream_results WHERE json_extract(result_json, '$.host.login')=?
+        FROM stream_results WHERE host_id=(SELECT twitch_id FROM stream_channels WHERE login=?)
         ${match ? 'AND (created_at, id) < (?, ?)' : ''}
         ORDER BY created_at DESC, id DESC LIMIT 21`);
       const { results } = await query.bind(historyMatch[1], ...(match ? [Number(match[1]), match[2]] : []))
@@ -173,13 +196,19 @@ export async function streamRoute(
     if (transport !== 'twitch') throw new ImageGameError(410, 'This game transport has been retired.');
     const serialized = JSON.stringify(result),
       bytes = new TextEncoder().encode(serialized);
+    // Host names/logins may change between an upload and its retry. Identity
+    // and reported scores determine idempotency; mutable host labels do not.
+    const canonical = new TextEncoder().encode(JSON.stringify({ ...result, host: { id: result.host.id },
+      players: result.players.map(p => p.id === result.host.id ? { ...p, name: '', login: '' } : p) }));
+    if (await env.DB.prepare('SELECT id FROM stream_result_removals WHERE id=?').bind(result.id).first())
+      throw new ImageGameError(410, 'This published result was removed.');
     if (bytes.byteLength > STREAM_MAX_DOCUMENT_BYTES)
       throw new ImageGameError(
         413,
         "Result is too large to publish. Download the complete result instead.",
       );
     const digest = Array.from(
-      new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
+      new Uint8Array(await crypto.subtle.digest("SHA-256", canonical)),
       (v) => v.toString(16).padStart(2, "0"),
     ).join("");
     const existing = await env.DB.prepare(
@@ -198,7 +227,7 @@ export async function streamRoute(
     const day = new Date(now).toISOString().slice(0, 10);
     const encoded = await encodeStoredResult(result, serialized, bytes);
     const inserted = await env.DB.prepare(
-      "INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json,result_gzip) SELECT ?,?,?,?,?,?,?,? WHERE (SELECT used_bytes FROM stream_result_storage WHERE id=1)+? <= ? AND (SELECT COUNT(*) FROM stream_results WHERE day=?) < ? AND (SELECT COUNT(*) FROM stream_results WHERE owner=? AND day=?) < ? ON CONFLICT(id) DO NOTHING RETURNING id",
+      "INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json,result_gzip,host_id,host_verified_at) SELECT ?,?,?,?,?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM stream_result_removals WHERE id=?) AND (SELECT used_bytes FROM stream_result_storage WHERE id=1)+? <= ? AND (SELECT COUNT(*) FROM stream_results WHERE day=?) < ? AND (SELECT COUNT(*) FROM stream_results WHERE owner=? AND day=?) < ? ON CONFLICT(id) DO NOTHING RETURNING id",
     )
       .bind(
         result.id,
@@ -209,6 +238,9 @@ export async function streamRoute(
         digest,
         encoded.json,
         encoded.gzip,
+        result.host.id,
+        user.ticketIssuedAt ?? now,
+        result.id,
         encoded.bytes + STREAM_RESULT_OVERHEAD_BYTES,
         STREAM_STORAGE_BUDGET_BYTES,
         day,
@@ -219,6 +251,8 @@ export async function streamRoute(
       )
       .first();
     if (!inserted) {
+      if (await env.DB.prepare('SELECT id FROM stream_result_removals WHERE id=?').bind(result.id).first())
+        throw new ImageGameError(410, 'This published result was removed.');
       const concurrent = await env.DB.prepare(
         "SELECT owner,digest FROM stream_results WHERE id=?",
       )

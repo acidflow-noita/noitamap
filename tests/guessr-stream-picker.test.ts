@@ -59,7 +59,7 @@ function mount(url: string, initial: Partial<TwitchViewerState> = {}) {
     connect: vi.fn(async () => update({ connected: true, login: 'chatter', userId: '123' })),
     disconnect: vi.fn(() => update({ connected: false, login: null, userId: null })),
     sendGuess: vi.fn(async () => 'sent-id'),
-    sendMessage: vi.fn(async () => 'sent-chat-id'),
+    sendMessage: vi.fn(async (_channel: string, _message: string) => 'sent-chat-id'),
     watchChat: vi.fn((_channel: string, _handlers: Parameters<TwitchViewer['watchChat']>[1]) => vi.fn()),
   };
   const page = document.createElement('div');
@@ -151,7 +151,7 @@ describe('shared channel guess picker', () => {
     const url = `/guess/wuote/${gameCode(id, 'twitch')}/`;
     const f = mount(url);
     expect(f.button('Gift Pro to wuote').hidden).toBe(true);
-    expect(f.main.querySelector<HTMLElement>('.stream-pro-status')!.dataset.proStatus).toBe('active');
+    expect(f.main.querySelector<HTMLElement>('.stream-pro-status')!.hidden).toBe(true);
     f.button('Sign in with Twitch').click(); await flush();
     f.button('Join wuote’s game')?.click(); await flush();
     const transport = f.viewer.watchChat.mock.calls[0][1]; transport.status('live', 'Connected');

@@ -48,7 +48,7 @@ import { startStreamTiming, beginStreamTiming, startHostWindow, streamTick, host
 import { streamRoundResults } from './stream-round-results';
 import { confirmQuitGame } from './quit-game';
 import { playerColor } from './player-color';
-import { StreamResultArchive, type ArchivedStreamResult } from './stream-result-archive';
+import { StreamResultArchive, clearCompletedHostTokens, type ArchivedStreamResult } from './stream-result-archive';
 import { streamHostName } from './stream-display-name';
 
 const SHARE_ANNOUNCEMENTS_KEY = 'noitamap-guessr-share-announcements';
@@ -1211,7 +1211,7 @@ export class StreamUI {
     const result = streamResult(this.game),
       main = this.hooks.shell();
     const entry: ArchivedStreamResult = { result, published: !!this.game.published,
-      ...(!this.game.published ? { pendingToken: this.game.session.token } : {}),
+      ...(!this.game.published && this.game.session.token ? { pendingToken: this.game.session.token } : {}),
       ...(this.game.session.localChat ? { localChannel: this.game.session.host.login } : {}) };
     const view = streamResultsView(result, undefined, this.exit);
     this.hooks.cleanupClue(view.destroy);
@@ -1260,7 +1260,13 @@ export class StreamUI {
         : storageWarning ? 'Not published. Retry publishing to make the result available to everyone.' : 'Saved on this device. Not published yet.'), storageWarning && tr(storageWarning)].filter(Boolean).join(' '));
     };
     const save = async () => {
-      try { await this.archive.save(entry); storageWarning = ''; }
+      try {
+        await this.archive.save(entry);
+        if (game) clearCompletedHostTokens(game);
+        const saved = await this.archive.get(entry.result.id);
+        if (saved) { Object.assign(entry, saved); if (!saved.pendingToken) delete entry.pendingToken; }
+        storageWarning = '';
+      }
       catch (error) { storageWarning = (error as Error).message; }
     };
     const publish = async () => {

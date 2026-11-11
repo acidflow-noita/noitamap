@@ -1,3 +1,4 @@
+import { testGameKeys } from './helpers/game-ticket-keys';
 import { accountDatabase } from './helpers/auth-account-db';
 import { authKey } from '../workers/noitamap-auth/src/crypto';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, it, expect } from "vitest";
@@ -5,7 +6,7 @@ import { build } from "esbuild";
 import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { signGameTicket as gameSigner, verifyGameTicket } from "../workers/noitamap-guessr/src/tickets";
+import { verifyGameTicket, verifyResultManagementTicket } from "../workers/noitamap-guessr/src/tickets";
 import { signGameTicket as authSigner } from '../workers/noitamap-auth/src/game-ticket';
 let worker: { fetch(request: Request, env: unknown): Promise<Response> };
 let standalone: string;
@@ -80,9 +81,10 @@ async function call(
   token: string | null,
   key: string | undefined = gameKey,
   method = "POST",
+  path = "/auth/game-ticket",
 ) {
   return worker.fetch(
-    new Request("https://auth.test/auth/game-ticket", {
+    new Request("https://auth.test" + path, {
       method,
       headers: {
         Origin: "https://noitamap.com",
@@ -93,7 +95,7 @@ async function call(
       SESSION_SIGNING_SECRET: { get: async () => loginKey },
       CREDENTIAL_ENCRYPTION_SECRET: { get: async () => 'local-only-provider-encryption-key-for-tests' },
       ACCOUNT_DB: db.binding,
-      GAME_SIGNING_SECRET: key,
+      GAME_TICKET_PRIVATE_KEY: key ? (await testGameKeys(key)).privateKey : key,
       ALLOWED_ORIGINS: "https://noitamap.com",
       WORKER_URL: "https://auth.test",
     },
@@ -106,16 +108,16 @@ describe("separate game-ticket issuer", () => {
     ['twitch:12345', 'A'.repeat(60), { twitchUserId: '12345', twitchLogin: 'mychannel' }],
   ] as const)('keeps standalone signing compatible for %s', async (sub, name, identity) => {
     const now = Date.UTC(2026, 10, 10, 12);
-    const auth = await authSigner(sub, name, gameKey, identity ?? now, now);
-    expect(auth).toEqual(await gameSigner(sub, name, gameKey, identity ?? now, now));
-    expect(await verifyGameTicket(auth.token, gameKey, now)).toMatchObject({ sub, name: name.slice(0, 48), pro: true });
+    const auth = await authSigner(sub, name, (await testGameKeys(gameKey)).privateKey, identity ?? now, now);
+    expect(JSON.parse(Buffer.from(auth.token.split('.')[0], 'base64url').toString())).toEqual({ alg: 'ES256', typ: 'JWT', kid: 'game-v2' });
+    expect(await verifyGameTicket(auth.token, (await testGameKeys(gameKey)).publicKey, now)).toMatchObject({ sub, name: name.slice(0, 48), pro: true });
     expect(await verifyGameTicket(auth.token, loginKey, now)).toBeNull();
   });
   it("issues a game-only identity for a verified Pro session", async () => {
     const response = await call(await access(true));
     expect(response.status).toBe(200);
     const data = (await response.json()) as any;
-    expect(await verifyGameTicket(data.token, gameKey)).toMatchObject({
+    expect(await verifyGameTicket(data.token, (await testGameKeys(gameKey)).publicKey)).toMatchObject({
       sub: `account:${accountId}`,
       pro: true,
       aud: "noitamap-guessr",
@@ -136,4 +138,20 @@ describe("separate game-ticket issuer", () => {
     expect((await call(await access(true), gameKey, "GET")).status).toBe(405);
     expect((await call(await access(true), "")).status).toBe(503);
   });
+});
+
+
+it('issues a separate management ticket without Pro and cannot use it for gameplay', async () => {
+  const response = await call(await access(false), gameKey, 'POST', '/auth/result-ticket');
+  expect(response.status).toBe(200);
+  const data = await response.json() as { token: string }, keys = await testGameKeys(gameKey);
+  expect(await verifyResultManagementTicket(data.token, keys.publicKey)).toMatchObject({ sub: `account:${accountId}`, pro: false, typ: 'result-management' });
+  expect(await verifyGameTicket(data.token, keys.publicKey)).toBeNull();
+  expect(await verifyResultManagementTicket(data.token, keys.privateKey)).toBeNull();
+});
+it('does not let the public verification key sign tickets', async () => {
+  const keys = await testGameKeys(gameKey);
+  await expect(authSigner('account:test', 'Player', keys.publicKey)).rejects.toThrow('signing key');
+  const ticket = await authSigner('account:test', 'Player', keys.privateKey);
+  expect(await verifyGameTicket(ticket.token, keys.privateKey)).toBeNull();
 });

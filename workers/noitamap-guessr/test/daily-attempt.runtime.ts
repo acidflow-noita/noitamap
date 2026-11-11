@@ -4,7 +4,7 @@ import { afterEach, expect, it } from 'vitest';
 import base from '../migrations/0001_game.sql?raw';
 import tenRounds from '../migrations/0004_ten_rounds.sql?raw';
 import { handle, type Env } from '../src/index';
-import { signGameTicket } from '../src/tickets';
+import { signGameTicket, testGameKeys } from '../../../tests/helpers/game-ticket-keys';
 
 afterEach(() => reset());
 it('resumes one D1 attempt, refuses to restart it after completion and still returns its saved score', async () => {
@@ -20,7 +20,7 @@ it('resumes one D1 attempt, refuses to restart it after completion and still ret
     now - 1000, now + 86400000, now + 86400000, '{"x":0,"y":0,"width":100,"height":100}', 90, 1).run();
   await env.DB.prepare('INSERT INTO attempts(id,user_id,challenge_id,display_name,started_at,round_started_at) VALUES(?,?,?,?,?,?)')
     .bind('daily-attempt', 'twitch:test-player', 'daily-test', 'Player', now, now).run();
-  const bindings = { ...env, GAME_ENABLED: 'true', GAME_SIGNING_SECRET: 'test-only-key-at-least-thirty-two-characters' } as Env;
+  const bindings = { ...env, GAME_ENABLED: 'true', GAME_SIGNING_SECRET: 'test-only-key-at-least-thirty-two-characters', GAME_TICKET_PUBLIC_KEY: (await testGameKeys('test-only-key-at-least-thirty-two-characters')).publicKey } as Env;
   const ticket = await signGameTicket('twitch:test-player', 'Player', bindings.GAME_SIGNING_SECRET, now);
   const call = (path: string, body?: unknown) => handle(new Request('https://api.test' + path, {
     method: body === undefined ? 'GET' : 'POST', headers: { Origin: 'https://dynamic-map.noitamap.com',

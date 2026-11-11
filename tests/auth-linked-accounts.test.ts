@@ -1,3 +1,4 @@
+import { testGameKeys } from './helpers/game-ticket-keys';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'esbuild';
 import { accountDatabase } from './helpers/auth-account-db';
@@ -19,10 +20,10 @@ beforeAll(async () => {
     format: 'iife', globalName: 'AuthTest', platform: 'neutral', target: 'es2022' });
   worker = new Function(result.outputFiles[0].text + '\nreturn AuthTest.default;')();
 });
-beforeEach(() => {
+beforeEach(async () => {
   db = accountDatabase();
   vi.spyOn(console, 'log').mockImplementation(() => {});
-  env = { SESSION_SIGNING_SECRET: secret(signingKey), CREDENTIAL_ENCRYPTION_SECRET: secret('local-only-separate-provider-credential-key'), ACCOUNT_DB: db.binding, GAME_SIGNING_SECRET: gameKey,
+  env = { SESSION_SIGNING_SECRET: secret(signingKey), CREDENTIAL_ENCRYPTION_SECRET: secret('local-only-separate-provider-credential-key'), ACCOUNT_DB: db.binding, GAME_TICKET_PRIVATE_KEY: (await testGameKeys(gameKey)).privateKey,
     PATREON_CLIENT_ID: secret('patreon-client'), PATREON_CLIENT_SECRET: secret('patreon-secret'),
     PATREON_CAMPAIGN_ID: secret('campaign'), CREATOR_USER_ID: secret('creator'),
     TWITCH_CLIENT_ID: secret('twitch-client'), TWITCH_CLIENT_SECRET: secret('twitch-secret'),
@@ -118,7 +119,7 @@ describe('durable linked Pro accounts', () => {
     const calls = providerFetch.mock.calls.length;
     await check(linked.token); await check(linked.token);
     const ticket = await (await request('/auth/game-ticket', linked.token, {})).json() as any;
-    expect(await verifyGameTicket(ticket.token, gameKey)).toMatchObject({
+    expect(await verifyGameTicket(ticket.token, (await testGameKeys(gameKey)).publicKey)).toMatchObject({
       sub: `account:${before.accountId}`, name: 'mychannel', twitchUserId: '12345', twitchLogin: 'mychannel', pro: true,
     });
     expect(providerFetch).toHaveBeenCalledTimes(calls);
@@ -137,11 +138,11 @@ describe('durable linked Pro accounts', () => {
     people.twitch.displayName = 'MyChannel';
     const patron = await login('patreon');
     const standaloneTicket = await (await request('/auth/game-ticket', patron.token, {})).json() as { token: string };
-    expect(await verifyGameTicket(standaloneTicket.token, gameKey)).toMatchObject({ name: vanity || 'Patron', pro: true });
+    expect(await verifyGameTicket(standaloneTicket.token, (await testGameKeys(gameKey)).publicKey)).toMatchObject({ name: vanity || 'Patron', pro: true });
     const linked = await (await link(patron.token, 'twitch', 'twitch')).json() as { token: string; accountId: string };
     const calls = providerFetch.mock.calls.length;
     const ticket = await (await request('/auth/game-ticket', linked.token, {})).json() as { token: string };
-    expect(await verifyGameTicket(ticket.token, gameKey)).toMatchObject({
+    expect(await verifyGameTicket(ticket.token, (await testGameKeys(gameKey)).publicKey)).toMatchObject({
       sub: `account:${linked.accountId}`, name: 'MyChannel', twitchUserId: '12345', twitchLogin: 'mychannel', pro: true,
     });
     expect(providerFetch).toHaveBeenCalledTimes(calls);

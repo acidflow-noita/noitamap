@@ -1,8 +1,9 @@
+import { testGameKeys } from './helpers/game-ticket-keys';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createHmac } from 'node:crypto';
 import { handle, type Env } from '../workers/noitamap-guessr/src/index';
 import { gameDatabase } from './helpers/guessr-database';
-import { signGameTicket } from '../workers/noitamap-guessr/src/tickets';
+import { signGameTicket } from './helpers/game-ticket-keys';
 import type { DailyImagePack } from '../src/guessr/daily-pack';
 
 const now = Date.UTC(2026, 9, 25, 12), secret = 'local-test-only-daily-publisher-key-0123456789';
@@ -21,10 +22,10 @@ function pack(): DailyImagePack {
       tiles: 'https://e5f6a7b8.map-test.pages.dev/map_files/' } },
     rounds: Array.from({ length: 10 }, () => ({ area, answer: { x: -16896, y: 1024 }, frames })) };
 }
-function fixture() {
+async function fixture() {
   const db = gameDatabase(); cleanups.push(db.close);
   const env: Env = { DB: db.db, ASSETS: { fetch: async () => new Response('', { status: 404 }) },
-    ALLOWED_ORIGINS: 'https://dynamic-map.noitamap.com', GAME_ENABLED: 'true', GAME_SIGNING_SECRET: gameSecret,
+    ALLOWED_ORIGINS: 'https://dynamic-map.noitamap.com', GAME_ENABLED: 'true', GAME_SIGNING_SECRET: gameSecret, GAME_TICKET_PUBLIC_KEY: (await testGameKeys(gameSecret)).publicKey,
     DAILY_PUBLISH_SECRET: secret, DAILY_ASSET_HOSTS: 'clue-test.pages.dev,map-test.pages.dev' };
   const publish = (value: DailyImagePack, valid = true) => {
     const body = JSON.stringify(value), signature = createHmac('sha256', valid ? secret : secret + 'wrong').update(body).digest('hex');
@@ -36,7 +37,7 @@ function fixture() {
 
 describe('prepared Daily publication and gameplay', () => {
   it('plays all ten rounds through the API, allows the final image, and caps the total at 50,000', async () => {
-    const f = fixture(), p = pack();
+    const f = await fixture(), p = pack();
     p.rounds[0] = { ...p.rounds[0], area: { ...p.rounds[0].area, id: 'terrain/edr',
       difficultyTier: 'hard', viewDifficulty: 'featureless-edr' } };
     await f.publish(p);
@@ -73,14 +74,14 @@ describe('prepared Daily publication and gameplay', () => {
     expect(f.sqlite.prepare('SELECT COUNT(*) AS saved FROM guesses WHERE attempt_id=?').get(state.id)).toEqual({ saved: 10 });
   });
   it('authenticates before database work and refuses untrusted asset hosts', async () => {
-    const f = fixture(); expect((await f.publish(pack(), false)).status).toBe(401); expect(f.calls()).toBe(0);
+    const f = await fixture(); expect((await f.publish(pack(), false)).status).toBe(401); expect(f.calls()).toBe(0);
     const wrong = pack(); wrong.config.map.tiles = 'https://untrusted.example/map_files/';
     expect((await f.publish(wrong)).status).toBe(400); expect(f.calls()).toBe(0);
     wrong.config.map.tiles = 'https://daily-images.map-test.pages.dev/map_files/';
     expect((await f.publish(wrong)).status).toBe(400); expect(f.calls()).toBe(0);
   });
   it('activates all ten rounds atomically and treats a repeated publication as a no-op', async () => {
-    const f = fixture(), p = pack();
+    const f = await fixture(), p = pack();
     const publication = await f.publish(p);
     expect(publication.status, await publication.clone().text()).toBe(200);
     expect(f.sqlite.prepare('SELECT COUNT(*) n FROM questions').get()).toMatchObject({ n: 10 });
@@ -90,7 +91,7 @@ describe('prepared Daily publication and gameplay', () => {
     expect(f.sqlite.prepare('SELECT x FROM questions WHERE ordinal=9').get()).toMatchObject({ x: p.rounds[9].answer.x });
   });
   it('withholds targets, uses prepared clue frames, and scores area/proximity with the exploration cap', async () => {
-    const f = fixture(), p = pack(); await f.publish(p);
+    const f = await fixture(), p = pack(); await f.publish(p);
     const ticket = await signGameTicket('twitch:one', 'Player', gameSecret, now);
     const call = (path: string, body?: unknown) => handle(new Request('https://guessr-api.sage-data.xyz' + path, {
       method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${ticket.token}`, 'Content-Type': 'application/json' },
@@ -113,12 +114,12 @@ describe('prepared Daily publication and gameplay', () => {
     expect((await f.publish(replacement)).status).toBe(409);
   });
   it('rejects an older bake after a newer publication', async () => {
-    const f = fixture(), p = pack(); await f.publish(p);
+    const f = await fixture(), p = pack(); await f.publish(p);
     const old = pack(); old.generatedAt = new Date(now - 2000).toISOString();
     expect((await f.publish(old)).status).toBe(409);
   });
   it('preserves all ten original rounds if a player starts while a replacement is being published', async () => {
-    const f = fixture(), original = pack(); await f.publish(original);
+    const f = await fixture(), original = pack(); await f.publish(original);
     const batch = f.env.DB.batch.bind(f.env.DB);
     f.env.DB = { ...f.env.DB, async batch(statements) {
       // A different request won the race after the publisher's preflight read.

@@ -94,3 +94,27 @@ encrypted credentials and never prints the refresh token. Remove the binding
 and rotate the temporary key afterwards. Query-string keys are not accepted.
 
 For a copied-folder build/deployment, see [DEPLOY.md](DEPLOY.md).
+
+
+## Game ticket boundary
+
+Auth alone holds `GAME_TICKET_PRIVATE_KEY` (Secrets Store secret
+`NOITAMAP_GAME_TICKET_PRIVATE_KEY`), a P-256 private JWK. The secondary Guessr
+Worker holds only the matching public JWK, in `GAME_TICKET_PUBLIC_KEY`.
+Tickets use ES256 with version 2 and a 20-minute expiry. Old symmetric tickets
+are rejected. Never put the private JWK on the secondary account.
+
+Generate the pair with `node tok_gen_script/game-ticket-keys.mjs /private/path`.
+The script writes two protected files and never prints key contents. Upload the
+private file to primary auth's Secrets Store and the public file to the secondary
+Worker's `GAME_TICKET_PUBLIC_KEY` secret binding. Do not include the private
+files in a source archive. The existing secondary `GAME_SIGNING_SECRET` is now
+used only for solo-game encryption: rotate it independently during cutover,
+and remove the obsolete shared value from primary/dev authentication.
+
+`POST /auth/game-ticket` requires Pro. `POST /auth/result-ticket` requires a
+registered login but does not require paid status. Its result-management ticket
+cannot start/play games. This permits owners to remove a published result after
+their subscription ends. No ticket or subscription lookup is needed to read a
+public result. These signatures are verified locally in the receiving Worker;
+there is no added verification request.

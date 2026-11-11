@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { formatGuessCommand } from '../src/guessr/guess-command';
 import {
   expandStreamResult,

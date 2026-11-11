@@ -14,6 +14,19 @@ export interface ResultArchiveStore {
   all(): Promise<ArchivedStreamResult[]>;
   put(entry: ArchivedStreamResult): Promise<void>;
 }
+/** Keep results/retry credentials durable, but remove all round-reveal tokens
+ * from a completed host snapshot. Never overwrite a newer active game. */
+export function clearCompletedHostTokens(game: StreamGame, storage: Storage = localStorage): void {
+  if (game.stage !== 'complete') return;
+  game.session.token = '';
+  for (const round of game.session.rounds) round.token = '';
+  const saved = read<StreamGame>(storage, STREAM_SESSION_KEY);
+  if (saved?.session.id !== game.session.id || saved.stage !== 'complete') return;
+  saved.session.token = '';
+  for (const round of saved.session.rounds) round.token = '';
+  try { storage.setItem(STREAM_SESSION_KEY, JSON.stringify(saved)); }
+  catch { storage.removeItem(STREAM_SESSION_KEY); }
+}
 const fallbackPrefix = 'noitamap-guessr-archive:';
 const legacyPrefix = 'noitamap-guessr-result:';
 const storageError = 'This browser could not save the result. Download a copy before closing this page.';
@@ -31,7 +44,7 @@ function keys(storage: Storage): string[] {
 function merge(old: ArchivedStreamResult | undefined, entry: ArchivedStreamResult): ArchivedStreamResult {
   const value = { ...old, ...entry, published: !!old?.published || entry.published };
   value.pendingToken ??= old?.pendingToken;
-  if (value.published) delete value.pendingToken;
+  if (value.published || value.result.createdAt + 30 * 86400000 <= Date.now()) delete value.pendingToken;
   return value;
 }
 function browserStore(): ResultArchiveStore {
@@ -87,14 +100,20 @@ export class StreamResultArchive {
       if (game?.stage === 'complete' && game.session?.rounds?.length === STREAM_ROUNDS) {
         let result: StreamResult;
         try { result = streamResult(game); } catch { return; }
-        await this.save({ result, published: !!game.published, ...(!game.published ? { pendingToken: game.session.token } : {}),
+        await this.save({ result, published: !!game.published, ...(!game.published && game.session.token ? { pendingToken: game.session.token } : {}),
           ...(game.session.localChat ? { localChannel: game.session.host.login } : {}) });
+        clearCompletedHostTokens(game, storage);
       }
     })();
   }
   async get(id: string): Promise<ArchivedStreamResult | undefined> {
     await this.recover(); await this.writes;
-    try { const stored = await this.database().get(id), backup = this.fallback(id); return backup ? merge(stored, backup) : stored; }
+    try {
+      const stored = await this.database().get(id), backup = this.fallback(id);
+      const value = backup ? merge(stored, backup) : stored && merge(undefined, stored);
+      if (value && stored?.pendingToken && !value.pendingToken) await this.save(value);
+      return value;
+    }
     catch { return this.fallback(id); }
   }
   async list(): Promise<ArchivedStreamResult[]> {

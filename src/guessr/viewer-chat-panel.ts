@@ -1,5 +1,5 @@
 import type { TwitchViewer } from './twitch-viewer';
-import { streamerProStatus, hasKnownStreamerPro } from './streamer-pro-status';
+import { streamerProStatus } from './streamer-pro-status';
 import type { TwitchChatStatus } from './twitch-chat';
 import { bindAttribute, bindText, onGuessrLanguageChanged, tr } from './i18n';
 import { guessRouteUrl } from './routes';
@@ -67,7 +67,7 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
     const state = viewer.getState();
     header.hidden = !channel;
     changeStreamer.hidden = !channel || !onChangeStreamer;
-    gift.hidden = !channel || !!gameId || hasGame || hasKnownStreamerPro(channel) || state.login === channel;
+    gift.hidden = !channel || !!gameId || hasGame || state.login === channel;
     bindText(gift, 'Gift Pro to {{channel}}', { channel }); giftHelp.update();
     historyLink.textContent = channel;
     historyLink.href = guessRouteUrl('history', location.origin, { channel }).href;

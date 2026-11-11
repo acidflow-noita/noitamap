@@ -29,6 +29,7 @@ export interface Env {
   DB: Database;
   ASSETS: { fetch(request: Request): Promise<Response> };
   GAME_SIGNING_SECRET: string;
+  GAME_TICKET_PUBLIC_KEY?: string;
   ALLOWED_ORIGINS: string;
   GAME_ENABLED?: string;
   SOLO_ENABLED?: string;
@@ -155,7 +156,7 @@ async function identity(
   const user = header.startsWith("Bearer ")
     ? await verifyGameTicket(
         header.slice(7),
-        env.GAME_SIGNING_SECRET || "",
+        env.GAME_TICKET_PUBLIC_KEY || "",
         now,
       )
     : null;

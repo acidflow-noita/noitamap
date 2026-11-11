@@ -23,7 +23,7 @@ export interface StreamRound {
 }
 export interface StreamSession {
   transport?: 'twitch';
-  /** Current rounds are coordinated by the channel's live room. */
+  /** Current rounds are coordinated through the Twitch broadcast transport. */
   live?: true;
   /** Loopback testing: real Twitch channel, separate synthetic host score. */
   localChat?: true;

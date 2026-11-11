@@ -26,7 +26,7 @@ describe('immutable result storage', () => {
     expect(JSON.parse(await new Response(compressed.body!.pipeThrough(new DecompressionStream('gzip'))).text())).toEqual(value);
     const identity = storedResultResponse(stored, new Request('https://result.test', { headers: { 'Accept-Encoding': 'gzip;q=0' } }));
     expect(identity.headers.get('Content-Encoding')).toBeNull(); expect(await identity.json()).toEqual(value);
-    expect(identity.headers.get('Cache-Control')).toContain('immutable');
+    expect(identity.headers.get('Cache-Control')).toBe('public, max-age=60');
   });
   it('preserves exact legacy bytes and does not compress when the storage representation would grow', async () => {
     const text = '{ "old": "結果" }\n';

@@ -31,6 +31,7 @@ export interface StreamHostIdentity {
   name: string;
   /** Set only after verification of the host's Pro game JWT. Epoch milliseconds. */
   hostProVerifiedUntil?: number;
+  ticketIssuedAt?: number;
 }
 interface Envelope {
   transport?: 'twitch';
@@ -230,7 +231,7 @@ export class StreamService {
         !/^\d{1,30}$/.test(player.id) ||
         ids.has(player.id) ||
         typeof player.name !== "string" ||
-        !player.name.length ||
+        !player.name.trim() || player.name !== player.name.trim() || /[\p{Cc}\p{Cf}\p{Cs}<>]/u.test(player.name) ||
         player.name.length > 48 ||
         typeof player.login !== "string" ||
         !/^[a-z0-9_]{1,25}$/.test(player.login) ||
@@ -276,8 +277,10 @@ export class StreamService {
         "The streamer must be included in the results.",
       );
     const host = players.find((player) => player.id === envelope.host.id)!;
-    host.name = envelope.host.name;
-    host.login = envelope.host.login;
+    const currentHost = { id: envelope.host.id, login: user.twitchLogin,
+      name: user.name.replace(/[\p{Cc}\p{Cf}\p{Cs}<>]/gu, '').trim().slice(0, 48) || user.twitchLogin };
+    host.name = currentHost.name;
+    host.login = currentHost.login;
     // Chat delivery and assistance are intentionally host-reported. The browser
     // uses the shared exact scorer; this bounded endpoint validates the summary
     // and identity without rerunning thousands of geometry tests on Workers Free.
@@ -288,7 +291,7 @@ export class StreamService {
       version: envelope.version,
       createdAt: envelope.createdAt,
       finishedAt: input.finishedAt,
-      host: envelope.host,
+      host: currentHost,
       rounds: envelope.reveals.map((round) => ({
         id: round.roundId,
         answer: round.answer,

@@ -1,3 +1,4 @@
+import { testGameKeys } from './helpers/game-ticket-keys';
 import { accountDatabase } from './helpers/auth-account-db';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { build } from "esbuild";
@@ -12,14 +13,14 @@ const env = {
   ACCOUNT_DB: undefined as ReturnType<typeof accountDatabase>['binding'] | undefined,
   CREDENTIAL_ENCRYPTION_SECRET: secret('local-only-provider-encryption-key-for-tests'),
   SESSION_SIGNING_SECRET: secret(loginKey),
-  GAME_SIGNING_SECRET: gameKey,
+  GAME_TICKET_PRIVATE_KEY: '',
   TWITCH_PRO_USER_IDS: '1001,1002',
   TWITCH_CLIENT_ID: secret("test-client"),
   TWITCH_CLIENT_SECRET: secret("test-client-secret"),
   ALLOWED_ORIGINS: "https://noitamap.test",
   WORKER_URL: "https://auth.test",
 };
-beforeEach(() => { accountDb = accountDatabase(); env.ACCOUNT_DB = accountDb.binding; vi.spyOn(console, 'log').mockImplementation(() => {}); });
+beforeEach(async () => { env.GAME_TICKET_PRIVATE_KEY = (await testGameKeys(gameKey)).privateKey; accountDb = accountDatabase(); env.ACCOUNT_DB = accountDb.binding; vi.spyOn(console, 'log').mockImplementation(() => {}); });
 afterEach(() => { accountDb.sqlite.close(); vi.restoreAllMocks(); });
 beforeAll(async () => {
   const result = await build({
@@ -130,7 +131,7 @@ describe("owner-approved Twitch Pro access", () => {
       );
       expect(ticketResponse.status).toBe(200);
       const ticket = (await ticketResponse.json()) as { token: string };
-      expect(await verifyGameTicket(ticket.token, gameKey)).toMatchObject({
+      expect(await verifyGameTicket(ticket.token, (await testGameKeys(gameKey)).publicKey)).toMatchObject({
         sub: expect.stringMatching(/^account:/),
         pro: true,
       });

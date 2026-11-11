@@ -875,3 +875,39 @@ controlled by the browser. No auth Worker bridge or extra polling is used.
 
 Local/preview sites must explicitly configure an isolated Twitch app through
 `VITE_GUESSR_TWITCH_CLIENT_ID`. Only dynamic-map defaults to the production app.
+
+
+## Security release: ownership and removal
+
+Apply `0007_result_ownership.sql` before the new Worker. As approved for the beta
+cutover, it deletes old **stream test results** whose compressed headers lack
+stable host identity. It does not delete Daily attempts or challenges. New
+history is indexed by Twitch user ID; a small channel alias table is updated
+atomically during final publication, with no viewer writes. The current verified
+ticket supplies the host's name/login, not the older game token.
+
+The primary auth Worker signs v2 ES256 tickets. Set `GAME_TICKET_PUBLIC_KEY` to
+the public JWK only; the private key stays in primary auth. Rotate the existing
+secondary-only solo/stream encryption keys at cutover. Never re-enable old HMAC
+ticket verification or share the session/provider encryption keys.
+
+A logged-in owner can obtain a result-management ticket from
+`POST /auth/result-ticket` on primary auth, without Pro, and use it as the Bearer
+token for `POST /api/streams/results/<uuid>/delete` on Guessr. The verified owner
+account or stable host Twitch ID may remove its result; the owner-approved
+administrator is the stable Twitch ID `564553302`. Other accounts receive 404.
+Removal returns 204 and writes a small tombstone so an old retry cannot restore
+the same result. These are explicit management actions, not background traffic.
+Public result reads remain unauthenticated and have a 60-second cache lifetime.
+Already downloaded copies and responses cached under the old one-year policy
+cannot be recalled by changing the server.
+
+Player names reject control/bidi/invisible characters and markup delimiters.
+All names still use textContent in the UI. Participant identity and scores are
+host-reported casual data, not independently checked with one Twitch request per
+player. The result page says so. No additional per-player verification was added.
+
+Completed browser saves lose their round-reveal credentials after the result is
+safely archived. An unpublished result retains only its game-scoped publication
+credential until upload succeeds or its original 30-day validity ends. This
+preserves failed-upload recovery without retaining playable round tokens.

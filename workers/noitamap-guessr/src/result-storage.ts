@@ -10,7 +10,7 @@ export interface StoredResultBody { result_json: string; result_gzip: unknown }
 export async function encodeStoredResult(result: StreamPublishedResult, serialized: string, original = encoder.encode(serialized)) {
   if (!original.byteLength || original.byteLength > STREAM_MAX_DOCUMENT_BYTES) throw new Error('Invalid result size.');
   const gzip = await new Response(new Response(original).body!.pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
-  const header = JSON.stringify({ storage: 'gzip-json-v1', host: { login: result.host.login, name: result.host.name },
+  const header = JSON.stringify({ storage: 'gzip-json-v1', host: { id: result.host.id, login: result.host.login, name: result.host.name },
     finishedAt: result.finishedAt, playerCount: result.players.length, rawBytes: original.byteLength });
   const bytes = encoder.encode(header).byteLength + gzip.byteLength;
   // Tiny/incompressible documents keep the original representation.
@@ -45,7 +45,7 @@ export function acceptsGzip(value: string | null): boolean {
 
 export function storedResultResponse(stored: StoredResultBody, request: Request): Response {
   const headers = new Headers({ 'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': 'public, max-age=31536000, immutable', Vary: 'Accept-Encoding' });
+    'Cache-Control': 'public, max-age=60', Vary: 'Accept-Encoding' });
   if (stored.result_gzip === null || stored.result_gzip === undefined) return new Response(stored.result_json, { headers });
   const header = JSON.parse(stored.result_json);
   if (header.storage !== 'gzip-json-v1' || !Number.isSafeInteger(header.rawBytes)

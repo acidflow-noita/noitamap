@@ -32,9 +32,8 @@ interface Env extends Partial<Pick<AccountRegistryBindings, 'ACCOUNT_DB'>> {
   PREVIOUS_CREDENTIAL_KEY_ID?: string;
   LEGACY_CREDENTIAL_SECRET?: SecretStoreSecret;
   CREATOR_USER_ID: SecretStoreSecret;
-  // Optional, separate game-only key, also configured on the Sage account's
-  // game Worker. Never share session or provider encryption keys with that account.
-  GAME_SIGNING_SECRET?: SecretStoreSecret | string;
+  // Primary-only signing key. The game Worker has the public verification key.
+  GAME_TICKET_PRIVATE_KEY?: SecretStoreSecret;
 
   // Plain environment variables (from wrangler.jsonc vars)
   AUTH_ENABLED?: string;
@@ -249,6 +248,7 @@ export default {
         case "/auth/twitch/chat-session":
           if (request.method !== "GET") return methodNotAllowed("GET", allowedOrigin);
           return await handleTwitchChatSession(request, env, await resolveSessionSecrets(env), allowedOrigin);
+        case "/auth/result-ticket":
         case "/auth/game-ticket":
           if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
           return await handleGameTicket(request, env, (await resolveSessionSecrets(env)).jwtSecret, allowedOrigin);
@@ -478,19 +478,20 @@ async function handleAuthCheck(request: Request, secrets: SessionSecrets, origin
 async function handleGameTicket(request: Request, env: Env, jwtSecret: string, allowedOrigin: string | null): Promise<Response> {
   const token = getBearerToken(request);
   const user = token ? await verifyJWT(token, jwtSecret) : null;
-  if (!user) return jsonResponse({ error: 'Sign in to play ranked games.' }, allowedOrigin, 401);
+  if (!user) return jsonResponse({ error: 'Sign in to continue.' }, allowedOrigin, 401);
+  if (!await sessionRateAllowed(env, user.sid)) return rateLimited(allowedOrigin);
   const account = await sessionAccount(env, user);
   if (!account) return jsonResponse({ error: 'Sign in again.' }, allowedOrigin, 401);
-  if (!accountData(account).isSubscriber) return jsonResponse({ error: 'Ranked games require Pro.' }, allowedOrigin, 403);
-  const binding = env.GAME_SIGNING_SECRET;
-  const key = typeof binding === 'string' ? binding : await binding?.get();
-  if (!key || key.length < 32) return jsonResponse({ error: 'Ranked games are not available yet.' }, allowedOrigin, 503);
+  const management = new URL(request.url).pathname === '/auth/result-ticket';
+  if (!management && !accountData(account).isSubscriber) return jsonResponse({ error: 'Ranked games require Pro.' }, allowedOrigin, 403);
+  const key = await getSecret(env.GAME_TICKET_PRIVATE_KEY);
+  if (!key || key.length > 2048) return jsonResponse({ error: 'Ranked games are not available yet.' }, allowedOrigin, 503);
   const twitch = account?.identities.find(row => row.provider === 'twitch' && row.status === 'active');
   // Pro may come from Patreon, but a linked Twitch identity supplies the public
   // game name. These fields are already loaded from the verified provider record.
   const name = twitch?.login ? twitch.nickname || twitch.username || twitch.login : user.nickname || user.username;
   return jsonResponse(await signGameTicket(`account:${account.id}`,
-    name, key, twitch?.login ? { twitchUserId: twitch.provider_user_id, twitchLogin: twitch.login } : undefined), allowedOrigin);
+    name, key, twitch?.login ? { twitchUserId: twitch.provider_user_id, twitchLogin: twitch.login } : undefined, Date.now(), management ? 'result-management' : 'game'), allowedOrigin);
 }
 
 /** Refresh a registered session exactly once; old stateless tokens never migrate. */
@@ -509,6 +510,7 @@ async function handleRefresh(request: Request, env: Env, secrets: SessionSecrets
   await refreshAccountMemberships(env, account, secrets);
   const current = await sessionAccount(env, refresh);
   if (!current || current.session.refresh_version !== refresh.rotation + 1) return jsonResponse({ authenticated: false }, origin, 401);
+  securityEvent('refresh', current.id);
   return jsonResponse(await issueAccountSession(env, current, secrets, refresh.provider, current.session), origin);
 }
 async function handleLogout(request: Request, env: Env, secrets: SessionSecrets, origin: string | null): Promise<Response> {

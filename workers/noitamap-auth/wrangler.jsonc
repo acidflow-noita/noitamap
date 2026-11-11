@@ -94,6 +94,11 @@
       "binding": "LEGACY_CREDENTIAL_SECRET",
       "store_id": "291b9519666945a1a56adbb686c62d76",
       "secret_name": "JWT_SECRET_PROD"
+    },
+    {
+      "binding": "GAME_TICKET_PRIVATE_KEY",
+      "store_id": "291b9519666945a1a56adbb686c62d76",
+      "secret_name": "NOITAMAP_GAME_TICKET_PRIVATE_KEY"
     }
   ],
   "env": {

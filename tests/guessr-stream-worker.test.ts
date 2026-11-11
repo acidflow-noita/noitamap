@@ -1,10 +1,11 @@
+import { testGameKeys, signResultManagementTicket } from './helpers/game-ticket-keys';
 import { packStreamPublish } from "../src/guessr/stream-codec";
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import { streamRoute } from "../workers/noitamap-guessr/src/streams";
 import { STREAM_STORAGE_BUDGET_BYTES, STREAM_RESULT_OVERHEAD_BYTES } from '../workers/noitamap-guessr/src/result-storage';
 import { handle, type Env } from "../workers/noitamap-guessr/src/index";
-import { signGameTicket } from "../workers/noitamap-guessr/src/tickets";
+import { signGameTicket } from "./helpers/game-ticket-keys";
 import {
   newStreamGame,
   streamResult,
@@ -38,6 +39,7 @@ async function fixture() {
   );
   db.sqlite.exec(readFileSync("workers/noitamap-guessr/migrations/0005_stream_history.sql", "utf8"));
   db.sqlite.exec(readFileSync("workers/noitamap-guessr/migrations/0006_stream_storage.sql", "utf8"));
+  db.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/0007_result_ownership.sql', 'utf8'));
   const ticket = await signGameTicket(
     streamHost.sub,
     streamHost.name,
@@ -48,7 +50,7 @@ async function fixture() {
   const env: Env = {
     DB: db.db,
     ASSETS: { fetch: async () => new Response("missing", { status: 404 }) },
-    GAME_SIGNING_SECRET: streamSecret,
+    GAME_SIGNING_SECRET: streamSecret, GAME_TICKET_PUBLIC_KEY: (await testGameKeys(streamSecret)).publicKey,
     STREAM_SIGNING_SECRET: streamSecret,
     STREAM_ENABLED: "true",
     STREAM_IMAGE_ROOT: "/images",
@@ -80,9 +82,9 @@ async function fixture() {
       streamNow + 1000,
       streamSource(),
     );
-  async function completed() {
+  async function completed(hostToken = ticket.token) {
     const session = (await (
-      await call("/sessions", { transport: "twitch" })
+      await call("/sessions", { transport: "twitch" }, hostToken)
     ).json()) as StreamSession;
     const game = newStreamGame(session, streamNow + 1000);
     for (let i = 0; i < session.rounds.length; i++) {
@@ -90,7 +92,7 @@ async function fixture() {
       revealStreamRound(
         game,
         await (
-          await call("/reveal", { token: session.rounds[i].token })
+          await call("/reveal", { token: session.rounds[i].token }, hostToken)
         ).json(),
       );
       advanceStreamRound(game, streamNow + 1000);
@@ -175,7 +177,7 @@ describe("single-document stream publication", () => {
       streamNow + 1000,
     );
     expect(response.status).toBe(200);
-    expect(response.headers.get("Cache-Control")).toContain("immutable");
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=60");
     expect(((await response.json()) as any).players).toHaveLength(1);
     expect(f.sqlite.prepare("SELECT total_changes() AS n").get()).toEqual(
       writes,
@@ -189,12 +191,12 @@ describe("single-document stream publication", () => {
     const publication = await (await f.call('/results', input)).json() as any;
     const stored = f.sqlite.prepare('SELECT * FROM stream_results WHERE id=?').get(publication.id) as any;
     const original = await (await f.call('/results/' + publication.id, undefined, null)).json() as any;
-    const insert = f.sqlite.prepare('INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json) VALUES(?,?,?,?,?,?,?)');
+    const insert = f.sqlite.prepare('INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json,host_id,host_verified_at) VALUES(?,?,?,?,?,?,?,?,?)');
     for (let i = 0; i < 24; i++) {
       const id = crypto.randomUUID(), result = { ...original, id };
-      if (i === 23) result.host = { ...result.host, login: 'another_streamer' };
+      if (i === 23) result.host = { ...result.host, id: '200', login: 'another_streamer' };
       const json = JSON.stringify(result);
-      insert.run(id, stored.owner, stored.day, stored.created_at + (i % 3), new TextEncoder().encode(json).byteLength, stored.digest, json);
+      insert.run(id, stored.owner, stored.day, stored.created_at + (i % 3), new TextEncoder().encode(json).byteLength, stored.digest, json, result.host.id, stored.host_verified_at);
     }
     const changes = f.sqlite.prepare('SELECT total_changes() AS n').get();
     const calls = f.calls();
@@ -208,8 +210,8 @@ describe("single-document stream publication", () => {
     expect(second.games).toHaveLength(4); expect(second.next).toBeUndefined();
     expect(new Set([...page.games, ...second.games].map(game => game.id)).size).toBe(24);
     expect(Object.keys(page.games[0]).sort()).toEqual(['finishedAt', 'hostName', 'id', 'players']);
-    const plan = f.sqlite.prepare("EXPLAIN QUERY PLAN SELECT id FROM stream_results WHERE json_extract(result_json, '$.host.login')=? AND (created_at, id) < (?, ?) ORDER BY created_at DESC, id DESC LIMIT 21").all(original.host.login, Number.MAX_SAFE_INTEGER, 'z');
-    expect(JSON.stringify(plan)).toContain('stream_results_channel_history');
+    const plan = f.sqlite.prepare("EXPLAIN QUERY PLAN SELECT id FROM stream_results WHERE host_id=? AND (created_at, id) < (?, ?) ORDER BY created_at DESC, id DESC LIMIT 21").all(original.host.id, Number.MAX_SAFE_INTEGER, 'z');
+    expect(JSON.stringify(plan)).toContain('stream_results_host_history');
     expect(f.sqlite.prepare('SELECT total_changes() AS n').get()).toEqual(changes);
     expect((await f.call('/history/' + original.host.login + '?before=broken', undefined, null)).status).toBe(400);
   });
@@ -361,4 +363,45 @@ it('rejects excessive anonymous demo calls before reading puzzle assets or D1', 
   }), f.env, streamNow);
   expect(response.status).toBe(429); expect(response.headers.get('Retry-After')).toBe('60');
   expect(assets).toBe(0); expect(f.calls()).toBe(0);
+});
+
+
+it('uses the current verified host name and stable ID after a rename, without transferring history to a recycled name', async () => {
+  const f = await fixture(), input = await f.completed();
+  const renamed = await signGameTicket(streamHost.sub, 'Renamed', streamSecret, { ...streamHost, twitchLogin: 'renamed' }, streamNow + 1000);
+  expect((await f.call('/results', input, renamed.token)).status).toBe(201);
+  const id = (await (await f.call('/history/renamed', undefined, null)).json() as any).games[0].id;
+  const result = await (await f.call('/results/' + id, undefined, null)).json() as any;
+  expect(result.host).toEqual({ id: streamHost.twitchUserId, name: 'Renamed', login: 'renamed' });
+  expect((await (await f.call('/history/streamer', undefined, null)).json() as any).games).toEqual([]);
+  const recycled = await signGameTicket('account:other', 'New streamer', streamSecret, { twitchUserId: '200', twitchLogin: 'streamer' }, streamNow + 1000);
+  const otherGame = await f.completed(recycled.token);
+  expect((await f.call('/results', otherGame, recycled.token)).status).toBe(201);
+  const oldName = await (await f.call('/history/streamer', undefined, null)).json() as any;
+  expect(oldName.games).toHaveLength(1); expect(oldName.games[0].id).not.toBe(id);
+  const laterLabel = await signGameTicket(streamHost.sub, 'Renamed again', streamSecret, { ...streamHost, twitchLogin: 'renamedagain' }, streamNow + 1000);
+  expect((await f.call('/results', input, laterLabel.token)).status).toBe(200);
+});
+it.each(['name\nforged log', 'abc\u202edef', '<script>user</script>', 'user\u200dname', ' '])('rejects non-printable or markup player name %j before publication', async name => {
+  const f = await fixture(), input = await f.completed(); input.players[0].name = name;
+  expect((await f.call('/results', input)).status).toBe(400);
+  expect(f.sqlite.prepare('SELECT COUNT(*) AS n FROM stream_results').get()).toEqual({ n: 0 });
+});
+it('allows owner/admin removal without Pro, blocks other users and prevents re-publication', async () => {
+  const f = await fixture(), input = await f.completed();
+  const result = await (await f.call('/results', input)).json() as { id: string };
+  const path = '/results/' + result.id + '/delete';
+  expect((await f.call(path, {}, null)).status).toBe(401);
+  const stranger = await signResultManagementTicket('account:stranger', 'Stranger', streamSecret, { twitchUserId: '200', twitchLogin: 'other' }, streamNow);
+  expect((await f.call(path, {}, stranger.token)).status).toBe(404);
+  const owner = await signResultManagementTicket(streamHost.sub, streamHost.name, streamSecret, streamHost, streamNow);
+  expect((await f.call('/sessions', { transport: 'twitch' }, owner.token)).status).toBe(401);
+  expect((await f.call(path, {}, owner.token)).status).toBe(204);
+  expect((await f.call(path, {}, owner.token)).status).toBe(204);
+  expect((await f.call('/results/' + result.id, undefined, null)).status).toBe(404);
+  expect((await f.call('/results', input)).status).toBe(410);
+  expect(f.sqlite.prepare('SELECT used_bytes,games FROM stream_result_storage').get()).toEqual({ used_bytes: 0, games: 0 });
+  const next = await f.completed(), nextId = (await (await f.call('/results', next)).json() as any).id;
+  const admin = await signResultManagementTicket('account:admin', 'WUOTE', streamSecret, { twitchUserId: '564553302', twitchLogin: 'renamed_admin' }, streamNow);
+  expect((await f.call('/results/' + nextId + '/delete', {}, admin.token)).status).toBe(204);
 });
