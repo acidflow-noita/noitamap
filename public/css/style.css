@@ -31,6 +31,16 @@ html {
   --bs-dialog-box-shadow: var(--shadow-panel);
 }
 
+/* Status tints elsewhere are translucent. Floating notifications need an
+   opaque panel beneath the tint so the map cannot show through their text. */
+.toast {
+  --bs-primary-bg-subtle: color-mix(in oklab, var(--bs-primary-base) 14%, var(--surface-1));
+  --bs-success-bg-subtle: color-mix(in oklab, var(--bs-success-base) 8%, var(--surface-1));
+  --bs-warning-bg-subtle: color-mix(in oklab, var(--bs-warning-base) 14%, var(--surface-1));
+  --bs-danger-bg-subtle: color-mix(in oklab, var(--bs-danger-base) 14%, var(--surface-1));
+  --bs-info-bg-subtle: color-mix(in oklab, var(--bs-info-base) 14%, var(--surface-1));
+}
+
 .pro-icon {
   width: 16px;
   height: 16px;
