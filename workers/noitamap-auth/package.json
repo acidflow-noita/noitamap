@@ -2,6 +2,13 @@
   "name": "noitamap-auth",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261110.1": true
+  },
   "scripts": {
     "db:migrate:local": "wrangler d1 migrations apply ACCOUNT_DB --local --config wrangler.accounts-local.jsonc",
     "types:accounts": "wrangler types src/account-bindings.d.ts --env-interface AccountRegistryBindings --include-runtime=false",
@@ -10,8 +17,8 @@
     "deploy:dev": "wrangler deploy --env dev"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260127.0",
+    "@cloudflare/workers-types": "5.20261110.1",
     "typescript": "^5.4.5",
-    "wrangler": "^4.106.0"
+    "wrangler": "4.160.1"
   }
 }
