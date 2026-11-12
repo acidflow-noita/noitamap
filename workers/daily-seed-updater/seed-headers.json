@@ -1,0 +1,3 @@
+{
+  "rules": "/current_seed.txt\n  Access-Control-Allow-Origin: *\n  Access-Control-Allow-Methods: GET, OPTIONS\n  Cache-Control: public, max-age=300, s-maxage=300\n  Content-Type: text/plain; charset=utf-8\n\n/previous_seed.txt\n  Access-Control-Allow-Origin: *\n  Access-Control-Allow-Methods: GET, OPTIONS\n  Cache-Control: public, max-age=300, s-maxage=300\n  Content-Type: text/plain; charset=utf-8\n"
+}

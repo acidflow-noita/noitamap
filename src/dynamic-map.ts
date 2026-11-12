@@ -216,24 +216,11 @@ export async function resolveSeed(isCurrent = () => true, requirePublishedDaily 
   }
 
   // No seed identity: daily-only links and the default map resolve today.
-  try {
-    const seed = await fetchDailySeed(requirePublishedDaily);
-    if (isCurrent()) updateURLWithSeed(seed, true);
-    return { seed, isDaily: true };
-  } catch (err) {
-    if (requirePublishedDaily) throw err;
-    if (isCurrent()) console.warn("[DynamicMap] Daily seed fetch failed, using fallback:", err);
-    // Fallback: use a deterministic seed based on UTC date so every visitor
-    // still sees the same map even when the Nolla endpoint is unreachable.
-    const dateStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-    let hash = 0;
-    for (let i = 0; i < dateStr.length; i++) {
-      hash = (hash * 31 + dateStr.charCodeAt(i)) | 0;
-    }
-    const fallbackSeed = Math.abs(hash) % 2147483647 || 1;
-    if (isCurrent()) updateURLWithSeed(fallbackSeed, true);
-    return { seed: fallbackSeed, isDaily: true };
-  }
+  // A failed lookup must never invent a seed and label it as today's Daily.
+  // Leave the URL unchanged so retry can resolve the published seed.
+  const seed = await fetchDailySeed(requirePublishedDaily);
+  if (isCurrent()) updateURLWithSeed(seed, true);
+  return { seed, isDaily: true };
 }
 
 // ─── Main pipeline ───────────────────────────────────────────────────────────
@@ -695,6 +682,10 @@ export async function runDynamicMapFromURL(opts: DynamicMapOptions, requirePubli
     const { seed, isDaily } = await resolveSeed(isCurrent, requirePublishedDaily);
     if (!isCurrent()) return null;
     return await runDynamicMapRequest(seed, isDaily, opts, token);
+  } catch (error) {
+    // A failed older lookup must not replace a newer map with an error panel.
+    if (!isCurrent()) return null;
+    throw error;
   } finally {
     if (isCurrent()) opts.onRequestStateChange?.(false);
   }

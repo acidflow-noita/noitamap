@@ -1,3 +1,5 @@
+import { rules as seedHeaders } from '../seed-headers.json';
+
 /**
  * daily-seed-updater worker
  *
@@ -60,19 +62,6 @@ async function fetchPublishedCurrentSeed(): Promise<number | null> {
   }
 }
 
-/** Build the _headers file content for CORS + caching. */
-function headersFileContent(): string {
-  const block = (path: string) =>
-    [
-      path,
-      "  Access-Control-Allow-Origin: *",
-      "  Access-Control-Allow-Methods: GET, OPTIONS",
-      "  Cache-Control: public, max-age=300, s-maxage=300",
-      "  Content-Type: text/plain; charset=utf-8",
-    ].join("\n");
-  return [block("/current_seed.txt"), "", block("/previous_seed.txt"), ""].join("\n");
-}
-
 /**
  * Deploy new static assets to the daily-seed-serve worker using the
  * CF Direct Upload API (3-step flow from the docs):
@@ -91,7 +80,6 @@ async function deployStaticAssets(
   // Fall back to the new seed if we couldn't read a previous one (first
   // ever deploy); the diff client treats prev == current as "no comparison".
   const previousContent = (previousSeed ?? seed).toString() + "\n";
-  const headersContent = headersFileContent();
 
   const apiBase = `https://api.cloudflare.com/client/v4/accounts/${accountId}`;
 
@@ -99,15 +87,12 @@ async function deployStaticAssets(
   const encoder = new TextEncoder();
   const seedBytes = encoder.encode(seedContent);
   const prevBytes = encoder.encode(previousContent);
-  const headersBytes = encoder.encode(headersContent);
   const seedB64 = bytesToBase64(seedBytes);
   const prevB64 = bytesToBase64(prevBytes);
-  const headersB64 = bytesToBase64(headersBytes);
 
   // Hash = sha256(base64(content) + extension) truncated to 32 hex chars
   const seedHash = await assetHash(seedB64, ".txt");
   const prevHash = await assetHash(prevB64, ".txt");
-  const headersHash = await assetHash(headersB64, "");
 
   // --- Step 1: Create upload session ---
   const sessionResp = await fetch(`${apiBase}/workers/scripts/${workerName}/assets-upload-session`, {
@@ -120,7 +105,6 @@ async function deployStaticAssets(
       manifest: {
         "/current_seed.txt": { hash: seedHash, size: seedBytes.byteLength },
         "/previous_seed.txt": { hash: prevHash, size: prevBytes.byteLength },
-        "/_headers": { hash: headersHash, size: headersBytes.byteLength },
       },
     }),
   });
@@ -137,14 +121,13 @@ async function deployStaticAssets(
   const hashToB64: Record<string, string> = {
     [seedHash]: seedB64,
     [prevHash]: prevB64,
-    [headersHash]: headersB64,
   };
 
   for (const bucket of buckets) {
     const formData = new FormData();
     for (const hash of bucket) {
       if (hashToB64[hash]) {
-        formData.append(hash, hashToB64[hash]);
+        formData.append(hash, new Blob([hashToB64[hash]], { type: 'text/plain; charset=utf-8' }), hash);
       }
     }
 
@@ -166,7 +149,9 @@ async function deployStaticAssets(
   // For assets-only workers, we just need to provide the assets JWT in the metadata
   const deployForm = new FormData();
   const metadata = {
-    assets: { jwt },
+    // Direct API uploads do not parse an uploaded /_headers asset. Wrangler
+    // sends the rules in assets.config._headers; use that same wire format.
+    assets: { jwt, config: { _headers: seedHeaders } },
     compatibility_date: "2026-02-19",
   };
   deployForm.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));

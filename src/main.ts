@@ -1659,7 +1659,9 @@ startWhenReady(async () => {
   // terrain/shader initialization can occupy JS. Sprites load on demand.
   afterStartupPaint(() => {
     if (app.getMap() === 'dynamic-main-branch') {
-      void runDynamicMapFromURL(dynamicOpts).catch(error => console.error('[Noitamap] Dynamic map init failed:', error));
+      void runDynamicMapFromURL(dynamicOpts).catch(error => showStartupFailure(error,
+        i18next.t('startup.failed', { defaultValue: STARTUP_MESSAGES.failed }) || STARTUP_MESSAGES.failed,
+        i18next.t('startup.retry', { defaultValue: STARTUP_MESSAGES.retry }) || STARTUP_MESSAGES.retry));
     }
   });
 

@@ -192,18 +192,17 @@ describe('URL seed request ownership', () => {
     } finally { pipeline.clearDynamicMap(second.viewer); frame.mockRestore(); }
   });
 
-  it('retains the deterministic fallback when the current Daily lookup fails', async () => {
+  it('does not generate or pin a fabricated Daily when the published seed cannot be read', async () => {
     const frame = livePipeline();
     vi.mocked(fetchDailySeed).mockRejectedValue(new Error('offline'));
     const pipeline = await import('../src/dynamic-map');
-    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const onRequestStateChange = vi.fn();
     try {
-      const result = await pipeline.runDynamicMapFromURL({ viewer: {} });
-      expect(result!.seed).toBeGreaterThan(0);
-      expect(parseURL()).toMatchObject({ seed: result!.seed, dailySeed: true });
-      expect(generateDynamicMap).toHaveBeenCalledOnce();
-      expect(warning).toHaveBeenCalledOnce();
-    } finally { pipeline.clearDynamicMap({}); warning.mockRestore(); frame.mockRestore(); }
+      await expect(pipeline.runDynamicMapFromURL({ viewer: {}, onRequestStateChange })).rejects.toThrow('offline');
+      expect(parseURL().seed).toBeUndefined();
+      expect(generateDynamicMap).not.toHaveBeenCalled();
+      expect(onRequestStateChange).toHaveBeenLastCalledWith(false);
+    } finally { pipeline.clearDynamicMap({}); frame.mockRestore(); }
   });
 });
 afterEach(() => { history.replaceState(null, '', '/'); });
