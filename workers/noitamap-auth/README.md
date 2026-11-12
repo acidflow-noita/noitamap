@@ -35,11 +35,11 @@ account's existing Secrets Store, using the names in `wrangler.jsonc`:
   separated by HKDF purpose.
 - `NOITAMAP_CREDENTIAL_ENCRYPTION_SECRET`, for provider data only.
 
-`LEGACY_CREDENTIAL_SECRET` temporarily references the previous provider-data
-key. It **cannot** verify an old session. Daily maintenance re-encrypts up to
-50 old provider records and migrates the broadcaster KV value. After checking
-that no legacy records remain, remove that binding. Keep previous encryption
-keys only while migrating data; do not delete them before verifying migration.
+The primary-account migration has been verified: no old provider records
+remain and broadcaster KV is encrypted. `LEGACY_CREDENTIAL_SECRET` has been
+removed from the deployment configuration. Existing v2 account data and
+sessions continue to use their independent keys. The former shared store
+entry must not be deleted until its other consumers have been checked.
 
 Generate secrets directly into the secret-setting tool or a protected ignored
 file. Never put values in source, shell arguments, chat, logs or build artifacts.

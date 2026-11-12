@@ -1,7 +1,7 @@
 // Production accepts only the hardened dynamic-map client. Add noitamap.com at cutover.
 // OAuth query codes must not enter invocation logs or traces. Only explicit safe events are logged.
 // Dev/local are disabled until independent OAuth apps, keys and storage are configured.
-// LEGACY_CREDENTIAL_SECRET decrypts provider data only, never old sessions. Remove after migration.
+// Provider credentials have been re-encrypted; the legacy data key is no longer bound.
 {
   "name": "noitamap-auth",
   "account_id": "666c045f38dd332e459bfe2a18c4e9a9",
@@ -89,11 +89,6 @@
       "binding": "CREDENTIAL_ENCRYPTION_SECRET",
       "store_id": "291b9519666945a1a56adbb686c62d76",
       "secret_name": "NOITAMAP_CREDENTIAL_ENCRYPTION_SECRET"
-    },
-    {
-      "binding": "LEGACY_CREDENTIAL_SECRET",
-      "store_id": "291b9519666945a1a56adbb686c62d76",
-      "secret_name": "JWT_SECRET_PROD"
     },
     {
       "binding": "GAME_TICKET_PRIVATE_KEY",

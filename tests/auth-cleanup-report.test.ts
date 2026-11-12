@@ -48,3 +48,12 @@ it('does not consider deployed code with broken signing keys ready for cleanup',
   expect(report.productionSessionKeysReady).toBe(false);
   expect(report.readyToRemoveLegacyCredentialBinding).toBe(false);
 });
+it('reports a failed dev probe as unknown and does not permit cleanup', async () => {
+  const f = fixture('c2.1.encrypted', 0);
+  const report = await checkCleanup(f.run, async (url: string) => {
+    if (url.includes('-dev.')) throw Error('network timeout');
+    return f.fetcher(url);
+  });
+  expect(report.developmentAuthDisabled).toBe('CHECK FAILED');
+  expect(report.readyToRemoveLegacyCredentialBinding).toBe(false);
+});
