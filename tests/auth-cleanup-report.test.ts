@@ -11,6 +11,7 @@ function fixture(kv: string, rows: number) {
   };
   const fetcher = async (url: string) => url.includes('-dev.')
     ? new Response('Authentication is not configured for this environment.', { status: 503 })
+    : url.endsWith('/auth/check') ? Response.json({ authenticated: false })
     : new Response('Method Not Allowed', { status: 405 });
   return { run, fetcher, buffers };
 }
@@ -37,4 +38,13 @@ it('fails closed without exposing failed CLI output', async () => {
   expect(report.broadcasterKv).toBe('CHECK FAILED');
   expect(report.oldGameSecretOnAuth).toBe('CHECK FAILED');
   expect(JSON.stringify(report)).not.toContain('do-not-print');
+});
+it('does not consider deployed code with broken signing keys ready for cleanup', async () => {
+  const f = fixture('c2.1.encrypted', 0);
+  const report = await checkCleanup(f.run, async (url: string) => url.endsWith('/auth/check') && !url.includes('-dev.')
+    ? new Response('Internal Server Error', { status: 500 }) : f.fetcher(url));
+  expect(report.productionAuthV2).toBe(true);
+  expect(report.productionAuthCheckStatus).toBe(500);
+  expect(report.productionSessionKeysReady).toBe(false);
+  expect(report.readyToRemoveLegacyCredentialBinding).toBe(false);
 });

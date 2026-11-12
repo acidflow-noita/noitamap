@@ -24,7 +24,9 @@ export function runWrangler(directory, args) {
     child.on('close', code => { clearTimeout(timer); done({ code, stdout: Buffer.concat(output), stderr: Buffer.concat(errors) }); });
   });
 }
+/** @param {(url: string, init?: RequestInit) => Promise<Response>} fetcher */
 export async function checkCleanup(run, fetcher = fetch) {
+  /** @type {Record<string, boolean | number | string | null>} */
   const report = {};
   for (const [key, url, disabled] of [
     ['productionAuthV2', 'https://noitamap-auth.wuote.workers.dev/auth/result-ticket', false],
@@ -35,6 +37,13 @@ export async function checkCleanup(run, fetcher = fetch) {
       report[key] = disabled ? response.status === 503 && (await response.text()) === 'Authentication is not configured for this environment.' : response.status === 405;
     } catch { report[key] = false; }
   }
+  // The 405 route probe proves code presence only. This anonymous check also
+  // exercises session/encryption secret loading, without creating a session.
+  try {
+    const response = await fetcher('https://noitamap-auth.wuote.workers.dev/auth/check', { redirect: 'error', signal: AbortSignal.timeout(10000) });
+    report.productionAuthCheckStatus = response.status;
+    report.productionSessionKeysReady = response.status === 200 && (await response.json()).authenticated === false;
+  } catch { report.productionSessionKeysReady = false; }
   const query = "SELECT COUNT(*) AS remaining FROM auth_identities WHERE credentials<>'' AND credentials NOT LIKE 'c2.1.%'";
   const count = await run(['d1', 'execute', 'ACCOUNT_DB', '--remote', '--json', '--command', query]);
   try {
@@ -62,7 +71,7 @@ export async function checkCleanup(run, fetcher = fetch) {
     } catch { report[field] = 'CHECK FAILED'; }
     finally { result.stdout.fill(0); result.stderr.fill(0); }
   }
-  report.readyToRemoveLegacyCredentialBinding = report.productionAuthV2 && report.developmentAuthDisabled
+  report.readyToRemoveLegacyCredentialBinding = report.productionAuthV2 && report.productionSessionKeysReady && report.developmentAuthDisabled
     && report.legacyCredentialRows === 0 && ['encrypted', 'absent'].includes(report.broadcasterKv);
   return report;
 }
