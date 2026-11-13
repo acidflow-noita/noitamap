@@ -8,6 +8,9 @@ import { streamPlayerName } from './stream-display-name';
 import { formatGuessCommand, parseGuessCommand } from './guess-command';
 import { within } from './rules';
 
+/** Invalid player actions are distinct from storage/runtime failures. */
+export class ParallelActionError extends Error {}
+
 export interface ParallelRecord {
   schema: 1;
   owner: string;
@@ -15,6 +18,7 @@ export interface ParallelRecord {
   privateReveals: StreamReveal[];
   metrics: ParallelMetrics;
   hostCommands: string[];
+  socketIdentities?: string[];
   ended?: boolean;
   pendingRevealAt?: number;
   publicationError?: string;
@@ -30,14 +34,14 @@ export function createParallelRecord(input: ParallelInitialization, now: number)
   game.clockOffset = 0;
   startStreamTiming(game, input.seconds, now, true);
   return { schema: 1, owner: input.owner, game, privateReveals: input.reveals,
-    metrics: emptyParallelMetrics(), hostCommands: [] };
+    metrics: emptyParallelMetrics(), hostCommands: [], socketIdentities: [] };
 }
 export function joinParallelPlayer(record: ParallelRecord, player: StreamPlayer): StreamParticipant {
   const game = record.game;
   let found = game.participants.find(p => p.id === player.id);
   const safe = { ...player, name: streamPlayerName(player.name, player.login) };
   if (found) { Object.assign(found, safe); return found; }
-  if (game.participants.length >= STREAM_MAX_PLAYERS) throw Error('This game has reached its player limit.');
+  if (game.participants.length >= STREAM_MAX_PLAYERS) throw new ParallelActionError('This game has reached its player limit.');
   found = { ...safe, guesses: game.session.rounds.map(() => null) };
   game.participants.push(found);
   if (player.id !== game.session.host.id) {
@@ -86,7 +90,7 @@ export function submitParallelHost(record: ParallelRecord, id: string, roundId: 
   if (record.hostCommands.includes(id)) return false;
   if (record.ended || game.stage !== 'guess' || game.session.rounds[game.round].id !== roundId || timing.phase !== 'play'
     || now < timing.startsAt || !expired && timing.deadline !== null && now > timing.deadline + STREAM_SUBMISSION_GRACE_MS
-    || !Number.isInteger(maximum) || maximum < 0 || maximum > 5000 || point !== null && !within(point, game.session.config.bounds)) throw Error('This round is closed');
+    || !Number.isInteger(maximum) || maximum < 0 || maximum > 5000 || point !== null && !within(point, game.session.config.bounds)) throw new ParallelActionError('This round is closed');
   closeStreamRound(game, point, now);
   game.participants[0].guesses[game.round]!.maximum = maximum;
   game.participants[0].guesses[game.round]!.messageId = id;
@@ -120,7 +124,7 @@ export function tickParallel(record: ParallelRecord, now: number): boolean {
 }
 export function beginParallel(record: ParallelRecord, id: string, now: number): void {
   if (record.hostCommands.includes(id)) return;
-  if (record.ended) throw Error('The streamer ended this game.');
+  if (record.ended) throw new ParallelActionError('The streamer ended this game.');
   beginStreamTiming(record.game, now);
   record.hostCommands = [...record.hostCommands.slice(-31), id];
 }

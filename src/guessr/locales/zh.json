@@ -577,5 +577,6 @@
   "Center map on marker": "将地图居中显示在标记上",
   "Back to round {{round}}": "返回第 {{round}} 轮",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "使用线索地图上方的按钮进行探索。每个按钮都会显示其所需积分。返回和放大操作均不消耗积分。",
-  "Not published yet. Retrying automatically.": "尚未发布。正在自动重试。"
+  "Not published yet. Retrying automatically.": "尚未发布。正在自动重试。",
+  "Preview unavailable": "无法预览"
 }

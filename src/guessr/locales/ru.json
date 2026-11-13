@@ -595,5 +595,6 @@
   "Center map on marker": "Выровнять карту по маркеру",
   "Back to round {{round}}": "Вернуться к раунду {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Исследуйте местность с помощью кнопок над картой подсказок. На каждой кнопке указана стоимость в очках. Возврат назад и увеличение масштаба бесплатны.",
-  "Not published yet. Retrying automatically.": "Еще не опубликовано. Повторная попытка выполняется автоматически."
+  "Not published yet. Retrying automatically.": "Еще не опубликовано. Повторная попытка выполняется автоматически.",
+  "Preview unavailable": "Предварительный просмотр недоступен"
 }

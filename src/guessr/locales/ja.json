@@ -577,5 +577,6 @@
   "Center map on marker": "マーカーを中心に地図を表示する",
   "Back to round {{round}}": "{{round}}ラウンドに戻る",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "手がかりマップの上にあるボタンを使って探索してください。各ボタンには必要なポイント数が表示されています。戻る操作やズームインは無料です。",
-  "Not published yet. Retrying automatically.": "まだ公開されていません。自動的に再試行します。"
+  "Not published yet. Retrying automatically.": "まだ公開されていません。自動的に再試行します。",
+  "Preview unavailable": "プレビューはご利用いただけません"
 }

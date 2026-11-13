@@ -577,5 +577,6 @@
   "Center map on marker": "Keskitä kartta merkkiin",
   "Back to round {{round}}": "Takaisin kierrokseen {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Tutki aluetta vihjekartan yläpuolella olevien painikkeiden avulla. Jokaisessa painikkeessa näkyy sen pistekustannus. Takaisin liikkuminen ja lähentäminen ovat ilmaisia.",
-  "Not published yet. Retrying automatically.": "Ei vielä julkaistu. Yritetään uudelleen automaattisesti."
+  "Not published yet. Retrying automatically.": "Ei vielä julkaistu. Yritetään uudelleen automaattisesti.",
+  "Preview unavailable": "Esikatselua ei ole saatavilla"
 }

@@ -293,7 +293,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       if (drawnResults !== key) {
         drawnResults = key;
         clearResults?.();
-        const summary = streamResultsView(expandStreamResult(live.result!), playerId ?? undefined);
+        const summary = streamResultsView(expandStreamResult(live.result!), playerId ?? undefined, undefined, config);
         clearResults = summary.destroy;
         const open = node('a', 'secondary', 'Open results page');
         open.href = guessRouteUrl('stream-result', location.origin, { result: live.resultId ?? live.gameId! }).href;

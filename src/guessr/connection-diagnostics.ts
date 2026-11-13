@@ -5,6 +5,7 @@ export interface ConnectionDiagnostic {
   status?: number;
   code?: string;
   attempt?: number;
+  transport?: 'coordinator' | 'twitch';
 }
 const KEY = 'noitamap-guessr-connection-diagnostics-v1';
 const events: (ConnectionDiagnostic & { at: string })[] = [];
@@ -16,6 +17,7 @@ function safeRecord(value: any): ConnectionDiagnostic & { at: string } | null {
   if (Number.isSafeInteger(value.status)) record.status = value.status;
   if (typeof value.code === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(value.code)) record.code = value.code;
   if (Number.isSafeInteger(value.attempt)) record.attempt = value.attempt;
+  if (value.transport === 'coordinator' || value.transport === 'twitch') record.transport = value.transport;
   return record;
 }
 try {
@@ -32,6 +34,7 @@ export function connectionDiagnostic(value: ConnectionDiagnostic): void {
   if (Number.isSafeInteger(value.status)) record.status = value.status;
   if (typeof value.code === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(value.code)) record.code = value.code;
   if (Number.isSafeInteger(value.attempt)) record.attempt = value.attempt;
+  if (value.transport === 'coordinator' || value.transport === 'twitch') record.transport = value.transport;
   events.push(record); if (events.length > 60) events.shift();
   try { localStorage.setItem(KEY, JSON.stringify(events)); } catch { /* Diagnostics never block play. */ }
 }

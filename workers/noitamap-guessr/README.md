@@ -949,3 +949,22 @@ owns the same absolute timers; it cannot advance while that browser is gone.
 There are no active games to migrate. Select the desired test mode before starting the pilot.
 A later host-only Cloudflare variant would keep the coordinator and remove
 chatter sockets, but is not the current pilot switch.
+
+## Result review and reset recovery
+
+Completed results include their public map configuration and compact coordinate
+pairs for recorded guesses in the same D1 document. Initial clue previews come
+from the static native-resolution reference tiles at the published answer.
+They need no rendering Worker or extra D1 request. Review panels expand inline
+above the main table using Bootstrap Collapse; save/share actions remain at the
+top. Optional malformed review coordinates are omitted without discarding valid
+scores. Summary-only records still show their scores and can reconstruct clues
+when the matching map configuration is available.
+
+Runtime/storage failures are not invalid guesses. They propagate for automatic
+reconnection while the client retains its pending ID for replay. Absolute timers
+continue to display during recovery. Hibernation ping/pong, abrupt reset with
+pending replacement, retained deadlines, and publication retry are covered by
+local Workers runtime tests. Browser heartbeat checks account for background
+throttling and delayed JavaScript execution. Counter schema 2 separates first
+socket authentication, reauthorization on the same socket, and reconnection.

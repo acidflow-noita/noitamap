@@ -586,5 +586,6 @@
   "Center map on marker": "Centrer la carte sur le repère",
   "Back to round {{round}}": "Retour au tour {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Explorez à l'aide des boutons situés au-dessus de la carte des indices. Chaque bouton indique le nombre de points qu'il coûte. Revenir en arrière et zoomer sont des actions gratuites.",
-  "Not published yet. Retrying automatically.": "Pas encore publié. Nouvelle tentative automatique."
+  "Not published yet. Retrying automatically.": "Pas encore publié. Nouvelle tentative automatique.",
+  "Preview unavailable": "Aperçu indisponible"
 }

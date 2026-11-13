@@ -7,6 +7,8 @@ import { streamResultHtml, streamResultsView } from '../src/guessr/stream-result
 import { streamHostName, streamResultNames } from '../src/guessr/stream-display-name';
 import type { StreamResult } from '../src/guessr/stream-types';
 
+vi.mock('../src/guessr/map-board', () => ({ MapBoard: class {} }));
+
 const result: StreamResult = {
   schema: 1, id: '11111111-1111-4111-8111-111111111111', version: 'test', createdAt: 1, finishedAt: 2,
   host: { id: '123', login: 'streamer', name: 'Rank' },

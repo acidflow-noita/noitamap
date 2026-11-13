@@ -299,6 +299,7 @@ describe("stream round protocol and scoring", () => {
         token: f.session.token,
         finishedAt: f.game.finishedAt!,
         players: streamResult(f.game).players,
+        positions: local.positions,
       }),
       streamHost,
       streamNow + 100,

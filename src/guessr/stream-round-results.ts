@@ -9,14 +9,16 @@ import { playerColor } from './player-color';
 export function streamRoundResults(main: HTMLElement, game: StreamGame, index: number, actions: HTMLElement): () => void {
   return sharedRoundResults(main, game.session.config, streamRoundData(game, index), actions);
 }
-export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, data: StreamRoundView, actions: HTMLElement): () => void {
+export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, data: StreamRoundView, actions: HTMLElement,
+  options: { inline?: boolean; clue?: HTMLElement } = {}): () => void {
   const index = data.round - 1;
-  const grid = document.createElement('div'); grid.className = 'game-grid stream-round-results-layout';
+  const grid = document.createElement('div'); grid.className = options.inline ? 'stream-review-grid' : 'game-grid stream-round-results-layout';
   const mapPanel = document.createElement('section'); mapPanel.className = 'game-panel';
   const mapTitle = document.createElement('div'); mapTitle.className = 'panel-bar';
   bindText(mapTitle, () => guessrGameTerm(data.label));
   const map = document.createElement('div'); map.className = 'map-board';
   mapPanel.append(mapTitle, map);
+  if (options.clue) mapTitle.after(options.clue);
   const scores = document.createElement('section'); scores.className = 'game-panel';
   const heading = document.createElement('div'); heading.className = 'panel-bar';
   bindText(heading, 'Round {{round}} results', { round: formatGuessrNumber(index + 1) });
@@ -60,12 +62,12 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
       row.onmouseenter = row.onfocus = row.onclick = () => select(player.id);
       row.onmouseleave = row.onblur = () => { rows.get(player.id)?.classList.remove('selected'); selected = undefined; board.highlightPlayer(''); };
       for (const [column, text] of [formatGuessrNumber(ranks.get(player.id)!), player.name,
-        player.guess ? formatGuessrNumber(player.score) : '—', formatGuessrNumber(player.total)].entries()) {
+        (player.recorded ?? !!player.guess) ? formatGuessrNumber(player.score) : '—', formatGuessrNumber(player.total)].entries()) {
         const cell = document.createElement('td'); cell.textContent = text;
         if (column !== 1) cell.className = 'numeric';
         if (column === 2 && player.score === 5000) cell.classList.add('score-perfect');
         else cell.style.color = playerColor(player, data.host.id);
-        if (column === 2 && !player.guess) cell.setAttribute('aria-label', tr('No guess recorded by the streamer'));
+        if (column === 2 && !(player.recorded ?? !!player.guess)) cell.setAttribute('aria-label', tr('No guess recorded by the streamer'));
         row.append(cell);
       }
       rows.set(player.id, row); fragment.append(row);

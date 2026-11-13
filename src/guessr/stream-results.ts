@@ -5,6 +5,8 @@ import { pageHeading } from './page-heading';
 import { playerColor } from './player-color';
 import { streamResultNames } from './stream-display-name';
 import { streamResultShare } from './stream-share';
+import { streamResultReviews } from './stream-result-review';
+import type { ImageGameConfig } from './image-game';
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -16,7 +18,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
   element.className = className;
   return element;
 }
-export function streamResultsView(result: StreamResult, viewerId?: string, onBack?: () => void): HTMLElement & { destroy: () => void } {
+export function streamResultsView(result: StreamResult, viewerId?: string, onBack?: () => void, config?: ImageGameConfig): HTMLElement & { destroy: () => void } {
   result = streamResultNames(result);
   const section = el("section"),
     hero = el("div", "", "finish-hero");
@@ -42,8 +44,18 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
     ),
   );
   const share = streamResultShare(result, viewerId);
-  if (share) hero.append(share.element);
+  const menu = el('div', '', 'stream-results-menu');
+  if (share) menu.append(share.element);
+  const download = el('button', 'Save results as a web page', 'btn btn-outline theme-secondary'); download.type = 'button';
+  download.onclick = () => downloadStreamResult(result, 'html');
+  const more = el('details', '', 'stream-export-options');
+  const json = el('button', 'Export scores (JSON)', 'btn btn-outline theme-secondary'); json.type = 'button';
+  json.onclick = () => downloadStreamResult(result, 'json');
+  more.append(el('summary', 'More download options'), json,
+    el('p', 'Open the saved web page in a browser to search and sort every player’s scores offline.', 'fine-print'));
+  menu.append(download, more); section.append(menu);
   section.append(hero);
+  const reviews = streamResultReviews(result, config); section.append(reviews.element);
   section.append(
     el(
       "p",
@@ -159,7 +171,7 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   }
   filter.addEventListener("input", render);
   render();
-  return Object.assign(section, { destroy: () => share?.destroy() });
+  return Object.assign(section, { destroy: () => { share?.destroy(); reviews.destroy(); } });
 }
 /** A single file with embedded data, styling, filtering and sorting; no network,
  * framework, login, API credentials or session tokens are needed to read it. */

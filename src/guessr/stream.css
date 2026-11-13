@@ -258,3 +258,27 @@
 .stream-viewer-layout.show-round-results > :is(.stream-viewer-clue, .stream-picker, .stream-viewer-results) { display: none; }
 .stream-round-review-actions { margin: 0; flex: none; position: static; padding: .5rem; border: 0; box-shadow: none; }
 .stream-round-review-actions > [hidden] { display: none; }
+
+.stream-results-menu { display: flex; flex-wrap: wrap; align-items: center; gap: var(--game-gutter); margin-block: .75rem; }
+.stream-export-options { position: relative; }
+.stream-export-options > summary { cursor: pointer; padding: .5rem; }
+.stream-export-options[open] > button { display: block; margin-block-start: .5rem; }
+.stream-result-reviews { margin-block: var(--game-gutter); --bs-accordion-bg: var(--surface-1); --bs-accordion-border-color: var(--border); }
+.stream-result-reviews .accordion-button { display: flex; gap: .75rem; align-items: center; color: var(--text); }
+.stream-result-reviews .accordion-button > span { min-inline-size: 0; overflow-wrap: anywhere; }
+.stream-round-thumbnail { flex: 0 0 6rem; inline-size: 6rem; aspect-ratio: 9 / 4; position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: .5rem; background: var(--bg); }
+.stream-round-thumbnail canvas { display: block; inline-size: 100%; block-size: 100%; object-fit: contain; image-rendering: pixelated; }
+.stream-round-thumbnail .clue-placeholder { display: block; position: absolute; inset: 0; }
+.stream-round-thumbnail canvas[data-ready="true"] + .clue-placeholder { display: none; }
+.stream-preview-unavailable { display: grid; place-items: center; min-block-size: 100%; padding: .25rem; font-size: .625rem; line-height: 1.1; overflow-wrap: anywhere; text-align: center; color: var(--text-muted); }
+.stream-review-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--game-gutter); align-items: stretch; }
+.stream-review-grid > .game-panel { min-block-size: 0; }
+.stream-review-grid .map-board { flex: 1; min-block-size: 18rem; block-size: 22rem; }
+.stream-review-grid .stream-round-score-scroll { max-block-size: 38rem; }
+.stream-review-grid .stream-round-preview { flex: none; inline-size: min(100%, 28rem); margin-inline: auto; aspect-ratio: 9 / 4; }
+.stream-review-grid .game-panel > .guess-map-controls { border-block: 1px solid var(--border); }
+@media (max-width: 48rem) {
+  .stream-review-grid { grid-template-columns: minmax(0, 1fr); }
+  .stream-result-reviews .accordion-body { padding: .5rem; }
+  .stream-result-reviews .accordion-button { padding: .5rem; }
+}

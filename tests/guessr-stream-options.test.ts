@@ -29,3 +29,16 @@ it('keeps display names safe without truncating a Unicode surrogate pair', () =>
   expect(value.length).toBeLessThanOrEqual(48);
   expect(value).not.toMatch(/\p{Cs}/u);
 });
+it('publishes bounded review coordinates without letting optional malformed data discard scores', async () => {
+  const service = new StreamService(streamSource(), streamSecret);
+  const session = await service.start(streamHost, streamNow, 'twitch', 3);
+  const players = [{ id: streamHost.twitchUserId, login: streamHost.twitchLogin, name: streamHost.name,
+    score: 15000, rounds: [[1000, 4000], [1000, 4000], [1000, 4000]] as [number, number][] }];
+  const input = { token: session.token, finishedAt: streamNow + 1000, players,
+    positions: { [streamHost.twitchUserId]: [[-17000, 500], null, [-16900, 500]] as ([number, number] | null)[] } };
+  const { result } = await service.result(input, streamHost, streamNow + 1001);
+  expect(result.config).toEqual(session.config); expect(result.positions).toEqual(input.positions);
+  const changed = { ...input, positions: { [streamHost.twitchUserId]: [[Infinity, 0], null, null] as ([number, number] | null)[], stranger: [[0, 0], null, null] as ([number, number] | null)[] } };
+  const { result: safe } = await service.result(changed, streamHost, streamNow + 1001);
+  expect(safe.players).toEqual(result.players); expect(safe.positions).toBeUndefined();
+});

@@ -577,5 +577,6 @@
   "Center map on marker": "Center map on marker",
   "Back to round {{round}}": "Back to round {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.",
-  "Not published yet. Retrying automatically.": "Not published yet. Retrying automatically."
+  "Not published yet. Retrying automatically.": "Not published yet. Retrying automatically.",
+  "Preview unavailable": "Preview unavailable"
 }

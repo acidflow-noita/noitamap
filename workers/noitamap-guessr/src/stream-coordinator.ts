@@ -3,7 +3,7 @@ import type { Env } from './index';
 import { authorizeSocket, socketTicket } from './stream-socket-auth';
 import { persistStreamResult } from './result-publication';
 import { acceptParallelGuess, beginParallel, createParallelRecord, directGuessMessage, joinParallelPlayer,
-  nextParallelAlarm, parallelResult, submitParallelHost, tickParallel, type ParallelRecord } from '../../../src/guessr/parallel-core';
+  nextParallelAlarm, parallelResult, submitParallelHost, tickParallel, ParallelActionError, type ParallelRecord } from '../../../src/guessr/parallel-core';
 import type { ParallelClientMessage, ParallelIdentity, ParallelInitialization, ParallelServerMessage } from '../../../src/guessr/parallel-types';
 import { streamSnapshot } from '../../../src/guessr/stream-snapshot';
 import { advanceStreamRound, streamResult, type StreamChatMessage } from '../../../src/guessr/stream-state';
@@ -16,6 +16,9 @@ import { streamPlayerName } from '../../../src/guessr/stream-display-name';
 import { streamRoundData, type StreamRoundView } from '../../../src/guessr/stream-round-data';
 
 interface Attachment { revealed?: number; identity?: ParallelIdentity; opened: number; count: number; since: number }
+class GameStorageError extends Error {
+  constructor(cause: unknown) { super('Game storage is temporarily unavailable.', { cause }); }
+}
 /** One authenticated, hibernating coordinator per game. Both delivery paths
  * converge here; a receipt is emitted only after its transaction is durable. */
 export class StreamCoordinator extends DurableObject<Env> {
@@ -73,7 +76,10 @@ export class StreamCoordinator extends DurableObject<Env> {
         this.ctx.storage.sql.exec('INSERT INTO game(id,data) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data', JSON.stringify(metadata));
       });
       await this.ctx.storage.sync();
-    } catch (error) { this.restore(); throw error; }
+    } catch (error) {
+      try { this.restore(); } catch { /* A storage reset can make the old instance unusable. */ }
+      throw new GameStorageError(error);
+    }
   }
   async fetch(request: Request): Promise<Response> {
     const origin = request.headers.get('Origin');
@@ -153,7 +159,7 @@ export class StreamCoordinator extends DurableObject<Env> {
         }
         await this.exclusive(async () => {
           const record = this.record!;
-          const existing = record.game.participants.find(p => p.id === identity.id), existed = !!existing;
+          const existing = record.game.participants.find(p => p.id === identity.id);
           const active = !record.ended && record.game.stage !== 'complete';
           const player = active ? joinParallelPlayer(record, identity) : existing ?? {
             id: identity.id, login: identity.login, name: streamPlayerName(identity.name, identity.login), color: identity.color,
@@ -161,7 +167,14 @@ export class StreamCoordinator extends DurableObject<Env> {
           };
           // Strip authorization fields before participant persistence/publication.
           delete (player as Partial<ParallelIdentity>).role; delete (player as Partial<ParallelIdentity>).owner; delete (player as Partial<ParallelIdentity>).expiresAt;
-          record.metrics.authenticated++; if (existed) record.metrics.reconnects++;
+          if (attachment.identity) record.metrics.reauthorizations = (record.metrics.reauthorizations ?? 0) + 1;
+          else {
+            record.metrics.authenticated++;
+            const key = identity.role + ':' + identity.id;
+            record.socketIdentities ??= [];
+            if (record.socketIdentities.includes(key)) record.metrics.reconnects++;
+            else record.socketIdentities.push(key);
+          }
           attachment.identity = identity; socket.serializeAttachment(attachment);
           // Close older same-role sockets, preventing two host tabs from racing.
           for (const other of this.ctx.getWebSockets()) {
@@ -175,7 +188,8 @@ export class StreamCoordinator extends DurableObject<Env> {
           this.snapshot(socket, true);
           if (active) this.hosts({ type: 'participant', participant: player, joined: Object.keys(record.game.joinedPlayers ?? {}).length });
         });
-      } catch {
+      } catch (error) {
+        if (error instanceof GameStorageError) throw error;
         this.send(socket, { type: 'error', code: 'unavailable', message: 'Connection unavailable. Reconnecting…' }); socket.close(1013, 'Try again');
       }
       return;
@@ -185,7 +199,10 @@ export class StreamCoordinator extends DurableObject<Env> {
     }
     await this.exclusive(async () => {
       try { await this.process(socket, attachment.identity!, message, now); }
-      catch {
+      catch (error) {
+        // Never turn an infrastructure failure into a rejected guess. Rethrow
+        // so the runtime reconnects; the client retains and replays the same ID.
+        if (!(error instanceof ParallelActionError)) throw error;
         this.send(socket, { type: 'error', code: 'invalid', message: 'This action could not be saved.' });
         if ('id' in message && typeof message.id === 'string') this.send(socket, { type: 'command', id: message.id, accepted: false });
       }
@@ -202,10 +219,10 @@ export class StreamCoordinator extends DurableObject<Env> {
       const direct = message.type === 'guess';
       if (direct) { record.metrics.directGuesses++; chat = directGuessMessage(record, identity, message.submission, now); }
       else {
-        if (identity.role !== 'host') throw Error('Forbidden');
+        if (identity.role !== 'host') throw new ParallelActionError('Forbidden');
         chat = message.message;
         if (!chat || typeof chat.text !== 'string' || chat.text.length > 2048 || !chat.player || typeof chat.player.name !== 'string'
-          || !/^[a-z0-9_]{1,25}$/.test(chat.player.login) || !/^\d{1,30}$/.test(chat.player.id) || chat.player.name.length > 512) throw Error('Invalid relay');
+          || !/^[a-z0-9_]{1,25}$/.test(chat.player.login) || !/^\d{1,30}$/.test(chat.player.id) || chat.player.name.length > 512) throw new ParallelActionError('Invalid relay');
         const join = streamJoinRequest(chat.text);
         if (join) {
           if (record.ended || record.game.stage === 'complete' || join.gameId !== record.game.session.id || join.channel !== record.game.session.host.login) return;
@@ -217,13 +234,13 @@ export class StreamCoordinator extends DurableObject<Env> {
         }
         record.metrics.twitchGuesses++;
       }
-      if (!chat) throw Error('Invalid submission');
+      if (!chat) throw new ParallelActionError('Invalid submission');
       if (!direct && chat.player.id === record.game.session.host.id) {
         const guess = parseGuessCommand(chat.text, { rounds: record.game.session.rounds.length, bounds: record.game.session.config.bounds });
-        if (!guess?.nonce || guess.userId !== chat.player.id || guess.roundId !== record.game.session.rounds[guess.round - 1]?.id) throw Error('Invalid host guess');
+        if (!guess?.nonce || guess.userId !== chat.player.id || guess.roundId !== record.game.session.rounds[guess.round - 1]?.id) throw new ParallelActionError('Invalid host guess');
         const timing = record.game.timing!;
         if (!Number.isFinite(chat.sentAt) || chat.sentAt < timing.startsAt || chat.sentAt > now + 5000
-          || timing.deadline !== null && (chat.sentAt > timing.deadline + 2000 || now > timing.deadline + 5000)) throw Error('Round closed');
+          || timing.deadline !== null && (chat.sentAt > timing.deadline + 2000 || now > timing.deadline + 5000)) throw new ParallelActionError('Round closed');
         if (submitParallelHost(record, guess.nonce, guess.roundId, { x: guess.x, y: guess.y }, guess.maximum ?? 5000, now, true)) {
           await this.persist([record.game.participants[0]]); await this.schedule(); this.broadcast();
         }
@@ -231,7 +248,7 @@ export class StreamCoordinator extends DurableObject<Env> {
       }
       const oldRevision = record.game.timing!.revision;
       const { status, command } = acceptParallelGuess(record, chat, now);
-      if (!command?.nonce || !command.revision) throw Error('Invalid submission');
+      if (!command?.nonce || !command.revision) throw new ParallelActionError('Invalid submission');
       const accepted = status === 'accepted' || status === 'duplicate';
       const player = record.game.participants.find(p => p.id === chat!.player.id);
       if (status === 'accepted' && player) {
@@ -248,7 +265,7 @@ export class StreamCoordinator extends DurableObject<Env> {
       this.hosts(response);
       return;
     }
-    if (identity.role !== 'host' || !('id' in message) || typeof message.id !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(message.id)) throw Error('Forbidden');
+    if (identity.role !== 'host' || !('id' in message) || typeof message.id !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(message.id)) throw new ParallelActionError('Forbidden');
     const duplicate = record.hostCommands.includes(message.id);
     if (!duplicate) {
       if (message.type === 'start') beginParallel(record, message.id, now);
@@ -256,9 +273,12 @@ export class StreamCoordinator extends DurableObject<Env> {
       else if (message.type === 'advance' && !record.game.timing!.seconds) {
         if (record.game.timing!.phase === 'warmup') {
           const { startHostWindow } = await import('../../../src/guessr/stream-timing'); startHostWindow(record.game, now);
-        } else advanceStreamRound(record.game, now);
+        } else {
+          if (record.game.stage !== 'reveal') throw new ParallelActionError('This round is closed');
+          advanceStreamRound(record.game, now);
+        }
       } else if (message.type === 'quit') record.ended = true;
-      else if (message.type !== 'publish') throw Error('Invalid command');
+      else if (message.type !== 'publish') throw new ParallelActionError('Invalid command');
       if (!record.hostCommands.includes(message.id)) record.hostCommands = [...record.hostCommands.slice(-31), message.id];
       tickParallel(record, now); await this.persist([record.game.participants[0]]);
       if (record.game.stage === 'complete') await this.publish();

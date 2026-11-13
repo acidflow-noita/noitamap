@@ -239,6 +239,9 @@ export function streamResult(game: StreamGame): StreamResult {
     createdAt: game.session.createdAt,
     finishedAt: game.finishedAt,
     host: game.session.host,
+    config: game.session.config,
+    positions: Object.fromEntries(game.participants.map(player => [player.id,
+      player.guesses.map(guess => guess?.point ? [guess.point.x, guess.point.y] as [number, number] : null)])),
     ...(game.transportStats ? { transportStats: game.transportStats } : {}),
     rounds: game.reveals.map((r) => ({
       id: r.roundId,

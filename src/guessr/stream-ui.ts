@@ -25,7 +25,7 @@ import {
   streamTime,
   type StreamChatMessage,
 } from "./stream-state";
-import { downloadStreamResult, streamResultsView } from "./stream-results";
+import { streamResultsView } from "./stream-results";
 import {
   STREAM_ROUNDS, STREAM_DEFAULT_ROUNDS, STREAM_ROUND_OPTIONS, validStreamRoundCount,
   STREAM_SESSION_KEY,
@@ -46,7 +46,7 @@ import { streamerProStatus } from './streamer-pro-status';
 import { instructionSteps } from './stepper';
 import { pageHeading } from './page-heading';
 import { loadingPlaceholders } from './loading-placeholders';
-import type { LiveRoomView } from './live-room-types';
+import type { LiveRoomView, RoomConnection } from './live-room-types';
 import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, tr } from './i18n';
 import { StreamBroadcastHost } from './stream-broadcast-host';
 import { startStreamTiming, beginStreamTiming, startHostWindow, streamTick, hostMayGuess, suspendStreamTiming, resumeStreamTiming, validStreamSeconds, shortenFinishedWindow, STREAM_DELIVERY_GRACE_MS } from './stream-timing';
@@ -148,6 +148,7 @@ export class StreamUI {
   private parallel?: ParallelConnection;
   private parallelAutoRound = '';
   private publicationError = '';
+  private parallelDetail = '';
   private broadcastRecovery?: ReturnType<typeof setTimeout>;
   private get durable(): boolean { return this.game?.session.transport === 'parallel'; }
   private connectParallel(): void {
@@ -157,7 +158,7 @@ export class StreamUI {
       async () => ({ role: 'host', ticket: await this.api.hostSocketTicket() }), {
         status: (status, detail) => {
           if (this.game !== game) return;
-          this.roomHealthy = status === 'connected'; this.statusDetail = detail;
+          this.roomHealthy = status === 'connected'; this.parallelDetail = detail;
           this.updateStatus(); this.updateTimer();
         },
         message: message => { if (this.game === game) this.parallelMessage(message); },
@@ -186,7 +187,7 @@ export class StreamUI {
       for (let i = revealed; i < game.reveals.length; i++) this.broadcast?.publishReveal(i);
       const after = `${game.round}/${game.stage}/${game.paused}/${game.timing?.phase}/${game.timing?.startsAt}/${game.published}`;
       if (before !== after || message.publicationError && game.stage === 'complete') this.render();
-      this.updateStatus(); this.updateTimer(); this.startTick();
+      this.updateStatus(); this.updateTimer(); if (game.stage !== 'complete') this.startTick();
     } else if (message.type === 'participant') {
       const old = game.participants.find(p => p.id === message.participant.id);
       if (old) Object.assign(old, message.participant); else game.participants.push(message.participant);
@@ -735,21 +736,22 @@ export class StreamUI {
   private updateTimer(): void {
     const game = this.game, timing = game?.timing;
     if (!game || !timing) return;
-    const recovering = this.durable && !this.parallel?.connected();
+    // Absolute deadlines remain meaningful during a transport interruption.
+    // Connection status has its own indicator; it must not replace the clock.
     const now = game.paused ? timing.suspendedAt ?? timing.lastActiveAt : this.durable && this.parallel?.connected() ? this.parallel.now() : streamTime(game);
     const starting = Math.max(0, Math.ceil((timing.startsAt - now) / 1000));
     const deadline = game.stage === 'reveal' ? Math.max(game.round === game.session.rounds.length - 1 ? now : timing.deadline ?? now, timing.resultsUntil ?? now)
       : timing.deadline ?? now;
     const remaining = Math.max(0, Math.ceil((deadline - now) / 1000));
     const clock = `${formatGuessrNumber(Math.floor(remaining / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(remaining % 60, { minimumIntegerDigits: 2 })}`;
-    const label = game.paused || recovering ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) })
+    const label = game.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) })
       : timing.deadline === null ? tr('Manual timing') : clock;
     for (const timer of document.querySelectorAll<HTMLElement>('#stream-round-timer, #stream-start-countdown, #stream-waiting-timer'))
       { if (timer.textContent !== label) timer.textContent = label;
-        timer.dataset.clock = String(!game.paused && !recovering && !starting && timing.deadline !== null);
+        timer.dataset.clock = String(!game.paused && !starting && timing.deadline !== null);
         if (timer.id === 'stream-round-timer') timer.hidden = timing.phase === 'lobby'; }
     const waitingTimer = document.getElementById('stream-waiting-timer');
-    if (waitingTimer) waitingTimer.dataset.clock = String(!game.paused && !recovering && !starting && timing.deadline !== null);
+    if (waitingTimer) waitingTimer.dataset.clock = String(!game.paused && !starting && timing.deadline !== null);
     const next = document.getElementById('stream-auto-next');
     if (next) {
       const final = game.round === game.session.rounds.length - 1;
@@ -875,25 +877,34 @@ export class StreamUI {
         admission === 'host' ? 'streamer' : admission === 'duplicate' ? 'superseded' : admission === 'future' ? 'round' : 'closed');
     }
   };
+  private connectionState(): RoomConnection {
+    if (this.durable) return this.parallel?.state() ?? 'connecting';
+    if (this.api.local && !this.game?.session.localChat || this.roomHealthy && this.status === 'live') return 'connected';
+    if (navigator.onLine === false) return 'offline';
+    return this.status === 'connecting' ? 'connecting' : this.status === 'reconnecting' ? 'retrying' : 'stopped';
+  }
+  private connectionLabel(): string {
+    const state = this.connectionState();
+    return state === 'connected' ? 'Connected' : state === 'connecting' ? 'Connecting…' : state === 'offline' ? 'Network issues'
+      : state === 'retrying' ? 'Reconnecting…' : 'Disconnected';
+  }
   private updateStatus(): void {
     const status = document.getElementById("stream-chat-status");
     if (status) {
-      const connected = this.durable ? !!this.parallel?.connected() || this.status === 'live' : this.roomHealthy && (this.api.local && !this.game?.session.localChat || this.status === 'live');
-      status.dataset.connection = connected ? 'connected' : this.status === 'reconnecting' ? 'reconnecting'
-        : this.status === 'connecting' ? 'connecting' : 'disconnected';
-      bindAttribute(status, 'aria-label', connected ? 'Connected' : this.status === 'reconnecting' ? 'Reconnecting…'
-        : this.status === 'connecting' ? 'Connecting…' : 'Disconnected');
+      const state = this.connectionState(), connected = state === 'connected';
+      status.dataset.connection = connected ? 'connected' : state === 'connecting' ? 'connecting' : state === 'retrying' ? 'reconnecting' : 'disconnected';
+      bindAttribute(status, 'aria-label', this.connectionLabel());
       const label = document.getElementById('stream-connection-label');
-      if (label) { label.hidden = connected; bindText(label, this.status === 'auth-required' ? 'Twitch sign-in required' : 'Reconnecting…'); }
+      if (label) { label.hidden = connected; bindText(label, this.connectionLabel()); }
       status.classList.toggle('spinner-border', !connected); status.classList.toggle('spinner-border-sm', !connected);
       this.statusHelp?.update();
     }
     const reconnect = document.getElementById('stream-reconnect') as HTMLButtonElement | null;
     if (reconnect) {
       const needsGameRecovery = !this.roomHealthy || !!this.game?.paused;
-      reconnect.hidden = this.status !== 'auth-required' && this.parallel?.state() !== 'stopped';
+      reconnect.hidden = this.status !== 'auth-required' && !(this.parallel?.state() === 'stopped' && this.parallelDetail === 'Sign in with Twitch to play.');
       if (this.api.local && !this.game?.session.localChat && !needsGameRecovery) reconnect.hidden = true;
-      bindText(reconnect, this.status === 'auth-required' ? 'Authorize Twitch' : 'Reconnect');
+      bindText(reconnect, 'Authorize Twitch');
     }
     const count = document.getElementById("stream-guess-count");
     if (count && this.game) {
@@ -1046,18 +1057,18 @@ export class StreamUI {
     } catch (error) { this.hooks.toast(tr((error as Error).message)); }
     finally { this.busy = false; }
   }
-  render(review?: number): void {
+  render(): void {
     if (!this.game) {
       void this.open();
       return;
     }
     this.mounted = true;
-    if (this.game.stage === "complete" && review === undefined) {
+    if (this.game.stage === "complete") {
       this.finish();
       return;
     }
     const game = this.game,
-      index = review ?? game.round,
+      index = game.round,
       reveal = game.reveals[index];
     this.disposeHeader();
     this.proStatus = streamerProStatus({ local: this.api.local });
@@ -1071,7 +1082,7 @@ export class StreamUI {
     phase.append(el('strong', () => game.timing?.phase === 'lobby' ? tr('Ready to start') : game.timing?.phase === 'warmup'
       ? tr('Chat goes first')
       : tr('Your round {{round}} / {{total}}', { round: formatGuessrNumber(index + 1), total: formatGuessrNumber(game.session.rounds.length) })));
-    if (game.timing && review === undefined) { const timer = el('span', '', 'stream-round-timer'); timer.id = 'stream-round-timer'; phase.append(timer); }
+    if (game.timing) { const timer = el('span', '', 'stream-round-timer'); timer.id = 'stream-round-timer'; phase.append(timer); }
     const commands = el('div', '', 'stream-toolbar-actions');
     banner.append(navigation, phase, commands);
     const count = el("span", '', 'stream-guess-count');
@@ -1080,6 +1091,7 @@ export class StreamUI {
     status.id = "stream-chat-status";
     status.tabIndex = 0; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
     this.statusHelp = hoverHelp(status, () => tr(this.api.local && !game.session.localChat ? 'Local simulated chat'
+      : this.durable ? this.parallel?.connected() ? 'Connected to the game.' : this.parallelDetail || this.connectionLabel()
       : this.status === 'live' && this.roomHealthy ? 'Receiving guesses from Twitch.' : this.statusDetail));
     const identity = el('span', '', 'stream-host-identity');
     const name = el('span', '', 'stream-name');
@@ -1113,9 +1125,9 @@ export class StreamUI {
     if (game.timing && game.timing.phase !== 'play') { this.renderWarmup(main); this.updateTimer(); return; }
     if (game.timing && reveal) {
       const actions = el('div', '', 'game-actions stream-host-actions');
-      const next = action(review === undefined ? index === game.session.rounds.length - 1 ? 'View results' : 'Next round' : 'Back to results',
-        () => review === undefined ? this.nextRound() : this.render(), 'primary');
-      if (game.timing.seconds && review === undefined) { next.id = 'stream-auto-next'; next.disabled = true; }
+      const next = action(index === game.session.rounds.length - 1 ? 'View results' : 'Next round',
+        () => this.nextRound(), 'primary');
+      if (game.timing.seconds) { next.id = 'stream-auto-next'; next.disabled = true; }
       actions.append(next);
       this.hooks.cleanupClue(streamRoundResults(main, game, index, actions));
       this.updateTimer(); return;
@@ -1180,19 +1192,12 @@ export class StreamUI {
       actions.append(
         el("p", "Your guess is blue. The location is green."),
         action(
-          review !== undefined
-            ? "Back to results"
-            : index + 1 === game.session.rounds.length
-              ? "View results"
-              : "Next round",
-          () => {
-            if (review === undefined) void this.nextRound();
-            else this.render();
-          },
+          index + 1 === game.session.rounds.length ? "View results" : "Next round",
+          () => this.nextRound(),
           "primary",
         ),
       );
-      if (game.timing?.seconds && review === undefined) {
+      if (game.timing?.seconds) {
         const next = actions.querySelector<HTMLButtonElement>('button')!;
         next.id = 'stream-auto-next'; next.disabled = true;
       }
@@ -1325,22 +1330,10 @@ export class StreamUI {
     const entry: ArchivedStreamResult = { result, published: !!this.game.published,
       ...(!this.game.published && this.game.session.token ? { pendingToken: this.game.session.token } : {}),
       ...(this.game.session.localChat ? { localChannel: this.game.session.host.login } : {}) };
-    const view = streamResultsView(result, undefined, this.exit);
+    const view = streamResultsView(result, undefined, this.exit, this.hooks.config);
     this.hooks.cleanupClue(view.destroy);
     main.append(view);
     this.resultPublication(view, entry, this.game);
-    const rounds = el("div", "", "stream-round-links");
-    result.rounds.forEach((round, i) =>
-      rounds.append(
-        action(
-          () => tr('Review {{round}}: {{location}}', { round: formatGuessrNumber(i + 1), location: guessrGameTerm(round.name) }),
-          () => this.render(i),
-          "small secondary",
-        ),
-      ),
-    );
-    main.append(rounds);
-    this.downloadActions(main, result);
     main.append(actionRow(action('Start another game', async () => {
       // Do not replace the singleton host session until its retry credential is
       // durable, or publication has already been confirmed.
@@ -1445,7 +1438,7 @@ export class StreamUI {
     const pending = (async () => {
       const api = this.api.local ? new StreamApi() : this.api;
       if (api.local) api.setLocalChannel(entry.localChannel);
-      const confirmation = await api.publish({ token: entry.pendingToken!, finishedAt: entry.result.finishedAt, players: entry.result.players });
+      const confirmation = await api.publish({ token: entry.pendingToken!, finishedAt: entry.result.finishedAt, players: entry.result.players, positions: entry.result.positions });
       if (!confirmation.published || confirmation.id !== id) throw new Error('The result was not saved. Please retry publishing.');
       entry.published = true; delete entry.pendingToken;
       if (game) {
@@ -1460,23 +1453,6 @@ export class StreamUI {
     });
     this.publications.set(id, pending);
     return pending;
-  }
-  private downloadActions(main: HTMLElement, result: StreamResult): void {
-    const actions = el("div", "", "stream-actions");
-    actions.append(
-      action(
-        "Save results as a web page",
-        () => downloadStreamResult(result, "html"),
-        "primary",
-      ),
-    );
-    const more = el('details');
-    more.append(el('summary', 'More download options'),
-      action('Export scores (JSON)', () => downloadStreamResult(result, 'json')),
-      el('p', 'Game data for spreadsheets, scripts, or other tools.', 'fine-print'));
-    main.append(actions,
-      el('p', 'Open the saved web page in a browser to search and sort every player’s scores offline.', 'fine-print'),
-      more);
   }
   async publicResult(id: string): Promise<void> {
     this.suspend();
@@ -1494,10 +1470,9 @@ export class StreamUI {
       if (!main.isConnected) return;
       loading.remove(); heading.remove();
       const viewerId = this.viewer?.getState().userId ?? savedTwitchViewerId();
-      const view = streamResultsView(entry.result, viewerId, this.exit);
+      const view = streamResultsView(entry.result, viewerId, this.exit, this.hooks.config);
       this.hooks.cleanupClue(view.destroy);
       main.append(view); this.resultPublication(view, entry);
-      this.downloadActions(main, entry.result);
 
     } catch (error) {
       if (main.isConnected) bindText(loading, (error as Error).message);

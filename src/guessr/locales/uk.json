@@ -595,5 +595,6 @@
   "Center map on marker": "Вирівняти карту по маркеру",
   "Back to round {{round}}": "Повернутися до раунду {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Досліджуйте карту за допомогою кнопок, розташованих над картою підказок. На кожній кнопці вказано її вартість у балах. Повернення назад та збільшення масштабу — безкоштовні.",
-  "Not published yet. Retrying automatically.": "Ще не опубліковано. Система автоматично повторює спробу."
+  "Not published yet. Retrying automatically.": "Ще не опубліковано. Система автоматично повторює спробу.",
+  "Preview unavailable": "Попередній перегляд недоступний"
 }

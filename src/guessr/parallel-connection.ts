@@ -1,5 +1,6 @@
 import type { ParallelAuthorization, ParallelClientMessage, ParallelServerMessage, ParallelSubmission } from './parallel-types';
 import type { RoomConnection } from './live-room-types';
+import { connectionDiagnostic } from './connection-diagnostics';
 
 type Command = Extract<ParallelClientMessage, { id: string }>;
 export class ParallelConnection {
@@ -13,7 +14,7 @@ export class ParallelConnection {
   private heartbeat?: ReturnType<typeof setInterval>;
   private pongDeadline?: ReturnType<typeof setTimeout>;
   private refreshAuth?: ReturnType<typeof setTimeout>;
-  private lastMessage = 0;
+  private probe?: () => void;
   private outbox = new Map<string, ParallelSubmission>();
   private relays = new Map<string, Extract<ParallelClientMessage, { type: 'relay' }>['message']>();
   private commands = new Map<string, { message: Command; resolve(): void; reject(error: Error): void }>();
@@ -22,6 +23,10 @@ export class ParallelConnection {
   private status: RoomConnection = 'connecting';
   private storageKey: string;
   private online = () => { if (!this.closed && !this.ready) this.connect(); };
+  private visibility = () => {
+    clearTimeout(this.pongDeadline);
+    if (document.visibilityState === 'visible' && this.ready) this.probe?.();
+  };
   constructor(private origin: string, readonly gameId: string, readonly identity: string,
     private authorize: () => Promise<ParallelAuthorization>,
     private events: { message(value: ParallelServerMessage): void; status(value: RoomConnection, detail: string): void }) {
@@ -37,6 +42,7 @@ export class ParallelConnection {
         && (saved.point === null || Number.isFinite(saved.point?.x) && Number.isFinite(saved.point?.y))) this.hostPending = saved;
     } catch {}
     window.addEventListener('online', this.online);
+    document.addEventListener('visibilitychange', this.visibility);
     this.connect();
   }
   now(): number { return Date.now() + this.offset; }
@@ -89,7 +95,6 @@ export class ParallelConnection {
     };
     socket.onmessage = event => {
       if (!current() || typeof event.data !== 'string') return;
-      this.lastMessage = Date.now();
       clearTimeout(this.pongDeadline);
       if (event.data === 'pong') return;
       if (event.data.length > 3 * 1024 * 1024) { socket.close(1009); return; }
@@ -98,6 +103,7 @@ export class ParallelConnection {
       if ('now' in message && Number.isFinite(message.now)) this.offset = message.now - Date.now();
       if (message.type === 'published') this.completed = true;
       if (message.type === 'authorized') {
+        connectionDiagnostic({ event: 'connected', transport: 'coordinator', code: this.ready ? 'reauthorized' : 'authorized' });
         clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.refreshAuth);
         this.ready = true; this.failures = 0; this.authFailures = 0;
         try { sessionStorage.setItem(this.storageKey, JSON.stringify({ ticket: message.ticket, expiresAt: message.expiresAt })); } catch {}
@@ -106,16 +112,25 @@ export class ParallelConnection {
         for (const command of this.commands.values()) this.send(command.message);
         if (this.hostPending && !this.commands.has(this.hostPending.id)) this.send(this.hostPending);
         for (const message of this.relays.values()) this.send({ type: 'relay', message }); this.relays.clear();
-        this.heartbeat = setInterval(() => {
-          if (!current()) return;
+        this.probe = () => {
+          if (!current() || document.visibilityState === 'hidden') return;
           socket.send('ping');
           clearTimeout(this.pongDeadline);
-          this.pongDeadline = setTimeout(() => { if (current()) socket.close(); }, 5000);
-        }, 10000);
+          const expected = performance.now() + 5000;
+          this.pongDeadline = setTimeout(() => {
+            if (!current() || document.visibilityState === 'hidden') return;
+            // Background throttling or a blocked main thread is not evidence
+            // that the socket failed. Give queued network events a fresh probe.
+            if (performance.now() > expected + 2000) { this.probe?.(); return; }
+            connectionDiagnostic({ event: 'keepalive-timeout', transport: 'coordinator' });
+            socket.close();
+          }, 5000);
+        };
+        this.heartbeat = setInterval(this.probe, 10000);
         this.refreshAuth = setTimeout(() => {
           void this.authorize().then(auth => { if (current()) socket.send(JSON.stringify({ type: 'authorize', ...auth })); })
             .catch(() => { if (current()) socket.close(4001, 'Authorization required'); });
-        }, Math.max(1000, message.expiresAt - Date.now() - 60000));
+        }, Math.max(1000, message.expiresAt - this.now() - 60000));
       } else if (message.type === 'receipt') {
         const pending = this.outbox.get(message.roundId);
         if (pending?.nonce === message.nonce) { this.outbox.delete(message.roundId); this.persist(); }
@@ -131,6 +146,7 @@ export class ParallelConnection {
     socket.onerror = () => { if (current()) socket.close(); };
     socket.onclose = event => {
       if (!current()) return;
+      connectionDiagnostic({ event: 'socket-close', transport: 'coordinator', status: event.code });
       this.ready = false; clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
       if (event.code === 1000 && this.completed) { this.update('connected', 'Game finished'); return; }
       if (event.code === 4002) { this.update('stopped', 'Another tab is hosting this game. Continue there.'); return; }
@@ -148,6 +164,7 @@ export class ParallelConnection {
   dispose(): void {
     this.closed = true; clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
     window.removeEventListener('online', this.online); this.socket?.close();
+    document.removeEventListener('visibilitychange', this.visibility);
     for (const pending of this.commands.values()) pending.reject(Error('Connection closed')); this.commands.clear();
   }
 }

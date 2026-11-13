@@ -14,7 +14,7 @@ export async function persistStreamResult(env: Env, owner: string, result: Strea
     bytes = new TextEncoder().encode(serialized);
   // Host names/logins may change between an upload and its retry. Identity
   // and reported scores determine idempotency; mutable host labels do not.
-  const canonical = new TextEncoder().encode(JSON.stringify({ ...result, transportStats: undefined, host: { id: result.host.id },
+  const canonical = new TextEncoder().encode(JSON.stringify({ ...result, transportStats: undefined, config: undefined, host: { id: result.host.id },
     players: result.players.map(p => p.id === result.host.id ? { ...p, name: '', login: '' } : p) }));
   if (await env.DB.prepare('SELECT id FROM stream_result_removals WHERE id=?').bind(result.id).first())
     throw new ImageGameError(410, 'This published result was removed.');

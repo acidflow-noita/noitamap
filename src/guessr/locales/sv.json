@@ -577,5 +577,6 @@
   "Center map on marker": "Centrera kartan på markören",
   "Back to round {{round}}": "Tillbaka till omgång {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Utforska med knapparna ovanför ledtrådskartan. Varje knapp visar hur många poäng den kostar. Att gå tillbaka och zooma in är gratis.",
-  "Not published yet. Retrying automatically.": "Har inte publicerats än. Försöker igen automatiskt."
+  "Not published yet. Retrying automatically.": "Har inte publicerats än. Försöker igen automatiskt.",
+  "Preview unavailable": "Förhandsvisning ej tillgänglig"
 }

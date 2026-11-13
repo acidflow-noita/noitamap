@@ -4,7 +4,7 @@ import type { AreaDefinition } from "./area-rules.ts";
 import type { PreparedFrame } from "./clue-camera.ts";
 import type { ImageGameConfig } from "./image-game.ts";
 import { ImageGameError } from "./image-game-server.ts";
-import type { Point } from "./rules.ts";
+import { within, type Point } from "./rules.ts";
 import { rankStreamPlayers } from "./stream-ranking.ts";
 import { streamPlayerName } from './stream-display-name.ts';
 import {
@@ -287,6 +287,18 @@ export class StreamService {
       name: streamPlayerName(user.name, user.twitchLogin) };
     host.name = currentHost.name;
     host.login = currentHost.login;
+    let positions: StreamPublishedResult['positions'];
+    // Review coordinates are optional. Malformed review data must not discard
+    // otherwise valid scores, and only known players/in-bounds points survive.
+    if (input.positions && typeof input.positions === 'object' && !Array.isArray(input.positions)) {
+      const safe: NonNullable<StreamPublishedResult['positions']> = {};
+      for (const id of ids) {
+        const points = input.positions[id];
+        if (Array.isArray(points) && points.length === envelope.reveals.length && points.every(point => point === null
+          || Array.isArray(point) && point.length === 2 && within({ x: point[0], y: point[1] }, envelope.config.bounds))) safe[id] = points;
+      }
+      if (Object.keys(safe).length) positions = safe;
+    }
     // Chat delivery and assistance are intentionally host-reported. The browser
     // uses the shared exact scorer; this bounded endpoint validates the summary
     // and identity without rerunning thousands of geometry tests on Workers Free.
@@ -298,6 +310,8 @@ export class StreamService {
       createdAt: envelope.createdAt,
       finishedAt: input.finishedAt,
       host: currentHost,
+      config: envelope.config,
+      ...(positions ? { positions } : {}),
       rounds: envelope.reveals.map((round) => ({
         id: round.roundId,
         answer: round.answer,

@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers';
-import { reset, runInDurableObject, evictDurableObject, runDurableObjectAlarm } from 'cloudflare:test';
-import { afterEach, expect, it } from 'vitest';
+import { reset, runInDurableObject, evictDurableObject, runDurableObjectAlarm, abortAllDurableObjects } from 'cloudflare:test';
+import { afterEach, expect, it, vi } from 'vitest';
 import { StreamService } from '../../../src/guessr/stream-server';
 import { streamSource, streamHost, streamSecret, streamAnswer } from '../../../tests/helpers/guessr-stream';
 import { socketTicket } from '../src/stream-socket-auth';
@@ -14,7 +14,7 @@ import storageSchema from '../migrations/0006_stream_storage.sql?raw';
 import ownershipSchema from '../migrations/0007_result_ownership.sql?raw';
 
 const sockets: WebSocket[] = [];
-afterEach(async () => { sockets.splice(0).forEach(s => s.close()); await reset(); });
+afterEach(async () => { sockets.splice(0).forEach(s => { try { s.close(); } catch {} }); await reset(); });
 const secret = 'runtime-test-socket-key-never-used-in-production';
 async function fixture() {
   const now = Date.now(), service = new StreamService(streamSource(), streamSecret);
@@ -103,6 +103,58 @@ it('alarms advance the game even after every browser disconnects', async () => {
   await evictDurableObject(stub); await runDurableObjectAlarm(stub);
   const phase = await runInDurableObject(stub, (_, state) => JSON.parse(state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data).game.timing.phase);
   expect(phase).toBe('play');
+});
+
+it('keeps guesses pending through a storage failure, then recovers scores and deadlines after an abrupt object reset', async () => {
+  const { stub, session, join } = await fixture();
+  const host = await join('host'), player = await join();
+  const ack = host.wait(m => m.type === 'command'); host.send({ type: 'start', id: 'start' }); await ack;
+  await runInDurableObject(stub, (_, state) => {
+    const record = JSON.parse(state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data);
+    record.game.timing.startsAt = Date.now() - 100; record.game.timing.windows[0].opensAt = Date.now() - 100;
+    state.storage.sql.exec('UPDATE game SET data=? WHERE id=1', JSON.stringify(record));
+  });
+  await evictDurableObject(stub);
+  const first = { roundId: session.rounds[0].id, point: streamAnswer, maximum: 5000, nonce: '1111111111111111', revision: 1 };
+  const received = player.wait(m => m.type === 'receipt'); player.send({ type: 'guess', submission: first });
+  expect(await received).toMatchObject({ accepted: true });
+  const before = await runInDurableObject(stub, (_, state) => JSON.parse(state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data));
+  expect(before.metrics.reconnects).toBe(0);
+  const update = { ...first, nonce: '2222222222222222', revision: 2, maximum: 4900 };
+  await expect(runInDurableObject(stub, async (instance, state) => {
+    const socket = state.getWebSockets().find(s => s.deserializeAttachment().identity?.id === '200')!;
+    const persist = vi.spyOn(instance as unknown as { persist(): Promise<void> }, 'persist').mockRejectedValueOnce(new Error('Simulated storage reset'));
+    try { await instance.webSocketMessage(socket, JSON.stringify({ type: 'guess', submission: update })); }
+    finally { persist.mockRestore(); }
+  })).rejects.toThrow('Simulated storage reset');
+  expect(player.messages.some(m => m.type === 'receipt' && m.nonce === update.nonce)).toBe(false);
+  await abortAllDurableObjects();
+  const restored = await join();
+  const freshStub = env.STREAM_COORDINATORS.getByName(session.id);
+  const after = await runInDurableObject(freshStub, (_, state) => JSON.parse(state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data));
+  expect(after.game.timing.deadline).toBe(before.game.timing.deadline);
+  expect(after.game.timing.startsAt).toBe(before.game.timing.startsAt);
+  expect(after.metrics.reconnects).toBe(1);
+  const retried = restored.wait(m => m.type === 'receipt' && m.nonce === update.nonce);
+  restored.send({ type: 'guess', submission: update });
+  expect(await retried).toMatchObject({ accepted: true, maximum: 4900, revision: 2 });
+});
+
+it('answers heartbeat probes without application messages before and after hibernation', async () => {
+  const { stub, join } = await fixture(); const player = await join();
+  for (const hibernate of [false, true]) {
+    if (hibernate) await evictDurableObject(stub);
+    const pong = new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(Error('No automatic pong')), 1000);
+      player.socket.addEventListener('message', function listener(event) {
+        if (event.data !== 'pong') return;
+        clearTimeout(timer); player.socket.removeEventListener('message', listener); resolve();
+      });
+    });
+    player.socket.send('ping'); await pong;
+  }
+  const record = await runInDurableObject(stub, (_, state) => JSON.parse(state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data));
+  expect(record.metrics.socketMessages).toBe(0); expect(record.metrics.reconnects).toBe(0);
 });
 it('retries failed final publication after eviction with no browser and stores one immutable D1 result', async () => {
   const { stub, session } = await fixture();

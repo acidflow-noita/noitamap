@@ -21,7 +21,9 @@ vi.mock('../src/guessr/stream-broadcast-host', () => ({ StreamBroadcastHost: cla
   start = async () => {}; publishState = mocks.stateBroadcast; publishReveal = mocks.revealBroadcast;
   remember = mocks.receipt; reject = mocks.reject; receiveRequest() {} close = async () => {}; complete = async () => {};
 } }));
-vi.mock('../src/guessr/stream-round-results', () => ({ streamRoundResults: mocks.roundView }));
+vi.mock('../src/guessr/stream-round-results', () => ({ streamRoundResults: mocks.roundView, sharedRoundResults: (main: HTMLElement) => {
+  const view = document.createElement('div'); view.className = 'stream-review-grid'; main.append(view); return () => {};
+} }));
 vi.mock('../src/guessr/stream-api', () => ({ StreamApi: class {
   local = true; available = true; pause = mocks.pause; quit = mocks.quit; setLocalChannel = mocks.channel; start = mocks.start; reveal = mocks.reveal;
   publish = mocks.publish; result = mocks.result;
@@ -554,6 +556,62 @@ it('groups result navigation and shows green punctuation-free copy feedback besi
   expect(hooks.toast).not.toHaveBeenCalled();
 });
 
+it('keeps round reviews inline with thumbnails and the save/share menu above the table', async () => {
+  const { game, hooks, service } = await fixture();
+  for (const round of game.session.rounds) {
+    closeStreamRound(game, streamAnswer, streamNow + 1);
+    revealStreamRound(game, await service.reveal(round.token, streamHost, streamNow + 2));
+    advanceStreamRound(game, streamNow + 3);
+  }
+  game.published = true; game.session.transport = 'parallel';
+  ui = new StreamUI(hooks); ui.game = game; ui.render();
+  const main = document.querySelector('main'), url = location.href;
+  const table = document.querySelector('.table-wrap')!;
+  const menu = document.querySelector('.stream-results-menu')!;
+  const reviews = document.querySelector('.stream-result-reviews')!;
+  expect(menu.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(reviews.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(menu.textContent).toContain('Share result'); expect(menu.textContent).toContain('Save results as a web page');
+  const buttons = [...reviews.querySelectorAll<HTMLButtonElement>('.accordion-button')];
+  expect(buttons).toHaveLength(10); expect(buttons[0].textContent).toBe('Round 1: Private place');
+  expect(buttons.every(button => button.querySelector('.stream-round-thumbnail'))).toBe(true);
+  buttons[0].click(); await flush();
+  expect(buttons[0].getAttribute('aria-expanded')).toBe('true');
+  expect(reviews.querySelector('.collapse.show .stream-review-grid')).not.toBeNull();
+  expect(document.querySelector('main')).toBe(main); expect(location.href).toBe(url);
+  expect(document.querySelector('.stream-host-shell')).toBeNull();
+  expect(document.querySelector('#stream-round-timer')).toBeNull();
+  expect(document.querySelector('dialog')).toBeNull();
+  expect(mocks.watchChat).not.toHaveBeenCalled();
+  buttons[0].click(); await flush();
+  expect(buttons[0].getAttribute('aria-expanded')).toBe('false');
+  expect(reviews.querySelector('.collapse.show')).toBeNull();
+});
+
+it('keeps the between-round countdown and table visible while the coordinator reconnects', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(streamNow);
+  const { game, hooks, service } = await fixture();
+  game.session.transport = 'parallel';
+  startStreamTiming(game, 30, streamNow - 10000); startHostWindow(game, streamNow - 10000);
+  closeStreamRound(game, streamAnswer, streamNow);
+  revealStreamRound(game, await service.reveal(game.session.rounds[0].token, streamHost, streamNow), streamNow);
+  let connected = true;
+  ui = new StreamUI(hooks); ui.game = game;
+  Object.assign(ui, { parallel: { connected: () => connected, state: () => connected ? 'connected' : 'retrying', now: () => Date.now(), dispose() {} } });
+  ui.render(); const main = document.querySelector('main'), deadline = game.timing!.resultsUntil;
+  expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:30');
+  connected = false; vi.setSystemTime(streamNow + 7000);
+  (ui as unknown as { updateStatus(): void }).updateStatus();
+  (ui as unknown as { updateTimer(): void }).updateTimer();
+  expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:23');
+  expect(document.getElementById('stream-connection-label')!.textContent).toBe('Reconnecting…');
+  expect(document.querySelector('main')).toBe(main);
+  expect(game.timing!.resultsUntil).toBe(deadline);
+  connected = true;
+  (ui as unknown as { updateStatus(): void }).updateStatus();
+  expect(document.getElementById('stream-connection-label')!.hidden).toBe(true);
+});
+
 
 it('recovers a failed publication from its result URL after a new game and F5, then retries exactly once', async () => {
   const { game, hooks, service } = await fixture();
@@ -582,7 +640,7 @@ it('recovers a failed publication from its result URL after a new game and F5, t
   await vi.waitFor(() => expect(document.getElementById('stream-publish-message')?.textContent).toContain('Result saved to the local test server.'));
   expect(mocks.publish).toHaveBeenCalledTimes(2);
   expect(mocks.channel).toHaveBeenLastCalledWith(game.session.host.login);
-  expect(mocks.publish.mock.calls[1][0]).toEqual({ token: publicationToken, finishedAt: game.finishedAt, players: streamResult(game).players });
+  expect(mocks.publish.mock.calls[1][0]).toEqual({ token: publicationToken, finishedAt: game.finishedAt, players: streamResult(game).players, positions: streamResult(game).positions });
   expect(JSON.parse(localStorage.getItem(STREAM_SESSION_KEY)!).session.id).not.toBe(game.session.id);
   expect([...document.querySelectorAll('button')].find(button => button.textContent === 'Copy result link')!.disabled).toBe(false);
 });

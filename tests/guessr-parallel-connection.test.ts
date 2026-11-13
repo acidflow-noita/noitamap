@@ -26,7 +26,7 @@ beforeEach(() => {
   vi.useFakeTimers(); Socket.all = [];
   vi.stubGlobal('localStorage', memoryStorage()); vi.stubGlobal('sessionStorage', memoryStorage()); vi.stubGlobal('WebSocket', Socket);
 });
-afterEach(() => { connection?.dispose(); connection = undefined; vi.unstubAllGlobals(); vi.useRealTimers(); });
+afterEach(() => { connection?.dispose(); connection = undefined; vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 async function authorized(socket: Socket) {
   socket.open(); await Promise.resolve(); await Promise.resolve();
   socket.receive({ type: 'authorized', ticket: 'safe-resume-ticket', expiresAt: Date.now() + 600000,
@@ -74,4 +74,16 @@ it('does not keep reconnecting a superseded tab or treat a sent command as a sav
   expect(accepted).toBe(true);
   Socket.all[0].close(4002); await vi.advanceTimersByTimeAsync(60000);
   expect(Socket.all).toHaveLength(1); expect(connection.state()).toBe('stopped');
+});
+
+it('does not manufacture a disconnect when the page is backgrounded during a heartbeat', async () => {
+  const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+  connection = new ParallelConnection('https://guessr-api.sage-data.xyz', game, '200', async () => ({ role: 'player', accessToken: 'test-only-token' }), { message: vi.fn(), status: vi.fn() });
+  await authorized(Socket.all[0]);
+  await vi.advanceTimersByTimeAsync(10000); expect(Socket.all[0].sent.at(-1)).toBe('ping');
+  visibility.mockReturnValue('hidden'); document.dispatchEvent(new Event('visibilitychange'));
+  await vi.advanceTimersByTimeAsync(60000); expect(Socket.all).toHaveLength(1); expect(connection.connected()).toBe(true);
+  visibility.mockReturnValue('visible'); document.dispatchEvent(new Event('visibilitychange'));
+  Socket.all[0].onmessage?.({ data: 'pong' });
+  await vi.advanceTimersByTimeAsync(5000); expect(connection.connected()).toBe(true);
 });

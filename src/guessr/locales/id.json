@@ -577,5 +577,6 @@
   "Center map on marker": "Pusatkan peta pada penanda",
   "Back to round {{round}}": "Kembali ke babak {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Jelajahi menggunakan tombol-tombol di atas peta petunjuk. Setiap tombol menunjukkan biaya poinnya. Kembali ke posisi sebelumnya dan memperbesar tampilan tidak dikenakan biaya.",
-  "Not published yet. Retrying automatically.": "Belum diterbitkan. Sedang mencoba lagi secara otomatis."
+  "Not published yet. Retrying automatically.": "Belum diterbitkan. Sedang mencoba lagi secara otomatis.",
+  "Preview unavailable": "Pratinjau tidak tersedia"
 }

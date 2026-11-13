@@ -126,6 +126,9 @@ export interface StreamResult {
   createdAt: number;
   finishedAt: number;
   host: StreamPlayer;
+  /** Public map configuration and compact pins for completed-round review. */
+  config?: ImageGameConfig;
+  positions?: Record<string, ([x: number, y: number] | null)[]>;
   transportStats?: import('./parallel-types').ParallelMetrics;
   rounds: { id: string; answer: Point; name: string; difficultyTier: string }[];
   players: (Omit<StreamPlayerResult, "rounds"> & {
@@ -137,6 +140,7 @@ export interface StreamPublishInput {
   finishedAt: number;
   /** Host-reported casual standings; the service validates and recomputes ranks. */
   players: Omit<StreamResult["players"][number], "rank">[];
+  positions?: StreamResult['positions'];
 }
 export interface StreamHistoryPage {
   games: { id: string; finishedAt: number; players: number; hostName: string }[];
@@ -154,4 +158,5 @@ export interface StreamPublishWireInput {
   token: string;
   finishedAt: number;
   players: Omit<StreamPublishedResult["players"][number], "rank">[];
+  positions?: StreamResult['positions'];
 }

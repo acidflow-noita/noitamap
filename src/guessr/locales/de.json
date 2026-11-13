@@ -577,5 +577,6 @@
   "Center map on marker": "Karte auf Markierung zentrieren",
   "Back to round {{round}}": "Zurück zu Runde {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Erkunden Sie die Karte mithilfe der Schaltflächen oberhalb der Hinweis-Karte. Bei jeder Schaltfläche sind die entsprechenden Punktkosten angegeben. Das Zurückbewegen und das Vergrößern sind kostenlos.",
-  "Not published yet. Retrying automatically.": "Noch nicht veröffentlicht. Es wird automatisch ein neuer Versuch unternommen."
+  "Not published yet. Retrying automatically.": "Noch nicht veröffentlicht. Es wird automatisch ein neuer Versuch unternommen.",
+  "Preview unavailable": "Vorschau nicht verfügbar"
 }

@@ -595,5 +595,6 @@
   "Center map on marker": "Vycentrovat mapu na značku",
   "Back to round {{round}}": "Zpět do kola {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Prozkoumejte mapu pomocí tlačítek nad ní. U každého tlačítka je uvedena jeho bodová hodnota. Návrat zpět a přiblížení jsou zdarma.",
-  "Not published yet. Retrying automatically.": "Zatím nebylo zveřejněno. Systém to zkusí znovu automaticky."
+  "Not published yet. Retrying automatically.": "Zatím nebylo zveřejněno. Systém to zkusí znovu automaticky.",
+  "Preview unavailable": "Náhled není k dispozici"
 }

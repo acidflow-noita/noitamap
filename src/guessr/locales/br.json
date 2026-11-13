@@ -595,5 +595,6 @@
   "Center map on marker": "Centralizar o mapa no marcador",
   "Back to round {{round}}": "Voltar à rodada {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Explore usando os botões acima do mapa de pistas. Cada botão indica o custo em pontos. Voltar e ampliar a imagem não custam pontos.",
-  "Not published yet. Retrying automatically.": "Ainda não foi publicado. Tentando novamente automaticamente."
+  "Not published yet. Retrying automatically.": "Ainda não foi publicado. Tentando novamente automaticamente.",
+  "Preview unavailable": "Pré-visualização indisponível"
 }

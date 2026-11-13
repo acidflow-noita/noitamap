@@ -14,6 +14,7 @@ export function packStreamPublish(
   return {
     token: input.token,
     finishedAt: input.finishedAt,
+    ...(input.positions ? { positions: input.positions } : {}),
     players: input.players.map((player) => ({
       id: player.id,
       name: player.name,

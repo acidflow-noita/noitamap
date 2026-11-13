@@ -17,6 +17,8 @@ export interface ParallelIdentity extends StreamPlayer {
   expiresAt: number;
 }
 export interface ParallelMetrics {
+  schemaVersion?: 2;
+  reauthorizations?: number;
   upgrades: number;
   authenticated: number;
   reconnects: number;
@@ -33,7 +35,7 @@ export interface ParallelMetrics {
   firstBySocket: number;
   publicationAttempts: number;
 }
-export const emptyParallelMetrics = (): ParallelMetrics => ({ upgrades: 0, authenticated: 0, reconnects: 0,
+export const emptyParallelMetrics = (): ParallelMetrics => ({ schemaVersion: 2, reauthorizations: 0, upgrades: 0, authenticated: 0, reconnects: 0,
   twitchValidations: 0, socketMessages: 0, directGuesses: 0, twitchGuesses: 0, duplicates: 0,
   replacements: 0, rejected: 0, accepted: 0, storageRowsWritten: 0, firstByTwitch: 0, firstBySocket: 0, publicationAttempts: 0 });
 

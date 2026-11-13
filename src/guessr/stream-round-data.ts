@@ -8,7 +8,7 @@ export interface StreamRoundView {
   host: StreamPlayer;
   answer: Point;
   label: string;
-  players: (StreamPlayer & { guess: Point | null; score: number; total: number })[];
+  players: (StreamPlayer & { guess: Point | null; recorded?: boolean; score: number; total: number })[];
 }
 /** Released round only. No credentials, future clues, or later-round guesses. */
 export function streamRoundData(game: StreamGame, index: number): StreamRoundView {
