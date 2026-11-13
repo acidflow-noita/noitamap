@@ -587,5 +587,8 @@
   "Back to round {{round}}": "Torna al round {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Esplora il territorio utilizzando i pulsanti situati sopra la mappa degli indizi. Ogni pulsante indica il relativo costo in punti. Tornare indietro e ingrandire la mappa non comporta alcun costo.",
   "Not published yet. Retrying automatically.": "Non ancora pubblicato. Si riproverà automaticamente.",
-  "Preview unavailable": "Anteprima non disponibile"
+  "Preview unavailable": "Anteprima non disponibile",
+  "Results available in: {{time}}": "Risultati disponibili tra: {{time}}",
+  "You finished in position {{rank}} out of {{players}} players.": "Ti sei classificato al {{rank}}° posto su {{players}} giocatori.",
+  "Streamer {{player}} finished in position {{rank}} out of {{players}} players.": "Lo streamer {{player}} si è classificato al {{rank}}° posto su {{players}} giocatori."
 }

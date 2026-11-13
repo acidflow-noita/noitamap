@@ -178,6 +178,15 @@ describe("guess-map camera", () => {
     expect(restoredControls.querySelector<HTMLButtonElement>('[aria-label="Center map on marker"]')!.disabled).toBe(false);
   });
 
+  it('omits pin centering from read-only result maps', async () => {
+    const { board } = await fixture();
+    board.setMarkers({ x: 1000, y: 2000 }, { x: 0, y: 0 });
+    const controls = mapControls(board, { readOnly: true });
+    expect(controls.querySelector('[aria-label="Center map on marker"]')).toBeNull();
+    expect(controls.querySelectorAll('button')).toHaveLength(3);
+    expect(controls.querySelector('[aria-label="Show entire map"]')).not.toBeNull();
+  });
+
   it('centres the solution target under the exact guess-pin tip through zoom changes', async () => {
     const { board } = await fixture(), point = { x: 1000, y: 2000 };
     board.setMarkers(point, point);

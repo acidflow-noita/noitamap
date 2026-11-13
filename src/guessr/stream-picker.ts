@@ -23,6 +23,9 @@ import type { LiveRoomView } from './live-room-types';
 import { guessRouteUrl, readGuessRoute } from './routes';
 import { expandStreamResult } from './stream-codec';
 import { streamResultsView } from './stream-results';
+import { roundResultReviews } from './stream-result-review';
+import type { StreamResult } from './stream-types';
+import type { StreamRoundView } from './stream-round-data';
 import { rememberPublishedStream } from './stream-history-records';
 import { localizedDistance } from './messages';
 import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, onGuessrLanguageChanged, tr } from './i18n';
@@ -73,6 +76,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   let progress: ClueProgress | null = null, roundKey = '';
   let submitted: { playerId: string; point: Point } | null = null;
   let drawnOutcome = '', drawnResults = '';
+  let publishedResult: StreamResult | undefined;
   let clearResults: (() => void) | undefined;
   let live: LiveRoomView | null = null, connectionState: RoomConnection = 'connecting', connectionDetail = 'Connecting to the NoitaGuessr game…';
   let room: ReturnType<typeof watchTwitchGame> | undefined, roomEpoch = 0;
@@ -204,12 +208,13 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     finally { sending = false; sendingRound = undefined; if (!closed) refresh(); }
   };
   const send = button('Send guess', () => sendGuess(), 'primary');
+  send.setAttribute('aria-live', 'polite'); send.setAttribute('aria-atomic', 'true');
   const sendControl = node('span', 'stream-send-control'); sendControl.append(send);
   const sendHelp = hoverHelp(sendControl, () => tr(sendReason), send);
   const secondaryActions = node('div', 'stream-secondary-actions');
   secondaryActions.append(previousResult, result, retry);
-  actions.append(sendControl, delivery, secondaryActions); mapPanel.append(revealBar, actions, signIn, map); layout.append(mapPanel);
-  const resultsPanel = node('section', 'game-panel stream-viewer-results'); resultsPanel.hidden = true;
+  actions.append(sendControl); mapPanel.append(revealBar, actions, delivery, secondaryActions, signIn, map); layout.append(mapPanel);
+  const resultsPanel = node('section', 'stream-viewer-results'); resultsPanel.hidden = true;
   layout.append(resultsPanel);
   const sharedPanel = node('section', 'stream-shared-round'); sharedPanel.hidden = true; layout.append(sharedPanel);
   const chat = viewerChatPanel(viewer, channel, leave,
@@ -224,7 +229,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const board = new MapBoard(map, config.bounds, config.overview, next => {
     if (within(next, config.bounds)) { point = next; board.setMarkers(next); saveProgress(); refresh(); }
   }, config.map);
-  const navigation = mapControls(board); mapPanel.insertBefore(navigation, actions);
+  const navigation = mapControls(board); actions.classList.add('guess-map-toolbar'); actions.prepend(navigation);
   const guessKey = () => point ? `${viewer.getState().userId}/${channel}/${live?.roundId ?? snapshot?.round}/${Math.round(point.x)}/${Math.round(point.y)}/${progress ? maximumScore(progress) : ''}` : '';
   const setRound = (payload: string | null, identity: string) => {
     if (identity === roundKey && (!!payload === !!snapshot)) return;
@@ -288,24 +293,29 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     } else board.setLocked(false);
     budget.hidden = !progress || revealed;
     if (live?.phase === 'complete' && live.result) {
-      if (live.resultId && channel) rememberPublishedStream(live.resultId, channel);
-      const key = `${live.gameId}/${playerId ?? ''}`;
-      if (drawnResults !== key) {
-        drawnResults = key;
-        clearResults?.();
-        const summary = streamResultsView(expandStreamResult(live.result!), playerId ?? undefined, undefined, config);
-        clearResults = summary.destroy;
-        const open = node('a', 'secondary', 'Open results page');
-        open.href = guessRouteUrl('stream-result', location.origin, { result: live.resultId ?? live.gameId! }).href;
-        const links = node('div', 'action-row'); links.append(open);
-        resultsPanel.replaceChildren(summary, links);
-      }
-      cluePanel.hidden = true; mapPanel.hidden = true; resultsPanel.hidden = false;
-      layout.classList.add('show-results'); round.textContent = tr('Results'); round.hidden = false;
+      showPublishedResult(expandStreamResult(live.result));
     }
+  };
+  const showPublishedResult = (completed: StreamResult) => {
+    const playerId = viewer.getState().userId ?? viewer.getState().savedUserId;
+    const key = `published/${completed.id}/${playerId ?? ''}`;
+    rememberPublishedStream(completed.id, channel);
+    if (drawnResults !== key) {
+      drawnResults = key; clearResults?.();
+      const summary = streamResultsView(completed, playerId ?? undefined, undefined, config);
+      clearResults = summary.destroy;
+      const open = node('a', 'btn btn-outline theme-secondary', 'Open results page');
+      open.href = guessRouteUrl('stream-result', location.origin, { result: completed.id }).href;
+      summary.querySelector('.stream-results-menu')!.append(open);
+      resultsPanel.replaceChildren(summary);
+    }
+    sharedRound = null; revealBar.hidden = true;
+    cluePanel.hidden = true; mapPanel.hidden = true; resultsPanel.hidden = false;
+    layout.classList.add('show-results'); bindText(round, 'Results'); round.hidden = false;
   };
   const showPersonalOutcome = () => {
     if (!twitchUpdates || !live) return;
+    if (publishedResult || live.result) { showPublishedResult(publishedResult ?? expandStreamResult(live.result!)); return; }
     if (!viewer.getState().userId && !viewer.getState().savedUserId) { resultsPanel.hidden = true; return; }
     const current = personal.round(live.round - 1);
     const index = reviewedRound ?? (live.phase !== 'guess' && current.reveal ? live.round - 1 : null);
@@ -335,22 +345,37 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         + Array.from({ length: live?.totalRounds ?? STREAM_ROUNDS }, (_, i) => { const r = personal.round(i); return `${r.score?.score}/${r.pending}/${r.received?.key}`; }).join('/');
       if (drawnResults !== signature) {
         drawnResults = signature;
+        const openRounds = [...resultsPanel.querySelectorAll<HTMLDetailsElement>('details[data-round][open]')].map(item => Number(item.dataset.round));
+        clearResults?.(); clearResults = undefined;
         const heading = node('h1', '', viewer.getState().connected ? 'Your result' : 'Saved result');
         const waiting = Array.from({ length: live?.totalRounds ?? STREAM_ROUNDS }, (_, i) => personal.round(i)).some(r => r.pending || r.received && !r.reveal);
         const total = node('strong', 'stream-rank', () => waiting ? tr('Waiting for results')
           : tr('{{points}} points', { points: formatGuessrNumber(personal.total()), count: personal.total() }));
-        const table = node('table', 'table'), body = node('tbody');
+        const table = node('table', 'table stream-score-table'), body = node('tbody');
+        const released: StreamRoundView[] = [];
+        let runningTotal = 0;
         for (let i = 0; i < (live?.totalRounds ?? STREAM_ROUNDS); i++) {
           const r = personal.round(i), row = node('tr');
+          runningTotal += r.score?.score ?? 0;
+          const shared = sharedRounds?.rounds.get(i + 1);
+          if (shared) released.push(shared);
+          else if (r.reveal) {
+            const id = viewer.getState().userId ?? viewer.getState().savedUserId!;
+            released.push({ round: i + 1, answer: r.reveal.answer, label: r.reveal.area.label,
+              host: { id: live.hostId ?? '', login: channel, name: channel },
+              players: [{ id, login: viewer.getState().login ?? '', name: viewer.getState().login ?? tr('You'),
+                guess: r.received?.point ?? null, score: r.score?.score ?? 0, total: runningTotal }] });
+          }
           row.append(node('td', '', () => tr('Round {{round}}', { round: formatGuessrNumber(i + 1) })),
             node('td', '', r.reveal ? () => guessrGameTerm(r.reveal!.area.label) : '—'),
-            node('td', 'score' + (r.score?.score === 5000 ? ' score-perfect' : ''), r.pending ? 'Waiting for confirmation' : r.received && !r.reveal ? 'Waiting for results'
+            node('td', 'numeric' + (r.score?.score === 5000 ? ' score-perfect' : ''), r.pending ? 'Waiting for confirmation' : r.received && !r.reveal ? 'Waiting for results'
               : r.received ? () => formatGuessrNumber(r.score?.score ?? 0) : '—'));
-          if (sharedRounds?.rounds.has(i + 1)) row.children[0].replaceChildren(button(tr('Round {{round}}', { round: formatGuessrNumber(i + 1) }), () => { sharedRound = i + 1; refresh(); }, 'btn btn-sm btn-outline theme-secondary'));
           body.append(row);
         }
-        table.append(body); const links = node('div', 'action-row'); links.append(result);
-        resultsPanel.replaceChildren(heading, total, table, links);
+        const reviews = roundResultReviews(released, config, openRounds); clearResults = reviews.destroy;
+        table.append(body); const links = node('div', 'stream-results-menu'); links.append(result);
+        const wrap = node('div', 'table-wrap'); wrap.append(table);
+        resultsPanel.replaceChildren(heading, links, total, reviews.element, wrap);
       }
       cluePanel.hidden = true; mapPanel.hidden = true; resultsPanel.hidden = false; layout.classList.add('show-results');
     }
@@ -396,6 +421,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     } satisfies Pick<Parameters<typeof watchTwitchGame>[3], 'state' | 'status'>;
     if (twitchUpdates) {
       const events: Parameters<typeof watchParallelGame>[3] = { ...handlers,
+        published: completed => { if (completed.id === requestedGame) { publishedResult = completed; refresh(); } },
         roundResults: data => { sharedRounds?.save(data); refresh(); },
         durableReceipt: message => {
           const playerId = viewer.getState().userId;
@@ -430,7 +456,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     }
   };
   const showSharedResults = () => {
-    if (live?.ended) sharedRound = null;
+    if (live?.ended || live?.phase === 'complete' || publishedResult) sharedRound = null;
     else if (parallelMode && live?.phase === 'reveal' && sharedRounds?.rounds.size)
       sharedRound = Math.max(...sharedRounds.rounds.keys());
     const data = sharedRound === null ? undefined : sharedRounds?.rounds.get(sharedRound);
@@ -457,7 +483,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         const seconds = Math.max(0, Math.ceil((Math.max(until, live?.timing?.deadline ?? 0) - gameNow()) / 1000));
         const text = `${formatGuessrNumber(Math.floor(seconds / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(seconds % 60, { minimumIntegerDigits: 2 })}`;
         timer.hidden = false; timer.textContent = text;
-        if (data.round === live?.totalRounds) bindText(sharedNext!, () => `${tr('View results')}: ${text}`);
+        if (data.round === live?.totalRounds) bindText(sharedNext!, 'Results available in: {{time}}', { time: text });
         else bindText(sharedNext!, 'Next round in {{time}}', { time: text });
       } else bindText(sharedNext!, 'Waiting for the streamer');
     }
@@ -497,13 +523,23 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     const sameGuess = !!guessKey() && guessKey() === lastSent;
     const mayResend = twitchUpdates && sameGuess && (own?.lastStatus === 'rejected' || own?.pending && Date.now() - lastSendAt >= 15_000);
     send.disabled = !canGuess() || !state.connected || !point || !channel || sending || !parallelMode && state.sending || sameGuess && !mayResend;
-    bindText(send, mayResend ? 'Resend guess' : own?.submitted && !sameGuess ? 'Update guess' : 'Send guess');
+    const currentSending = sending && (!live || sendingRound === live.round - 1);
+    const sendLabel = currentSending ? own?.automatic ? 'Auto-sending…' : 'Sending…'
+      : mayResend ? 'Resend guess'
+      : sameGuess && own?.pending ? own.automatic ? 'Auto-sending…' : 'Waiting for confirmation'
+      : sameGuess && own?.received ? own.automatic ? 'Auto-submitted' : 'Guess received'
+      : sameGuess && !twitchUpdates ? 'Guess sent'
+      : own?.submitted && !sameGuess ? 'Update guess' : 'Send guess';
+    bindText(send, sendLabel);
+    send.dataset.state = sameGuess && own?.received && !own.pending ? 'received' : currentSending || sameGuess && own?.pending ? 'waiting' : 'ready';
+    send.setAttribute('aria-busy', String(currentSending || sameGuess && !!own?.pending));
     const receiptStatus = live?.ended ? 'The streamer ended this game.' : sending ? deliveryOwn?.automatic ? 'Auto-sending…' : 'Sending…' : deliveryOwn?.pending ? deliveryOwn.received ? 'Update awaiting confirmation. Previous guess counts.'
       : deliveryOwn.automatic ? 'Auto-sending…' : 'Waiting for confirmation'
       : deliveryOwn?.lastStatus === 'rejected' ? deliveryOwn.received ? 'Update not received. Previous guess counts.' : guessRejectionText(deliveryOwn.reason)
       : deliveryOwn?.received ? deliveryOwn.automatic ? 'Auto-submitted' : 'Guess received' : !twitchUpdates && sameGuess ? 'Guess sent' : 'Place a pin first';
     bindText(delivery, () => actionError || (previousDelivery ? `${tr('Round {{round}}', { round: formatGuessrNumber(deliveryRound! + 1) })}: ` : '') + tr(receiptStatus));
     delivery.dataset.state = actionError || deliveryOwn?.lastStatus === 'rejected' ? 'error' : deliveryOwn?.received && !deliveryOwn.pending ? 'received' : 'waiting';
+    delivery.hidden = !actionError && !previousDelivery && deliveryOwn?.lastStatus !== 'rejected';
     const latestShared = Math.max(0, ...sharedRounds?.rounds.keys() ?? []);
     if (latestShared && live?.phase !== 'complete') {
       previousResult.hidden = false; bindText(previousResult, 'Round {{round}} results', { round: formatGuessrNumber(latestShared) });
@@ -538,8 +574,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       : live?.timing?.deadline && gameNow() >= live.timing.deadline ? 'This round is closed'
       : !point ? 'Place a pin first' : '';
     sendControl.tabIndex = send.disabled ? 0 : -1;
-    if (disabledReason !== sendReason) { sendReason = disabledReason; sendHelp.update(); }
-    if (!sending && !actionError && !own?.submitted && !previousDelivery && disabledReason) bindText(delivery, disabledReason);
+    const help = disabledReason || (sameGuess ? receiptStatus : '');
+    if (help !== sendReason) { sendReason = help; sendHelp.update(); }
     const needsReceipt = twitchUpdates && deliveryOwn?.pending && Date.now() - lastSendAt > 15_000;
     if (needsReceipt && Date.now() - lastSendAt > 20000) { lastSendAt = Date.now(); feed?.requestRecovery(); }
     retry.hidden = true;

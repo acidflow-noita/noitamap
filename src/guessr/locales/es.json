@@ -587,5 +587,8 @@
   "Back to round {{round}}": "Volver a la ronda {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Explora con los botones situados encima del mapa de pistas. Cada botón muestra el coste en puntos que conlleva. Retroceder y ampliar la imagen no cuesta nada.",
   "Not published yet. Retrying automatically.": "Aún no se ha publicado. Se volverá a intentar automáticamente.",
-  "Preview unavailable": "No hay vista previa disponible"
+  "Preview unavailable": "No hay vista previa disponible",
+  "Results available in: {{time}}": "Resultados disponibles en: {{time}}",
+  "You finished in position {{rank}} out of {{players}} players.": "Has quedado en la posición {{rank}} de un total de {{players}} jugadores.",
+  "Streamer {{player}} finished in position {{rank}} out of {{players}} players.": "El streamer {{player}} ha quedado en la posición {{rank}} de un total de {{players}} jugadores."
 }

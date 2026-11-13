@@ -19,6 +19,18 @@ const result: StreamResult = {
   ],
 };
 
+it('names the streamer and the chatter explicitly in their finishing positions, including ties', () => {
+  const own = streamResultsView(result, '456'); document.body.append(own);
+  expect(own.querySelector('.finish-hero')!.textContent).toContain('You finished 1st out of 2.');
+  expect(own.querySelector('.finish-hero')!.textContent).toContain('Streamer Rank finished 2nd out of 2.');
+  own.destroy(); own.remove();
+  const tied = structuredClone(result); tied.players[0].rank = 1; tied.players[0].score = tied.players[1].score;
+  const host = streamResultsView(tied, '123'); document.body.append(host);
+  expect(host.querySelector('.stream-placement')!.textContent).toBe('Streamer Rank finished 1st out of 2.');
+  expect(host.querySelector('.finish-hero')!.textContent).not.toContain('You finished');
+  host.destroy();
+});
+
 async function translations() {
   await initializeGuessrTranslations();
   i18next.addResourceBundle('de', 'translation', {}, true, true);

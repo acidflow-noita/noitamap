@@ -1135,7 +1135,7 @@ textarea {
 /* Tailwind amber-300/amber-400: a perfect round, never an ordinary total. */
 .score-perfect { color: #fcd34d !important; font-weight: 700; text-shadow: 0 0 .45rem rgb(251 191 36 / .6), 0 0 1rem rgb(251 191 36 / .3); }
 
-.guess-map-controls { display: flex; flex: none; align-items: center; gap: .375rem; padding: .375rem .5rem; }
+.guess-map-controls { display: none; flex: none; align-items: center; gap: .25rem; padding: .375rem .5rem; }
 .guess-map-controls .btn { min-inline-size: 2.75rem; min-block-size: 2.75rem; display: inline-flex; align-items: center; justify-content: center; gap: .375rem; padding: .375rem .5rem; white-space: nowrap; }
 .guess-map-controls svg { inline-size: 1.1rem; block-size: 1.1rem; }
 .guess-map-controls { flex-wrap: wrap; }
@@ -1143,6 +1143,17 @@ textarea {
 .map-heading:empty, .guess-submit-row:empty { display: none; }
 .guess-submit-row { flex: none; padding: .375rem .5rem; border-block-end: 1px solid var(--border); }
 .game-panel--map > .game-actions { position: static; flex: none; margin: 0; box-shadow: none; }
+.guess-map-toolbar { display: flex; flex: none; align-items: center; justify-content: space-between; gap: .5rem; padding: .375rem .5rem; min-block-size: 0; }
+.map-bar.guess-map-toolbar { padding: .375rem .5rem; }
+.guess-map-toolbar > .guess-map-controls { padding: 0; flex-wrap: nowrap; }
+.guess-map-toolbar > :is(.primary, .stream-send-control) { margin-inline-start: auto; }
+.guess-map-toolbar > .primary { min-inline-size: 10rem; min-block-size: 2.75rem; }
+@media (max-width: 900px), (pointer: coarse) {
+  .guess-map-controls { display: flex; flex-wrap: nowrap; }
+  .guess-map-controls .btn > span { position: absolute; inline-size: 1px; block-size: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .guess-map-toolbar { gap: .25rem; padding-inline: .25rem; }
+  .guess-map-toolbar > .primary { min-inline-size: 0; flex: 1; }
+}
 
 /* Keep the clue, free map controls and submit action together on a phone. */
 @media (max-width: 900px) {

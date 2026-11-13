@@ -25,6 +25,12 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   const host = result.players.find((p) => p.id === result.host.id)!;
   const own = viewerId ? result.players.find(p => p.id === viewerId) : undefined;
   const featured = own ?? host;
+  const placement = (rank: number) => {
+    const number = formatGuessrNumber(rank);
+    if (!/^en(?:-|$)/i.test(guessrLocale())) return number;
+    const rule = new Intl.PluralRules('en', { type: 'ordinal' }).select(rank);
+    return number + ({ one: 'st', two: 'nd', few: 'rd' }[rule as 'one' | 'two' | 'few'] ?? 'th');
+  };
   const title = el("h1", () => own ? tr('Your result') : viewerId ? tr('Game results') : tr('{{player}}’s results', { player: result.host.name }));
   if (onBack) {
     const back = el('button', 'Back'); back.type = 'button'; back.onclick = onBack;
@@ -33,11 +39,10 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   hero.append(
     el("span", "Chat vs Streamer", "badge pro animation-pop twitch-mode-label"),
     ...(!onBack ? [title] : []),
-    el(
-      "div",
-      () => viewerId && !own ? tr('No recorded guesses') : tr('Rank {{rank}} of {{players}}', { rank: formatGuessrNumber(featured.rank), players: formatGuessrNumber(result.players.length) }),
-      "stream-rank",
-    ),
+    ...(own && own.id !== host.id ? [el('p', () => tr('You finished in position {{rank}} out of {{players}} players.',
+      { rank: placement(own.rank), players: formatGuessrNumber(result.players.length) }), 'stream-placement')] : []),
+    el('p', () => tr('Streamer {{player}} finished in position {{rank}} out of {{players}} players.',
+      { player: result.host.name, rank: placement(host.rank), players: formatGuessrNumber(result.players.length) }), 'stream-placement'),
     el(
       "p",
       () => viewerId && !own ? tr('The streamer did not record a guess from this account.') : tr('{{score}}, {{rounds}}, Equal scores share a rank.', { score: tr('{{points}} points', { points: formatGuessrNumber(featured.score), count: featured.score }), rounds: tr('{{rounds}} rounds', { rounds: formatGuessrNumber(result.rounds.length), count: result.rounds.length }) }),

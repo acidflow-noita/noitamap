@@ -596,5 +596,8 @@
   "Back to round {{round}}": "Повернутися до раунду {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Досліджуйте карту за допомогою кнопок, розташованих над картою підказок. На кожній кнопці вказано її вартість у балах. Повернення назад та збільшення масштабу — безкоштовні.",
   "Not published yet. Retrying automatically.": "Ще не опубліковано. Система автоматично повторює спробу.",
-  "Preview unavailable": "Попередній перегляд недоступний"
+  "Preview unavailable": "Попередній перегляд недоступний",
+  "Results available in: {{time}}": "Результати будуть доступні через: {{time}}",
+  "You finished in position {{rank}} out of {{players}} players.": "Ви посіли {{rank}} місце серед {{players}} гравців.",
+  "Streamer {{player}} finished in position {{rank}} out of {{players}} players.": "Стрімер {{player}} посів {{rank}} місце серед {{players}} гравців."
 }

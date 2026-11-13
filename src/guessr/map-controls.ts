@@ -3,7 +3,7 @@ import { bindAttribute, bindText } from './i18n';
 import { iconLabel } from './control-icons';
 
 /** These controls change the free guess map, never the clue's point allowance. */
-export function mapControls(board: MapBoard): HTMLElement {
+export function mapControls(board: MapBoard, options: { readOnly?: boolean } = {}): HTMLElement {
   const row = document.createElement('div'); row.className = 'guess-map-controls';
   row.setAttribute('role', 'group'); bindAttribute(row, 'aria-label', 'Map navigation controls');
   for (const [label, action, icon] of [
@@ -12,6 +12,7 @@ export function mapControls(board: MapBoard): HTMLElement {
     ['Show entire map', () => board.showEntireMap(), 'arrow-counterclockwise'],
     ['Center map on marker', () => board.centerOnPin(), null],
   ] as const) {
+    if (!icon && options.readOnly) continue;
     const button = document.createElement('button'); button.type = 'button';
     button.className = 'btn btn-sm btn-outline theme-secondary'; bindAttribute(button, 'aria-label', label);
     if (icon) { button.append(iconLabel(icon, label)); if (icon.startsWith('zoom')) button.querySelector('span')!.classList.add('sr-only'); }

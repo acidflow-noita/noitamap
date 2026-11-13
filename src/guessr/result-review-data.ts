@@ -18,6 +18,8 @@ export function resultMapConfig(result: StreamResult, fallback?: ImageGameConfig
 export function resultClue(config: ImageGameConfig, answer: Point): ClueSource | undefined {
   if (!within(answer, config.bounds)) return;
   const c = config.map, view = cameraRect({ dx: 0, dy: 0, level: 0 });
+  if (!c || !Number.isFinite(c.width) || !Number.isFinite(c.height) || !Number.isInteger(c.tileSize) || c.tileSize <= 0
+    || !Number.isInteger(c.overlap) || c.overlap < 0 || !Number.isInteger(c.maxLevel) || typeof c.tiles !== 'string') return;
   const left = answer.x + view.x - config.bounds.x, top = answer.y + view.y - config.bounds.y;
   if (left < 0 || top < 0 || left + view.width > c.width || top + view.height > c.height) return;
   const frames: PreparedFrame[] = [];

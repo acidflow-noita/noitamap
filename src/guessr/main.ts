@@ -344,6 +344,7 @@ function makePlayPanels(
   guess: Point | null,
   locked: boolean,
   onPick?: (point: Point) => void,
+  readOnly = false,
 ): { clue: HTMLElement; bar: HTMLElement; mapActions: HTMLElement } {
   const grid = node("div", "game-grid"),
     left = node("section", "game-panel"),
@@ -406,7 +407,7 @@ function makePlayPanels(
     },
     ranked && view === 'ranked' && ranked.config ? ranked.config.map : pack.map,
   );
-  mapBar.append(mapControls(board));
+  mapBar.append(mapControls(board, { readOnly }));
   board.setMarkers(guess);
   board.setLocked(locked);
   return { clue, bar, mapActions };
@@ -541,6 +542,7 @@ function renderPractice(): void {
     main,
     session.guess,
     !!result || session.pausedAt !== null,
+    undefined, !!result,
   );
   updateRoundIndicators(main, session.clue, place.hard ? 'hard' : undefined);
   if (!result && session.pausedAt === null && place.views) {
@@ -703,7 +705,7 @@ function reviewPractice(index: number): void {
     node("h1", "", msg("Round {{value1}}: {{value2}}", () => ({ value1: index + 1, value2: place.name }))),
     button(msg("← Results"), finish),
   ));
-  const { clue } = makePlayPanels(main, result.guess, true);
+  const { clue } = makePlayPanels(main, result.guess, true, undefined, true);
   putClue(clue, place.views?.["0,0,6"]?.image ?? place.image, 1);
   board?.setMarkers(result.guess, place);
   showMapResult(
@@ -745,6 +747,7 @@ function renderImageGame(review?: {
     main,
     result ? result.guess : imageGuess,
     !!result || imagePaused,
+    undefined, !!result,
   );
   updateRoundIndicators(main, imageClue, result?.difficultyTier ?? imageSession.current?.difficultyTier);
   if (result) {
@@ -1485,7 +1488,7 @@ function reviewRanked(ordinal: number, continueGame = false): void {
     r.guess?.x != null && r.guess.y != null
       ? { x: r.guess.x, y: r.guess.y }
       : null;
-  const { clue, bar } = makePlayPanels(main, guess, true);
+  const { clue, bar } = makePlayPanels(main, guess, true, undefined, true);
   bar.append(node("span", "hint", msg(() => guessrGameTerm(r.biome))));
   if (r.clue) {
     const viewport = new ClueViewport(clue, r.clue);

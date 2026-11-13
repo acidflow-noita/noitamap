@@ -587,5 +587,8 @@
   "Back to round {{round}}": "Retour au tour {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Explorez à l'aide des boutons situés au-dessus de la carte des indices. Chaque bouton indique le nombre de points qu'il coûte. Revenir en arrière et zoomer sont des actions gratuites.",
   "Not published yet. Retrying automatically.": "Pas encore publié. Nouvelle tentative automatique.",
-  "Preview unavailable": "Aperçu indisponible"
+  "Preview unavailable": "Aperçu indisponible",
+  "Results available in: {{time}}": "Résultats disponibles dans : {{time}}",
+  "You finished in position {{rank}} out of {{players}} players.": "Ton classement final : {{rank}} sur {{players}} joueurs.",
+  "Streamer {{player}} finished in position {{rank}} out of {{players}} players.": "Le classement final du streamer {{player}} est de {{rank}} sur {{players}} joueurs."
 }

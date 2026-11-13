@@ -572,20 +572,23 @@ it('keeps round reviews inline with thumbnails and the save/share menu above the
   expect(menu.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(reviews.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(menu.textContent).toContain('Share result'); expect(menu.textContent).toContain('Save results as a web page');
-  const buttons = [...reviews.querySelectorAll<HTMLButtonElement>('.accordion-button')];
+  const buttons = [...reviews.querySelectorAll<HTMLElement>('summary.accordion-header')];
   expect(buttons).toHaveLength(10); expect(buttons[0].textContent).toBe('Round 1: Private place');
   expect(buttons.every(button => button.querySelector('.stream-round-thumbnail'))).toBe(true);
   buttons[0].click(); await flush();
-  expect(buttons[0].getAttribute('aria-expanded')).toBe('true');
-  expect(reviews.querySelector('.collapse.show .stream-review-grid')).not.toBeNull();
+  expect((buttons[0].parentElement as HTMLDetailsElement).open).toBe(true);
+  expect(reviews.querySelector('details[open] .stream-review-grid')).not.toBeNull();
+  buttons[1].click(); await flush();
+  expect(reviews.querySelectorAll('details[open]')).toHaveLength(2);
+  expect(buttons[0].nextElementSibling?.querySelector('.stream-review-grid')).not.toBeNull();
   expect(document.querySelector('main')).toBe(main); expect(location.href).toBe(url);
   expect(document.querySelector('.stream-host-shell')).toBeNull();
   expect(document.querySelector('#stream-round-timer')).toBeNull();
   expect(document.querySelector('dialog')).toBeNull();
   expect(mocks.watchChat).not.toHaveBeenCalled();
   buttons[0].click(); await flush();
-  expect(buttons[0].getAttribute('aria-expanded')).toBe('false');
-  expect(reviews.querySelector('.collapse.show')).toBeNull();
+  expect((buttons[0].parentElement as HTMLDetailsElement).open).toBe(false);
+  expect((buttons[1].parentElement as HTMLDetailsElement).open).toBe(true);
 });
 
 it('keeps the between-round countdown and table visible while the coordinator reconnects', async () => {
@@ -660,7 +663,7 @@ it('labels the streamer’s last round and gives its rendered score table 30 sec
   mocks.roundView.mockImplementationOnce((main, _game, _index, actions) => { vi.setSystemTime(streamNow + 3000); main.append(actions); return () => {}; });
   history.replaceState(null, '', '/guess/stream/'); ui = new StreamUI(hooks); ui.game = game; ui.render();
   expect(game.timing!.resultsUntil).toBe(streamNow + 30000);
-  expect(document.getElementById('stream-auto-next')!.textContent).toBe('View results: 00:27');
+  expect(document.getElementById('stream-auto-next')!.textContent).toBe('Results available in: 00:27');
   expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:27');
   expect(document.querySelector('.stream-toolbar-round')!.textContent).toContain('Your round 10 / 10');
   expect(document.body.textContent).toContain('Chatters have finished all rounds.');

@@ -596,5 +596,8 @@
   "Back to round {{round}}": "Вернуться к раунду {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Исследуйте местность с помощью кнопок над картой подсказок. На каждой кнопке указана стоимость в очках. Возврат назад и увеличение масштаба бесплатны.",
   "Not published yet. Retrying automatically.": "Еще не опубликовано. Повторная попытка выполняется автоматически.",
-  "Preview unavailable": "Предварительный просмотр недоступен"
+  "Preview unavailable": "Предварительный просмотр недоступен",
+  "Results available in: {{time}}": "Результаты будут доступны через: {{time}}",
+  "You finished in position {{rank}} out of {{players}} players.": "Вы заняли {{rank}}-е место из {{players}} игроков.",
+  "Streamer {{player}} finished in position {{rank}} out of {{players}} players.": "Стример {{player}} занял {{rank}}-е место среди {{players}} игроков."
 }

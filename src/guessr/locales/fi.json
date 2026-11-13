@@ -578,5 +578,8 @@
   "Back to round {{round}}": "Takaisin kierrokseen {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Tutki aluetta vihjekartan yläpuolella olevien painikkeiden avulla. Jokaisessa painikkeessa näkyy sen pistekustannus. Takaisin liikkuminen ja lähentäminen ovat ilmaisia.",
   "Not published yet. Retrying automatically.": "Ei vielä julkaistu. Yritetään uudelleen automaattisesti.",
-  "Preview unavailable": "Esikatselua ei ole saatavilla"
+  "Preview unavailable": "Esikatselua ei ole saatavilla",
+  "Results available in: {{time}}": "Tulokset saatavilla: {{time}}",
+  "You finished in position {{rank}} out of {{players}} players.": "Sijoituit sijalle {{rank}} yhteensä {{players}} pelaajan joukosta.",
+  "Streamer {{player}} finished in position {{rank}} out of {{players}} players.": "Striimaaja {{player}} sijoittui sijalle {{rank}} yhteensä {{players}} pelaajan joukosta."
 }

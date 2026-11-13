@@ -8,6 +8,7 @@ import type { RoomConnection } from './live-room-types';
 type Handlers = Parameters<typeof watchTwitchGame>[3] & {
   durableReceipt(message: Extract<ParallelServerMessage, { type: 'receipt' }>): void;
   roundResults(results: import('./stream-round-data').StreamRoundView): void;
+  published(result: import('./stream-types').StreamResult): void;
 };
 /** Both transports run concurrently. Twitch receipts in this mode originate
  * from the coordinator's committed acknowledgements, never optimistic sends. */
@@ -42,6 +43,7 @@ export function watchParallelGame(viewer: TwitchViewer, channel: string, gameId:
           if (message.accepted) revisions.set(message.roundId, Math.max(message.revision, revisions.get(message.roundId) ?? 0));
           handlers.durableReceipt(message);
         }
+        else if (message.type === 'published' && message.result.id === gameId) handlers.published(message.result);
       },
     });
   };

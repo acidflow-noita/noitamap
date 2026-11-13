@@ -66,6 +66,7 @@ export interface StreamUIHooks {
     guess: Point | null,
     locked: boolean,
     pick: (point: Point) => void,
+    readOnly?: boolean,
   ): { clue: HTMLElement; bar: HTMLElement };
   cleanupClue(cleanup: () => void): void;
   markers(guess: Point | null, answer?: Point): void;
@@ -758,7 +759,7 @@ export class StreamUI {
       const until = Math.max(final ? now : timing.deadline ?? now, timing.resultsUntil ?? now);
       const seconds = Math.max(0, Math.ceil((until - now) / 1000));
       const nextClock = `${formatGuessrNumber(Math.floor(seconds / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(seconds % 60, { minimumIntegerDigits: 2 })}`;
-      bindText(next, () => final ? `${tr('View results')}: ${nextClock}` : tr('Next round in {{time}}', { time: nextClock }));
+      bindText(next, final ? 'Results available in: {{time}}' : 'Next round in {{time}}', { time: nextClock });
     }
     const first = document.getElementById('stream-first-round') as HTMLButtonElement | null;
     if (first) first.disabled = game.paused || !!starting;
@@ -1144,6 +1145,7 @@ export class StreamUI {
           this.save();
         }
       },
+      !!reveal,
     );
     updateRoundIndicators(main, game.clue, reveal?.area.difficultyTier ?? game.session.rounds[index].difficultyTier);
     if (reveal || game.stage === "closing") {
@@ -1224,7 +1226,11 @@ export class StreamUI {
       );
     }
     const mapPanel = main.querySelector('.game-panel--map');
-    if (mapPanel) mapPanel.insertBefore(actions, mapPanel.querySelector('.map-board')); else main.append(actions);
+    if (mapPanel) {
+      const toolbar = mapPanel.querySelector('.map-bar'), submit = actions.querySelector('#confirm-guess');
+      if (toolbar && submit) { toolbar.classList.add('guess-map-toolbar'); toolbar.append(submit); }
+      mapPanel.insertBefore(actions, mapPanel.querySelector('.map-board'));
+    } else main.append(actions);
     this.updateTimer();
     if (this.api.local && !reveal && game.stage === "guess")
       this.localInput(main);

@@ -578,5 +578,8 @@
   "Back to round {{round}}": "{{round}}ラウンドに戻る",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "手がかりマップの上にあるボタンを使って探索してください。各ボタンには必要なポイント数が表示されています。戻る操作やズームインは無料です。",
   "Not published yet. Retrying automatically.": "まだ公開されていません。自動的に再試行します。",
-  "Preview unavailable": "プレビューはご利用いただけません"
+  "Preview unavailable": "プレビューはご利用いただけません",
+  "Results available in: {{time}}": "結果の表示まであと {{time}} です。",
+  "You finished in position {{rank}} out of {{players}} players.": "{{players}}人のプレイヤー中、{{rank}}位でフィニッシュしました。",
+  "Streamer {{player}} finished in position {{rank}} out of {{players}} players.": "ストリーマーの{{player}}は、{{players}}人のプレイヤー中、{{rank}}位でフィニッシュしました。"
 }

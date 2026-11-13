@@ -578,5 +578,8 @@
   "Back to round {{round}}": "Terug naar ronde {{round}}",
   "Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.": "Verken de kaart met behulp van de knoppen boven de aanwijzingskaart. Bij elke knop staat de kosten in punten aangegeven. Teruggaan en inzoomen zijn gratis.",
   "Not published yet. Retrying automatically.": "Nog niet gepubliceerd. Er wordt automatisch opnieuw geprobeerd.",
-  "Preview unavailable": "Voorbeeld niet beschikbaar"
+  "Preview unavailable": "Voorbeeld niet beschikbaar",
+  "Results available in: {{time}}": "Resultaten beschikbaar over: {{time}}",
+  "You finished in position {{rank}} out of {{players}} players.": "Je bent geëindigd op plaats {{rank}} van de {{players}} spelers.",
+  "Streamer {{player}} finished in position {{rank}} out of {{players}} players.": "Streamer {{player}} eindigde op plaats {{rank}} van de {{players}} spelers."
 }
