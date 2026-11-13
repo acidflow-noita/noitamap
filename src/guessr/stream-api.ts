@@ -8,7 +8,7 @@ import type {
   StreamPublishedResult,
   StreamHistoryPage,
 } from "./stream-types";
-import { STREAM_MAX_PLAYERS } from "./stream-types";
+import { STREAM_MAX_PLAYERS, STREAM_DEFAULT_ROUNDS } from "./stream-types";
 import type { LiveRoomView } from "./live-room-types";
 
 export class StreamApi {
@@ -20,6 +20,10 @@ export class StreamApi {
   private api = this.origin ? new GameApi(this.origin) : null;
   private publicResults = new Map<string, Promise<StreamResult>>();
   private localChannel?: string;
+  hostSocketTicket(): Promise<string> {
+    if (!this.api) return Promise.reject(new Error('Stream hosting is not configured on this site yet.'));
+    return this.api.transportTicket();
+  }
   setLocalChannel(channel?: string): void {
     if (channel !== undefined && !/^[a-z0-9_]{1,25}$/.test(channel)) throw new Error('Invalid Twitch channel.');
     this.localChannel = channel;
@@ -47,8 +51,8 @@ export class StreamApi {
       );
     return this.api.request<T>("/api/streams" + path, { body });
   }
-  start(transport?: 'twitch'): Promise<StreamSession> {
-    return this.request("/sessions", transport ? { transport } : {});
+  start(transport?: 'twitch' | 'parallel', rounds = STREAM_DEFAULT_ROUNDS, seconds = 90): Promise<StreamSession> {
+    return this.request("/sessions", { ...(transport ? { transport } : {}), rounds, seconds });
   }
   clock(): Promise<{ now: number }> {
     return this.request("/time", {});

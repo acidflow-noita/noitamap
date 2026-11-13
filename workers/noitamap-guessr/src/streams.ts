@@ -7,14 +7,15 @@ import {
 } from "../../../src/guessr/stream-server";
 import {
   STREAM_MAX_DOCUMENT_BYTES,
+  STREAM_DEFAULT_ROUNDS, validStreamRoundCount,
   type StreamPublishWireInput,
 } from "../../../src/guessr/stream-types";
 import { verifyGameTicket, verifyResultManagementTicket } from "./tickets";
 import type { Env } from "./index";
-import { encodeStoredResult, storedResultResponse, STREAM_STORAGE_BUDGET_BYTES, STREAM_RESULT_OVERHEAD_BYTES, type StoredResultBody } from './result-storage';
+import { storedResultResponse, type StoredResultBody } from './result-storage';
+import { persistStreamResult } from './result-publication';
+export { STREAM_DAILY_PUBLISH_CAP, STREAM_HOST_DAILY_CAP } from './result-publication';
 
-export const STREAM_DAILY_PUBLISH_CAP = 100;
-export const STREAM_HOST_DAILY_CAP = 20;
 const idPattern =
   /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 function json(value: unknown, status = 200): Response {
@@ -86,11 +87,7 @@ async function hostIdentity(
     ticketIssuedAt: user.iat * 1000,
   };
 }
-interface StoredResult {
-  owner: string;
-  digest: string;
-  result_json: string;
-}
+
 /** This branch deliberately never calls the legacy admit() request counters.
  * Twitch carries round updates; publication writes one final D1 document.
  * Reads are indexed, immutable and write-free, still subject to Workers/D1 Free
@@ -108,6 +105,15 @@ export async function streamRoute(
         "Stream hosting is not available on this site yet. The guess picker and downloaded results remain available.",
       );
     const path = new URL(request.url).pathname;
+    const socketMatch = /^\/api\/streams\/live\/([a-f0-9-]{36})\/socket$/.exec(path);
+    if (socketMatch) {
+      if (!idPattern.test(socketMatch[1]) || !env.STREAM_COORDINATORS) throw new ImageGameError(404, 'Game not found.');
+      const origin = request.headers.get('Origin');
+      if (!origin || !(env.ALLOWED_ORIGINS ?? '').split(',').map(v => v.trim()).includes(origin)) throw new ImageGameError(403, 'Origin not allowed.');
+      if (env.PUBLIC_GAME_RATE_LIMIT && !(await env.PUBLIC_GAME_RATE_LIMIT.limit({ key: 'stream-socket:' + (request.headers.get('CF-Connecting-IP') ?? 'unknown') })).success)
+        throw new ImageGameError(429, 'Too many connections. Please try again shortly.');
+      return await env.STREAM_COORDINATORS.getByName(socketMatch[1]).fetch(request);
+    }
     const deleteMatch = /^\/api\/streams\/results\/([a-f0-9-]{36})\/delete$/.exec(path);
     if (deleteMatch) {
       if (!idPattern.test(deleteMatch[1])) throw new ImageGameError(404, 'Result not found.');
@@ -184,8 +190,19 @@ export async function streamRoute(
     const data = await boundedBody(request);
     const service = new StreamService(source ?? preparedSource(env), env.STREAM_SIGNING_SECRET || '');
     if (path.endsWith('/sessions')) {
-      if (data.transport !== 'twitch') throw new ImageGameError(400, 'Use Twitch game transport.');
-      return json({ ...await service.start(user, now, 'twitch'), live: true }, 201);
+      if (data.transport !== 'twitch' && data.transport !== 'parallel') throw new ImageGameError(400, 'Use Twitch game transport.');
+      const rounds = data.rounds === undefined ? STREAM_DEFAULT_ROUNDS : data.rounds;
+      if (!validStreamRoundCount(rounds)) throw new ImageGameError(400, 'Choose 3, 5 or 10 rounds.');
+      const session = { ...await service.start(user, now, data.transport, rounds), live: true as const };
+      if (data.transport === 'parallel') {
+        if (!env.STREAM_COORDINATORS) throw new ImageGameError(503, 'Durable game connections are unavailable.');
+        const seconds = data.seconds === undefined ? 90 : data.seconds;
+        if (typeof seconds !== 'number' || !(seconds === 0 || Number.isInteger(seconds) && seconds >= 15 && seconds <= 600)) throw new ImageGameError(400, 'Invalid round duration.');
+        if (env.PUBLIC_GAME_RATE_LIMIT && !(await env.PUBLIC_GAME_RATE_LIMIT.limit({ key: 'stream-create:' + user.sub })).success) throw new ImageGameError(429, 'Too many games.');
+        await env.STREAM_COORDINATORS.getByName(session.id).initialize({ owner: user.sub, session,
+          reveals: await service.coordinatorReveals(session.token, user, now), seconds });
+      }
+      return json(data.transport === 'parallel' ? { ...session, token: '', rounds: session.rounds.map(round => ({ ...round, token: '' })) } : session, 201);
     }
     if (path.endsWith('/reveal')) {
       const { reveal, transport } = await service.revealForRoom(data.token, user, now);
@@ -194,91 +211,7 @@ export async function streamRoute(
     }
     const { owner, result, transport } = await service.result(data as unknown as StreamPublishWireInput, user, now);
     if (transport !== 'twitch') throw new ImageGameError(410, 'This game transport has been retired.');
-    const serialized = JSON.stringify(result),
-      bytes = new TextEncoder().encode(serialized);
-    // Host names/logins may change between an upload and its retry. Identity
-    // and reported scores determine idempotency; mutable host labels do not.
-    const canonical = new TextEncoder().encode(JSON.stringify({ ...result, host: { id: result.host.id },
-      players: result.players.map(p => p.id === result.host.id ? { ...p, name: '', login: '' } : p) }));
-    if (await env.DB.prepare('SELECT id FROM stream_result_removals WHERE id=?').bind(result.id).first())
-      throw new ImageGameError(410, 'This published result was removed.');
-    if (bytes.byteLength > STREAM_MAX_DOCUMENT_BYTES)
-      throw new ImageGameError(
-        413,
-        "Result is too large to publish. Download the complete result instead.",
-      );
-    const digest = Array.from(
-      new Uint8Array(await crypto.subtle.digest("SHA-256", canonical)),
-      (v) => v.toString(16).padStart(2, "0"),
-    ).join("");
-    const existing = await env.DB.prepare(
-      "SELECT owner,digest FROM stream_results WHERE id=?",
-    )
-      .bind(result.id)
-      .first<StoredResult>();
-    if (existing) {
-      if (existing.owner !== owner || existing.digest !== digest)
-        throw new ImageGameError(
-          409,
-          "This game already has an immutable published result.",
-        );
-      return json({ id: result.id, published: true });
-    }
-    const day = new Date(now).toISOString().slice(0, 10);
-    const encoded = await encodeStoredResult(result, serialized, bytes);
-    const inserted = await env.DB.prepare(
-      "INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json,result_gzip,host_id,host_verified_at) SELECT ?,?,?,?,?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM stream_result_removals WHERE id=?) AND (SELECT used_bytes FROM stream_result_storage WHERE id=1)+? <= ? AND (SELECT COUNT(*) FROM stream_results WHERE day=?) < ? AND (SELECT COUNT(*) FROM stream_results WHERE owner=? AND day=?) < ? ON CONFLICT(id) DO NOTHING RETURNING id",
-    )
-      .bind(
-        result.id,
-        owner,
-        day,
-        now,
-        encoded.bytes,
-        digest,
-        encoded.json,
-        encoded.gzip,
-        result.host.id,
-        user.ticketIssuedAt ?? now,
-        result.id,
-        encoded.bytes + STREAM_RESULT_OVERHEAD_BYTES,
-        STREAM_STORAGE_BUDGET_BYTES,
-        day,
-        STREAM_DAILY_PUBLISH_CAP,
-        owner,
-        day,
-        STREAM_HOST_DAILY_CAP,
-      )
-      .first();
-    if (!inserted) {
-      if (await env.DB.prepare('SELECT id FROM stream_result_removals WHERE id=?').bind(result.id).first())
-        throw new ImageGameError(410, 'This published result was removed.');
-      const concurrent = await env.DB.prepare(
-        "SELECT owner,digest FROM stream_results WHERE id=?",
-      )
-        .bind(result.id)
-        .first<StoredResult>();
-      if (concurrent?.owner === owner && concurrent.digest === digest) {
-          return json({ id: result.id, published: true });
-      }
-      if (concurrent)
-        throw new ImageGameError(
-          409,
-          "This game already has an immutable published result.",
-        );
-      const storage = await env.DB.prepare('SELECT used_bytes FROM stream_result_storage WHERE id=1').first<{ used_bytes: number }>();
-      if (!storage) throw new Error('Result storage accounting is unavailable.');
-      if (storage.used_bytes + encoded.bytes + STREAM_RESULT_OVERHEAD_BYTES <= STREAM_STORAGE_BUDGET_BYTES) {
-        const response = json({ error: 'Today’s result publishing limit has been reached. Please try again later.' }, 429);
-        response.headers.set('Retry-After', String(Math.max(1, Math.ceil((Date.parse(day) + 86400000 - now) / 1000))));
-        return response;
-      }
-      throw new ImageGameError(
-        507,
-        'Result storage is full. Download your result to keep a copy.',
-      );
-    }
-    return json({ id: result.id, published: true }, 201);
+    return await persistStreamResult(env, owner, result, user.ticketIssuedAt ?? now, now);
   } catch (error) {
     return json(
       {

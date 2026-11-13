@@ -1,10 +1,14 @@
 # NoitaGuessr alpha
 
-Alpha release source. The secondary Cloudflare database and image projects
-and API are deployed. The owner confirmed adding both GitLab CI credentials on
-2026-10-31. The ten-round migration is applied and the private API checkout is
-synchronized; release commits/deployments and the first Daily publication remain.
-See [deployment instructions and current resources](DEPLOYMENT.md).
+Source for the secondary-account Guessr API and the parallel Twitch/WebSocket pilot.
+The primary authentication Worker is a separate deployment. See
+[deployment instructions and current resources](DEPLOYMENT.md).
+
+New live games use `StreamCoordinator`, a hibernating SQLite Durable Object per
+game. Its binding and additive class migration are in `wrangler.jsonc`. Deploy
+this Worker before the matching frontend. No new D1 migration, secret rotation,
+image bake, or primary-auth deployment is required for this pilot. Retired `/rooms`,
+`/pulse`, `/advance`, `/pause`, and `/quit` endpoints remain closed.
 
 ## Current state
 
@@ -12,7 +16,7 @@ The lobby has three illustrated mode cards, a resumable-game strip and actual
 recent/best results. The map navbar entry uses the same Bootstrap popover as
 the other Pro controls. The reviewed area inventory is unchanged.
 
-Chat vs Streamer has ten rounds. Creating a game opens a ready lobby and
+Chat vs Streamer offers three, five, or ten rounds, with five selected by default. Daily still has ten rounds. Creating a game opens a ready lobby and
 automatically posts its link in the streamer's own channel. The lobby has no
 deadline: the streamer presses Start game after people have joined. That click
 starts a silent three-second countdown
@@ -24,23 +28,50 @@ shortens the remaining wait to a silent five-second closing period (or the
 remaining results-view time, if longer). Revisions remain possible until closure.
 Absent players use the original deadline; manual timing is unchanged. Late
 arrivals enroll in the next round for this readiness check.
-Automatic progression leaves results visible for at least eight seconds, then
+Automatic progression leaves results visible for at least thirty seconds, then
 starts the next streamer/chatter pair together after the silent countdown.
 With automatic timing disabled in setup, the streamer explicitly starts their
 first round and later submissions close chat's current round.
 
-Guesses, shared round snapshots and batched receipt confirmations travel through
-the `noitaguessr` Twitch channel. The host's linked Twitch connection needs
-`user:read:chat` and `user:write:chat`. Viewers reuse one Twitch subscription;
-new games have no per-viewer Cloudflare socket, polling or heartbeat. Twitch's
-actual sender identity and event timestamp bind guesses to their player and round.
-Small delivery delays are admitted before releasing that round's solution.
-Only released answers and source-cell scoring masks are broadcast; private round
-tokens and future solutions never enter a public snapshot.
-State posts happen only on changes or shared recovery requests. There is no
-periodic state heartbeat. Final state, solutions and pending receipts are drained
-once before the broadcaster and host receiver stop. A completed chatter refresh
-uses saved results without posting another sync request.
+Every new live-game guess is sent immediately through both Twitch and the
+player's Cloudflare WebSocket. The Twitch receiver forwards the authenticated
+sender and provider timestamp to the same game object. Both deliveries carry
+one nonce and monotonically increasing revision. The object commits one accepted
+record before acknowledging it, ignores duplicates and older replacements,
+and computes final scores from those saved positions. A failed update leaves
+the previous confirmed guess in effect. A failed outgoing Twitch post never
+disposes the healthy receiver or pauses the durable game's clock.
+
+The object owns absolute deadlines and alarms. A host refresh or network outage
+does not restart a timer. Automatic reconnect replays pending direct submissions
+with the same identifiers, restores accepted positions and released results,
+and displays connection status. The site stays silent. At zero, the latest placed
+pin is automatically sent if it differs from the last submitted placement.
+No marker means no guess. The grace bounds are provider/server receipt timestamp
+at most two seconds past the visible deadline, and coordinator arrival at most
+five seconds past it. Solutions are withheld until that round's acceptance ends.
+
+Socket upgrades require the allowed production Origin and an initialized game.
+Host authorization uses the existing Pro game ticket. Players authorize with
+their current-tab Twitch credential in the first encrypted frame, verified with
+Twitch against the configured public client ID. Provider credentials never enter
+socket URLs, storage, attachments or logs. Short-lived, game-bound reconnect
+credentials remain in sessionStorage. The old insecure transport is not revived.
+
+Pings receive hibernation auto-responses. Round updates and guess receipts use
+existing connections; there is no HTTP polling or per-guess D1 query. Durable
+Object SQL saves accepted submissions. D1 gets one immutable final result,
+with alarm-based retry after publication failure even if the host tab closes.
+Unfinished games expire after 24 hours. Published coordinators retain round views for 24 hours; D1 results persist. Completed but unpublished scores are retained and publication retries back off, rather than deleting the result.
+The pilot records connection counts, direct/relayed deliveries, duplicates,
+replacements, SQL rows written and publication attempts. These app counters
+must be compared with Cloudflare analytics, not treated as billing counters.
+
+The `noitaguessr` Twitch channel remains transport only. Both host and player
+paths need their existing `user:read:chat` and `user:write:chat` grants. Protocol
+labels and fields are language-independent; the interface is localized.
+Only released solutions enter public messages. Reconnect restores a player's
+own accepted guesses, not other players' unrevealed positions.
 The setup switch "Share game links as announcements" is off by default and
 remembered locally, including across OAuth returns and game refreshes. Sharing
 posts three normal messages in the host's own channel when off, or one announcement
@@ -51,7 +82,7 @@ Normal messages use `user:write:chat`; announcements additionally require
 does not invoke the game or auth Worker. A confirmed post disables the button
 for two seconds. Failed or uncertain requests are never retried automatically.
 Confirmed initial posts are saved so refreshing the ready lobby does not repeat
-them. The persistent status says "Game link shared in chat." after confirmation.
+them. The lobby status says "Game link shared in chat." after confirmation. Published results are posted the same way in the streamer's own channel, using "Latest NoitaGuessr game results: [URL]". Posting progress is saved, and an uncertain post is not automatically repeated. A manual repost has a two-second cooldown.
 Game admission requires Pro; its badge describes admission for this game rather
 than the expiry of the short-lived game ticket. Active games do not solicit gifts.
 The public Wuote/Dunkorslam grants are shown immediately without another account
@@ -69,7 +100,7 @@ searchable/sortable table and downloadable HTML/JSON results.
 Each shared game uses `/guess/<channel>/<game-code>/`. The code preserves the
 entire UUID and identifies the transport version without a database lookup.
 It stays unchanged across rounds, F5 and OAuth returns. A link cannot silently
-join a different game from the same streamer. The retired Cloudflare socket transport is no longer accepted.
+join a different game from the same streamer. The retired Cloudflare socket transport is no longer accepted; the new authenticated coordinator has separate routes and a separate class migration.
 
 The host's round results show every submitted pin, fit the map to all pins and
 the solution, and provide sortable round/total scores. Hovering or selecting a
@@ -80,27 +111,22 @@ sort column. The host and chatter share the same toolbar arrangement, with a
 plain digital timer. Submission/activity feedback is inline in reserved space;
 it does not create popovers or replace the action button's label with a status.
 Names and guess markers use the color supplied by Twitch chat events; the streamer
-uses Twitch purple. An unset Twitch color uses a neutral fallback. Colors are
-saved with the final result without an additional identity lookup. The lobby
+uses Twitch purple. An unset Twitch color uses a neutral fallback. Colors are saved with the final result. Player socket authorization fetches the display name and chat color once; resume tickets avoid repeating those lookups. The lobby
 renders at most ten plain names, and its bounded roster shows `3,000+` after
 reaching its storage bound. Sharing confirmation stays in the lobby, except for
 brief feedback immediately after an explicit repost during play.
 
-Chatter submissions remain `Waiting for confirmation` until the host acknowledges
-their sender/round/nonce fingerprint. Receipts are batched, not one reply per
-viewer. There is no automatic guess resend. `Check delivery` and `Resend guess`
-are explicit actions. Saved guesses, receipt state and released scores survive
-refresh; an unreachable Twitch validation can still show the last saved result
-without authorizing another send. A disconnected host pauses the timer, and
-recovery extends the unfinished window without reopening previously closed rounds.
-Twitch-send confirmation and host-receipt confirmation are separate states.
-Known late, wrong-round, host-identity and superseded submissions receive a
-batched rejection with a reason. Re-delivery of an already accepted packet
-renews its receipt. A rejected current-round guess can be sent again at the same
-pin. A Twitch API success alone does not prove host receipt.
-Replacing a guess leaves the previous confirmed guess in effect until the
-replacement is received. Round ten has the same duration as the other rounds;
-chat then waits while the streamer finishes their tenth location.
+Chatter submissions remain `Waiting for confirmation` until durable receipt.
+`Auto-sending…` changes to `Auto-submitted` only after acceptance. A rejected
+update leaves the last accepted pin and score intact. Pending direct submissions
+are replayed on reconnect, without automatically repeating Twitch chat messages.
+The last round follows the same acceptance and result-hold rules as other rounds.
+
+Submit and free-map navigation controls sit above the guess map. The maximum
+remaining score sits above the clue. Portrait layouts share available viewport
+height between both panels; landscape uses two columns. Perfect 5,000-point
+round cells glow amber. Standalone result HTML includes the map pattern and a
+full-width table with horizontal scrolling on narrow screens.
 
 Completion moves the host to `/guess/results/<game-id>/`. Published results are
 immutable D1 records with no automatic expiry. New results use lossless gzip
@@ -143,19 +169,13 @@ verified Pro/Twitch host identity and excludes a second host entry. The explicit
 Offline testing option retains the simulator; it never receives real Twitch chat.
 
 Production solo sessions use encrypted continuation tokens instead of D1
-session rows. New stream sessions also use encrypted continuation tokens and
-keep live state in the host browser. Existing sessions retain the older Durable
-Object path while they finish. Only optional final publication writes an immutable
-D1 result row. Results are host-reported casual
-scores: the server verifies the host, bounded score components, participants,
-round counts and totals, but does not attest messages observed in the browser.
-Prepared Daily rounds use the same area/proximity scoring and exploration
-allowance as the other modes. Public result reads still
-consume Worker/D1 allowances; a downloaded result works without that service.
-Publication is bounded to 1,500 participants, 1.5 MiB per document, 200 stored
-games, 100 publications/day and 20/host/day. Larger games remain fully available
-locally and in downloads. Local benchmarks do not guarantee the Workers Free
-CPU allowance on the deployed service.
+session rows. The parallel pilot uses the coordinator described above. Twitch-only mode, if selected for a later test, uses browser-owned state. Scoring remains
+casual: exploration allowances are client-reported, not an anti-cheat attestation.
+Public result reads consume Worker/D1 allowances; downloaded results work offline.
+Publication is bounded to 1,500 participants, 1.5 MiB per document, a 256 MiB
+application storage budget, 100 publications/day and 20/host/day. The pilot must
+measure actual usage and latency with real Twitch viewers before claiming
+production reliability or capacity.
 
 Shared account linking now supports Patreon and Twitch on one account. Pro is
 the union of active paid Patreon membership, a Twitch subscription to wuote,
@@ -911,3 +931,21 @@ Completed browser saves lose their round-reveal credentials after the result is
 safely archived. An unpublished result retains only its game-scoped publication
 credential until upload succeeds or its original 30-day validity ends. This
 preserves failed-upload recovery without retaining playable round tokens.
+
+## Timer ownership and round review
+
+In parallel games, the object owns the timer and accepts guesses by the receive
+time captured before its serialized write queue. Duplicate commands and refresh
+never reset deadlines. Result views last 30 seconds. Chatter round tables and
+map pins use the same component as the streamer, sent once per released round
+over existing sockets. Opening a past result during an active clue does not
+pause or reset the current round. Shared views are cached for F5 and replayed
+on reconnect. The solution always paints above all other SVG pins; hovering a
+player dims other guesses.
+
+The optional frontend build setting `VITE_GUESSR_PARALLEL_TRANSPORT=false` selects
+the existing Twitch-only implementation for NEW games. The selected mode is recorded in that game’s URL and save for refresh recovery. In Twitch-only mode the host browser
+owns the same absolute timers; it cannot advance while that browser is gone.
+There are no active games to migrate. Select the desired test mode before starting the pilot.
+A later host-only Cloudflare variant would keep the coordinator and remove
+chatter sockets, but is not the current pilot switch.

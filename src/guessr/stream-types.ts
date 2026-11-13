@@ -5,6 +5,11 @@ import type { ClueProgress, Point } from "./rules.ts";
 import { ROUND_COUNT } from './rules.ts';
 
 export const STREAM_ROUNDS = ROUND_COUNT;
+export const STREAM_ROUND_OPTIONS = [3, 5, 10] as const;
+export const STREAM_DEFAULT_ROUNDS = 5;
+export function validStreamRoundCount(value: unknown): value is typeof STREAM_ROUND_OPTIONS[number] {
+  return STREAM_ROUND_OPTIONS.some(rounds => rounds === value);
+}
 /** Cloud roster/result bound. Local chat collection and downloads retain everyone. */
 export const STREAM_MAX_PLAYERS = 1500;
 export const STREAM_MAX_DOCUMENT_BYTES = 1536 * 1024;
@@ -22,7 +27,7 @@ export interface StreamRound {
   token: string;
 }
 export interface StreamSession {
-  transport?: 'twitch';
+  transport?: 'twitch' | 'parallel';
   /** Current rounds are coordinated through the Twitch broadcast transport. */
   live?: true;
   /** Loopback testing: real Twitch channel, separate synthetic host score. */
@@ -46,6 +51,7 @@ export interface StreamGuess {
   messageId: string;
   sentAt: number;
   nonce?: string;
+  revision?: number;
 }
 export interface StreamReveal {
   roundId: string;
@@ -103,6 +109,9 @@ export interface StreamGame {
   recentNonces?: Record<string, string[]>;
   reveals: StreamReveal[];
   published?: boolean;
+  resultShareCount?: number;
+  resultShareAttempted?: boolean;
+  transportStats?: import('./parallel-types').ParallelMetrics;
 }
 export interface StreamPlayerResult extends StreamPlayer {
   rounds: (AreaGuessResult & { guess: Point | null })[];
@@ -117,6 +126,7 @@ export interface StreamResult {
   createdAt: number;
   finishedAt: number;
   host: StreamPlayer;
+  transportStats?: import('./parallel-types').ParallelMetrics;
   rounds: { id: string; answer: Point; name: string; difficultyTier: string }[];
   players: (Omit<StreamPlayerResult, "rounds"> & {
     rounds: Pick<AreaGuessResult, "score" | "areaScore" | "positionScore">[];

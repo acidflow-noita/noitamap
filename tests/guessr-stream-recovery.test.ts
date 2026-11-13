@@ -17,7 +17,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 it('runs ten rounds with a chatter ahead, reconstructs receipts and scores after refresh, and releases only finished solutions', async () => {
   const service = new StreamService(streamSource(), streamSecret);
-  const session = await service.start(streamHost, streamNow, 'twitch'); session.live = true; session.serverNow = streamNow;
+  const session = await service.start(streamHost, streamNow, 'twitch', 10); session.live = true; session.serverNow = streamNow;
   const game = newStreamGame(session, streamNow); startStreamTiming(game, 90, streamNow);
   let personal = new StreamViewerHistory(session.config.bounds); personal.identify(session.id, '123');
   const reader = new StreamPacketReader('streamer', session.id);
@@ -75,7 +75,7 @@ it('runs ten rounds with a chatter ahead, reconstructs receipts and scores after
 });
 
 it('keeps an unconfirmed submission explicit across reloads and resolves a negative receipt without inventing a score', async () => {
-  const service = new StreamService(streamSource(), streamSecret), session = await service.start(streamHost, streamNow, 'twitch');
+  const service = new StreamService(streamSource(), streamSecret), session = await service.start(streamHost, streamNow, 'twitch', 10);
   let personal = new StreamViewerHistory(session.config.bounds); personal.identify(session.id, '123');
   personal.submit(0, '0123456789abcdef', streamAnswer, 5000);
   personal = new StreamViewerHistory(session.config.bounds); personal.identify(session.id, '123');
@@ -93,7 +93,7 @@ it('keeps an unconfirmed submission explicit across reloads and resolves a negat
 });
 
 it('keeps the last confirmed guess until its replacement arrives and preserves the same score after F5', async () => {
-  const service = new StreamService(streamSource(), streamSecret), session = await service.start(streamHost, streamNow, 'twitch');
+  const service = new StreamService(streamSource(), streamSecret), session = await service.start(streamHost, streamNow, 'twitch', 10);
   session.live = true;
   const game = newStreamGame(session, streamNow); startStreamTiming(game, 90, streamNow);
   let own = new StreamViewerHistory(session.config.bounds); own.identify(session.id, '123');

@@ -1,3 +1,4 @@
+import { mapControls } from './map-controls';
 import "./game.css";
 import Dialog from "bootstrap/js/dist/dialog.js";
 import { bindText, bindAttribute, tr, initializeGuessrTranslations, guessrLocale, guessrGameTerm, formatGuessrNumber } from './i18n';
@@ -350,21 +351,21 @@ function makePlayPanels(
   const bar = node("div", "panel-bar");
   const clueHeading = node('div', 'clue-heading');
   clueHeading.append(node("span", "panel-title", msg('Where are you?')), difficultyIndicator());
-  bar.append(clueHeading);
+  bar.append(clueHeading, maximumIndicator());
   left.append(bar);
   const clue = node("div", "clue loading");
   clue.append(clueLoadingPlaceholder());
   bindAttribute(clue, 'data-loading-label', 'Loading clue map…');
   bindAttribute(clue, 'data-paused-label', 'Paused');
   left.append(clue);
-  const mapBar = node("div", "panel-bar map-bar map-bar--budget");
+  const mapBar = node("div", "panel-bar map-bar");
   const mapHeading = node("div", "map-heading");
-  mapBar.append(mapHeading, maximumIndicator());
+  mapBar.append(mapHeading);
   const mapActions = node("div", "buttons");
-  mapBar.append(mapActions);
+  mapActions.classList.add('guess-submit-row');
   const map = node("div", "map-board");
   map.id = "guess-map";
-  right.append(mapBar, map);
+  right.append(mapBar, mapActions, map);
   grid.append(left, right);
   main.append(grid);
   board = new MapBoard(
@@ -405,6 +406,7 @@ function makePlayPanels(
     },
     ranked && view === 'ranked' && ranked.config ? ranked.config.map : pack.map,
   );
+  mapBar.append(mapControls(board));
   board.setMarkers(guess);
   board.setLocked(locked);
   return { clue, bar, mapActions };
@@ -475,6 +477,8 @@ function showMapResult(
 ): void {
   const clueTitle = main.querySelector('.game-grid > .game-panel:first-child .panel-title');
   if (clueTitle) bindText(clueTitle, 'Revealed area');
+  const allowance = main.querySelector<HTMLElement>('[data-clue-maximum]');
+  if (allowance) allowance.hidden = true;
   updateDifficultyIndicators(main, difficulty);
   const heading = main.querySelector(".map-heading")!;
   const explore = link(msg(() => guessrGameTerm(name)), url, "panel-title result-link");
@@ -491,6 +495,7 @@ function showMapResult(
   );
   bindAttribute(points, 'aria-label', '{{points}} points earned this round', () => ({ count: score, points: score.toLocaleString(guessrLocale()) }));
   bindAttribute(points, 'title', 'Points earned this round');
+  points.classList.toggle('score-perfect', score === 5000);
   const mapBar = heading.parentElement!;
   mapBar.classList.remove('map-bar--budget');
   mapBar.classList.add("map-bar--result");
@@ -1537,7 +1542,7 @@ function help(): void {
   body.append(
     instructionSteps(
       node('p', 'mb-0', msg('Find the starting point marked on the clue map.')),
-      node('p', 'mb-0', msg('Explore with the buttons below the clue map. Each button shows its point cost. Moving back and zooming in are free.')),
+      node('p', 'mb-0', msg('Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.')),
       node('p', 'mb-0', msg('Place your pin on the world map, then submit your guess.')),
     ),
     node("p", "", msg("No time limit. Your progress saves automatically.")),

@@ -31,7 +31,7 @@ export class StreamBroadcastHost {
   private recordingReceipts = new Map<string, number>();
   constructor(private game: StreamGame, private imageRoot: string, private send: (message: string) => Promise<unknown>,
     private failed: (error: unknown, key?: string) => void, private save: () => void, private joined: () => void = () => {}) {
-    this.publisher = new StreamBroadcaster(game.session.id, send, failed, game.session.host.id);
+    this.publisher = new StreamBroadcaster(game.session.id, send, failed, game.session.host.id, game.session.transport ?? 'twitch');
     for (const [round, keys] of Object.entries(game.receipts ?? {})) this.receipts.set(Number(round), new Set(keys));
   }
   async start(): Promise<void> {
@@ -60,7 +60,7 @@ export class StreamBroadcastHost {
     const window = timing.windows[round];
     return { schema: 1, channel: game.session.host.login, hostId: game.session.host.id, hostPro: 'active',
       gameId: game.session.id, revision: timing.revision, phase: timing.phase === 'lobby' ? 'waiting' : game.stage === 'complete' ? 'complete' : window?.closed ? 'reveal' : 'guess',
-      online: !game.paused, paused: game.paused, round: round + 1, roundId: game.session.rounds[round].id,
+      online: !game.paused, paused: game.paused, round: round + 1, totalRounds: game.session.rounds.length, roundId: game.session.rounds[round].id,
       clue: timing.phase === 'lobby' ? null : this.clue(round), expiresAt: game.session.expiresAt,
       ...(game.session.rounds[round].difficultyTier ? { difficultyTier: game.session.rounds[round].difficultyTier } : {}),
       ...(game.published ? { resultId: game.session.id } : {}),
@@ -68,6 +68,7 @@ export class StreamBroadcastHost {
         deadline: timing.chatRound === null ? null : window?.closesAt ?? timing.deadline,
         chatRound: timing.chatRound === null ? null : timing.chatRound + 1,
         hostRound: game.round + 1, seconds: timing.seconds, recovery: 1,
+        ...(timing.resultsUntil ? { resultsUntil: timing.resultsUntil } : {}),
         ...(timing.early ? { early: true } : {}),
         revealed: game.reveals.reduce((mask, reveal, i) => reveal ? mask | 1 << i : mask, 0) } };
   }

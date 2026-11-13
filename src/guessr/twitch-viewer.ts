@@ -370,17 +370,18 @@ export class TwitchViewer {
 
   /** Reading and sending use the same validated viewer identity and channel. */
   watchChat(channel: string, handlers: Pick<TwitchChatOptions, 'message' | 'status' | 'remove'>): () => void {
-    let stopped = false;
+    let stopped = false, retries = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let connection: TwitchChatConnection | undefined;
     const generation = this.generation;
     const stop = () => {
       if (stopped) return;
       stopped = true;
-      connection?.stop();
+      clearTimeout(retryTimer); connection?.stop();
       this.chats.delete(stop);
     };
     this.chats.add(stop);
-    void (async () => {
+    const start = async () => {
       try {
         if (!/^[a-z0-9_]{1,25}$/i.test(channel)) throw new TwitchViewerError('channel', 'Choose a Twitch channel.');
         const identity = await this.currentCredentials();
@@ -409,26 +410,35 @@ export class TwitchViewer {
         });
         connection.start();
       } catch (error) {
-        if (!stopped) handlers.status(error instanceof TwitchViewerError && error.code === 'channel-not-found' ? 'channel-not-found' : 'offline',
+        if (stopped) return;
+        const terminal = error instanceof TwitchViewerError && ['channel-not-found', 'expired', 'disconnected'].includes(error.code);
+        handlers.status(terminal ? error.code === 'channel-not-found' ? 'channel-not-found' : 'auth-required' : 'reconnecting',
           error instanceof Error ? error.message : 'Could not connect to chat.');
+        if (!terminal) retryTimer = setTimeout(() => void start(), Math.min(15000, 1000 * 2 ** Math.min(retries++, 4)));
       }
-    })();
+    };
+    void start();
     return stop;
   }
 
   /** Exactly one send attempt, called explicitly after connect() has completed.
    * An uncertain response is never retried: Twitch may already have sent it. */
-  async sendGuess(channel: string, round: number, point: Point, maximum?: number, roundId?: string, nonce?: Uint8Array, gameId?: string, sendDeadline?: number): Promise<string> {
+  async sendGuess(channel: string, round: number, point: Point, maximum?: number, roundId?: string, nonce?: Uint8Array, gameId?: string, sendDeadline?: number, revision?: number): Promise<string> {
     const credentials = await this.currentCredentials();
     let command: string;
     try {
       if (typeof channel !== 'string' || !/^[a-z0-9_]{1,25}$/i.test(channel) || round > STREAM_ROUNDS) throw Error();
-      const label = tr('{{player}} submitted a guess for round {{round}} in {{channel}}’s game {{game}}.', {
-        player: this.state.displayName || credentials.login, round: String(round), channel, game: gameId ? gameCode(gameId, 'twitch') : '',
-      });
-      command = formatGuessCommand(round, point, maximum, roundId, { userId: credentials.userId, nonce, label });
+      const label = `${this.state.displayName || credentials.login} submitted a guess for round ${round} in ${channel}'s NoitaGuessr game ${gameId ? gameCode(gameId, revision ? 'parallel' : 'twitch') : ''}.`;
+      command = formatGuessCommand(round, point, maximum, roundId, { userId: credentials.userId, nonce, label, revision });
     } catch { throw new TwitchViewerError('invalid-guess', 'Choose a valid round, map position, and Twitch channel before sending.'); }
     return this.sendMessage(GUESSR_TRANSPORT_CHANNEL, command, credentials.userId, sendDeadline);
+  }
+
+  /** Ephemeral first-frame authentication for the parallel game connection.
+   * The coordinator validates it with Twitch and never stores the provider token. */
+  async transportAuthorization(): Promise<{ role: 'player'; accessToken: string }> {
+    const credentials = await this.currentCredentials();
+    return { role: 'player', accessToken: credentials.token };
   }
 
   async sendMessage(channel: string, message: string, expectedUserId?: string, sendDeadline?: number): Promise<string> {

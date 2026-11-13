@@ -13,8 +13,9 @@ export interface GuessCommand extends Point {
   roundId?: string;
   userId?: string;
   nonce?: string;
+  revision?: number;
 }
-export interface GuessIdentity { userId: string; nonce?: Uint8Array; label?: string }
+export interface GuessIdentity { userId: string; nonce?: Uint8Array; label?: string; revision?: number }
 /** Detects copy/paste errors only. This is deliberately obfuscation, not authentication. */
 function checksum(bytes: Uint8Array): number {
   let crc = 0xffff;
@@ -33,16 +34,18 @@ export function formatGuessCommand(round: number, point: Point, maximum?: number
     || !Number.isSafeInteger(y) || y < -2147483648 || y > 2147483647
     || maximum !== undefined && (!Number.isSafeInteger(maximum) || maximum < 0 || maximum > 5000)
     || roundId !== undefined && !roundIdPattern.test(roundId)
-    || identity !== undefined && (!/^\d{1,30}$/.test(identity.userId) || identity.nonce !== undefined && identity.nonce.length !== 8))
+    || identity !== undefined && (!/^\d{1,30}$/.test(identity.userId) || identity.nonce !== undefined && identity.nonce.length !== 8
+      || identity.revision !== undefined && (!Number.isSafeInteger(identity.revision) || identity.revision < 1 || identity.revision > 0xffffffff)))
     throw new Error('Invalid guess coordinates or round.');
   const id = identity ? new TextEncoder().encode(identity.userId) : undefined;
-  const data = new Uint8Array((roundId ? 31 : 15) + (id ? id.length + 9 : 0)), view = new DataView(data.buffer);
-  data[0] = identity ? 2 : 1; data[1] = round; data[2] = (maximum === undefined ? 0 : 1) | (roundId ? 2 : 0);
+  const data = new Uint8Array((roundId ? 31 : 15) + (id ? id.length + 9 : 0) + (identity?.revision === undefined ? 0 : 4)), view = new DataView(data.buffer);
+  data[0] = identity?.revision !== undefined ? 3 : identity ? 2 : 1; data[1] = round; data[2] = (maximum === undefined ? 0 : 1) | (roundId ? 2 : 0);
   view.setInt32(3, x); view.setInt32(7, y); view.setUint16(11, maximum ?? 5000);
   if (roundId) {
     const hex = roundId.replaceAll('-', '');
     for (let i = 0; i < 16; i++) data[13 + i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
   }
+  if (identity?.revision !== undefined) view.setUint32(data.length - 6, identity.revision);
   if (id && identity) {
     const offset = roundId ? 29 : 13;
     data[offset] = id.length; data.set(id, offset + 1);
@@ -53,27 +56,30 @@ export function formatGuessCommand(round: number, point: Point, maximum?: number
   return `${GUESS_CHAT_COMMAND} ✦${Array.from(data, byte => RUNES[byte >> 4] + RUNES[byte & 15]).join('')}✦`;
 }
 function decodePayload(runes: string): GuessCommand | null {
-  if (runes.length < 30 || runes.length > 140 || runes.length % 2) return null;
+  if (runes.length < 30 || runes.length > 160 || runes.length % 2) return null;
   const bytes = new Uint8Array(runes.length / 2);
   for (let i = 0; i < bytes.length; i++) bytes[i] = RUNES.indexOf(runes[i * 2]) * 16 + RUNES.indexOf(runes[i * 2 + 1]);
   const view = new DataView(bytes.buffer), flags = bytes[2];
-  if (![1, 2].includes(bytes[0]) || flags & ~3 || view.getUint16(bytes.length - 2) !== checksum(bytes.subarray(0, -2))) return null;
+  if (![1, 2, 3].includes(bytes[0]) || flags & ~3 || view.getUint16(bytes.length - 2) !== checksum(bytes.subarray(0, -2))) return null;
   const offset = flags & 2 ? 29 : 13;
   let userId: string | undefined, nonce: string | undefined;
   if (bytes[0] === 1) { if (bytes.length !== offset + 2) return null; }
   else {
     const length = bytes[offset];
-    if (!length || length > 30 || bytes.length !== offset + length + 11) return null;
+    if (!length || length > 30 || bytes.length !== offset + length + (bytes[0] === 3 ? 15 : 11)) return null;
     userId = new TextDecoder().decode(bytes.subarray(offset + 1, offset + 1 + length));
     if (!/^\d{1,30}$/.test(userId)) return null;
-    nonce = Array.from(bytes.subarray(offset + 1 + length, -2), byte => byte.toString(16).padStart(2, '0')).join('');
+    nonce = Array.from(bytes.subarray(offset + 1 + length, offset + 1 + length + 8), byte => byte.toString(16).padStart(2, '0')).join('');
   }
+  const revision = bytes[0] === 3 ? view.getUint32(bytes.length - 6) : undefined;
+  if (revision === 0) return null;
   const hex = flags & 2 ? Array.from(bytes.subarray(13, 29), byte => byte.toString(16).padStart(2, '0')).join('') : '';
   return {
     round: bytes[1], x: view.getInt32(3), y: view.getInt32(7),
     ...(flags & 1 ? { maximum: view.getUint16(11) } : {}),
     ...(hex ? { roundId: `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}` } : {}),
     ...(userId ? { userId, nonce } : {}),
+    ...(revision !== undefined ? { revision } : {}),
   };
 }
 

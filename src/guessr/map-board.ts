@@ -242,6 +242,13 @@ export class MapBoard {
     this.view = { ...this.bounds };
     this.updateView();
   }
+  centerOnPin(): void {
+    if (!this.point) return;
+    this.fittedMarkers = null; this.atHome = false;
+    this.view.x = this.point.x - this.view.width / 2;
+    this.view.y = this.point.y - this.view.height / 2;
+    this.updateView();
+  }
   private wheel = (event: WheelEvent) => {
     event.preventDefault();
     this.zoom(
@@ -251,6 +258,9 @@ export class MapBoard {
   };
   private start = (event: PointerEvent) => {
     if (event.button !== 0) return;
+    // The SVG owns touch gestures because OSD navigation is intentionally off.
+    // Cancel synthetic clicks and scrolling without affecting toolbar buttons.
+    event.preventDefault();
     this.element.focus({ preventScroll: true });
     this.element.setPointerCapture(event.pointerId);
     this.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -389,9 +399,9 @@ export class MapBoard {
         line.setAttribute(key, String(value));
       this.marks.append(line);
     }
+    if (guess) this.addPin(guess, GUESS_PIN_COLOR, guessLabel, GUESS_PIN_HEIGHT, 'guess');
     if (answer)
       this.addPin(answer, ANSWER_PIN_COLOR, 'Actual location', ANSWER_PIN_HEIGHT, 'answer');
-    if (guess) this.addPin(guess, GUESS_PIN_COLOR, guessLabel, GUESS_PIN_HEIGHT, 'guess');
     if (answer) {
       this.atHome = false;
       this.updateView();
@@ -441,11 +451,11 @@ export class MapBoard {
       const mark = this.addPin(player.guess, twitchColor(player.color) ?? GUESS_PIN_COLOR, () => player.name, PLAYER_PIN_HEIGHT, 'player');
       mark.dataset.player = player.id; mark.style.pointerEvents = 'auto';
       mark.addEventListener('pointerenter', () => highlight(player.id));
+      mark.addEventListener('pointerleave', () => highlight(''));
       mark.addEventListener('click', () => highlight(player.id));
       this.playerMarks.set(player.id, mark); this.marks.append(mark); points.push(player.guess);
     }
-    // A perfect guess points into the solution target. Its lower ring remains
-    // visible beneath even a highlighted pin at the same exact coordinate.
+    this.raiseSolution();
     this.resultMarkers = points; this.fittedMarkers = this.resultMarkers; this.atHome = false; this.updateView();
   }
   highlightPlayer(id: string): void {
@@ -453,7 +463,14 @@ export class MapBoard {
     if (previous) { previous.dataset.pinHeight = String(PLAYER_PIN_HEIGHT); previous.classList.remove('selected'); }
     const mark = this.playerMarks.get(id); this.highlightedPlayer = id;
     if (mark) { mark.dataset.pinHeight = String(HIGHLIGHT_PIN_HEIGHT); mark.classList.add('selected'); this.marks.append(mark); }
+    for (const [playerId, element] of this.playerMarks) element.style.opacity = id && playerId !== id ? '0.18' : '1';
+    this.raiseSolution();
     this.updateMarkers();
+  }
+  private raiseSolution(): void {
+    // SVG paints in DOM order. CSS z-index does not order SVG groups.
+    const solution = this.marks.querySelector<SVGGElement>('[data-pin-kind="answer"]');
+    if (solution) { solution.style.opacity = '1'; this.marks.append(solution); }
   }
   setLocked(value: boolean): void {
     this.locked = value;

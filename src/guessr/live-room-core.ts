@@ -1,5 +1,5 @@
 import type { LiveRoomGame, LiveRoomView } from './live-room-types.ts';
-import { STREAM_MAX_DOCUMENT_BYTES, STREAM_MAX_PLAYERS, STREAM_ROUNDS, type StreamPlayer, type StreamPublishedResult, type StreamRoundOutcome } from './stream-types.ts';
+import { STREAM_MAX_DOCUMENT_BYTES, STREAM_MAX_PLAYERS, validStreamRoundCount, type StreamPlayer, type StreamPublishedResult, type StreamRoundOutcome } from './stream-types.ts';
 import { rankStreamPlayers } from './stream-ranking.ts';
 import type { Point } from './rules.ts';
 
@@ -138,7 +138,7 @@ function validateGame(game: LiveRoomGame, now: number): void {
     || game.hostProVerifiedUntil !== undefined && !validProProof(game.hostProVerifiedUntil, now)
     || !Number.isSafeInteger(game.expiresAt) || game.expiresAt <= now
     || game.expiresAt > now + MAX_LIFETIME_MS || !Array.isArray(game.rounds)
-    || game.rounds.length !== STREAM_ROUNDS
+    || !validStreamRoundCount(game.rounds.length)
     || new Set(game.rounds.map((round) => round.id)).size !== game.rounds.length
     || game.rounds.some((round) => !round || !idPattern.test(round.id)
       || round.difficultyTier !== undefined && !difficulty(round.difficultyTier)

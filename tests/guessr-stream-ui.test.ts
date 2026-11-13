@@ -57,7 +57,7 @@ beforeEach(() => {
 afterEach(() => { ui?.suspend(); ui = undefined; vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 async function fixture() {
   const source = streamSource(), service = new StreamService(source, streamSecret);
-  const session = await service.start(streamHost, streamNow); session.live = true;
+  const session = await service.start(streamHost, streamNow, undefined, 10); session.live = true;
   const game = newStreamGame(session, streamNow);
   const hooks: StreamUIHooks = {
     config: await source.config(),
@@ -88,7 +88,7 @@ async function liveFixture(announcements = false) {
   return { ...f, receiver };
 }
 
-it('keeps receiving guesses after a receipt failure and ignores failures from a replaced publisher', async () => {
+it('keeps receiving guesses after receipt and state send failures, with automatic recovery', async () => {
   vi.useFakeTimers(); vi.setSystemTime(streamNow);
   const { receiver } = await liveFixture();
   const game = ui!.game!;
@@ -110,17 +110,16 @@ it('keeps receiving guesses after a receipt failure and ignores failures from a 
   expect(game.timing!.deadline).toBe(deadline);
   expect(document.getElementById('stream-chat-status')!.dataset.connection).toBe('connected');
   firstPublisher.failed(Error('Twitch could not send the game update.'), 'state');
-  expect(game.paused).toBe(true);
-  expect(document.getElementById('stream-reconnect')!.hidden).toBe(false);
-  expect(document.getElementById('stream-chat-status')!.dataset.connection).toBe('disconnected');
-  await vi.advanceTimersByTimeAsync(4000);
-  receiver.status('live', 'Connected');
-  expect(mocks.broadcasters).toHaveLength(2);
-  firstPublisher.failed(Error('Late error from an old publisher'), 'state');
   expect(game.paused).toBe(false);
-  expect(game.timing!.deadline).toBe(deadline);
-  expect(game.participants.find(p => p.id === '123')!.guesses[0]!.messageId).toBe('2');
+  expect(document.getElementById('stream-reconnect')!.hidden).toBe(true);
   expect(document.getElementById('stream-chat-status')!.dataset.connection).toBe('connected');
+  await vi.advanceTimersByTimeAsync(4000);
+  receiver.message(message(3));
+  expect(game.participants.find(p => p.id === '123')!.guesses[0]!.messageId).toBe('3');
+  expect(firstPublisher.dispose).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(6000);
+  expect(mocks.stateBroadcast).toHaveBeenCalledWith(true, true);
+  expect(game.timing!.deadline).toBe(deadline);
   expect(warning).toHaveBeenCalledTimes(2);
 });
 
@@ -589,7 +588,7 @@ it('recovers a failed publication from its result URL after a new game and F5, t
 });
 
 
-it('labels the streamer’s last round and gives its rendered score table 15 seconds, not the unused round timer', async () => {
+it('labels the streamer’s last round and gives its rendered score table 30 seconds, not the unused round timer', async () => {
   vi.useFakeTimers(); vi.setSystemTime(streamNow);
   const { game, hooks, service } = await fixture();
   for (const round of game.session.rounds.slice(0, 9)) {
@@ -602,13 +601,13 @@ it('labels the streamer’s last round and gives its rendered score table 15 sec
   revealStreamRound(game, await service.reveal(game.session.rounds[9].token, streamHost, streamNow), streamNow);
   mocks.roundView.mockImplementationOnce((main, _game, _index, actions) => { vi.setSystemTime(streamNow + 3000); main.append(actions); return () => {}; });
   history.replaceState(null, '', '/guess/stream/'); ui = new StreamUI(hooks); ui.game = game; ui.render();
-  expect(game.timing!.resultsUntil).toBe(streamNow + 18000);
-  expect(document.getElementById('stream-auto-next')!.textContent).toBe('View results: 00:15');
-  expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:15');
+  expect(game.timing!.resultsUntil).toBe(streamNow + 30000);
+  expect(document.getElementById('stream-auto-next')!.textContent).toBe('View results: 00:27');
+  expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:27');
   expect(document.querySelector('.stream-toolbar-round')!.textContent).toContain('Your round 10 / 10');
-  expect(document.body.textContent).toContain('All 10 rounds for chatters are over.');
+  expect(document.body.textContent).toContain('Chatters have finished all rounds.');
   vi.setSystemTime(streamNow + 4000); ui.render();
-  expect(game.timing!.resultsUntil).toBe(streamNow + 18000); // Rendering again must not restart the timer.
+  expect(game.timing!.resultsUntil).toBe(streamNow + 30000); // Rendering again must not restart the timer.
 });
 
 

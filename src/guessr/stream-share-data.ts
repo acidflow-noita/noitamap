@@ -1,5 +1,5 @@
 import type { StreamResult } from './stream-types';
-import { STREAM_ROUNDS } from './stream-types';
+import { validStreamRoundCount } from './stream-types';
 import { playerColor } from './player-color';
 import { streamHostName } from './stream-display-name';
 
@@ -25,12 +25,12 @@ export interface StreamShareData {
 /** Only names, colors and scoring enter the image renderer. Never pass clue
  * locations, source URLs, session credentials or account identifiers to it. */
 export function streamShareData(result: StreamResult, playerId = result.host.id): StreamShareData | null {
-  if (result.rounds.length !== STREAM_ROUNDS || !Number.isSafeInteger(result.finishedAt) || result.finishedAt <= 0
+  if (!validStreamRoundCount(result.rounds.length) || !Number.isSafeInteger(result.finishedAt) || result.finishedAt <= 0
     || !result.players.length) return null;
   const ids = new Set<string>();
   for (const player of result.players) {
     if (!player.id || ids.has(player.id) || typeof player.name !== 'string' || !player.name.trim()
-      || player.name.length > 100 || player.rounds.length !== STREAM_ROUNDS) return null;
+      || player.name.length > 100 || player.rounds.length !== result.rounds.length) return null;
     ids.add(player.id);
     if (player.rounds.some(round => !Number.isInteger(round.score) || round.score < 0 || round.score > 5000)
       || player.score !== player.rounds.reduce((sum, round) => sum + round.score, 0)) return null;

@@ -49,6 +49,13 @@ describe('Guessr page routes', () => {
     expect(readGuessRoute(modern)).toEqual({ pane: 'stream-picker', channel: 'wuote', game: id, transport: 'twitch' });
     expect(guessRouteUrl('stream-picker', modern).href).toBe(modern.href);
   });
+  it('retains parallel transport and the same game identity through canonical URLs', () => {
+    const id = crypto.randomUUID();
+    const url = guessRouteUrl('stream-picker', origin, { channel: 'wuote', game: id, transport: 'parallel' });
+    expect(readGuessRoute(url)).toEqual({ pane: 'stream-picker', channel: 'wuote', game: id, transport: 'parallel' });
+    expect(guessRouteUrl('stream-picker', url).href).toBe(url.href);
+    expect(gameIdFromCode(gameCode(id, 'parallel'))).toBe(id);
+  });
   it.each([
     ['/guess/?pane=stream', '/guess/stream/', 'stream'],
     ['/guess/?channel=wuote', '/guess/stream/wuote/', 'stream-picker'],

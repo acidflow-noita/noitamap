@@ -6,7 +6,7 @@ export const STREAM_START_COUNTDOWN_MS = 3000;
 // deadline never moves. Only Twitch's timestamp is used, never a claimed click time.
 export const STREAM_SUBMISSION_GRACE_MS = 2000;
 export const STREAM_DELIVERY_GRACE_MS = 5000;
-export const STREAM_RESULTS_HOLD_MS = 15000;
+export const STREAM_RESULTS_HOLD_MS = 30000;
 export const STREAM_EARLY_CLOSE_MS = 5000;
 
 export interface ChatRoundWindow { opensAt: number; closesAt: number | null; closed: boolean }

@@ -25,8 +25,9 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
   changeStreamer.onclick = () => onChangeStreamer?.();
   const light = document.createElement('span'); light.className = 'stream-chat-state';
   light.tabIndex = 0; light.setAttribute('role', 'status'); light.setAttribute('aria-live', 'polite');
+  const connectionLabel = document.createElement('span'); connectionLabel.className = 'stream-connection-label'; connectionLabel.hidden = true;
   const name = document.createElement('span'); name.className = 'stream-name';
-  name.append(title, pro.badge); identity.append(light, name);
+  name.append(title, pro.badge); identity.append(light, connectionLabel, name);
   const gift = document.createElement('button'); gift.type = 'button'; gift.className = 'btn btn-patron stream-gift-pro';
   gift.dataset.proGift = 'choose';
   gift.onclick = () => { void import('./pro-gift-dialog').then(({ showStreamerGift }) => showStreamerGift(channel)); };
@@ -49,7 +50,9 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
   const statusHelp = hoverHelp(light, explanation);
   const paint = () => {
     const state = viewer.getState();
-    const health = navigator.onLine === false || gameStatus === 'offline' ? 'network-issues'
+    const health = navigator.onLine === false ? 'network-issues'
+      : state.connected && gameStatus === 'connected' ? 'connected'
+      : gameStatus === 'offline' ? 'network-issues'
       : !state.connected && !state.restoring && !state.connecting || chatStatus === 'auth-required' || chatStatus === 'channel-not-found' || gameStatus === 'stopped' ? 'disconnected'
       : gameStatus === 'retrying' || chatStatus === 'reconnecting' ? 'reconnecting'
       : state.restoring || state.connecting || gameStatus === 'connecting' || chatStatus === 'connecting' ? 'connecting'
@@ -61,6 +64,9 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
     light.dataset.connection = health;
     light.classList.toggle('stream-chat-state-online', health === 'connected');
     light.setAttribute('aria-label', label);
+    const reconnecting = health === 'reconnecting' || health === 'connecting';
+    light.classList.toggle('spinner-border', reconnecting); light.classList.toggle('spinner-border-sm', reconnecting);
+    connectionLabel.hidden = !reconnecting; connectionLabel.textContent = label;
     statusHelp.update();
   };
   const refresh = () => {

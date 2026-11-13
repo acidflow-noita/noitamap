@@ -32,7 +32,7 @@ import type { LiveRoomView } from "../src/guessr/live-room-types";
 
 async function fixture() {
   const service = new StreamService(streamSource(), streamSecret);
-  const session = await service.start(streamHost, streamNow);
+  const session = await service.start(streamHost, streamNow, undefined, 10);
   expect(session.rounds).toHaveLength(10);
   expect(session.rounds.every(round => round.difficultyTier === streamArea.difficultyTier)).toBe(true);
   session.serverNow = streamNow;

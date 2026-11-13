@@ -5,6 +5,7 @@ import type { StreamReveal } from './stream-types';
 import { readChatEnvelope } from './chat-envelope';
 import { TwitchTransportError } from './twitch-transport-error';
 import { connectionDiagnostic } from './connection-diagnostics';
+import { validStreamRoundCount } from './stream-types';
 
 const PREFIX = '!noitaguessr_state';
 export const STREAM_RECEIPT_BATCH = 35;
@@ -52,7 +53,9 @@ function pack(payload: StreamWirePayload): unknown[] | Uint8Array<ArrayBuffer> {
     const s = payload.state, t = s.timing;
     return [0, s.revision, s.hostId, s.phase, s.online, s.paused, s.round, s.roundId, s.clue, s.expiresAt, s.resultId,
       t ? { phase: t.phase, startsAt: t.startsAt, deadline: t.deadline, hostRound: t.hostRound, seconds: t.seconds, revealed: t.revealed,
+        ...(t.resultsUntil !== undefined ? { resultsUntil: t.resultsUntil } : {}),
         ...(t.chatRound !== undefined ? { chatRound: t.chatRound } : {}),
+        ...(s.totalRounds !== undefined ? { totalRounds: s.totalRounds } : {}),
         ...(t.recovery === 1 ? { recovery: 1 } : {}),
         ...(t.early ? { early: true } : {}),
         ...(['easy', 'normal', 'hard'].includes(s.difficultyTier ?? '') ? { d: ['easy', 'normal', 'hard'].indexOf(s.difficultyTier!) } : {}),
@@ -69,12 +72,12 @@ function pack(payload: StreamWirePayload): unknown[] | Uint8Array<ArrayBuffer> {
     difficultyTier: a.difficultyTier, scoring: a.scoring, difficultyRule: a.difficultyRule,
   }];
 }
-export async function encodeStreamPacket(gameId: string, payload: StreamWirePayload): Promise<string[]> {
+export async function encodeStreamPacket(gameId: string, payload: StreamWirePayload, transport: 'twitch' | 'parallel' = 'twitch'): Promise<string[]> {
   const value = pack(payload);
   const raw = value instanceof Uint8Array ? value : new TextEncoder().encode(JSON.stringify(value));
   if (raw.length > MAX_DECODED) throw Error('Broadcast exceeds its size limit');
   const compressed = await bounded(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate')), MAX_COMPRESSED);
-  const data = base64(compressed), code = gameCode(gameId, 'twitch');
+  const data = base64(compressed), code = gameCode(gameId, transport);
   const id = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
   const event = payload.type === 'receipts' ? payload.rejected ? 'guess-rejected' + (payload.reason ? '-' + payload.reason : '') : 'guess-received'
     : payload.type === 'reveal' ? 'round-solution'
@@ -150,12 +153,16 @@ export class StreamPacketReader {
           || !Number.isInteger(timing.hostRound) || timing.hostRound < 1 || timing.hostRound > 10
           || timing.chatRound !== undefined && timing.chatRound !== null && (!Number.isInteger(timing.chatRound) || timing.chatRound < 1 || timing.chatRound > 10)
           || !Number.isInteger(timing.seconds) || timing.seconds < 0 || timing.seconds > 600) return null;
+        if (timing.resultsUntil !== undefined && !Number.isSafeInteger(timing.resultsUntil)) return null;
         if (timing.d !== undefined && (!Number.isInteger(timing.d) || timing.d < 0 || timing.d > 2)) return null;
         if (timing.recovery !== undefined && timing.recovery !== 1) return null;
+        if (timing.totalRounds !== undefined && (!validStreamRoundCount(timing.totalRounds) || round > timing.totalRounds || timing.hostRound > timing.totalRounds)) return null;
+        const totalRounds = timing.totalRounds;
+        delete timing.totalRounds;
         const difficultyTier = (['easy', 'normal', 'hard'] as const)[timing.d as number];
         delete timing.d;
         payload = { type: 'state', state: { schema: 1, channel: this.channel, gameId, revision, hostId, hostPro: 'active', phase,
-          online, paused, round, roundId, clue, expiresAt, ...(resultId ? { resultId } : {}), ...(timing.ended ? { ended: true } : {}),
+          online, paused, round, ...(totalRounds ? { totalRounds } : {}), roundId, clue, expiresAt, ...(resultId ? { resultId } : {}), ...(timing.ended ? { ended: true } : {}),
           ...(difficultyTier ? { difficultyTier } : {}), timing } };
       } else if (row[0] === 1 && row.length === 5 && Number.isInteger(row[1]) && row[1] >= 0 && row[1] < 10) {
         const [, round, roundId, point, area] = row;
@@ -189,7 +196,7 @@ export class StreamBroadcaster {
   private stopped = false;
   private waiters = new Set<() => void>();
   private budgetKey: string;
-  constructor(private gameId: string, private send: (message: string) => Promise<unknown>, private failed: (error: unknown, key?: string) => void, senderId = gameId) {
+  constructor(private gameId: string, private send: (message: string) => Promise<unknown>, private failed: (error: unknown, key?: string) => void, senderId = gameId, private transport: 'twitch' | 'parallel' = 'twitch') {
     this.budgetKey = 'noitamap-guessr-broadcast-budget:' + senderId;
     try {
       const saved = JSON.parse(localStorage.getItem(this.budgetKey) ?? 'null');
@@ -200,7 +207,7 @@ export class StreamBroadcaster {
   async offer(key: string, payload: StreamWirePayload, priority = 1, done?: () => void, lost?: () => void): Promise<void> {
     if (this.stopped) return;
     const version = (this.serial.get(key) ?? 0) + 1; this.serial.set(key, version);
-    const frames = await encodeStreamPacket(this.gameId, payload);
+    const frames = await encodeStreamPacket(this.gameId, payload, this.transport);
     if (this.stopped || this.serial.get(key) !== version) return;
     if (this.queue.size >= 64 && !this.queue.has(key)) throw Error('Broadcast queue is full');
     const current = this.queue.get(key);
@@ -237,7 +244,7 @@ export class StreamBroadcaster {
         // Retry a complete packet with a new packet ID. An uncertain send may
         // already have arrived; state/reveals/receipts are idempotent at readers.
         try {
-          const frames = await encodeStreamPacket(this.gameId, entry.payload);
+          const frames = await encodeStreamPacket(this.gameId, entry.payload, this.transport);
           if (this.stopped || this.queue.get(key) !== entry) return;
           entry.frames = frames; entry.next = 0;
           entry.retryAt = Date.now() + Math.max(error.retryAfterMs, entry.retries * 3000);

@@ -22,7 +22,7 @@ for (const name of ['tsconfig.json', 'test/tsconfig.json']) {
   for (const source of ts.createProgram(parsed.fileNames.filter(file => !file.endsWith('/auth-sessions.runtime.ts')), parsed.options).getSourceFiles()) {
     if (!source.fileName.startsWith(root + '/') || source.fileName.includes('/node_modules/')) continue;
     if (!source.fileName.startsWith(worker + '/') && !source.fileName.startsWith(join(root, 'src/guessr/'))
-      && !['tests/helpers/game-ticket-keys.ts', 'workers/noitamap-auth/src/game-ticket.ts'].includes(relative(root, source.fileName)))
+      && !['tests/helpers/guessr-stream.ts', 'tests/helpers/game-ticket-keys.ts', 'workers/noitamap-auth/src/game-ticket.ts'].includes(relative(root, source.fileName)))
       throw Error('Unexpected shared source dependency: ' + relative(root, source.fileName));
     files.add(source.fileName);
   }

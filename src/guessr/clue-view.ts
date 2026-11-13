@@ -44,7 +44,7 @@ export function attachClueControls(
   error.className = "error";
   error.setAttribute("role", "status");
   controls.append(toolbar, description, error);
-  clue.after(controls);
+  clue.before(controls);
   let stopped = false,
     pending = false;
   const buttons: {

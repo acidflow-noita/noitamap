@@ -1,3 +1,6 @@
+import { sharedRoundResults } from './stream-round-results';
+import { StreamRoundCache } from './stream-round-cache';
+import { mapControls } from './map-controls';
 import { ClueViewport } from './clue-viewport';
 import { fitClueToPanel } from './clue-stage';
 import { attachClueControls } from './clue-view';
@@ -12,6 +15,7 @@ import { decodeViewerClue } from './viewer-clue';
 import { viewerChatPanel } from './viewer-chat-panel';
 import { supportedCamera } from './clue-camera';
 import type { RoomConnection } from './live-room-types';
+import { watchParallelGame } from './parallel-game-client';
 import { watchTwitchGame } from './twitch-game-client';
 import { StreamViewerHistory } from './stream-viewer-history';
 import { guessReceiptKey, guessRejectionText } from './stream-wire';
@@ -40,10 +44,16 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const url = new URL(location.href);
   const candidate = readGuessRoute(url).channel || '';
   let requestedGame = readGuessRoute(url).game;
+  const parallelMode = readGuessRoute(url).transport === 'parallel';
   const twitchUpdates = !new URLSearchParams(url.hash.slice(1)).has('clue');
   const personal = new StreamViewerHistory(config.bounds);
+  const sharedRounds = requestedGame ? new StreamRoundCache(requestedGame, config.bounds) : undefined;
+  let sharedRound: number | null = null, sharedSignature = '', clearShared: (() => void) | undefined;
+  let sharedNext: HTMLButtonElement | undefined, sharedBack: HTMLButtonElement | undefined;
   personal.identify(requestedGame, viewer.getState().userId ?? viewer.getState().savedUserId ?? null);
-  let feed: ReturnType<typeof watchTwitchGame> | undefined;
+  let feed: ReturnType<typeof watchTwitchGame> | ReturnType<typeof watchParallelGame> | undefined;
+  let autoRound = '';
+  let checkAutomatic = () => {};
   let reviewedRound: number | null = null, lastSendAt = 0, actionError = '', sendReason = '';
   let recoveryRequested = '';
   let unavailableGame = false;
@@ -96,7 +106,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   page?.classList.add('stream-viewer-page'); main.classList.add('stream-viewer-shell');
   const connection = node('div', 'stream-account'), account = node('span', 'stream-viewer-account');
   const connect = button('Sign in with Twitch', async () => {
-    try { actionError = ''; await viewer.connect(); } catch (error) { if (!closed) { actionError = twitchMessageText((error as Error).message); refresh(); } }
+    try { actionError = '';
+      if (parallelMode && connectionState === 'stopped' && viewer.getState().connected) viewer.disconnect();
+      await viewer.connect(); feed?.retry();
+    } catch (error) { if (!closed) { actionError = twitchMessageText((error as Error).message); refresh(); } }
   }, 'btn-twitch small');
   const disconnect = button('Sign out', () => viewer.disconnect(), 'small secondary');
   connection.append(account, connect, disconnect);
@@ -129,13 +142,15 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   joinGame.hidden = true; signIn.append(connect, joinGame, signInError);
   const budget = maximumIndicator(); budget.classList.add('stream-maximum'); budget.hidden = true;
   const budgetBar = node('div', 'panel-bar stream-budget-bar'); budgetBar.hidden = true;
-  budgetBar.append(budget); mapPanel.prepend(budgetBar);
+  budgetBar.append(budget);
   const roomStatus = node('span', 'stream-room-status'); roomStatus.setAttribute('role', 'status');
   const retry = button('Reconnect', () => room?.retry(), 'small secondary'); retry.hidden = true;
   const delivery = node('span', 'stream-delivery'); delivery.setAttribute('role', 'status');
   const timer = node('span', 'stream-round-timer'); timer.hidden = !twitchUpdates;
   const previousResult = button('View results', () => {
     if (!live) return;
+    const latest = Math.max(0, ...sharedRounds?.rounds.keys() ?? []);
+    if (latest) { sharedRound = latest; refresh(); return; }
     for (let i = 9; i >= 0; i--) if (personal.round(i).reveal) { reviewedRound = i; drawnOutcome = ''; refresh(); break; }
   }, 'small secondary'); previousResult.hidden = true;
   const returnToRound = button('Back', () => { reviewedRound = null; drawnOutcome = ''; board.setMarkers(point); refresh(); }, 'small secondary');
@@ -146,8 +161,9 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const canGuess = () => (!twitchUpdates || !!feed?.hasJoined()) && reviewedRound === null && navigator.onLine !== false && !!snapshot && !isHost() && (!!legacyPayload || !!live && connectionState === 'connected'
     && live.online && !live.paused && live.phase === 'guess' && (!live.timing || gameNow() >= live.timing.startsAt
       && (live.timing.deadline === null || gameNow() < live.timing.deadline)));
-  const send = button('Send guess', async () => {
-    if (!point || !channel || !snapshot || !canGuess() || sending || !viewer.getState().connected) return;
+  const sendGuess = async (automatic = false) => {
+    if (!point || !channel || !snapshot || (!automatic && !canGuess()) || sending || !viewer.getState().connected) return;
+    if (automatic && (!live?.timing?.deadline || live.ended || live.phase !== 'guess' || isHost() || gameNow() > live.timing.deadline + STREAM_SUBMISSION_GRACE_MS)) return;
     const submittedPoint = { x: Math.round(point.x), y: Math.round(point.y) }, submittedChannel = channel, key = guessKey(), identity = roundKey, playerId = viewer.getState().userId!;
     const submittedRound = snapshot.round;
     const submittedMaximum = progress ? maximumScore(progress) : 5000;
@@ -163,10 +179,15 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         // sending must not cancel it, retarget it, or borrow the next allowance.
         if (closed || live?.gameId !== target.gameId || viewer.getState().userId !== playerId) return;
         personal.identify(target.gameId, playerId);
-        personal.submit(submittedRound - 1, receipt, submittedPoint, submittedMaximum);
+        const revision = parallelMode ? Math.max(personal.nextRevision(submittedRound - 1), feed && 'nextRevision' in feed ? feed.nextRevision(target.roundId) : 1) : undefined;
+        personal.submit(submittedRound - 1, receipt, submittedPoint, submittedMaximum, revision, automatic);
+        if (parallelMode && feed && 'submit' in feed) feed.submit({ roundId: target.roundId, point: submittedPoint, maximum: submittedMaximum,
+          nonce: Array.from(nonce, n => n.toString(16).padStart(2, '0')).join(''), revision: revision!, automatic });
         refresh();
-        await viewer.sendGuess(submittedChannel, submittedRound, submittedPoint, submittedMaximum, target.roundId, nonce, target.gameId, target.sendDeadline);
-        personal.markSent(submittedRound - 1, receipt);
+        const post = viewer.sendGuess(submittedChannel, submittedRound, submittedPoint, submittedMaximum, target.roundId, nonce, target.gameId, target.sendDeadline, revision);
+        if (parallelMode) {
+          void post.then(() => { personal.markSent(submittedRound - 1, receipt!); if (!closed) refresh(); }).catch(() => {});
+        } else { await post; personal.markSent(submittedRound - 1, receipt); }
       }
       else if (target) await viewer.sendGuess(submittedChannel, submittedRound, submittedPoint, submittedMaximum, target.roundId);
       else if (progress) await viewer.sendGuess(submittedChannel, submittedRound, submittedPoint, submittedMaximum);
@@ -175,20 +196,22 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         lastSent = key; lastSendAt = Date.now(); submitted = { playerId, point: submittedPoint }; saveProgress();
       }
     } catch (error) {
-      if (receipt && ['dropped', 'forbidden', 'expired', 'invalid-guess', 'disconnected', 'rate-limit', 'busy', 'round-closed'].includes((error as { code?: string }).code ?? ''))
+      if (!parallelMode && receipt && ['dropped', 'forbidden', 'expired', 'invalid-guess', 'disconnected', 'rate-limit', 'busy', 'round-closed'].includes((error as { code?: string }).code ?? ''))
         personal.receipts(submittedRound - 1, [receipt], true);
       if (!closed) actionError = (roundKey === identity ? '' : `${tr('Round {{round}}', { round: formatGuessrNumber(submittedRound) })}: `)
         + twitchMessageText((error as Error).message);
     }
     finally { sending = false; sendingRound = undefined; if (!closed) refresh(); }
-  }, 'primary');
+  };
+  const send = button('Send guess', () => sendGuess(), 'primary');
   const sendControl = node('span', 'stream-send-control'); sendControl.append(send);
   const sendHelp = hoverHelp(sendControl, () => tr(sendReason), send);
   const secondaryActions = node('div', 'stream-secondary-actions');
   secondaryActions.append(previousResult, result, retry);
-  actions.append(delivery, sendControl, secondaryActions); mapPanel.append(revealBar, signIn, map, actions); layout.append(mapPanel);
+  actions.append(sendControl, delivery, secondaryActions); mapPanel.append(revealBar, actions, signIn, map); layout.append(mapPanel);
   const resultsPanel = node('section', 'game-panel stream-viewer-results'); resultsPanel.hidden = true;
   layout.append(resultsPanel);
+  const sharedPanel = node('section', 'stream-shared-round'); sharedPanel.hidden = true; layout.append(sharedPanel);
   const chat = viewerChatPanel(viewer, channel, leave,
     { message: message => { void feed?.receive(message); }, status: (status, detail) => feed?.transport(status, detail) }, requestedGame);
   const toolbar = chat.panel.querySelector<HTMLElement>('.stream-chat-header')!;
@@ -201,20 +224,21 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const board = new MapBoard(map, config.bounds, config.overview, next => {
     if (within(next, config.bounds)) { point = next; board.setMarkers(next); saveProgress(); refresh(); }
   }, config.map);
+  const navigation = mapControls(board); mapPanel.insertBefore(navigation, actions);
   const guessKey = () => point ? `${viewer.getState().userId}/${channel}/${live?.roundId ?? snapshot?.round}/${Math.round(point.x)}/${Math.round(point.y)}/${progress ? maximumScore(progress) : ''}` : '';
   const setRound = (payload: string | null, identity: string) => {
     if (identity === roundKey && (!!payload === !!snapshot)) return;
     clearResults?.(); clearResults = undefined;
     viewport?.destroy(); viewport = undefined; clearControls?.(); clearControls = undefined;
     snapshot = undefined; progress = null; point = null; submitted = null; lastSent = ''; actionError = ''; roundKey = identity;
-    reviewedRound = null;
+    reviewedRound = null; sharedRound = null;
     drawnOutcome = ''; drawnResults = ''; revealBar.hidden = true;
     resultsPanel.hidden = true; cluePanel.hidden = false; mapPanel.hidden = false; layout.classList.remove('show-results');
     if (payload) try {
       snapshot = decodeViewerClue(payload, { imageRoot, version: config.version });
       if (snapshot.round > STREAM_ROUNDS) throw Error();
     } catch { snapshot = undefined; }
-    round.textContent = snapshot ? tr('Round {{value1}} / {{value2}}', { value1: formatGuessrNumber(snapshot.round), value2: formatGuessrNumber(STREAM_ROUNDS) }) : tr('Ready to start');
+    round.textContent = snapshot ? tr('Round {{value1}} / {{value2}}', { value1: formatGuessrNumber(snapshot.round), value2: formatGuessrNumber(live?.totalRounds ?? STREAM_ROUNDS) }) : tr('Ready to start');
     if (!snapshot) emptyClue(payload ? 'This clue uses a different map version. Reload the page to update.' : undefined);
     else {
       if (snapshot.assistance) progress = { ...newClueProgress(), ...snapshot.camera, ...snapshot.assistance,
@@ -222,7 +246,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       restoreProgress();
       bindAttribute(cluePanel, 'aria-label', () => tr('Round {{round}} clue', { round: formatGuessrNumber(snapshot!.round) }));
       const clueBar = node('div', 'panel-bar'), heading = node('div', 'clue-heading');
-      heading.append(node('span', 'panel-title', 'Where are you?'), difficultyIndicator()); clueBar.append(heading);
+      heading.append(node('span', 'panel-title', 'Where are you?'), difficultyIndicator()); clueBar.append(heading, budget);
       const clue = node('div', 'clue loading'); cluePanel.replaceChildren(clueBar, clue);
       if (progress) clearControls = attachClueControls(clue, snapshot.source, progress, 256, () => { saveProgress(); refresh(); },
         { compact: true, difficultyTier: () => live?.difficultyTier });
@@ -292,13 +316,14 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       const score = own.score;
       revealName.textContent = `${tr('Round {{round}}', { round: formatGuessrNumber(index! + 1) })}: ${guessrGameTerm(own.reveal.area.label)}`;
       revealDistance.textContent = own.pending ? tr('Waiting for confirmation') : !own.received ? tr('No guess recorded by the streamer') : localizedDistance(score?.distance ?? null);
+      revealPoints.classList.toggle('score-perfect', own.score?.score === 5000);
       revealPoints.textContent = own.pending ? '…' : tr('{{points}} points', { points: formatGuessrNumber(score?.score ?? 0), count: score?.score ?? 0 });
       const key = `${live.gameId}/${index}/${own.received?.key}/${own.pending}`;
       if (drawnOutcome !== key) { drawnOutcome = key; board.setMarkers(own.received?.point ?? null, own.reveal.answer); }
       board.setLocked(true);
     } else board.setLocked(!canGuess());
     let latest = -1;
-    for (let i = 0; i < 10; i++) if (personal.round(i).reveal) latest = i;
+    for (let i = 0; i < (live?.totalRounds ?? STREAM_ROUNDS); i++) if (personal.round(i).reveal) latest = i;
     previousResult.hidden = latest < 0 || reviewedRound !== null;
     if (latest >= 0) {
       const latestResult = personal.round(latest);
@@ -306,21 +331,22 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     }
     if (live.phase === 'complete') {
       if (live.resultId && channel) rememberPublishedStream(live.resultId, channel);
-      const signature = `${viewer.getState().userId ?? viewer.getState().savedUserId}/${viewer.getState().connected}/`
-        + Array.from({ length: 10 }, (_, i) => { const r = personal.round(i); return `${r.score?.score}/${r.pending}/${r.received?.key}`; }).join('/');
+      const signature = `${viewer.getState().userId ?? viewer.getState().savedUserId}/${viewer.getState().connected}/${sharedRounds?.rounds.size}/`
+        + Array.from({ length: live?.totalRounds ?? STREAM_ROUNDS }, (_, i) => { const r = personal.round(i); return `${r.score?.score}/${r.pending}/${r.received?.key}`; }).join('/');
       if (drawnResults !== signature) {
         drawnResults = signature;
         const heading = node('h1', '', viewer.getState().connected ? 'Your result' : 'Saved result');
-        const waiting = Array.from({ length: 10 }, (_, i) => personal.round(i)).some(r => r.pending || r.received && !r.reveal);
+        const waiting = Array.from({ length: live?.totalRounds ?? STREAM_ROUNDS }, (_, i) => personal.round(i)).some(r => r.pending || r.received && !r.reveal);
         const total = node('strong', 'stream-rank', () => waiting ? tr('Waiting for results')
           : tr('{{points}} points', { points: formatGuessrNumber(personal.total()), count: personal.total() }));
         const table = node('table', 'table'), body = node('tbody');
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < (live?.totalRounds ?? STREAM_ROUNDS); i++) {
           const r = personal.round(i), row = node('tr');
           row.append(node('td', '', () => tr('Round {{round}}', { round: formatGuessrNumber(i + 1) })),
             node('td', '', r.reveal ? () => guessrGameTerm(r.reveal!.area.label) : '—'),
-            node('td', 'score', r.pending ? 'Waiting for confirmation' : r.received && !r.reveal ? 'Waiting for results'
+            node('td', 'score' + (r.score?.score === 5000 ? ' score-perfect' : ''), r.pending ? 'Waiting for confirmation' : r.received && !r.reveal ? 'Waiting for results'
               : r.received ? () => formatGuessrNumber(r.score?.score ?? 0) : '—'));
+          if (sharedRounds?.rounds.has(i + 1)) row.children[0].replaceChildren(button(tr('Round {{round}}', { round: formatGuessrNumber(i + 1) }), () => { sharedRound = i + 1; refresh(); }, 'btn btn-sm btn-outline theme-secondary'));
           body.append(row);
         }
         table.append(body); const links = node('div', 'action-row'); links.append(result);
@@ -346,13 +372,15 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
           requestedGame = state.gameId;
           history.replaceState(null, '', guessRouteUrl('stream-picker', location.href, { channel, game: requestedGame }));
         }
+        checkAutomatic();
+        if (state.phase === 'complete' && live?.phase !== 'complete') sharedRound = null;
         live = state;
         personal.identify(state.gameId ?? requestedGame, viewer.getState().userId ?? viewer.getState().savedUserId ?? null);
         chat.setProStatus(state);
         setRound(state.clue, state.gameId && state.roundId ? `${state.gameId}/${state.roundId}` : `waiting/${channel}`);
         if (state.ended) emptyClue('The streamer ended this game.', 'Game ended');
         else if (state.timing?.phase === 'lobby') emptyClue('Waiting for the streamer to start the game.', 'Ready to start');
-        if (twitchUpdates && feed) {
+        if (twitchUpdates && feed && !parallelMode) {
           const recovery = personal.recovery(state.timing?.revealed ?? 0);
           const signature = JSON.stringify(recovery);
           if ((recovery.missing || recovery.receipts.length) && signature !== recoveryRequested) {
@@ -367,7 +395,19 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       },
     } satisfies Pick<Parameters<typeof watchTwitchGame>[3], 'state' | 'status'>;
     if (twitchUpdates) {
-      feed = watchTwitchGame(viewer, channel, requestedGame, { ...handlers,
+      const events: Parameters<typeof watchParallelGame>[3] = { ...handlers,
+        roundResults: data => { sharedRounds?.save(data); refresh(); },
+        durableReceipt: message => {
+          const playerId = viewer.getState().userId;
+          if (!playerId || !requestedGame) return;
+          void guessReceiptKey(message.roundId, playerId, message.nonce).then(key => {
+            if (closed) return;
+            personal.identify(requestedGame, playerId);
+            if (message.accepted && message.point) personal.restoreReceipt(message.round - 1, key, message.point, message.maximum ?? 5000, message.revision, message.automatic);
+            else personal.receipts(message.round - 1, [key], true, message.reason === 'superseded' ? 'superseded' : 'closed');
+            refresh();
+          });
+        },
         recovery: () => personal.recovery(live?.timing?.revealed ?? 0),
         reveal: (round, reveal) => { personal.reveal(round, reveal); refresh(); },
         receipts: (round, keys, rejected, reason) => {
@@ -382,9 +422,44 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
           }
           refresh();
         },
-      });
+      };
+      feed = parallelMode && requestedGame ? watchParallelGame(viewer, channel, requestedGame, events)
+        : watchTwitchGame(viewer, channel, requestedGame, events);
       room = feed;
       const transport = chat.transportState(); feed.transport(transport.status, transport.detail);
+    }
+  };
+  const showSharedResults = () => {
+    if (live?.ended) sharedRound = null;
+    else if (parallelMode && live?.phase === 'reveal' && sharedRounds?.rounds.size)
+      sharedRound = Math.max(...sharedRounds.rounds.keys());
+    const data = sharedRound === null ? undefined : sharedRounds?.rounds.get(sharedRound);
+    sharedPanel.hidden = !data; layout.classList.toggle('show-round-results', !!data);
+    if (!data) {
+      if (sharedSignature) { clearShared?.(); clearShared = undefined; sharedPanel.replaceChildren(); sharedSignature = ''; }
+      return;
+    }
+    const signature = `${requestedGame}/${data.round}`;
+    if (signature !== sharedSignature) {
+      clearShared?.(); sharedPanel.replaceChildren(); sharedSignature = signature;
+      const actions = node('div', 'game-actions stream-round-review-actions');
+      sharedBack = button('Back', () => { sharedRound = null; refresh(); }, 'primary');
+      sharedNext = button('Waiting for the streamer', () => {}, 'secondary'); sharedNext.disabled = true;
+      actions.append(sharedBack, sharedNext);
+      clearShared = sharedRoundResults(sharedPanel, config, data, actions);
+    }
+    sharedBack!.hidden = live?.phase !== 'guess' && live?.phase !== 'complete'; sharedNext!.hidden = live?.phase === 'guess' || live?.phase === 'complete';
+    bindText(sharedBack!, live?.phase === 'complete' ? 'Back to results' : 'Back to round {{round}}', { round: formatGuessrNumber(live?.round ?? 1) });
+    if (live?.phase !== 'guess') {
+      bindText(round, 'Round {{round}} results', { round: formatGuessrNumber(data.round) });
+      const until = live?.phase === 'complete' ? undefined : live?.timing?.resultsUntil;
+      if (until) {
+        const seconds = Math.max(0, Math.ceil((Math.max(until, live?.timing?.deadline ?? 0) - gameNow()) / 1000));
+        const text = `${formatGuessrNumber(Math.floor(seconds / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(seconds % 60, { minimumIntegerDigits: 2 })}`;
+        timer.hidden = false; timer.textContent = text;
+        if (data.round === live?.totalRounds) bindText(sharedNext!, () => `${tr('View results')}: ${text}`);
+        else bindText(sharedNext!, 'Next round in {{time}}', { time: text });
+      } else bindText(sharedNext!, 'Waiting for the streamer');
     }
   };
   refresh = () => {
@@ -393,19 +468,20 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (twitchUpdates && live?.phase === 'complete' && !state.connected) connection.insertBefore(connect, disconnect);
     else if (connect.parentElement !== signIn) signIn.prepend(connect);
     const joined = !twitchUpdates || !!feed?.hasJoined();
-    signIn.hidden = state.connected && joined || reviewedRound !== null;
-    map.hidden = (!state.connected || !joined) && reviewedRound === null;
+    const needsAuthorization = parallelMode && connectionState === 'stopped' && connectionDetail === 'Sign in with Twitch to play.';
+    signIn.hidden = state.connected && joined && !needsAuthorization || reviewedRound !== null;
+    map.hidden = (!state.connected || !joined || needsAuthorization) && reviewedRound === null;
     joinGame.hidden = !state.connected || joined;
     signInError.textContent = actionError || (state.error ? twitchMessageText(state.error) : '');
     signInError.hidden = !signInError.textContent;
-    if (snapshot) round.textContent = tr('Round {{value1}} / {{value2}}', { value1: formatGuessrNumber(snapshot.round), value2: formatGuessrNumber(STREAM_ROUNDS) });
+    if (snapshot) round.textContent = tr('Round {{value1}} / {{value2}}', { value1: formatGuessrNumber(snapshot.round), value2: formatGuessrNumber(live?.totalRounds ?? STREAM_ROUNDS) });
     if (twitchUpdates) showPersonalOutcome(); else showOutcome();
     if (progress) updateRoundIndicators(layout, progress,
       reviewedRound === null ? live?.difficultyTier : personal.round(reviewedRound).reveal?.area.difficultyTier);
     budgetBar.hidden = !progress || reviewedRound !== null || !revealBar.hidden;
     budget.hidden = budgetBar.hidden;
     account.textContent = state.connected ? tr('Playing as {{player}}', { player: state.login! }) : '';
-    connect.hidden = state.connected; connect.disabled = state.connecting;
+    connect.hidden = state.connected && !needsAuthorization; connect.disabled = state.connecting;
     bindText(connect, state.restoring ? 'Restoring Twitch…' : state.connecting ? 'Signing in…' : 'Sign in with Twitch');
     disconnect.hidden = !state.connected; disconnect.disabled = state.sending;
     const own = live ? personal.round(live.round - 1) : null;
@@ -420,14 +496,18 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     const previousDelivery = !!live && deliveryRound !== undefined && deliveryRound !== live.round - 1;
     const sameGuess = !!guessKey() && guessKey() === lastSent;
     const mayResend = twitchUpdates && sameGuess && (own?.lastStatus === 'rejected' || own?.pending && Date.now() - lastSendAt >= 15_000);
-    send.disabled = !canGuess() || !state.connected || !point || !channel || sending || state.sending || sameGuess && !mayResend;
+    send.disabled = !canGuess() || !state.connected || !point || !channel || sending || !parallelMode && state.sending || sameGuess && !mayResend;
     bindText(send, mayResend ? 'Resend guess' : own?.submitted && !sameGuess ? 'Update guess' : 'Send guess');
-    const receiptStatus = live?.ended ? 'The streamer ended this game.' : sending ? 'Sending…' : deliveryOwn?.pending ? deliveryOwn.received ? 'Update awaiting confirmation. Previous guess counts.'
-      : deliveryOwn.sent ? 'Sent to Twitch. Waiting for the streamer’s confirmation.' : 'Waiting for confirmation'
+    const receiptStatus = live?.ended ? 'The streamer ended this game.' : sending ? deliveryOwn?.automatic ? 'Auto-sending…' : 'Sending…' : deliveryOwn?.pending ? deliveryOwn.received ? 'Update awaiting confirmation. Previous guess counts.'
+      : deliveryOwn.automatic ? 'Auto-sending…' : 'Waiting for confirmation'
       : deliveryOwn?.lastStatus === 'rejected' ? deliveryOwn.received ? 'Update not received. Previous guess counts.' : guessRejectionText(deliveryOwn.reason)
-      : deliveryOwn?.received ? 'Guess received' : !twitchUpdates && sameGuess ? 'Guess sent' : 'Place a pin first';
+      : deliveryOwn?.received ? deliveryOwn.automatic ? 'Auto-submitted' : 'Guess received' : !twitchUpdates && sameGuess ? 'Guess sent' : 'Place a pin first';
     bindText(delivery, () => actionError || (previousDelivery ? `${tr('Round {{round}}', { round: formatGuessrNumber(deliveryRound! + 1) })}: ` : '') + tr(receiptStatus));
     delivery.dataset.state = actionError || deliveryOwn?.lastStatus === 'rejected' ? 'error' : deliveryOwn?.received && !deliveryOwn.pending ? 'received' : 'waiting';
+    const latestShared = Math.max(0, ...sharedRounds?.rounds.keys() ?? []);
+    if (latestShared && live?.phase !== 'complete') {
+      previousResult.hidden = false; bindText(previousResult, 'Round {{round}} results', { round: formatGuessrNumber(latestShared) });
+    }
     const controls = cluePanel.querySelector<HTMLElement>('.clue-controls');
     if (controls && twitchUpdates) controls.inert = !canGuess();
     if (twitchUpdates && live?.timing) {
@@ -461,11 +541,12 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (disabledReason !== sendReason) { sendReason = disabledReason; sendHelp.update(); }
     if (!sending && !actionError && !own?.submitted && !previousDelivery && disabledReason) bindText(delivery, disabledReason);
     const needsReceipt = twitchUpdates && deliveryOwn?.pending && Date.now() - lastSendAt > 15_000;
-    retry.hidden = !joined || !!legacyPayload || live?.ended || live?.phase === 'complete' || !['stopped', 'retrying'].includes(connectionState) && !needsReceipt;
+    if (needsReceipt && Date.now() - lastSendAt > 20000) { lastSendAt = Date.now(); feed?.requestRecovery(); }
+    retry.hidden = true;
     bindText(retry, needsReceipt && connectionState !== 'stopped' ? 'Check delivery' : 'Reconnect');
     if (!legacyPayload && connectionState === 'connected') {
       bindText(roomStatus, live?.ended ? 'The streamer ended this game.' : live?.timing?.phase === 'lobby' ? 'Waiting for the streamer to start the game.' : !live || live.phase === 'waiting' ? 'No active NoitaGuessr game'
-        : live.phase === 'complete' ? 'Game finished' : live.phase === 'reveal' && live.round === STREAM_ROUNDS ? 'You have finished all 10 rounds. Waiting for the streamer.' : live.phase === 'reveal' ? 'Round closed'
+        : live.phase === 'complete' ? 'Game finished' : live.phase === 'reveal' && live.round === (live.totalRounds ?? STREAM_ROUNDS) ? tr('Waiting for the streamer', { rounds: formatGuessrNumber(live.totalRounds ?? STREAM_ROUNDS) }) : live.phase === 'reveal' ? 'Round closed'
         : live.timing?.early ? 'Everyone has submitted. This round is closing.'
         : !live.online ? 'Streamer disconnected from NoitaGuessr' : live.paused ? 'Paused' : isHost() ? 'You are the streamer' : '');
     } else bindText(roomStatus, connectionDetail);
@@ -474,6 +555,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     result.hidden = !live?.resultId && !(unavailableGame && requestedGame);
     const resultId = live?.resultId ?? (unavailableGame ? requestedGame : undefined);
     if (resultId) result.href = guessRouteUrl('stream-result', location.origin, { result: resultId }).href;
+    showSharedResults();
   };
   if (legacyPayload) setRound(legacyPayload, legacyPayload);
   const unsubscribe = viewer.subscribe(refresh);
@@ -481,9 +563,16 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   window.addEventListener('offline', refresh);
   window.addEventListener('online', refresh);
   startRoom(); refresh();
-  const ticks = twitchUpdates ? setInterval(refresh, 250) : undefined;
+  checkAutomatic = () => {
+    const deadline = live?.timing?.deadline;
+    if (!live?.roundId || deadline == null || autoRound === live.roundId || gameNow() < deadline || gameNow() > deadline + STREAM_SUBMISSION_GRACE_MS) return;
+    if (!point || !snapshot || !viewer.getState().connected || isHost() || guessKey() === lastSent) return;
+    if (sending) return;
+    autoRound = live.roundId; void sendGuess(true);
+  };
+  const ticks = twitchUpdates ? setInterval(() => { checkAutomatic(); refresh(); }, 250) : undefined;
   return () => {
-    closed = true; room?.dispose(); unsubscribe(); unsubscribeLanguage(); chat.dispose(); board.destroy(); viewport?.destroy(); clearControls?.(); clearResults?.();
+    closed = true; clearShared?.(); room?.dispose(); unsubscribe(); unsubscribeLanguage(); chat.dispose(); board.destroy(); viewport?.destroy(); clearControls?.(); clearResults?.();
     clearInterval(ticks);
     window.removeEventListener('offline', refresh); window.removeEventListener('online', refresh);
     sendHelp.dispose(); connection.remove(); round.remove(); roomStatus.remove();

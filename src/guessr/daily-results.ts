@@ -6,8 +6,9 @@ import { localizedDistance } from './messages';
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, className = ''): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag); node.className = className; return node;
 }
-function numberCell(value: number | null | undefined, score = false): HTMLTableCellElement {
+function numberCell(value: number | null | undefined, score = false, round = false): HTMLTableCellElement {
   const cell = element('td', score ? 'numeric score' : 'numeric');
+  cell.classList.toggle('score-perfect', round && value === 5000);
   bindText(cell, () => value === null || value === undefined ? '—' : formatGuessrNumber(value)); return cell;
 }
 function subtotal(results: NonNullable<RankedState['results']> | DailyResultSummary['results'], key: 'area_score' | 'position_score'): number | null {
@@ -27,7 +28,7 @@ export function dailyScoreTable(state: DailyResultSummary): HTMLElement {
   for (const result of [...state.results].sort((a, b) => a.ordinal - b.ordinal)) {
     const row = element('tr');
     row.append(numberCell(result.ordinal + 1), numberCell(result.guess?.area_score),
-      numberCell(result.guess?.position_score), numberCell(result.guess?.score ?? 0, true));
+      numberCell(result.guess?.position_score), numberCell(result.guess?.score ?? 0, true, true));
     body.append(row);
   }
   const foot = element('tfoot'), totals = element('tr'), label = element('th'); label.scope = 'row'; bindText(label, 'Total');
@@ -77,7 +78,7 @@ export function dailyResultsTable(state: RankedState, review: (ordinal: number) 
     const action = element('td', 'result-action'), button = element('button', 'small secondary'); button.type = 'button';
     bindText(button, 'Review'); bindAttribute(button, 'aria-label', label); button.onclick = () => review(result.ordinal); action.append(button);
     row.append(numberCell(result.ordinal + 1), location, distance, numberCell(result.guess?.area_score),
-      numberCell(result.guess?.position_score), numberCell(result.guess?.score ?? 0, true), action);
+      numberCell(result.guess?.position_score), numberCell(result.guess?.score ?? 0, true, true), action);
     body.append(row);
   }
   const foot = element('tfoot'), totals = element('tr'), totalLabel = element('th'); totalLabel.colSpan = 3; totalLabel.scope = 'row';

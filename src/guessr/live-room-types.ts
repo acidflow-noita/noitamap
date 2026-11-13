@@ -16,6 +16,7 @@ export interface LiveRoomView {
   paused: boolean;
   ended?: boolean;
   round: number;
+  totalRounds?: number;
   roundId: string | null;
   clue: string | null;
   difficultyTier?: AreaDifficulty;
@@ -23,7 +24,7 @@ export interface LiveRoomView {
   resultId?: string;
   outcome?: StreamRoundOutcome;
   result?: StreamPublishedResult;
-  timing?: { phase: 'lobby' | 'warmup' | 'play'; startsAt: number; deadline: number | null; hostRound: number; chatRound?: number | null; seconds: number; revealed?: number; early?: boolean;
+  timing?: { phase: 'lobby' | 'warmup' | 'play'; startsAt: number; deadline: number | null; hostRound: number; chatRound?: number | null; seconds: number; resultsUntil?: number; revealed?: number; early?: boolean;
     /** Host accepts receipt/result recovery without resending the current clue. */
     recovery?: 1 };
 }

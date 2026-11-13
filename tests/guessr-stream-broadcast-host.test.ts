@@ -10,7 +10,7 @@ const hosts: StreamBroadcastHost[] = [];
 afterEach(() => { hosts.splice(0).forEach(h => h.dispose()); vi.useRealTimers(); });
 
 async function fixture() {
-  const session = await new StreamService(streamSource(), streamSecret).start(streamHost, streamNow, 'twitch');
+  const session = await new StreamService(streamSource(), streamSecret).start(streamHost, streamNow, 'twitch', 10);
   const game = newStreamGame(session, streamNow); startStreamTiming(game, 90, streamNow);
   const sent: { text: string; at: number }[] = [], save = vi.fn(), failure = vi.fn(), joined = vi.fn();
   const send = vi.fn(async (text: string) => { sent.push({ text, at: Date.now() }); });

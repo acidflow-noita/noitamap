@@ -1,3 +1,4 @@
+import { isEncodedGuessCommand } from './guess-command';
 import type { StreamChatMessage } from "./stream-state";
 import { canShareGameLink, postTwitchGameLink } from './twitch-announcement';
 import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
@@ -66,7 +67,7 @@ export class TwitchChatConnection {
   async sendTransport(message: string): Promise<void> {
     const credentials = this.credentials;
     if (this.options.broadcasterLogin !== GUESSR_TRANSPORT_CHANNEL || !this.broadcasterId || !credentials
-      || !canShareGameLink(credentials, false) || !/^!noitaguessr_state /.test(streamPacketText(message)) || message.length > 500)
+      || !canShareGameLink(credentials, false) || (!/^!noitaguessr_state /.test(streamPacketText(message)) && !isEncodedGuessCommand(message)) || message.length > 500)
       throw Error('Reconnect Twitch to send game updates.');
     let response: Response;
     try { response = await (this.options.fetch ?? fetch)('https://api.twitch.tv/helix/chat/messages', {

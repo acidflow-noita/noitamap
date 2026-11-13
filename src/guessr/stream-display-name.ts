@@ -1,5 +1,16 @@
 import type { StreamPlayer, StreamResult } from './stream-types';
 
+/** Twitch display labels may contain formatting marks. Identity is the numeric
+ * Twitch ID; harmless label cleanup must never discard someone's scores. */
+export function streamPlayerName(name: string, login: string): string {
+  let display = '';
+  for (const character of name.replace(/[\p{Cc}\p{Cf}\p{Cs}<>]/gu, '').trim()) {
+    if (display.length + character.length > 48) break;
+    display += character;
+  }
+  return display || login;
+}
+
 /** Old linked-Patreon sessions sometimes stored the provider's placeholder as
  * the host name. The saved Twitch identity is enough to repair its display. */
 export function streamHostName(host: StreamPlayer, player?: StreamPlayer): string {
@@ -8,13 +19,14 @@ export function streamHostName(host: StreamPlayer, player?: StreamPlayer): strin
   return host.login;
 }
 
-/** Repair presentation/exports without mutating archived data or player scores.
- * Chatter names come directly from Twitch and must never be rewritten. */
+/** Repair presentation/exports without mutating archived data or player scores. */
 export function streamResultNames(result: StreamResult): StreamResult {
   const player = result.players.find(player => player.id === result.host.id);
-  const name = streamHostName(result.host, player);
-  if (name === result.host.name && player?.name !== 'Patron') return result;
-  if (name === result.host.name && player?.name === name) return result;
-  return { ...result, host: { ...result.host, name },
-    players: result.players.map(player => player.id === result.host.id ? { ...player, name } : player) };
+  const name = streamPlayerName(streamHostName(result.host, player), result.host.login);
+  const players = result.players.map(player => {
+    const next = player.id === result.host.id ? name : streamPlayerName(player.name, player.login);
+    return next === player.name ? player : { ...player, name: next };
+  });
+  return name === result.host.name && players.every((player, index) => player === result.players[index]) ? result
+    : { ...result, host: { ...result.host, name }, players };
 }

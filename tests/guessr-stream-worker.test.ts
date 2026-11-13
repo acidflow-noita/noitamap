@@ -84,7 +84,7 @@ async function fixture() {
     );
   async function completed(hostToken = ticket.token) {
     const session = (await (
-      await call("/sessions", { transport: "twitch" }, hostToken)
+      await call("/sessions", { transport: "twitch", rounds: 10 }, hostToken)
     ).json()) as StreamSession;
     const game = newStreamGame(session, streamNow + 1000);
     for (let i = 0; i < session.rounds.length; i++) {
@@ -108,7 +108,7 @@ async function fixture() {
 describe("single-document stream publication", () => {
   it('runs a Twitch game with no live object or per-round database work, then writes one final result', async () => {
     const f = await fixture();
-    const start = await f.call('/sessions', { transport: 'twitch' });
+    const start = await f.call('/sessions', { transport: 'twitch', rounds: 10 });
     expect(start.status).toBe(201);
     const session = await start.json() as StreamSession;
     expect(session.transport).toBe('twitch');
@@ -382,10 +382,17 @@ it('uses the current verified host name and stable ID after a rename, without tr
   const laterLabel = await signGameTicket(streamHost.sub, 'Renamed again', streamSecret, { ...streamHost, twitchLogin: 'renamedagain' }, streamNow + 1000);
   expect((await f.call('/results', input, laterLabel.token)).status).toBe(200);
 });
-it.each(['name\nforged log', 'abc\u202edef', '<script>user</script>', 'user\u200dname', ' '])('rejects non-printable or markup player name %j before publication', async name => {
-  const f = await fixture(), input = await f.completed(); input.players[0].name = name;
-  expect((await f.call('/results', input)).status).toBe(400);
-  expect(f.sqlite.prepare('SELECT COUNT(*) AS n FROM stream_results').get()).toEqual({ n: 0 });
+it.each(['name\nforged log', 'abc\u202edef', '<script>user</script>', 'user\u200dname', ' ', '\u061c\u061c007'])('sanitizes display label %j without dropping anyone’s scores', async name => {
+  const f = await fixture(), input = await f.completed(); input.players.push({ ...structuredClone(input.players[0]), id: '999', login: 'omicron', name });
+  const response = await f.call('/results', input);
+  expect(response.status).toBe(201);
+  const { id } = await response.json();
+  const result = await (await f.call('/results/' + id)).json();
+  expect(result.players).toHaveLength(input.players.length);
+  const player = result.players.find((p: any) => p.id === input.players[1].id);
+  expect(player.name).not.toMatch(/[\p{Cc}\p{Cf}\p{Cs}<>]/u);
+  expect(player.name.length).toBeGreaterThan(0);
+  expect(player.score).toBe(input.players[1].score);
 });
 it('allows owner/admin removal without Pro, blocks other users and prevents re-publication', async () => {
   const f = await fixture(), input = await f.completed();

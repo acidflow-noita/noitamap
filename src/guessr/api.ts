@@ -105,6 +105,11 @@ export class GameApi {
   private ticket?: { token: string; expiresAt: number };
   private ticketRequest?: Promise<string>;
   constructor(readonly origin: string) {}
+  /** Sent in a WebSocket authorization frame, never in a URL or persisted. */
+  transportTicket(): Promise<string> {
+    if (this.ticket && this.ticket.expiresAt <= Date.now() + 90000) this.clear();
+    return this.getTicket();
+  }
   clear(): void {
     this.ticket = undefined;
   }

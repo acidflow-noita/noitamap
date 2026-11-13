@@ -16,7 +16,7 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 async function completed() {
   const service = new StreamService(streamSource(), streamSecret);
-  const game = newStreamGame(await service.start(streamHost, streamNow), streamNow);
+  const game = newStreamGame(await service.start(streamHost, streamNow, undefined, 10), streamNow);
   for (const round of game.session.rounds) {
     closeStreamRound(game, streamAnswer, streamNow + 1);
     revealStreamRound(game, await service.reveal(round.token, streamHost, streamNow + 2));

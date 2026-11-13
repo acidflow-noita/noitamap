@@ -11,6 +11,7 @@
     "GAME_ENABLED": "true",
     "SOLO_ENABLED": "true",
     "STREAM_ENABLED": "true",
+    "TWITCH_PLAYER_CLIENT_ID": "9wmgerb87z6v5i8yb1q5ggy2ya2khj",
     "STREAM_IMAGE_ROOT": "https://guessr-tiles.sage-data.xyz/images",
     "STREAM_REFERENCE_ROOT": "https://guessr-map.sage-data.xyz/map_files/",
     "DAILY_ASSET_HOSTS": "noitaguessr-tiles.pages.dev,noitaguessr-map.pages.dev",
@@ -25,9 +26,11 @@
       "migrations_dir": "migrations",
     },
   ],
+  "durable_objects": { "bindings": [{ "name": "STREAM_COORDINATORS", "class_name": "StreamCoordinator" }] },
   "migrations": [
     { "tag": "live-rooms-v1", "new_sqlite_classes": ["LiveRoom"] },
-    { "tag": "retire-live-rooms-v2", "deleted_classes": ["LiveRoom"] }
+    { "tag": "retire-live-rooms-v2", "deleted_classes": ["LiveRoom"] },
+    { "tag": "stream-coordinator-v3", "new_sqlite_classes": ["StreamCoordinator"] }
   ],
   "ratelimits": [{ "name": "PUBLIC_GAME_RATE_LIMIT", "namespace_id": "111103", "simple": { "limit": 120, "period": 60 } }],
   "assets": {

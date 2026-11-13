@@ -1,16 +1,20 @@
+import { mapControls } from './map-controls';
 import { MapBoard } from './map-board';
-import { streamStandings } from './stream-state';
+import { streamRoundData, type StreamRoundView } from './stream-round-data';
+import type { ImageGameConfig } from './image-game';
 import type { StreamGame } from './stream-types';
 import { bindText, formatGuessrNumber, guessrGameTerm, guessrLocale, onGuessrLanguageChanged, tr } from './i18n';
 import { playerColor } from './player-color';
-import { streamHostName } from './stream-display-name';
 
 export function streamRoundResults(main: HTMLElement, game: StreamGame, index: number, actions: HTMLElement): () => void {
-  const reveal = game.reveals[index], config = game.session.config;
+  return sharedRoundResults(main, game.session.config, streamRoundData(game, index), actions);
+}
+export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, data: StreamRoundView, actions: HTMLElement): () => void {
+  const index = data.round - 1;
   const grid = document.createElement('div'); grid.className = 'game-grid stream-round-results-layout';
   const mapPanel = document.createElement('section'); mapPanel.className = 'game-panel';
   const mapTitle = document.createElement('div'); mapTitle.className = 'panel-bar';
-  bindText(mapTitle, () => guessrGameTerm(reveal.area.label));
+  bindText(mapTitle, () => guessrGameTerm(data.label));
   const map = document.createElement('div'); map.className = 'map-board';
   mapPanel.append(mapTitle, map);
   const scores = document.createElement('section'); scores.className = 'game-panel';
@@ -21,20 +25,19 @@ export function streamRoundResults(main: HTMLElement, game: StreamGame, index: n
   const head = document.createElement('thead'), header = document.createElement('tr'), body = document.createElement('tbody');
   head.append(header); table.append(head, body); wrap.append(table); scores.append(heading, wrap, actions); grid.append(mapPanel, scores); main.append(grid);
   const board = new MapBoard(map, config.bounds, config.overview, () => {}, config.map); board.setLocked(true);
+  mapPanel.insertBefore(mapControls(board), map);
   const rows = new Map<string, HTMLTableRowElement>();
   let selected: string | undefined;
   const select = (id: string) => {
     if (selected) rows.get(selected)?.classList.remove('selected');
     selected = id; rows.get(id)?.classList.add('selected'); board.highlightPlayer(id);
   };
-  const hostName = streamHostName(game.session.host, game.participants.find(player => player.id === game.session.host.id));
-  const players = streamStandings(game.participants, game.reveals.slice(0, index + 1))
-    .map(player => player.id === game.session.host.id ? { ...player, name: hostName } : player);
-  const roundOrder = [...players].sort((a, b) => b.rounds[index].score - a.rounds[index].score || a.rank - b.rank);
+  const players = data.players;
+  const roundOrder = [...players].sort((a, b) => b.score - a.score || b.total - a.total);
   const ranks = new Map<string, number>();
-  roundOrder.forEach((p, i) => ranks.set(p.id, i && p.rounds[index].score === roundOrder[i - 1].rounds[index].score
+  roundOrder.forEach((p, i) => ranks.set(p.id, i && p.score === roundOrder[i - 1].score
     ? ranks.get(roundOrder[i - 1].id)! : i + 1));
-  board.setPlayers(players.map(p => ({ id: p.id, name: p.name, color: playerColor(p, game.session.host.id), guess: p.rounds[index].guess })), reveal.answer, select);
+  board.setPlayers(players.map(p => ({ id: p.id, name: p.name, color: playerColor(p, data.host.id), guess: p.guess })), data.answer, select);
   let sort: 'rank' | 'name' | 'round' | 'total' = 'round', direction = -1;
   const columns = [['rank', 'Rank'], ['name', 'Player'], ['round', 'Round score'], ['total', 'Total']] as const;
   const headers: HTMLTableCellElement[] = [];
@@ -48,19 +51,21 @@ export function streamRoundResults(main: HTMLElement, game: StreamGame, index: n
   function render() {
     columns.forEach(([key], i) => headers[i].setAttribute('aria-sort', key === sort ? direction === 1 ? 'ascending' : 'descending' : 'none'));
     const ordered = [...players].sort((a, b) => direction * (sort === 'name' ? a.name.localeCompare(b.name, guessrLocale())
-      : sort === 'rank' ? ranks.get(a.id)! - ranks.get(b.id)! : sort === 'round' ? a.rounds[index].score - b.rounds[index].score : a.score - b.score));
+      : sort === 'rank' ? ranks.get(a.id)! - ranks.get(b.id)! : sort === 'round' ? a.score - b.score : a.total - b.total));
     rows.clear(); const fragment = document.createDocumentFragment();
     for (const player of ordered) {
       const row = document.createElement('tr'); row.tabIndex = 0; row.dataset.player = player.id;
-      if (player.id === game.session.host.id) row.classList.add('stream-host-row');
+      if (player.id === data.host.id) row.classList.add('stream-host-row');
       if (player.id === selected) row.classList.add('selected');
       row.onmouseenter = row.onfocus = row.onclick = () => select(player.id);
+      row.onmouseleave = row.onblur = () => { rows.get(player.id)?.classList.remove('selected'); selected = undefined; board.highlightPlayer(''); };
       for (const [column, text] of [formatGuessrNumber(ranks.get(player.id)!), player.name,
-        player.rounds[index].guess ? formatGuessrNumber(player.rounds[index].score) : '—', formatGuessrNumber(player.score)].entries()) {
+        player.guess ? formatGuessrNumber(player.score) : '—', formatGuessrNumber(player.total)].entries()) {
         const cell = document.createElement('td'); cell.textContent = text;
         if (column !== 1) cell.className = 'numeric';
-        else cell.style.color = playerColor(player, game.session.host.id);
-        if (column === 2 && !player.rounds[index].guess) cell.setAttribute('aria-label', tr('No guess recorded by the streamer'));
+        if (column === 2 && player.score === 5000) cell.classList.add('score-perfect');
+        else cell.style.color = playerColor(player, data.host.id);
+        if (column === 2 && !player.guess) cell.setAttribute('aria-label', tr('No guess recorded by the streamer'));
         row.append(cell);
       }
       rows.set(player.id, row); fragment.append(row);

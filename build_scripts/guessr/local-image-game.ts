@@ -180,7 +180,8 @@ export function localImageGameMiddleware(root: string, rooms = new LocalLiveRoom
         const service = await streams();
         const room = rooms.getByName(localHost.twitchLogin);
         if (path === "/stream/sessions" && req.method === "POST") {
-          const session = await service.start(localHost, Date.now(), body.transport === 'twitch' ? 'twitch' : undefined);
+          const session = await service.start(localHost, Date.now(), body.transport === 'twitch' ? 'twitch' : undefined,
+            typeof body.rounds === 'number' ? body.rounds : undefined);
           if (session.transport !== 'twitch') await room.start(localHost.sub, liveRoomGame(session, (await get()).imageRoot));
           return send(201, { ...session, live: true, ...(body.localChannel ? { localChat: true } : {}) });
         }

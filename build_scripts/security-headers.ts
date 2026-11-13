@@ -18,7 +18,7 @@ export function contentSecurityPolicy(html: string[]): string {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    "connect-src 'self' data: blob: https://*.acidflow.stream https://*.sage-data.xyz https://*.runfast.stream https://*.noitamap.com https://*.pages.dev https://noitamap-auth.wuote.workers.dev https://noitamap-image-upload-proxy.wuote.workers.dev https://files.catbox.moe https://qu.ax https://id.twitch.tv https://api.twitch.tv wss://eventsub.wss.twitch.tv https://www.googletagmanager.com https://*.google-analytics.com https://*.google.com",
+    "connect-src 'self' data: blob: https://*.acidflow.stream https://*.sage-data.xyz https://*.runfast.stream https://*.noitamap.com https://*.pages.dev https://noitamap-auth.wuote.workers.dev https://noitamap-image-upload-proxy.wuote.workers.dev https://files.catbox.moe https://qu.ax https://id.twitch.tv https://api.twitch.tv wss://eventsub.wss.twitch.tv wss://guessr-api.sage-data.xyz https://www.googletagmanager.com https://*.google-analytics.com https://*.google.com",
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'none'",

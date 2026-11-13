@@ -143,7 +143,7 @@ describe("guess-map camera", () => {
       expect(Number(circle.getAttribute('cy'))).toBe(ANSWER_PIN_CENTER.y);
     }
     expect([...answer.querySelectorAll('path')].some(path => path.getAttribute('d') === MAP_PIN_PATH)).toBe(false);
-    expect(guess.previousElementSibling).toBe(answer);
+    expect(guess.nextElementSibling).toBe(answer);
     expect(ANSWER_PIN_HEIGHT).toBeGreaterThan(GUESS_PIN_HEIGHT);
     expect(ANSWER_PIN_HEIGHT).toBeGreaterThan(HIGHLIGHT_PIN_HEIGHT);
     for (const zoom of [1, 3, .25]) {
@@ -198,7 +198,13 @@ describe("guess-map camera", () => {
     first.dispatchEvent(new Event('pointerenter'));
     expect(highlighted).toHaveBeenCalledWith('1');
     board.highlightPlayer('1'); expect(first.dataset.pinHeight).toBe(String(HIGHLIGHT_PIN_HEIGHT));
+    expect(first.style.opacity).toBe('1'); expect(second.style.opacity).toBe('0.18');
+    const solution = board.svg.querySelector('[data-pin-kind="answer"]')!;
+    expect(solution.parentElement!.lastElementChild).toBe(solution);
     board.highlightPlayer('2'); expect(first.dataset.pinHeight).toBe(String(PLAYER_PIN_HEIGHT)); expect(second.dataset.pinHeight).toBe(String(HIGHLIGHT_PIN_HEIGHT));
+    expect(first.style.opacity).toBe('0.18'); expect(second.style.opacity).toBe('1');
+    expect(solution.parentElement!.lastElementChild).toBe(solution);
+    board.highlightPlayer(''); expect(first.style.opacity).toBe('1'); expect(second.style.opacity).toBe('1');
     expect(camera()).toEqual(before); aligned(viewer.viewport);
     expect(board.svg.querySelectorAll('[data-player]')).toHaveLength(2);
   });
@@ -223,7 +229,7 @@ describe("guess-map camera", () => {
       expect(camera()).toEqual(before);
       expect([...board.svg.querySelectorAll('circle')]).toEqual(circles);
       expect(circles.map(circle => [circle.getAttribute('cx'), circle.getAttribute('cy')])).toEqual(coordinates);
-      expect([...board.svg.querySelectorAll('title')].map(title => title.textContent)).toEqual(['Tatsächlicher Ort', 'Dein Tipp']);
+      expect([...board.svg.querySelectorAll('title')].map(title => title.textContent)).toEqual(['Dein Tipp', 'Tatsächlicher Ort']);
       expect(board.svg.getAttribute('aria-label')).toBe('Weltübersicht. Platziere deinen Tipp auf der Karte.');
       expect(mount.getAttribute('aria-label')).toContain('Pfeiltasten');
       expect(fit).not.toHaveBeenCalled();

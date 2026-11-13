@@ -9,7 +9,6 @@ import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import { gameCode, gameIdFromCode } from './routes';
 import { prepareAreaScorer } from './area-rules';
 import { chatEnvelope } from './chat-envelope';
-import { tr, formatGuessrNumber } from './i18n';
 import { connectionDiagnostic } from './connection-diagnostics';
 
 /** Receives through the page's existing Twitch connection. No Cloudflare socket,
@@ -48,6 +47,7 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
       if (closed) return;
       connectionDiagnostic({ event: 'game-update-timeout' });
       handlers.status('retrying', 'Waiting for the streamer’s game update.');
+      needsState = true; request(); watch();
     }, delay);
   };
   const request = () => {
@@ -66,11 +66,10 @@ export function watchTwitchGame(viewer: TwitchViewer, channel: string, expectedG
     const code = currentGame ? gameCode(currentGame, 'twitch') : '-';
     const rounds = recovery.receipts.length ? recovery.receipts.slice(0, 6).map(r => r.round + 1)
       : Array.from({ length: 10 }, (_, i) => i + 1).filter(round => recovery.missing & 1 << (round - 1));
-    const values = { game: code, channel, rounds: rounds.map(round => formatGuessrNumber(round)).join(', ') };
-    const label = latest && !recovery.receipts.length && !recovery.missing ? `NoitaGuessr ${code}: ${tr('Reconnecting…')}`
-      : tr(recovery.receipts.length ? 'NoitaGuessr {{game}}: checking guess delivery for rounds {{rounds}}.'
-      : recovery.missing ? 'NoitaGuessr {{game}}: restoring results for rounds {{rounds}}.'
-      : 'NoitaGuessr {{game}}: joining {{channel}}’s game.', values);
+    const label = latest && !recovery.receipts.length && !recovery.missing ? `NoitaGuessr ${code}: reconnecting.`
+      : recovery.receipts.length ? `NoitaGuessr ${code}: checking guess delivery for rounds ${rounds.join(', ')}.`
+      : recovery.missing ? `NoitaGuessr ${code}: restoring results for rounds ${rounds.join(', ')}.`
+      : `NoitaGuessr ${code}: joining ${channel}'s game.`;
     // Older host tabs retain the existing command until they reload. Capability
     // comes from a fresh host state; F5/reconnect always requests state first.
     const command = needsState || latest?.timing?.recovery !== 1 ? '!noitaguessr_sync' : '!noitaguessr_recover';

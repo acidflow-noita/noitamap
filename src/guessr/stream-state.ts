@@ -4,6 +4,7 @@ import { rankStreamPlayers } from "./stream-ranking";
 import { maximumScore, newClueProgress, within, type Point } from "./rules";
 import { chatRoundAccepts, closeChatWindow, startHostWindow, STREAM_RESULTS_HOLD_MS } from './stream-timing';
 import { twitchColor } from './player-color';
+import { streamPlayerName } from './stream-display-name';
 import type { LiveRoomView } from "./live-room-types";
 import {
   type StreamGame,
@@ -66,8 +67,8 @@ export function acceptStreamGuess(
     !/^\d{1,30}$/.test(message.player.id) ||
     !/^[a-z0-9_]{1,25}$/.test(message.player.login) ||
     !message.player.name ||
-    message.player.name.length > 48 ||
-    !message.id ||
+    message.player.name.length > 512 ||
+    typeof message.id !== "string" || !message.id ||
     message.id.length > 100 ||
     !Number.isFinite(message.sentAt)
   )
@@ -87,13 +88,15 @@ export function acceptStreamGuess(
   if (message.player.id === game.session.host.id) return "host";
   let player = game.participants.find((p) => p.id === message.player.id);
   const previous = player?.guesses[index];
+  if (command.revision !== undefined && previous?.revision !== undefined && command.revision <= previous.revision)
+    return command.revision === previous.revision && command.nonce === previous.nonce ? 'duplicate' : 'old';
   const nonceKey = game.timing ? `${index}/${message.player.id}` : message.player.id;
   const savedNonces = game.recentNonces?.[nonceKey];
   const nonces = Array.isArray(savedNonces) ? savedNonces.filter(value => /^[a-f0-9]{16}$/.test(value)).slice(-64) : [];
   if (command.nonce && nonces.includes(command.nonce)) return 'duplicate';
   if (
     previous &&
-    (previous.messageId === message.id || previous.sentAt >= message.sentAt || command.nonce && previous.nonce === command.nonce)
+    (previous.messageId === message.id || (command.revision === undefined && previous.sentAt >= message.sentAt) || command.nonce && previous.nonce === command.nonce)
   )
     return "duplicate";
   if (!player) {
@@ -103,7 +106,7 @@ export function acceptStreamGuess(
     };
     game.participants.push(player);
   }
-  player.name = message.player.name;
+  player.name = streamPlayerName(message.player.name, message.player.login);
   player.login = message.player.login;
   if (twitchColor(message.player.color)) player.color = twitchColor(message.player.color);
   player.guesses[index] = {
@@ -112,6 +115,7 @@ export function acceptStreamGuess(
     messageId: message.id,
     sentAt: message.sentAt,
     nonce: command.nonce,
+    ...(command.revision !== undefined ? { revision: command.revision } : {}),
   };
   if (game.timing?.chatRound === index && game.timing.waitingFor)
     game.timing.waitingFor = game.timing.waitingFor.filter(id => id !== message.player.id);
@@ -235,6 +239,7 @@ export function streamResult(game: StreamGame): StreamResult {
     createdAt: game.session.createdAt,
     finishedAt: game.finishedAt,
     host: game.session.host,
+    ...(game.transportStats ? { transportStats: game.transportStats } : {}),
     rounds: game.reveals.map((r) => ({
       id: r.roundId,
       answer: r.answer,

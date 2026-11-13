@@ -6,9 +6,10 @@ import type { ImageGameConfig } from "./image-game.ts";
 import { ImageGameError } from "./image-game-server.ts";
 import type { Point } from "./rules.ts";
 import { rankStreamPlayers } from "./stream-ranking.ts";
+import { streamPlayerName } from './stream-display-name.ts';
 import {
   STREAM_MAX_PLAYERS,
-  STREAM_ROUNDS,
+  STREAM_DEFAULT_ROUNDS, validStreamRoundCount,
   type StreamPlayer,
   type StreamPublishWireInput,
   type StreamReveal,
@@ -34,7 +35,7 @@ export interface StreamHostIdentity {
   ticketIssuedAt?: number;
 }
 interface Envelope {
-  transport?: 'twitch';
+  transport?: 'twitch' | 'parallel';
   kind: "session" | "round";
   owner: string;
   id: string;
@@ -136,17 +137,19 @@ export class StreamService {
   async start(
     user: StreamHostIdentity,
     now = Date.now(),
-    transport?: 'twitch',
+    transport?: 'twitch' | 'parallel',
+    roundCount = STREAM_DEFAULT_ROUNDS,
   ): Promise<StreamSession> {
+    if (!validStreamRoundCount(roundCount)) throw new ImageGameError(400, 'Choose 3, 5 or 10 rounds.');
     const started = performance.now();
     const config = await this.source.config(),
-      selected = await this.source.sampleRounds(STREAM_ROUNDS);
+      selected = await this.source.sampleRounds(roundCount);
     const id = crypto.randomUUID(),
       expiresAt = now + 30 * 86400000;
     const host = {
       id: user.twitchUserId,
       login: user.twitchLogin,
-      name: user.name.slice(0, 48),
+      name: streamPlayerName(user.name, user.twitchLogin),
     };
     const reveals = selected.map((r) => ({
       roundId: crypto.randomUUID(),
@@ -191,6 +194,10 @@ export class StreamService {
       serverNow: now + Math.max(0, Math.round(performance.now() - started)),
     };
   }
+  /** Internal coordinator initialization, never a browser response. */
+  async coordinatorReveals(token: string, user: StreamHostIdentity, now = Date.now()): Promise<StreamReveal[]> {
+    return (await this.open(token, user, 'session', now)).reveals;
+  }
   async reveal(
     token: unknown,
     user: StreamHostIdentity,
@@ -231,8 +238,7 @@ export class StreamService {
         !/^\d{1,30}$/.test(player.id) ||
         ids.has(player.id) ||
         typeof player.name !== "string" ||
-        !player.name.trim() || player.name !== player.name.trim() || /[\p{Cc}\p{Cf}\p{Cs}<>]/u.test(player.name) ||
-        player.name.length > 48 ||
+        player.name.length > 512 ||
         typeof player.login !== "string" ||
         !/^[a-z0-9_]{1,25}$/.test(player.login) ||
         !Array.isArray(player.rounds) ||
@@ -265,7 +271,7 @@ export class StreamService {
       return {
         id: player.id,
         login: player.login,
-        name: player.name,
+        name: streamPlayerName(player.name, player.login),
         ...(typeof player.color === 'string' && /^#[a-f0-9]{6}$/i.test(player.color) ? { color: player.color.toUpperCase() } : {}),
         rounds,
         score,
@@ -278,7 +284,7 @@ export class StreamService {
       );
     const host = players.find((player) => player.id === envelope.host.id)!;
     const currentHost = { id: envelope.host.id, login: user.twitchLogin,
-      name: user.name.replace(/[\p{Cc}\p{Cf}\p{Cs}<>]/gu, '').trim().slice(0, 48) || user.twitchLogin };
+      name: streamPlayerName(user.name, user.twitchLogin) };
     host.name = currentHost.name;
     host.login = currentHost.login;
     // Chat delivery and assistance are intentionally host-reported. The browser

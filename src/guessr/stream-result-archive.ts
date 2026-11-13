@@ -1,6 +1,6 @@
 import { openDB } from 'idb';
 import { streamResult } from './stream-state';
-import { STREAM_ROUNDS, STREAM_SESSION_KEY, type StreamGame, type StreamResult } from './stream-types';
+import { validStreamRoundCount, STREAM_SESSION_KEY, type StreamGame, type StreamResult } from './stream-types';
 
 /** Private retry credentials stay in browser storage, outside public result data. */
 export interface ArchivedStreamResult {
@@ -32,8 +32,8 @@ const legacyPrefix = 'noitamap-guessr-result:';
 const storageError = 'This browser could not save the result. Download a copy before closing this page.';
 function valid(result: StreamResult | undefined): result is StreamResult {
   return !!result && result.schema === 1 && /^[a-f0-9-]{36}$/.test(result.id)
-    && result.rounds?.length === STREAM_ROUNDS && !!result.players?.length
-    && result.players.every(player => player.rounds?.length === STREAM_ROUNDS);
+    && validStreamRoundCount(result.rounds?.length) && !!result.players?.length
+    && result.players.every(player => player.rounds?.length === result.rounds.length);
 }
 function read<T>(storage: Storage, key: string): T | undefined {
   try { return JSON.parse(storage.getItem(key) ?? 'null') ?? undefined; } catch { return undefined; }
@@ -97,7 +97,7 @@ export class StreamResultArchive {
         if (valid(result)) await this.save({ result, published: false });
       }
       const game = read<StreamGame>(storage, STREAM_SESSION_KEY);
-      if (game?.stage === 'complete' && game.session?.rounds?.length === STREAM_ROUNDS) {
+      if (game?.stage === 'complete' && validStreamRoundCount(game.session?.rounds?.length)) {
         let result: StreamResult;
         try { result = streamResult(game); } catch { return; }
         await this.save({ result, published: !!game.published, ...(!game.published && game.session.token ? { pendingToken: game.session.token } : {}),

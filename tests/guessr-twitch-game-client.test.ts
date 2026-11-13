@@ -121,7 +121,7 @@ it('identifies a missing round update without declaring Twitch disconnected and 
   for (const text of await encodeStreamPacket(id, { type: 'state', state })) await f.client.receive(message(text));
   await vi.advanceTimersByTimeAsync(108000);
   expect(f.handlers.status).toHaveBeenLastCalledWith('retrying', 'Waiting for the streamer’s game update.');
-  expect(f.sendMessage).toHaveBeenCalledOnce();
+  expect(f.sendMessage).toHaveBeenCalledTimes(2);
   const next = { ...state, revision: 2, round: 2, timing: { ...state.timing!, phase: 'play' as const,
     startsAt: Date.now(), deadline: Date.now() + 30000 } };
   for (const text of await encodeStreamPacket(id, { type: 'state', state: next }))

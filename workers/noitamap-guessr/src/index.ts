@@ -27,6 +27,8 @@ export interface Database {
 }
 export interface Env {
   DB: Database;
+  STREAM_COORDINATORS?: import('../../../src/guessr/parallel-types').ParallelNamespace;
+  TWITCH_PLAYER_CLIENT_ID?: string;
   ASSETS: { fetch(request: Request): Promise<Response> };
   GAME_SIGNING_SECRET: string;
   GAME_TICKET_PUBLIC_KEY?: string;

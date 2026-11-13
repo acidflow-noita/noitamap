@@ -3,7 +3,7 @@ import { prepareAreaScorer } from './area-rules';
 import { within, type Bounds, type Point } from './rules';
 import type { GuessRejectionReason } from './stream-wire';
 
-export interface ViewerSubmission { key: string; point: Point; maximum: number; status: 'pending' | 'received' | 'rejected'; reason?: GuessRejectionReason; sent?: boolean }
+export interface ViewerSubmission { key: string; point: Point; maximum: number; status: 'pending' | 'received' | 'rejected'; reason?: GuessRejectionReason; sent?: boolean; revision?: number; automatic?: boolean }
 interface ViewerRoundRecord { submissions: ViewerSubmission[]; reveal?: StreamReveal }
 interface ViewerGameHistory { gameId: string; playerId: string; rounds: ViewerRoundRecord[] }
 
@@ -39,10 +39,24 @@ export class StreamViewerHistory {
     if (!this.history) return;
     try { localStorage.setItem(this.key(this.history.gameId, this.history.playerId), JSON.stringify(this.history)); } catch { /* Current tab retains the data. */ }
   }
-  submit(round: number, key: string, point: Point, maximum: number): void {
+  submit(round: number, key: string, point: Point, maximum: number, revision?: number, automatic?: boolean): void {
     const record = this.history?.rounds[round]; if (!record) return;
-    record.submissions.push({ key, point: { ...point }, maximum, status: 'pending' });
+    record.submissions.push({ key, point: { ...point }, maximum, status: 'pending', revision, automatic });
     record.submissions = record.submissions.slice(-64); this.save();
+  }
+  nextRevision(round: number): number {
+    return Math.max(0, ...this.history?.rounds[round]?.submissions.map(s => s.revision ?? 0) ?? []) + 1;
+  }
+  restoreReceipt(round: number, key: string, point: Point, maximum: number, revision: number, automatic?: boolean): void {
+    const record = this.history?.rounds[round];
+    if (!record || !within(point, this.bounds) || !Number.isInteger(maximum) || maximum < 0 || maximum > 5000) return;
+    if (!record.submissions.some(s => s.key === key)) record.submissions.push({ key, point, maximum, revision, automatic, status: 'received' });
+    for (const item of record.submissions) {
+      if (item.key === key) { item.status = 'received'; item.revision = revision; item.point = point; item.maximum = maximum; }
+      else if (item.status === 'pending' && (item.revision ?? 0) < revision) { item.status = 'rejected'; item.reason = 'superseded'; }
+    }
+    record.submissions.sort((a, b) => (a.revision ?? 0) - (b.revision ?? 0));
+    this.save();
   }
   markSent(round: number, key: string): void {
     const submission = this.history?.rounds[round]?.submissions.find(value => value.key === key);
@@ -68,7 +82,7 @@ export class StreamViewerHistory {
     const last = record?.submissions.at(-1);
     const pending = last?.status === 'pending';
     const score = record?.reveal ? prepareAreaScorer(record.reveal.area, record.reveal.answer)(received?.point ?? null, received?.maximum ?? 5000) : undefined;
-    return { reveal: record?.reveal, received, pending, sent: last?.sent, lastStatus: last?.status, reason: last?.reason, submitted: !!record?.submissions.length, score };
+    return { reveal: record?.reveal, received, pending, sent: last?.sent, automatic: last?.automatic, lastStatus: last?.status, reason: last?.reason, submitted: !!record?.submissions.length, score };
   }
   recovery(revealed: number) {
     let missing = 0;

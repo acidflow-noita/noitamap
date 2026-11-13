@@ -103,7 +103,8 @@ it('exports a localized standalone web page that filters and sorts offline witho
     expect(doc.querySelector('th button')!.textContent).toBe('Rang');
     expect(doc.querySelector('#summary')!.textContent).toContain('2.000 Punkte, 1 Runde');
     expect(doc.querySelectorAll('tbody tr')).toHaveLength(2);
-    expect(doc.querySelector('tbody tr')!.children[1].textContent).toBe(unsafe.players[1].name);
+    expect(doc.querySelector('tbody tr')!.children[1].textContent).not.toMatch(/[<>]/);
+    expect(doc.querySelector('tbody tr')!.children[1].textContent).toContain('window.playerTextExecuted=true');
     expect((offline.window as unknown as { playerTextExecuted?: boolean }).playerTextExecuted).toBeUndefined();
     const filter = doc.querySelector<HTMLInputElement>('#filter')!;
     filter.value = 'streamer'; filter.dispatchEvent(new offline.window.Event('input'));
