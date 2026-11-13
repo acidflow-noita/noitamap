@@ -25,6 +25,7 @@ const ui = vi.hoisted(() => ({ pick: (_point: Point) => {}, show: vi.fn(async (_
 vi.mock('../src/guessr/button-notice', () => ({ buttonNotice: () => ({ show: ui.notice, dispose: vi.fn() }) }));
 vi.mock('../src/guessr/map-board', () => ({ MapBoard: class {
   constructor(_element: unknown, _bounds: unknown, _overview: unknown, pick: (point: Point) => void) { ui.pick = pick; }
+  onPinChange(listener: (placed: boolean) => void) { listener(false); return () => {}; }
   setMarkers(...points: unknown[]) { ui.markers(...points); } setPlayers() {} highlightPlayer() {} setLocked() {} zoom() {} home() {} destroy() { ui.destroy(); }
 } }));
 vi.mock('../src/guessr/clue-viewport', () => ({ ClueViewport: class {

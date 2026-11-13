@@ -16,6 +16,7 @@ vi.mock('../src/guessr/api', () => ({ ApiError: app.ApiError, GameApi: class { r
 vi.mock('../src/guessr/stream-ui', () => ({ StreamUI: class { game = null; save() {} suspend() {} } }));
 vi.mock('../src/guessr/map-board', () => ({ MapBoard: class {
   constructor(_node: unknown, bounds: unknown, _overview: unknown, pick: typeof app.pick, map: unknown) { app.pick = pick; app.board(bounds, map); }
+  onPinChange(listener: (placed: boolean) => void) { listener(false); return () => {}; }
   setMarkers = app.marks; setLocked() {} destroy() {}
 } }));
 vi.mock('../src/guessr/clue-viewport', () => ({ ClueViewport: class {

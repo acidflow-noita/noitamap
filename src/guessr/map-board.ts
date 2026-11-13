@@ -25,6 +25,8 @@ export class MapBoard {
   // Retain the result after manual pan/zoom so reset can fit those points again.
   private resultMarkers: Point[] | null = null;
   private atHome = true;
+  private homeFit: 'fill' | 'contain' = 'fill';
+  private pinListeners = new Set<(placed: boolean) => void>();
   private playerMarks = new Map<string, SVGGElement>();
   private highlightedPlayer?: string;
   constructor(
@@ -111,6 +113,7 @@ export class MapBoard {
     this.resize.observe(element);
   }
   destroy(): void {
+    this.pinListeners.clear();
     this.tiles?.destroy();
     this.tiles = undefined;
     this.tilesReady = false;
@@ -141,7 +144,7 @@ export class MapBoard {
         this.element.clientHeight,
       );
     } else {
-      if (this.atHome) this.view = frameMap(this.bounds, width, height);
+      if (this.atHome) this.view = frameMap(this.bounds, width, height, this.homeFit);
       else if (width > 0 && height > 0) {
         const nextHeight = (this.view.width * height) / width;
         this.view.y += (this.view.height - nextHeight) / 2;
@@ -239,8 +242,25 @@ export class MapBoard {
   home(): void {
     this.fittedMarkers = this.resultMarkers;
     this.atHome = !this.resultMarkers;
+    this.homeFit = 'fill';
     this.view = { ...this.bounds };
     this.updateView();
+  }
+  showEntireMap(): void {
+    this.fittedMarkers = null;
+    this.atHome = true;
+    this.homeFit = 'contain';
+    this.updateView();
+  }
+  onPinChange(listener: (placed: boolean) => void): () => void {
+    this.pinListeners.add(listener);
+    listener(this.point !== null);
+    return () => this.pinListeners.delete(listener);
+  }
+  private setPoint(point: Point | null): void {
+    const changed = (point !== null) !== (this.point !== null);
+    this.point = point;
+    if (changed) for (const listener of this.pinListeners) listener(point !== null);
   }
   centerOnPin(): void {
     if (!this.point) return;
@@ -319,8 +339,9 @@ export class MapBoard {
     if (this.down && !this.down.moved && !this.locked) {
       const p = this.world(event.clientX, event.clientY);
       if (within(p, this.bounds)) {
-        this.point = { x: Math.round(p.x), y: Math.round(p.y) };
-        this.onGuess(this.point);
+        const point = { x: Math.round(p.x), y: Math.round(p.y) };
+        this.setPoint(point);
+        this.onGuess(point);
       }
     }
     this.cancel(event);
@@ -376,12 +397,12 @@ export class MapBoard {
       this.bounds.y,
       Math.min(this.bounds.y + this.bounds.height, next.y),
     );
-    this.point = next;
+    this.setPoint(next);
     this.onGuess(next);
   };
   setMarkers(guess: Point | null, answer?: Point, guessLabel = 'Your guess'): void {
     this.playerMarks.clear(); this.highlightedPlayer = undefined;
-    this.point = guess;
+    this.setPoint(guess);
     this.resultMarkers = answer ? (guess ? [guess, answer] : [answer]) : null;
     this.fittedMarkers = this.resultMarkers;
     this.marks.replaceChildren();

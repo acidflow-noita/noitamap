@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MapBoard } from "../src/guessr/map-board";
+import { mapControls } from '../src/guessr/map-controls';
 import { MAP_PIN_PATH, MAP_PIN_TIP, ANSWER_PIN_CENTER, GUESS_PIN_COLOR, ANSWER_PIN_COLOR, GUESS_PIN_HEIGHT, ANSWER_PIN_HEIGHT, PLAYER_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT } from '../src/guessr/map-pin';
 
 const harness = vi.hoisted(() => ({
@@ -131,6 +132,52 @@ function click(mount: HTMLElement, x: number, y: number) {
 }
 
 describe("guess-map camera", () => {
+  it.each([[800, 400], [340, 550], [300, 1000]])('shows the entire world from a %i×%i panel, including after result framing and resize', async (w, h) => {
+    width = w; height = h;
+    const { board, viewer } = await fixture();
+    board.setMarkers({ x: 1000, y: 2000 }, { x: 1200, y: 2200 });
+    board.zoom(3);
+    const controls = mapControls(board);
+    controls.querySelector<HTMLButtonElement>('[aria-label="Show entire map"]')!.click();
+    const check = () => {
+      const frame = camera();
+      for (const x of [bounds.x, bounds.x + bounds.width]) for (const y of [bounds.y, bounds.y + bounds.height]) {
+        expect((x - frame.x) / frame.width).toBeGreaterThanOrEqual(-1e-10);
+        expect((x - frame.x) / frame.width).toBeLessThanOrEqual(1 + 1e-10);
+        expect((y - frame.y) / frame.height).toBeGreaterThanOrEqual(-1e-10);
+        expect((y - frame.y) / frame.height).toBeLessThanOrEqual(1 + 1e-10);
+      }
+      expect(frame.width / frame.height).toBeCloseTo(width / height);
+      aligned(viewer.viewport);
+    };
+    check();
+    [width, height] = [h, w]; observer([], {} as ResizeObserver);
+    check();
+  });
+
+  it('enables centering for placed or restored pins and disables it when the guess is cleared', async () => {
+    const { board, mount } = await fixture();
+    const controls = mapControls(board);
+    const center = controls.querySelector<HTMLButtonElement>('[aria-label="Center map on marker"]')!;
+    expect(center.disabled).toBe(true);
+    click(mount, 300, 150);
+    expect(center.disabled).toBe(false);
+    board.setMarkers(null);
+    expect(center.disabled).toBe(true);
+    mount.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    expect(center.disabled).toBe(false);
+    board.setMarkers(null, { x: 0, y: 0 });
+    expect(center.disabled).toBe(true);
+    const restored = { x: 1000, y: 2000 };
+    board.setMarkers(restored); board.zoom(4);
+    expect(center.disabled).toBe(false);
+    center.click();
+    expect(camera().x + camera().width / 2).toBeCloseTo(restored.x);
+    expect(camera().y + camera().height / 2).toBeCloseTo(restored.y);
+    const restoredControls = mapControls(board);
+    expect(restoredControls.querySelector<HTMLButtonElement>('[aria-label="Center map on marker"]')!.disabled).toBe(false);
+  });
+
   it('centres the solution target under the exact guess-pin tip through zoom changes', async () => {
     const { board } = await fixture(), point = { x: 1000, y: 2000 };
     board.setMarkers(point, point);

@@ -9,7 +9,7 @@ export function mapControls(board: MapBoard): HTMLElement {
   for (const [label, action, icon] of [
     ['Zoom in', () => board.zoom(1.6), 'zoom-in'],
     ['Zoom out', () => board.zoom(1 / 1.6), 'zoom-out'],
-    ['Show entire map', () => board.home(), 'arrow-counterclockwise'],
+    ['Show entire map', () => board.showEntireMap(), 'arrow-counterclockwise'],
     ['Center map on marker', () => board.centerOnPin(), null],
   ] as const) {
     const button = document.createElement('button'); button.type = 'button';
@@ -18,6 +18,7 @@ export function mapControls(board: MapBoard): HTMLElement {
     else {
       const icon = document.createElement('img'); icon.src = '/assets/noitaguessr-pin.svg'; icon.alt = ''; icon.width = 18; icon.height = 22;
       const text = bindText(document.createElement('span'), label); button.append(icon, text);
+      board.onPinChange(placed => { button.disabled = !placed; });
     }
     button.onclick = action; row.append(button);
   }

@@ -1,17 +1,18 @@
 import type { Bounds, Point } from "./rules";
 import { ANSWER_PIN_HEIGHT, GUESS_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT } from './map-pin';
 
-/** Fill the panel on entry instead of shrinking the tall world into a strip.
- * Panning still reaches the portions above and below the initial view. */
+/** Fill the panel on entry, or contain the entire world when explicitly asked. */
 export function frameMap(
   bounds: Bounds,
   width: number,
   height: number,
+  fit: 'fill' | 'contain' = 'fill',
 ): Bounds {
   if (!(width > 0 && height > 0) || !Number.isFinite(width / height))
     return { ...bounds };
   const aspect = width / height;
-  const w = Math.min(bounds.width, bounds.height * aspect);
+  const w = fit === 'contain' ? Math.max(bounds.width, bounds.height * aspect)
+    : Math.min(bounds.width, bounds.height * aspect);
   const h = w / aspect;
   return {
     x: bounds.x + (bounds.width - w) / 2,

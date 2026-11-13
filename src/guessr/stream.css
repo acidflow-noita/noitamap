@@ -132,8 +132,7 @@
 .stream-guess-actions > .stream-secondary-actions { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; gap: .75rem; font-size: .8125rem; }
 .stream-secondary-actions:not(:has(> :not([hidden]))) { display: none; }
 .stream-secondary-actions > [hidden] { display: none; }
-.stream-maximum { flex: 1; }
-.stream-maximum { margin-inline-end: auto; font-size: .8125rem; color: var(--text-muted); }
+.stream-maximum { flex: 0 0 auto; }
 .stream-room-status { min-inline-size: 0; max-inline-size: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .8125rem; color: var(--text-muted); }
 .stream-room-status.stream-activity { max-inline-size: none; inline-size: 100%; }
 .stream-guess-actions > [hidden] { display: none; }
