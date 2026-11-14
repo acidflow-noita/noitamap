@@ -31,6 +31,17 @@ it('names the streamer and the chatter explicitly in their finishing positions, 
   host.destroy();
 });
 
+it('keeps PvP result copy neutral and identifies unfinished rounds after a concession', () => {
+  const duel = structuredClone(result); duel.mode = 'pvp'; duel.scheduledRounds = 5; duel.concededBy = '123';
+  const view = streamResultsView(duel, '456'); document.body.append(view);
+  expect(view.querySelector('.finish-hero')!.textContent).toContain('Rank conceded the match.');
+  expect(view.querySelector('.finish-hero')!.textContent).toContain('1 of 5 rounds completed');
+  expect(view.querySelector('.finish-hero')!.textContent).not.toContain('Equal scores share a rank');
+  expect(view.querySelector('.finish-hero')!.textContent).not.toContain('Streamer');
+  expect(view.querySelector('.stream-host-row')).toBeNull(); view.destroy();
+  const html = streamResultHtml(duel); expect(html).toContain('1v1'); expect(html).not.toContain('Chat vs Streamer');
+});
+
 async function translations() {
   await initializeGuessrTranslations();
   i18next.addResourceBundle('de', 'translation', {}, true, true);

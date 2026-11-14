@@ -9,7 +9,7 @@ export const hasKnownStreamerPro = (userId?: string) => ['564553302', '241636'].
 
 /** Hosting already requires Pro. This badge describes that game's admission,
  * not a live membership lookup or the lifetime of an authentication ticket. */
-export function streamerProStatus(options: { local?: boolean; channel?: string } = {}) {
+export function streamerProStatus(options: { local?: boolean; channel?: string; player?: boolean } = {}) {
   const badge = document.createElement('span');
   badge.tabIndex = 0;
   let proof: ProProof = {}, explanation = '';
@@ -24,7 +24,7 @@ export function streamerProStatus(options: { local?: boolean; channel?: string }
     badge.dataset.proStatus = local ? 'local' : active ? 'active' : 'unknown';
     badge.textContent = local ? tr('Local test') : tr('Pro');
     badge.setAttribute('aria-label', local ? tr('Local test') : tr('Pro'));
-    explanation = known ? tr('Streamer has Pro') : local ? tr('This is a local test game. Streamer Pro access is not checked here.')
+    explanation = options.player && active ? tr('Pro access was confirmed for this game.') : known ? tr('Streamer has Pro') : local ? tr('This is a local test game. Streamer Pro access is not checked here.')
       : tr('The streamer’s Pro access was confirmed for this game.');
     badge.setAttribute('aria-description', explanation);
     popup.setContent({ '.popover-body': explanation });

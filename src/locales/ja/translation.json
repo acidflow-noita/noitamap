@@ -5836,7 +5836,7 @@
   },
   "guessr": {
     "title": "NoitaGuessr",
-    "content": "ゲームモード：デイリー、デモ、チャット対配信者"
+    "content": "ゲームモード：デイリー、デモ、チャット対配信者、1対1"
   },
   "attribution": {
     "poweredBy": "技術提供："

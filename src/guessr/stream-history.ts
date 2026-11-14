@@ -16,14 +16,14 @@ interface HistoryRow {
 export async function streamHistorySection(main: HTMLElement, channel?: string): Promise<void> {
   const section = document.createElement('section'); section.className = 'stream-history';
   if (!channel) {
-    const heading = document.createElement('h2'); bindText(heading, 'Chat vs Streamer'); section.append(heading);
+    const heading = document.createElement('h2'); bindText(heading, 'Multiplayer results'); section.append(heading);
   }
   const status = document.createElement('p'); status.className = 'fine-print'; status.setAttribute('role', 'status');
   bindText(status, 'Loading results…'); section.append(status); main.append(section);
   const wrap = document.createElement('div'); wrap.className = 'table-wrap';
   const table = document.createElement('table'); table.className = 'table stream-score-table';
   const head = document.createElement('tr'), thead = document.createElement('thead'), body = document.createElement('tbody');
-  for (const label of channel ? ['Date', 'Players', 'Results'] : ['Date', 'Streamer', 'Players', 'Results']) {
+  for (const label of channel ? ['Date', 'Players', 'Results'] : ['Date', 'Created by', 'Players', 'Results']) {
     const cell = document.createElement('th'); cell.scope = 'col';
     if (label === 'Players') cell.className = 'numeric';
     bindText(cell, label); head.append(cell);

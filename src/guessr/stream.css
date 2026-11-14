@@ -252,6 +252,11 @@
 .stream-viewer-shell:has(.show-results) { display: block; }
 .stream-viewer-layout.show-results { display: block; }
 .stream-viewer-layout.show-results > .stream-connection-bar { margin-block-end: var(--game-gutter); }
+.pvp-lobby { grid-column: 1 / -1; grid-row: 2 / -1; }
+.pvp-lobby .action-row { justify-content: center; }
+.pvp-lobby [hidden] { display: none; }
+.stream-viewer-layout.show-pvp-lobby { grid-template-rows: auto minmax(0, 1fr); }
+.stream-viewer-layout.show-pvp-lobby > :is(.stream-viewer-clue, .stream-picker) { display: none; }
 .stream-length-setting { display: flex; align-items: center; gap: .75rem; margin-block-end: .75rem; }
 .stream-length-setting .form-select { inline-size: auto; min-inline-size: 7rem; }
 .stream-shared-round { grid-column: 1 / -1; grid-row: 2 / -1; display: flex; min-inline-size: 0; min-block-size: 0; }
@@ -261,6 +266,9 @@
 .stream-viewer-layout.show-round-results > :is(.stream-viewer-clue, .stream-picker, .stream-viewer-results) { display: none; }
 .stream-round-review-actions { margin: 0; flex: none; position: static; padding: .5rem; border: 0; box-shadow: none; }
 .stream-round-review-actions > [hidden] { display: none; }
+.stream-round-results-layout .game-actions { border-block-start: 0; border-block-end: 1px solid var(--border); }
+.pvp-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.pvp-actions > button { min-inline-size: 0; inline-size: 100%; block-size: 3.25rem; padding: .25rem .5rem; font-size: .8125rem; white-space: normal; }
 
 .stream-results-menu { display: flex; flex-wrap: wrap; align-items: center; gap: var(--game-gutter); margin-block: .75rem; }
 .stream-export-options { position: relative; }

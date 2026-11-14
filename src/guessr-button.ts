@@ -29,7 +29,7 @@ export function createGuessrButton(
   link.setAttribute("data-bs-html", "true");
   link.setAttribute("data-bs-title", '<img src="/assets/noitaguessr-logo.svg" class="guessr-popover-logo" width="160" alt="NoitaGuessr">');
   link.setAttribute("data-i18n-content", "guessr.content");
-  link.setAttribute("data-bs-content", i18next.t("guessr.content", "Game modes: Daily, Demo, Chat vs Streamer"));
+  link.setAttribute("data-bs-content", i18next.t("guessr.content", "Game modes: Daily, Demo, Chat vs Streamer, 1v1"));
   const icon = document.createElement("i");
   icon.className = "bi bi-geo-alt";
   icon.setAttribute("aria-hidden", "true");

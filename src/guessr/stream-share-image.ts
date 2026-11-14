@@ -9,9 +9,9 @@ export function streamShareLabels(data: StreamShareData, locale: string, transla
     rank: translate('Rank {{rank}} of {{players}}', { rank: number.format(value.rank), players: number.format(data.players) }) });
   return {
     kind: data.kind,
-    title: translate('Chat vs Streamer'),
+    title: translate(data.mode === 'pvp' ? '1v1' : 'Chat vs Streamer'),
     date: new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${data.day}T00:00:00Z`)),
-    headline: data.kind === 'streamer' ? data.player.name : data.gap > 0
+    headline: data.conceded ? translate('{{player}} conceded the match.', { player: data.conceded }) : data.kind === 'streamer' ? data.player.name : data.gap > 0
       ? translate('You scored more points than {{player}} (difference: {{score}})', { player: data.streamer.name, score: difference })
       : data.gap < 0 ? translate('You scored fewer points than {{player}} (difference: {{score}})', { player: data.streamer.name, score: difference })
         : translate('Same score as {{player}}', { player: data.streamer.name }),
@@ -48,6 +48,7 @@ export function drawStreamShareImage(ctx: CanvasRenderingContext2D, labels: Retu
   }
 
   // The approved Daily grid, with the same player order in every cell.
+  if (!labels.rounds.length) return;
   const left = 80, top = 384, column = 208, row = 134;
   ctx.strokeStyle = '#64748b'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.roundRect(left, top, column * 5, row * 2, 16); ctx.stroke();

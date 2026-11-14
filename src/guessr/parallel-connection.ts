@@ -101,6 +101,9 @@ export class ParallelConnection {
       let message: ParallelServerMessage;
       try { message = JSON.parse(event.data); } catch { return; }
       if ('now' in message && Number.isFinite(message.now)) this.offset = message.now - Date.now();
+      if (message.type === 'error' && message.code === 'capacity') {
+        this.update('stopped', message.message); socket.close(4003, 'Invitation unavailable'); return;
+      }
       if (message.type === 'published') this.completed = true;
       if (message.type === 'authorized') {
         connectionDiagnostic({ event: 'connected', transport: 'coordinator', code: this.ready ? 'reauthorized' : 'authorized' });
@@ -149,7 +152,8 @@ export class ParallelConnection {
       connectionDiagnostic({ event: 'socket-close', transport: 'coordinator', status: event.code });
       this.ready = false; clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
       if (event.code === 1000 && this.completed) { this.update('connected', 'Game finished'); return; }
-      if (event.code === 4002) { this.update('stopped', 'Another tab is hosting this game. Continue there.'); return; }
+      if (event.code === 4002) { this.update('stopped', 'This game is open in another tab. Continue there.'); return; }
+      if (event.code === 4003) { this.update('stopped', 'This invitation is not available.'); return; }
       if (event.code === 4001) {
         try { sessionStorage.removeItem(this.storageKey); } catch {}
         if (++this.authFailures > 1) { this.update('stopped', 'Sign in with Twitch to play.'); return; }

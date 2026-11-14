@@ -5836,7 +5836,7 @@
   },
   "guessr": {
     "title": "NoitaGuessr",
-    "content": "游戏模式：每日、演示、聊天观众对战主播"
+    "content": "游戏模式：每日、演示、聊天观众对战主播、1v1"
   },
   "attribution": {
     "poweredBy": "技术支持："

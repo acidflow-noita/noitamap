@@ -1,4 +1,5 @@
 import { mapControls } from './map-controls';
+import { readPvpResume, leaveSavedPvp, forgetPvp } from './pvp-resume';
 import "./game.css";
 import Dialog from "bootstrap/js/dist/dialog.js";
 import { bindText, bindAttribute, tr, initializeGuessrTranslations, guessrLocale, guessrGameTerm, formatGuessrNumber } from './i18n';
@@ -246,6 +247,13 @@ function home(): void {
     undefined,
   );
   const candidates: (NonNullable<LobbyOptions['resume']> & { mode: string })[] = [];
+  const pvp = readPvpResume();
+  if (pvp) candidates.push({
+    mode: 'pvp', modeLabel: '1v1', complete: pvp.complete, continueLabel: pvp.complete ? 'View saved results' : 'Continue 1v1', currentRound: pvp.round, totalRounds: pvp.rounds, completedRounds: pvp.completed,
+    action: () => { historyReplace(guessRouteUrl('pvp-game', location.href, { game: pvp.id })); openPvpGame(); },
+    quit: async () => { if (pvp.complete) forgetPvp(pvp.id); else await leaveSavedPvp(pvp); home(); },
+    quitDescription: pvp.lobby ? pvp.creator ? 'This cancels the match invitation.' : 'This declines the match invitation.' : 'Leaving now concedes the match to your opponent.',
+  });
   if (stream && stream.stage !== 'complete') candidates.push({
     mode: 'stream', modeLabel: 'Chat vs Streamer', continueLabel: 'Continue Chat vs Streamer', twitch: true,
     currentRound: stream.round + 1, totalRounds: stream.session.rounds.length, completedRounds: stream.reveals.length,
@@ -290,6 +298,7 @@ function home(): void {
         rankedLobby(undefined, utcDay(Date.now() - 86400000)),
       streamHost: openStream,
       streamJoin: openStreamPicker,
+      pvp: openPvp,
       resume,
       history:
         latest && best ? { recent: latest, best, action: history } : undefined,
@@ -320,6 +329,36 @@ function openStreamPicker(): void {
   view = "stream";
   setPane("stream-picker");
   streamUI?.picker();
+}
+async function openPvp(): Promise<void> {
+  save(); streamUI?.suspend(); view = 'stream'; setPane('pvp');
+  const main = shell();
+  try {
+    const { mountPvpSetup } = await import('./pvp-setup'); if (!main.isConnected) return;
+    clearClue = mountPvpSetup(main, id => {
+      historyReplace(guessRouteUrl('pvp-game', location.href, { game: id })); void openPvpGame();
+    }, home);
+  } catch (error) { if (main.isConnected) toast(msg(() => localizedError(error))); }
+}
+async function openPvpGame(): Promise<void> {
+  storage.setItem(ACTIVE_MODE_KEY, 'pvp');
+  save(); streamUI?.suspend(); view = 'stream';
+  const main = shell();
+  try {
+    const [{ mountStreamPicker }, { TwitchViewer }, { StreamResultArchive }] = await Promise.all([
+      import('./stream-picker'), import('./twitch-viewer'), import('./stream-result-archive'),
+    ]);
+    if (!main.isConnected) return;
+    const id = readGuessRoute(new URL(location.href)).game;
+    const saved = id ? await new StreamResultArchive().get(id).catch(() => undefined) : undefined;
+    if (!main.isConnected) return;
+    if (saved?.result.mode === 'pvp') { await streamUI?.publicResult(saved.result.id); return; }
+    const viewer = new TwitchViewer({ chat: false });
+    const imageRoot = import.meta.env.VITE_GUESSR_IMAGE_ROOT || (gameApiOrigin() ? 'https://guessr-tiles.sage-data.xyz/images' : '/guessr-images/images');
+    if (!pack.map) { viewer.dispose(); toast(msg('The game service is unavailable.')); return; }
+    const close = mountStreamPicker(main, { ...pack, map: pack.map }, viewer, imageRoot, home);
+    clearClue = () => { close(); viewer.dispose(); };
+  } catch (error) { if (main.isConnected) toast(msg(() => localizedError(error))); }
 }
 
 async function startPractice(): Promise<void> {
@@ -1592,7 +1631,7 @@ if (!isGuessrAvailable(location.hostname, import.meta.env.DEV)) {
       home,
       toast,
     });
-    if (pane !== "stream-picker" && pane !== "stream-result") try {
+    if (pane !== "stream-picker" && pane !== "stream-result" && pane !== 'pvp' && pane !== 'pvp-game') try {
       const saved = JSON.parse(storage.getItem(IMAGE_SESSION_KEY) || "null");
       if (
         saved?.version === config.version &&
@@ -1626,7 +1665,9 @@ if (!isGuessrAvailable(location.hostname, import.meta.env.DEV)) {
     } catch {
       imageSession = null;
     }
-    if (pane === "stream") openStream();
+    if (pane === 'pvp') openPvp();
+    else if (pane === 'pvp-game') openPvpGame();
+    else if (pane === "stream") openStream();
     else if (pane === "stream-picker") openStreamPicker();
     else if (pane === "stream-result") {
       view = "stream";

@@ -27,6 +27,8 @@ export interface StreamRound {
   token: string;
 }
 export interface StreamSession {
+  mode?: import('./match-settings').MultiplayerMode;
+  streaming?: boolean;
   transport?: 'twitch' | 'parallel';
   /** Current rounds are coordinated through the Twitch broadcast transport. */
   live?: true;
@@ -45,6 +47,7 @@ export interface StreamSession {
   token: string;
 }
 export interface StreamGuess {
+  automatic?: boolean;
   point: Point | null;
   maximum: number;
   /** Twitch message IDs prevent duplicate delivery from replacing a guess. */
@@ -83,6 +86,7 @@ export interface StreamParticipant extends StreamPlayer {
   guesses: (StreamGuess | null)[];
 }
 export interface StreamGame {
+  pvp?: { ready: string[]; declined: string[]; controllers?: Record<string, number>; concededBy?: string };
   schema: 1;
   session: StreamSession;
   /** Server epoch minus browser epoch; chat timestamps already use server time. */
@@ -120,6 +124,9 @@ export interface StreamPlayerResult extends StreamPlayer {
 }
 /** No credentials, unrevealed tokens, raw chat, or account IDs in public results. */
 export interface StreamResult {
+  mode?: import('./match-settings').MultiplayerMode;
+  concededBy?: string;
+  scheduledRounds?: number;
   schema: 1;
   id: string;
   version: string;

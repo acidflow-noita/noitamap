@@ -63,6 +63,8 @@ export class TwitchViewerError extends Error {
 }
 export interface TwitchViewerPopup { readonly closed: boolean; close(): void }
 export interface TwitchViewerOptions {
+  /** Private PvP needs identity only, without permission to read or send chat. */
+  chat?: boolean;
   clientId?: string;
   /** Dependency injection for unit tests; the default calls only Twitch APIs. */
   fetch?: typeof fetch;
@@ -85,6 +87,7 @@ const emptyState = (): TwitchViewerState => ({ connected: false, connecting: fal
 /** Viewer-only browser OAuth. No Noitamap auth, Worker calls or queued
  * messages. connect() grants permission; sendGuess() is a separate user action. */
 export class TwitchViewer {
+  private get requiredScopes(): string[] { return this.options.chat === false ? [] : SCOPES; }
   readonly configured: boolean;
   readonly clientId: string;
   readonly redirectUri: string;
@@ -206,7 +209,7 @@ export class TwitchViewer {
     const state = Array.from(crypto.getRandomValues(new Uint8Array(32)), n => n.toString(16).padStart(2, '0')).join('');
     const authorize = new URL('https://id.twitch.tv/oauth2/authorize');
     authorize.search = new URLSearchParams({ response_type: 'token', client_id: this.clientId,
-      redirect_uri: this.redirectUri, scope: [...SCOPES, ...(options.announcements ? [ANNOUNCEMENT_SCOPE] : [])].join(' '), state, force_verify: 'true' }).toString();
+      redirect_uri: this.redirectUri, scope: [...this.requiredScopes, ...(options.announcements ? [ANNOUNCEMENT_SCOPE] : [])].join(' '), state, force_verify: 'true' }).toString();
     let popup: TwitchViewerPopup | null;
     try { popup = (this.options.popup ?? ((url, name, features) => window.open(url, name, features)))(
       authorize.href, 'noitamap-twitch-' + state, 'popup,width=520,height=720'); }
@@ -285,10 +288,10 @@ export class TwitchViewer {
     if (value.client_id !== this.clientId || typeof value.user_id !== 'string' || !/^\d{1,30}$/.test(value.user_id)
       || expectedUserId !== undefined && value.user_id !== expectedUserId
       || typeof value.login !== 'string' || !/^[a-z0-9_]{1,25}$/.test(value.login)
-      || !Array.isArray(value.scopes) || !SCOPES.every(scope => (value.scopes as unknown[]).includes(scope))
+      || !Array.isArray(value.scopes) || !this.requiredScopes.every(scope => (value.scopes as unknown[]).includes(scope))
       || typeof value.expires_in !== 'number' || !Number.isSafeInteger(value.expires_in) || value.expires_in <= 5
       || !Number.isSafeInteger(Date.now() + value.expires_in * 1000))
-      throw new TwitchViewerError('validation', 'Twitch sign-in did not match this app, account, or chat permission. Connect again.');
+      throw new TwitchViewerError('validation', this.options.chat === false ? 'Twitch could not verify your sign-in. Please connect again.' : 'Twitch sign-in did not match this app, account, or chat permission. Connect again.');
     return { token, userId: value.user_id, login: value.login, scopes: value.scopes as string[], checkedAt: Date.now(), expiresAt: Date.now() + value.expires_in * 1000 };
   }
   /** Local streamer testing uses the same direct announcement API as production. */

@@ -19,6 +19,7 @@ import {
   type StreamSession,
 } from "../src/guessr/stream-types";
 import { gameDatabase } from "./helpers/guessr-database";
+import type { ParallelInitialization } from '../src/guessr/parallel-types';
 import {
   streamAnswer,
   streamHost,
@@ -106,6 +107,23 @@ async function fixture() {
   return { ...db, env, call, request, completed };
 }
 describe("single-document stream publication", () => {
+  it('creates PvP only with Pro and private transport, without handing its creator any future clues or tokens', async () => {
+    const f = await fixture(), initialized: ParallelInitialization[] = [];
+    f.env.STREAM_COORDINATORS = { getByName: () => ({ initialize: async input => { initialized.push(input); }, fetch: async () => new Response() }) };
+    expect((await f.call('/sessions', { mode: 'pvp', transport: 'parallel', rounds: 3 }, null)).status).toBe(401);
+    expect((await f.call('/sessions', { mode: 'pvp', transport: 'twitch', rounds: 3 })).status).toBe(400);
+    expect((await f.call('/sessions', { transport: 'parallel', streaming: 'false' })).status).toBe(400);
+    expect(initialized).toHaveLength(0);
+    const response = await f.call('/sessions', { mode: 'pvp', transport: 'parallel', rounds: 3 });
+    expect(response.status).toBe(201);
+    const result = await response.json() as StreamSession;
+    expect(result.mode).toBe('pvp'); expect(result.streaming).toBe(false); expect(result.token).toBe(''); expect(result.rounds).toEqual([]);
+    expect(initialized).toHaveLength(1); expect(initialized[0].reveals).toHaveLength(3);
+    expect(initialized[0].session.rounds).toHaveLength(3);
+    expect(JSON.stringify(result)).not.toContain(initialized[0].session.rounds[0].clue.frames![0].image);
+    expect((await f.call('/sessions', { transport: 'parallel', rounds: 3 })).status).toBe(201);
+    expect(initialized[1].session.streaming).toBe(true);
+  });
   it('runs a Twitch game with no live object or per-round database work, then writes one final result', async () => {
     const f = await fixture();
     const start = await f.call('/sessions', { transport: 'twitch', rounds: 10 });

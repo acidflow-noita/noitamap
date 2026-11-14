@@ -7,6 +7,7 @@ import { ImageGameError } from "./image-game-server.ts";
 import { within, type Point } from "./rules.ts";
 import { rankStreamPlayers } from "./stream-ranking.ts";
 import { streamPlayerName } from './stream-display-name.ts';
+import { defaultStreaming, type MultiplayerMode } from './match-settings.ts';
 import {
   STREAM_MAX_PLAYERS,
   STREAM_DEFAULT_ROUNDS, validStreamRoundCount,
@@ -35,6 +36,8 @@ export interface StreamHostIdentity {
   ticketIssuedAt?: number;
 }
 interface Envelope {
+  mode?: MultiplayerMode;
+  streaming?: boolean;
   transport?: 'twitch' | 'parallel';
   kind: "session" | "round";
   owner: string;
@@ -139,13 +142,17 @@ export class StreamService {
     now = Date.now(),
     transport?: 'twitch' | 'parallel',
     roundCount = STREAM_DEFAULT_ROUNDS,
+    settings: { mode?: MultiplayerMode; streaming?: boolean } = {},
   ): Promise<StreamSession> {
     if (!validStreamRoundCount(roundCount)) throw new ImageGameError(400, 'Choose 3, 5 or 10 rounds.');
+    if (settings.mode !== undefined && settings.mode !== 'stream' && settings.mode !== 'pvp'
+      || settings.streaming !== undefined && typeof settings.streaming !== 'boolean') throw new ImageGameError(400, 'Invalid game settings.');
+    const mode = settings.mode ?? 'stream', streaming = settings.streaming ?? defaultStreaming(mode);
     const started = performance.now();
     const config = await this.source.config(),
       selected = await this.source.sampleRounds(roundCount);
     const id = crypto.randomUUID(),
-      expiresAt = now + 30 * 86400000;
+      expiresAt = now + (mode === 'pvp' ? 30 * 60000 : 30 * 86400000);
     const host = {
       id: user.twitchUserId,
       login: user.twitchLogin,
@@ -157,6 +164,7 @@ export class StreamService {
       area: r.area,
     }));
     const envelope: Envelope = {
+      mode, streaming,
       ...(transport ? { transport } : {}),
       kind: "session",
       owner: user.sub,
@@ -181,6 +189,7 @@ export class StreamService {
       })),
     );
     return {
+      mode, streaming,
       ...(transport ? { transport } : {}),
       id,
       version: config.version,

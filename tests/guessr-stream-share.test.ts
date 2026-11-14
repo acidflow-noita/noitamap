@@ -15,6 +15,18 @@ function game(scores = [36880, 38120, 38120, 50000, 32000]): StreamResult {
 }
 const t = (source: string, values: Record<string, string | number> = {}) => source.replace(/\{\{(\w+)\}\}/g, (_, key) => String(values[key]));
 
+it('exports a 1v1 comparison for either player without streamer-only styling or an invented win after a concession', () => {
+  const result = game([40000, 45000]); result.mode = 'pvp'; result.players[0].rank = 2; result.players[1].rank = 1;
+  const creator = streamShareData(result, '0')!, guest = streamShareData(result, '1')!;
+  expect(creator).toMatchObject({ mode: 'pvp', kind: 'chatter', gap: -5000,
+    player: { name: 'dunkorslam', color: '#FF4500' }, streamer: { name: 'Chatter1' } });
+  expect(guest.gap).toBe(5000); expect(streamShareLabels(creator, 'en', t).title).toBe('1v1');
+  result.concededBy = '1'; result.rounds = []; result.scheduledRounds = 5;
+  result.players.forEach((p, i) => { p.rounds = []; p.score = 0; p.rank = i + 1; });
+  const cancelled = streamShareLabels(streamShareData(result, '0')!, 'en', t);
+  expect(cancelled.headline).toBe('Chatter1 conceded the match.'); expect(cancelled.rounds).toEqual([]);
+});
+
 it('compares the selected chatter with the streamer and preserves competition ranks and username colors', () => {
   const data = streamShareData(game(), '1')!;
   expect(data).toMatchObject({ kind: 'chatter', players: 5, gap: 1240, chatters: 4, outscored: 1,

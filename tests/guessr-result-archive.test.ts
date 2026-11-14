@@ -90,3 +90,17 @@ it('drops expired publication credentials while retaining the complete result', 
   expect((await archive.get(game.session.id))?.pendingToken).toBeUndefined();
   expect((await archive.get(game.session.id))?.result.id).toBe(game.session.id);
 });
+
+it('restores a conceded PvP result with no completed rounds and no publication credentials', async () => {
+  const game = await completed();
+  const result = { ...streamResult(game), mode: 'pvp' as const, scheduledRounds: 5, concededBy: game.session.host.id,
+    rounds: [], positions: {}, players: [
+      { ...game.session.host, rank: 2, score: 0, rounds: [] },
+      { id: '123', login: 'opponent', name: 'Opponent', rank: 1, score: 0, rounds: [] },
+    ] };
+  const database = store(), archive = new StreamResultArchive(() => localStorage, () => database);
+  await archive.save({ result, published: false });
+  const restored = await new StreamResultArchive(() => localStorage, () => database).get(result.id);
+  expect(restored).toEqual({ result, published: false });
+  expect(restored?.pendingToken).toBeUndefined();
+});

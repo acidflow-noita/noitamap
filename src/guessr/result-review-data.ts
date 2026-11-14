@@ -37,7 +37,7 @@ export function resultClue(config: ImageGameConfig, answer: Point): ClueSource |
 
 export function resultRoundView(result: StreamResult, index: number): StreamRoundView {
   const round = result.rounds[index];
-  return { round: index + 1, host: result.host, answer: round.answer, label: round.name,
+  return { ...(result.mode ? { mode: result.mode } : {}), round: index + 1, host: result.host, answer: round.answer, label: round.name,
     players: result.players.map(player => {
       const position = result.positions?.[player.id]?.[index];
       return { id: player.id, name: player.name, login: player.login, color: player.color,

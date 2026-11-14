@@ -17,7 +17,9 @@ export interface LobbyOptions {
   dailyYesterday: LobbyAction;
   streamHost: LobbyAction;
   streamJoin?: LobbyAction;
+  pvp?: LobbyAction;
   resume?: {
+    complete?: boolean;
     modeLabel: string;
     continueLabel: string;
     twitch?: boolean;
@@ -112,8 +114,9 @@ function continueGame(
   const current = Math.max(1, Math.min(total, resume.currentRound));
   const completed = Math.max(0, Math.min(total, resume.completedRounds));
   details.append(
-    element("h2", resume.twitch ? "twitch-mode-label" : "", msg("{{value1}} in progress", () => ({ value1: tr(resume.modeLabel) }))),
-    element("span", "lobby-resume-round", msg("Round {{value1}} of {{value2}}", () => ({ value1: current, value2: total }))),
+    element("h2", resume.twitch ? "twitch-mode-label" : "", resume.complete
+      ? msg(() => `${tr(resume.modeLabel)}: ${tr('Results')}`) : msg("{{value1}} in progress", () => ({ value1: tr(resume.modeLabel) }))),
+    ...(!resume.complete ? [element("span", "lobby-resume-round", msg("Round {{value1}} of {{value2}}", () => ({ value1: current, value2: total })))] : []),
   );
   const progress = element("div", "lobby-rounds");
   progress.setAttribute("role", "progressbar");
@@ -131,9 +134,9 @@ function continueGame(
   }
   body.append(
     details,
-    progress,
+    ...(!resume.complete ? [progress] : []),
     actionButton(msg(resume.continueLabel), resume.action, true),
-    actionButton(msg("Exit game"), () => confirmQuitGame(resume.quit, resume.quitDescription)),
+    ...(!resume.complete ? [actionButton(msg("Exit game"), () => confirmQuitGame(resume.quit, resume.quitDescription))] : []),
   );
   card.append(body);
   return card;
@@ -209,6 +212,9 @@ export function createLobby(options: LobbyOptions): HTMLElement {
     }),
   );
   lobby.append(modes);
+  if (options.pvp) modes.append(modeCard({ name: '1v1', image: 'fungal-caverns',
+    description: 'Challenge another player. Only one of you needs Pro.', badge: 'Pro', pro: true,
+    actions: [actionButton(msg('Play 1v1'), options.pvp, true)] }));
   if (options.history) lobby.append(historySummary(options.history));
   return lobby;
 }

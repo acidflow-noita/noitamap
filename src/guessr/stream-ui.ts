@@ -55,6 +55,9 @@ import { confirmQuitGame } from './quit-game';
 import { playerColor } from './player-color';
 import { StreamResultArchive, clearCompletedHostTokens, type ArchivedStreamResult } from './stream-result-archive';
 import { streamHostName } from './stream-display-name';
+import { streamingSetting } from './streaming-setting';
+import { streamsAhead } from './match-settings';
+import { streamRevealAt } from './stream-timing';
 
 const SHARE_ANNOUNCEMENTS_KEY = 'noitamap-guessr-share-announcements';
 
@@ -217,7 +220,6 @@ export class StreamUI {
   private quitting = false;
   private mounted = false;
   private saveTimer?: ReturnType<typeof setTimeout>;
-  private registeredAuth = false;
   private saveWarning = false;
   private pulseTimer?: ReturnType<typeof setTimeout>;
   private roomHealthy = true;
@@ -239,6 +241,7 @@ export class StreamUI {
   private timedRounds = true;
   private roundSeconds = 90;
   private roundCount = STREAM_DEFAULT_ROUNDS;
+  private streaming = true;
   private hostRelease?: () => void;
   private activityUntil = 0;
   private guessNoticeTimer?: ReturnType<typeof setTimeout>;
@@ -258,7 +261,7 @@ export class StreamUI {
     const pane = readGuessRoute(new URL(location.href)).pane;
     // A chatter tab may share browser storage with the host. It must never
     // restore, save or pause that private host session.
-    if (pane === 'stream-picker') return;
+    if (pane === 'stream-picker' || pane === 'pvp' || pane === 'pvp-game') return;
     try { this.shareAnnouncements = localStorage.getItem(SHARE_ANNOUNCEMENTS_KEY) === 'true'; } catch { /* Optional preference. */ }
     try {
       const settings = JSON.parse(localStorage.getItem('noitamap-guessr-round-timer') ?? 'null');
@@ -403,7 +406,7 @@ export class StreamUI {
     main.append(heading);
     const accountStep = el('div'), playStep = el('div'), shareStep = el('div');
     accountStep.append(el('h2', 'Connect Twitch'));
-    playStep.append(el('h2', 'Start new game'), el('p', 'Chat submits their guesses before the streamer plays that location. This prevents cheating from the stream.'));
+    playStep.append(el('h2', 'Start new game'), streamingSetting('stream', value => { this.streaming = value; }).element);
     const timerRow = el('div', '', 'd-flex align-items-center gap-2');
     const timerSwitch = el('span', '', 'switch theme-primary'), automatic = el('input');
     automatic.type = 'checkbox'; automatic.id = 'stream-automatic-timer'; automatic.setAttribute('role', 'switch'); automatic.checked = this.timedRounds;
@@ -504,13 +507,10 @@ export class StreamUI {
       }
       if (!this.api.local) {
         const auth = await gameAuth();
-        if (!this.registeredAuth) {
-          auth.registerLoginPreparation("guessr", () => {
-            this.save();
-            return { pane: "stream" };
-          });
-          this.registeredAuth = true;
-        }
+        auth.registerLoginPreparation("guessr", () => {
+          this.save();
+          return { pane: "stream" };
+        });
         if (!main.isConnected) return;
         if (!auth.getState().isSubscriber) {
           const { createProControls } = await import("../auth/pro-controls");
@@ -620,7 +620,9 @@ export class StreamUI {
         if (useTwitch && (!identity?.connected || !identity.login)) throw new Error(tr('Connect Twitch before starting a live test.'));
         this.api.setLocalChannel(useTwitch ? identity!.login! : undefined);
       }
-      const session = await this.api.start(useTwitch ? this.api.local || import.meta.env.VITE_GUESSR_PARALLEL_TRANSPORT === 'false' ? 'twitch' : 'parallel' : undefined, this.roundCount, this.timedRounds ? this.roundSeconds : 0);
+      const session = await this.api.start(useTwitch ? this.api.local || import.meta.env.VITE_GUESSR_PARALLEL_TRANSPORT === 'false' ? 'twitch' : 'parallel' : undefined, this.roundCount, this.timedRounds ? this.roundSeconds : 0, this.streaming);
+      if (session.transport === 'parallel' && !this.streaming && session.streaming !== false) throw Error('This timing option is not available on this site yet.');
+      if (session.transport !== 'parallel') session.streaming = this.streaming;
       if (session.transport) await this.acquireHost(session.host.id);
       this.parallel?.dispose(); this.parallel = undefined;
       this.broadcast?.dispose(); this.broadcast = undefined;
@@ -723,6 +725,7 @@ export class StreamUI {
         return;
       }
       if (shortenFinishedWindow(game, now)) { this.save(); this.broadcast?.publishState(false); this.updateTimer(); }
+      if (game.stage === 'closing' && streamRevealAt(game, now) <= now) { void this.submit(true); return; }
       if (document.querySelector('.stream-host-shell[data-starting]') && now >= game.timing.startsAt && !game.paused) this.render();
       const revision = game.timing.revision;
       const next = streamTick(game, now);
@@ -797,6 +800,8 @@ export class StreamUI {
     const names = el('div', '', 'stream-joined-names'); names.id = 'stream-joined-names';
     if (this.game!.timing!.phase === 'lobby') {
       section.append(el('h2', 'Ready to start'), el('p', 'Share the game link, then start when your chat is ready.'));
+      section.append(el('p', streamsAhead(this.game!.session) ? 'Other players guess each location before it appears on your stream.'
+        : 'Everyone plays the same location at the same time.'));
       const start = action('Start game', () => {
         const game = this.game!;
         if (game.paused || !this.roomHealthy || this.sharePending) return;
@@ -1204,8 +1209,10 @@ export class StreamUI {
         next.id = 'stream-auto-next'; next.disabled = true;
       }
     } else if (game.stage === "closing") {
-      actions.append(el("p", this.durable ? "Waiting for confirmation" : "Round closed. Chat guesses and your submission are saved."));
-      if (!this.durable) actions.append(action("Retry reveal", () => this.submit(), "primary"));
+      const waiting = streamRevealAt(game, streamTime(game)) > streamTime(game);
+      actions.append(el("p", waiting && !streamsAhead(game.session) ? 'Your guess is locked. Waiting for the other players.'
+        : this.durable ? "Waiting for confirmation" : "Round closed. Chat guesses and your submission are saved."));
+      if (!this.durable && !waiting) actions.append(action("Retry reveal", () => this.submit(), "primary"));
     } else {
       const submit = action(
         "Submit guess",
@@ -1294,13 +1301,13 @@ export class StreamUI {
         }
         await durable; return;
       }
+      const wasClosing = this.game.stage === 'closing';
       closeStreamRound(this.game, this.game.guess);
+      shortenFinishedWindow(this.game, streamTime(this.game));
       this.save();
-      this.render();
+      if (!wasClosing) this.render();
       const game = this.game;
-      const closed = game.timing?.windows[game.round]?.closesAt;
-      const grace = closed === null || closed === undefined ? 0 : Math.max(0, closed + STREAM_DELIVERY_GRACE_MS - streamTime(game));
-      if (grace) await new Promise(resolve => setTimeout(resolve, grace));
+      if (game.timing && streamRevealAt(game, streamTime(game)) > streamTime(game)) return;
       if (this.game !== game) return;
       const reveal = await this.api.reveal(
         game.session.rounds[game.round].token,
@@ -1472,6 +1479,10 @@ export class StreamUI {
     main.append(heading, loading);
     try {
       let entry = await this.archive.get(id);
+      if (entry?.result.mode === 'pvp' && !entry.published && navigator.onLine !== false) try {
+        entry = { result: await this.api.result(id), published: true };
+        await this.archive.save(entry);
+      } catch { /* The saved complete result stays readable without a connection. */ }
       if (!entry) entry = { result: await this.api.result(id), published: true };
       if (!main.isConnected) return;
       loading.remove(); heading.remove();

@@ -32,6 +32,12 @@
     gap: var(--lobby-gap);
     align-items: stretch;
   }
+  @media (min-width: 55.001rem) and (max-width: 64.999rem) {
+    .lobby-modes:has(> :nth-child(4)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 65rem) {
+    .lobby-modes:has(> :nth-child(4)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
 
   .lobby-mode-image {
     display: block;

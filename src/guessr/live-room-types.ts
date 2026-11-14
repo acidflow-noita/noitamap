@@ -5,6 +5,17 @@ import type { AreaDifficulty } from './area-rules.ts';
 /** Public room messages never contain future answers or private reveal tokens. */
 export interface LiveRoomView {
   schema: 1;
+  streaming?: boolean;
+  mode?: 'stream' | 'pvp';
+  pvp?: {
+    players: import('./stream-types').StreamPlayer[];
+    creator: boolean;
+    active: boolean;
+    locked: boolean;
+    opponentLocked: boolean;
+    ready: string[];
+    concededBy?: string;
+  };
   channel: string;
   hostId?: string;
   hostPro?: 'active' | 'unknown';
@@ -23,7 +34,7 @@ export interface LiveRoomView {
   expiresAt: number | null;
   resultId?: string;
   outcome?: StreamRoundOutcome;
-  result?: StreamPublishedResult;
+  result?: StreamPublishedResult | import('./stream-types').StreamResult;
   timing?: { phase: 'lobby' | 'warmup' | 'play'; startsAt: number; deadline: number | null; hostRound: number; chatRound?: number | null; seconds: number; resultsUntil?: number; revealed?: number; early?: boolean;
     /** Host accepts receipt/result recovery without resending the current clue. */
     recovery?: 1 };

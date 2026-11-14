@@ -16,10 +16,10 @@ import { encodeStreamPacket, guessReceiptKey } from '../src/guessr/stream-wire';
 import { Blob as NodeBlob } from 'node:buffer';
 import { streamArea, streamAnswer } from './helpers/guessr-stream';
 
-const parallel = vi.hoisted(() => ({ events: undefined as Parameters<typeof import('../src/guessr/parallel-game-client')['watchParallelGame']>[3] | undefined, submit: vi.fn() }));
+const parallel = vi.hoisted(() => ({ events: undefined as Parameters<typeof import('../src/guessr/parallel-game-client')['watchParallelGame']>[3] | undefined, submit: vi.fn(), command: vi.fn(async (_message: unknown) => {}) }));
 vi.mock('../src/guessr/parallel-game-client', () => ({ watchParallelGame: (_viewer: unknown, _channel: string, _id: string, events: NonNullable<typeof parallel.events>) => {
   parallel.events = events;
-  return { hasJoined: () => true, join() {}, now: () => Date.now(), submit: parallel.submit, receive() {}, transport() { events.status('connected', ''); }, retry() {}, requestRecovery() {}, dispose() {} };
+  return { hasJoined: () => true, join() {}, now: () => Date.now(), submit: parallel.submit, command: parallel.command, receive() {}, transport() { events.status('connected', ''); }, retry() {}, requestRecovery() {}, dispose() {} };
 } }));
 const ui = vi.hoisted(() => ({ pick: (_point: Point) => {}, show: vi.fn(async (_camera: unknown, ready?: () => void) => { await Promise.resolve(); ready?.(); return true; }), destroy: vi.fn(), notice: vi.fn(), markers: vi.fn() }));
 vi.mock('../src/guessr/button-notice', () => ({ buttonNotice: () => ({ show: ui.notice, dispose: vi.fn() }) }));
@@ -79,6 +79,51 @@ function mount(url: string, initial: Partial<TwitchViewerState> = {}) {
 }
 
 describe('shared channel guess picker', () => {
+  it('lets a PvP creator lock a private guess with no chat connection, and keeps it locked before the next snapshot', async () => {
+    const id = '11111111-1111-4111-8111-111111111111';
+    const f = mount(`/guess/pvp/${gameCode(id, 'pvp')}/`, { connected: true, login: 'wuote', userId: '456' });
+    const state: LiveRoomView = { schema: 1, mode: 'pvp', streaming: false, channel: 'wuote', gameId: id, hostId: '456',
+      revision: 1, phase: 'guess', online: true, paused: false, round: 1, totalRounds: 5, roundId: id,
+      clue: new URL(roundLink('/guess/?channel=wuote', 1, true)).hash.slice(6), expiresAt: Date.now() + 999999,
+      timing: { phase: 'play', startsAt: Date.now() - 1000, deadline: Date.now() + 30000, seconds: 30, hostRound: 1, chatRound: 1 },
+      pvp: { creator: true, active: true, locked: false, opponentLocked: false, ready: [], players: [
+        { id: '456', login: 'wuote', name: 'WUOTE' }, { id: '123', login: 'opponent', name: 'Opponent' },
+      ] } };
+    parallel.events!.state(state); ui.pick(streamAnswer);
+    expect(f.button('Lock guess').disabled).toBe(false);
+    expect(f.viewer.watchChat).not.toHaveBeenCalled();
+    f.button('Lock guess').click();
+    await vi.waitFor(() => expect(parallel.submit).toHaveBeenCalledOnce());
+    expect(f.viewer.sendGuess).not.toHaveBeenCalled(); expect(f.viewer.sendMessage).not.toHaveBeenCalled();
+    const submitted = parallel.submit.mock.calls[0][0];
+    parallel.events!.durableReceipt({ type: 'receipt', round: 1, accepted: true, ...submitted });
+    await vi.waitFor(() => expect(f.button('Guess locked')?.disabled).toBe(true));
+    ui.pick({ x: streamAnswer.x + 10, y: streamAnswer.y });
+    expect(f.button('Guess locked').disabled).toBe(true);
+    expect(parallel.submit).toHaveBeenCalledTimes(1); expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('binds PvP start approval to the named ready opponent and hides the inactive warm-up map', async () => {
+    const id = '11111111-1111-4111-8111-111111111111';
+    const f = mount(`/guess/pvp/${gameCode(id, 'pvp')}/`, { connected: true, login: 'wuote', userId: '456' });
+    const state: LiveRoomView = { schema: 1, mode: 'pvp', streaming: true, channel: 'wuote', gameId: id, hostId: '456',
+      revision: 1, phase: 'waiting', online: true, paused: false, round: 1, totalRounds: 5, roundId: id, clue: null, expiresAt: Date.now() + 999999,
+      timing: { phase: 'lobby', startsAt: Date.now(), deadline: null, seconds: 30, hostRound: 1, chatRound: 1 },
+      pvp: { creator: true, active: false, locked: false, opponentLocked: false, ready: [], players: [
+        { id: '456', login: 'wuote', name: 'WUOTE' }, { id: '123', login: 'opponent', name: 'Opponent' },
+      ] } };
+    parallel.events!.state(state);
+    expect(f.button('Start game').disabled).toBe(true);
+    parallel.events!.state({ ...state, revision: 2, pvp: { ...state.pvp!, ready: ['123'] } });
+    f.button('Start game').click(); await flush();
+    expect(parallel.command).toHaveBeenCalledWith(expect.objectContaining({ type: 'start', opponentId: '123' }));
+    parallel.events!.state({ ...state, revision: 3, timing: { ...state.timing!, phase: 'warmup', deadline: Date.now() + 30000 } });
+    expect(f.main.querySelector<HTMLElement>('.pvp-lobby')!.hidden).toBe(false);
+    expect(f.main.querySelector('.pvp-lobby')!.textContent).toContain('You will play this location after your opponent.');
+    expect(f.main.querySelector('.stream-viewer-clue .clue')).toBeNull();
+    expect(f.viewer.watchChat).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('uses the full published result on the chatter game URL, with shared menus, previews and inline reviews', async () => {
     const id = '11111111-1111-4111-8111-111111111111';
     const url = `/guess/wuote/${gameCode(id, 'parallel')}/`;
@@ -199,6 +244,7 @@ describe('shared channel guess picker', () => {
     f.button('Round 1 results').click();
     expect(f.main.querySelector<HTMLElement>('.stream-shared-round')!.hidden).toBe(false);
     expect(f.main.querySelectorAll('.stream-shared-round tbody tr')).toHaveLength(2);
+    expect(f.main.querySelector('.stream-shared-round .game-actions')!.compareDocumentPosition(f.main.querySelector('.stream-shared-round table')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(f.main.querySelector('.stream-shared-round .score-perfect')!.textContent).toBe('5,000');
     f.button('Back to round 2').click();
     expect(f.button('Send guess').disabled).toBe(false);

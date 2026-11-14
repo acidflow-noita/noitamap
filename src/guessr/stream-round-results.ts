@@ -25,7 +25,7 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
   const wrap = document.createElement('div'); wrap.className = 'stream-round-score-scroll';
   const table = document.createElement('table'); table.className = 'table stream-score-table stream-round-score-table';
   const head = document.createElement('thead'), header = document.createElement('tr'), body = document.createElement('tbody');
-  head.append(header); table.append(head, body); wrap.append(table); scores.append(heading, wrap, actions); grid.append(mapPanel, scores); main.append(grid);
+  head.append(header); table.append(head, body); wrap.append(table); scores.append(heading, actions, wrap); grid.append(mapPanel, scores); main.append(grid);
   const board = new MapBoard(map, config.bounds, config.overview, () => {}, config.map); board.setLocked(true);
   mapPanel.insertBefore(mapControls(board, { readOnly: true }), map);
   const rows = new Map<string, HTMLTableRowElement>();
@@ -35,11 +35,12 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
     selected = id; rows.get(id)?.classList.add('selected'); board.highlightPlayer(id);
   };
   const players = data.players;
+  const streamerId = data.mode === 'pvp' ? '' : data.host.id;
   const roundOrder = [...players].sort((a, b) => b.score - a.score || b.total - a.total);
   const ranks = new Map<string, number>();
   roundOrder.forEach((p, i) => ranks.set(p.id, i && p.score === roundOrder[i - 1].score
     ? ranks.get(roundOrder[i - 1].id)! : i + 1));
-  board.setPlayers(players.map(p => ({ id: p.id, name: p.name, color: playerColor(p, data.host.id), guess: p.guess })), data.answer, select);
+  board.setPlayers(players.map(p => ({ id: p.id, name: p.name, color: playerColor(p, streamerId), guess: p.guess })), data.answer, select);
   let sort: 'rank' | 'name' | 'round' | 'total' = 'round', direction = -1;
   const columns = [['rank', 'Rank'], ['name', 'Player'], ['round', 'Round score'], ['total', 'Total']] as const;
   const headers: HTMLTableCellElement[] = [];
@@ -57,7 +58,7 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
     rows.clear(); const fragment = document.createDocumentFragment();
     for (const player of ordered) {
       const row = document.createElement('tr'); row.tabIndex = 0; row.dataset.player = player.id;
-      if (player.id === data.host.id) row.classList.add('stream-host-row');
+      if (player.id === streamerId) row.classList.add('stream-host-row');
       if (player.id === selected) row.classList.add('selected');
       row.onmouseenter = row.onfocus = row.onclick = () => select(player.id);
       row.onmouseleave = row.onblur = () => { rows.get(player.id)?.classList.remove('selected'); selected = undefined; board.highlightPlayer(''); };
@@ -66,8 +67,8 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
         const cell = document.createElement('td'); cell.textContent = text;
         if (column !== 1) cell.className = 'numeric';
         if (column === 2 && player.score === 5000) cell.classList.add('score-perfect');
-        else cell.style.color = playerColor(player, data.host.id);
-        if (column === 2 && !(player.recorded ?? !!player.guess)) cell.setAttribute('aria-label', tr('No guess recorded by the streamer'));
+        else cell.style.color = playerColor(player, streamerId);
+        if (column === 2 && !(player.recorded ?? !!player.guess)) cell.setAttribute('aria-label', tr(data.mode === 'pvp' ? 'No recorded guesses' : 'No guess recorded by the streamer'));
         row.append(cell);
       }
       rows.set(player.id, row); fragment.append(row);

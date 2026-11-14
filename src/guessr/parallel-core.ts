@@ -1,12 +1,13 @@
 import { newStreamGame, acceptStreamGuess, closeStreamRound, revealStreamRound, advanceStreamRound, streamResult, type StreamChatMessage } from './stream-state';
 import { beginStreamTiming, startHostWindow, startStreamTiming, streamTick, shortenFinishedWindow,
-  STREAM_DELIVERY_GRACE_MS, STREAM_SUBMISSION_GRACE_MS } from './stream-timing';
+  STREAM_DELIVERY_GRACE_MS, STREAM_SUBMISSION_GRACE_MS, streamRevealAt } from './stream-timing';
 import { emptyParallelMetrics, type ParallelInitialization, type ParallelMetrics, type ParallelSubmission } from './parallel-types';
 import type { StreamGame, StreamParticipant, StreamPlayer, StreamPublishedResult, StreamReveal } from './stream-types';
 import { STREAM_MAX_PLAYERS } from './stream-types';
 import { streamPlayerName } from './stream-display-name';
 import { formatGuessCommand, parseGuessCommand } from './guess-command';
 import { within } from './rules';
+import { streamsAhead } from './match-settings';
 
 /** Invalid player actions are distinct from storage/runtime failures. */
 export class ParallelActionError extends Error {}
@@ -41,7 +42,8 @@ export function joinParallelPlayer(record: ParallelRecord, player: StreamPlayer)
   let found = game.participants.find(p => p.id === player.id);
   const safe = { ...player, name: streamPlayerName(player.name, player.login) };
   if (found) { Object.assign(found, safe); return found; }
-  if (game.participants.length >= STREAM_MAX_PLAYERS) throw new ParallelActionError('This game has reached its player limit.');
+  if (game.pvp && (game.timing?.phase !== 'lobby' || game.pvp.declined.includes(player.id))) throw new ParallelActionError('This invitation is not available.');
+  if (game.participants.length >= (game.pvp ? 2 : STREAM_MAX_PLAYERS)) throw new ParallelActionError('This game has reached its player limit.');
   found = { ...safe, guesses: game.session.rounds.map(() => null) };
   game.participants.push(found);
   if (player.id !== game.session.host.id) {
@@ -53,6 +55,7 @@ export function joinParallelPlayer(record: ParallelRecord, player: StreamPlayer)
 export function directGuessMessage(record: ParallelRecord, player: StreamPlayer, input: ParallelSubmission, now: number): StreamChatMessage | null {
   const round = record.game.session.rounds.findIndex(round => round.id === input?.roundId);
   if (round < 0 || !input.point || !within(input.point, record.game.session.config.bounds)
+    || input.automatic !== undefined && typeof input.automatic !== 'boolean'
     || !Number.isInteger(input.maximum) || input.maximum < 0 || input.maximum > 5000
     || !Number.isSafeInteger(input.revision) || input.revision < 1 || input.revision > 0xffffffff
     || !/^[a-f0-9]{16}$/.test(input.nonce)) return null;
@@ -72,6 +75,19 @@ export function acceptParallelGuess(record: ParallelRecord, message: StreamChatM
     const same = previous.point?.x === command.x && previous.point?.y === command.y && previous.maximum === command.maximum;
     return { status: same ? 'duplicate' as const : 'invalid' as const, command };
   }
+  if (game.pvp) {
+    if (command.roundId !== game.session.rounds[round]?.id) return { status: 'invalid' as const, command };
+    if (!game.participants.some(p => p.id === message.player.id) || previous || record.game.stage === 'complete') return { status: 'closed' as const, command };
+    if (message.player.id === game.session.host.id) {
+      try {
+        if (!submitParallelHost(record, command.nonce, command.roundId!, { x: command.x, y: command.y }, command.maximum ?? 5000, now))
+          return { status: 'invalid' as const, command };
+        Object.assign(game.participants[0].guesses[round]!, { nonce: command.nonce, revision: command.revision });
+        record.metrics.accepted++;
+        return { status: 'accepted' as const, command };
+      } catch (error) { if (!(error instanceof ParallelActionError)) throw error; return { status: 'closed' as const, command }; }
+    }
+  }
   if (previous?.revision !== undefined && previous.revision >= command.revision) return { status: 'old' as const, command };
   if (!game.participants.some(p => p.id === message.player.id) && game.participants.length >= STREAM_MAX_PLAYERS) return { status: 'invalid' as const, command };
   const status = acceptStreamGuess(game, message, now);
@@ -82,6 +98,7 @@ export function acceptParallelGuess(record: ParallelRecord, message: StreamChatM
     record.metrics.accepted++;
     if (previous) record.metrics.replacements++;
     shortenFinishedWindow(game, now);
+    if (game.stage === 'closing') record.pendingRevealAt = streamRevealAt(game, now);
   } else record.metrics.rejected++;
   return { status, command };
 }
@@ -95,7 +112,8 @@ export function submitParallelHost(record: ParallelRecord, id: string, roundId: 
   game.participants[0].guesses[game.round]!.maximum = maximum;
   game.participants[0].guesses[game.round]!.messageId = id;
   record.hostCommands = [...record.hostCommands.slice(-31), id];
-  record.pendingRevealAt = Math.max(now, (timing.windows[game.round]?.closesAt ?? now) + STREAM_DELIVERY_GRACE_MS);
+  shortenFinishedWindow(game, now);
+  record.pendingRevealAt = streamRevealAt(game, now);
   return true;
 }
 /** Shared time progression runs on object alarms, independent of browser tabs. */
@@ -103,6 +121,8 @@ export function tickParallel(record: ParallelRecord, now: number): boolean {
   const game = record.game, timing = game.timing!;
   if (record.ended || game.stage === 'complete' || timing.phase === 'lobby') return false;
   let changed = false;
+  if (game.pvp && timing.phase === 'warmup' && timing.deadline !== null
+    && !game.participants[1]?.guesses[0] && now < timing.deadline + STREAM_DELIVERY_GRACE_MS) return false;
   if (game.stage === 'closing' && record.pendingRevealAt !== undefined && now >= record.pendingRevealAt) {
     revealStreamRound(game, record.privateReveals[game.round], now);
     record.pendingRevealAt = undefined; shortenFinishedWindow(game, now); changed = true;
@@ -122,11 +142,20 @@ export function tickParallel(record: ParallelRecord, now: number): boolean {
   } else if (next === 'advance' || next === 'finish') { advanceStreamRound(game, now); changed = true; }
   return changed || oldRevision !== timing.revision;
 }
-export function beginParallel(record: ParallelRecord, id: string, now: number): void {
+export function beginParallel(record: ParallelRecord, id: string, now: number, opponentId?: string): void {
   if (record.hostCommands.includes(id)) return;
   if (record.ended) throw new ParallelActionError('The streamer ended this game.');
+  if (record.game.pvp && record.game.timing?.phase !== 'lobby') throw new ParallelActionError('This action is no longer available.');
+  if (record.game.pvp && record.game.timing?.phase === 'lobby' && (record.game.participants.length !== 2
+    || record.game.participants[1].id !== opponentId || !record.game.pvp.ready.includes(opponentId!)))
+    throw new ParallelActionError('Wait for your opponent to be ready.');
+  if (record.game.pvp && record.game.timing!.phase === 'lobby') {
+    const turns = record.game.session.rounds.length + (streamsAhead(record.game.session) ? 1 : 0);
+    record.game.session.expiresAt = now + (turns * (record.game.timing!.seconds + 8) + record.game.session.rounds.length * 30 + 900) * 1000;
+  }
   beginStreamTiming(record.game, now);
   record.hostCommands = [...record.hostCommands.slice(-31), id];
+  if (record.game.pvp) record.game.pvp.ready = [];
 }
 export function nextParallelAlarm(record: ParallelRecord, now: number): number | null {
   if (record.publishedAt) return record.publishedAt + 86400000;
@@ -137,7 +166,7 @@ export function nextParallelAlarm(record: ParallelRecord, now: number): number |
   if (timing.phase === 'lobby' || timing.deadline === null) return game.session.expiresAt;
   if (game.stage === 'reveal') return Math.max(now + 1, timing.resultsUntil ?? now,
     game.round === game.session.rounds.length - 1 ? now : timing.deadline);
-  return Math.max(now + 1, timing.deadline + (timing.phase === 'play' ? STREAM_DELIVERY_GRACE_MS : 0));
+  return Math.max(now + 1, timing.deadline + (game.pvp && timing.early ? 0 : timing.phase === 'play' || game.pvp ? STREAM_DELIVERY_GRACE_MS : 0));
 }
 export function parallelResult(record: ParallelRecord): StreamPublishedResult {
   if (record.finalResult) return record.finalResult;

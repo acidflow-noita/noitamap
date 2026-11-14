@@ -193,16 +193,20 @@ export async function streamRoute(
       if (data.transport !== 'twitch' && data.transport !== 'parallel') throw new ImageGameError(400, 'Use Twitch game transport.');
       const rounds = data.rounds === undefined ? STREAM_DEFAULT_ROUNDS : data.rounds;
       if (!validStreamRoundCount(rounds)) throw new ImageGameError(400, 'Choose 3, 5 or 10 rounds.');
-      const session = { ...await service.start(user, now, data.transport, rounds), live: true as const };
+      const mode = data.mode === undefined ? 'stream' : data.mode;
+      if (mode !== 'stream' && mode !== 'pvp' || mode === 'pvp' && data.transport !== 'parallel') throw new ImageGameError(400, 'Invalid game settings.');
+      if (data.streaming !== undefined && typeof data.streaming !== 'boolean') throw new ImageGameError(400, 'Invalid game settings.');
+      const session = { ...await service.start(user, now, data.transport, rounds, { mode, streaming: data.streaming as boolean | undefined }), live: true as const };
       if (data.transport === 'parallel') {
         if (!env.STREAM_COORDINATORS) throw new ImageGameError(503, 'Durable game connections are unavailable.');
         const seconds = data.seconds === undefined ? 90 : data.seconds;
         if (typeof seconds !== 'number' || !(seconds === 0 || Number.isInteger(seconds) && seconds >= 15 && seconds <= 600)) throw new ImageGameError(400, 'Invalid round duration.');
+        if (mode === 'pvp' && seconds === 0) throw new ImageGameError(400, 'Choose a round duration between 15 and 600 seconds.');
         if (env.PUBLIC_GAME_RATE_LIMIT && !(await env.PUBLIC_GAME_RATE_LIMIT.limit({ key: 'stream-create:' + user.sub })).success) throw new ImageGameError(429, 'Too many games.');
         await env.STREAM_COORDINATORS.getByName(session.id).initialize({ owner: user.sub, session,
           reveals: await service.coordinatorReveals(session.token, user, now), seconds });
       }
-      return json(data.transport === 'parallel' ? { ...session, token: '', rounds: session.rounds.map(round => ({ ...round, token: '' })) } : session, 201);
+      return json(data.transport === 'parallel' ? { ...session, token: '', rounds: mode === 'pvp' ? [] : session.rounds.map(round => ({ ...round, token: '' })) } : session, 201);
     }
     if (path.endsWith('/reveal')) {
       const { reveal, transport } = await service.revealForRoom(data.token, user, now);

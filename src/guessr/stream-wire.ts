@@ -56,6 +56,7 @@ function pack(payload: StreamWirePayload): unknown[] | Uint8Array<ArrayBuffer> {
         ...(t.resultsUntil !== undefined ? { resultsUntil: t.resultsUntil } : {}),
         ...(t.chatRound !== undefined ? { chatRound: t.chatRound } : {}),
         ...(s.totalRounds !== undefined ? { totalRounds: s.totalRounds } : {}),
+        ...(s.streaming !== undefined ? { streaming: s.streaming } : {}),
         ...(t.recovery === 1 ? { recovery: 1 } : {}),
         ...(t.early ? { early: true } : {}),
         ...(['easy', 'normal', 'hard'].includes(s.difficultyTier ?? '') ? { d: ['easy', 'normal', 'hard'].indexOf(s.difficultyTier!) } : {}),
@@ -156,14 +157,18 @@ export class StreamPacketReader {
         if (timing.resultsUntil !== undefined && !Number.isSafeInteger(timing.resultsUntil)) return null;
         if (timing.d !== undefined && (!Number.isInteger(timing.d) || timing.d < 0 || timing.d > 2)) return null;
         if (timing.recovery !== undefined && timing.recovery !== 1) return null;
+        if (timing.streaming !== undefined && typeof timing.streaming !== 'boolean') return null;
         if (timing.totalRounds !== undefined && (!validStreamRoundCount(timing.totalRounds) || round > timing.totalRounds || timing.hostRound > timing.totalRounds)) return null;
         const totalRounds = timing.totalRounds;
         delete timing.totalRounds;
+        const streaming = timing.streaming;
+        delete timing.streaming;
         const difficultyTier = (['easy', 'normal', 'hard'] as const)[timing.d as number];
         delete timing.d;
         payload = { type: 'state', state: { schema: 1, channel: this.channel, gameId, revision, hostId, hostPro: 'active', phase,
           online, paused, round, ...(totalRounds ? { totalRounds } : {}), roundId, clue, expiresAt, ...(resultId ? { resultId } : {}), ...(timing.ended ? { ended: true } : {}),
           ...(difficultyTier ? { difficultyTier } : {}), timing } };
+        if (typeof streaming === 'boolean') payload.state.streaming = streaming;
       } else if (row[0] === 1 && row.length === 5 && Number.isInteger(row[1]) && row[1] >= 0 && row[1] < 10) {
         const [, round, roundId, point, area] = row;
         if (typeof roundId !== 'string' || !/^[a-f0-9-]{36}$/.test(roundId) || !Array.isArray(point) || point.length !== 2

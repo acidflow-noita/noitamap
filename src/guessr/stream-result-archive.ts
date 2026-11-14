@@ -32,7 +32,8 @@ const legacyPrefix = 'noitamap-guessr-result:';
 const storageError = 'This browser could not save the result. Download a copy before closing this page.';
 function valid(result: StreamResult | undefined): result is StreamResult {
   return !!result && result.schema === 1 && /^[a-f0-9-]{36}$/.test(result.id)
-    && validStreamRoundCount(result.rounds?.length) && !!result.players?.length
+    && (result.mode === 'pvp' && result.concededBy && result.players?.some(player => player.id === result.concededBy)
+      ? Array.isArray(result.rounds) && result.rounds.length <= 10 : validStreamRoundCount(result.rounds?.length)) && !!result.players?.length
     && result.players.every(player => player.rounds?.length === result.rounds.length);
 }
 function read<T>(storage: Storage, key: string): T | undefined {

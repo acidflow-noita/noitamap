@@ -14,8 +14,9 @@ import { streamJoinRequest } from '../../../src/guessr/stream-join-request';
 import { ImageGameError } from '../../../src/guessr/image-game-server';
 import { streamPlayerName } from '../../../src/guessr/stream-display-name';
 import { streamRoundData, type StreamRoundView } from '../../../src/guessr/stream-round-data';
+import { pvpSnapshot } from '../../../src/guessr/pvp-state';
 
-interface Attachment { revealed?: number; identity?: ParallelIdentity; opened: number; count: number; since: number }
+interface Attachment { revealed?: number; generation?: number; identity?: ParallelIdentity; opened: number; count: number; since: number }
 class GameStorageError extends Error {
   constructor(cause: unknown) { super('Game storage is temporarily unavailable.', { cause }); }
 }
@@ -56,10 +57,11 @@ export class StreamCoordinator extends DurableObject<Env> {
       await this.schedule();
     });
   }
-  private async persist(players: StreamParticipant[] = []): Promise<void> {
+  private async persist(players: StreamParticipant[] = [], removed: string[] = []): Promise<void> {
     const record = this.record!;
     try {
       this.ctx.storage.transactionSync(() => {
+        for (const id of removed) record.metrics.storageRowsWritten += this.ctx.storage.sql.exec('DELETE FROM players WHERE id=?', id).rowsWritten;
         record.game.reveals.forEach((reveal, round) => {
           if (!reveal || this.storedRounds.has(round)) return;
           const view = streamRoundData(record.game, round);
@@ -87,7 +89,8 @@ export class StreamCoordinator extends DurableObject<Env> {
     if (request.method !== 'GET' || request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') return new Response('WebSocket required', { status: 426 });
     if (!this.record || Date.now() > this.retentionDeadline()) return new Response('Game unavailable', { status: 404 });
     const sockets = this.ctx.getWebSockets();
-    if (sockets.length >= STREAM_MAX_PLAYERS * 2 + 32 || sockets.filter(s => !this.attachment(s).identity).length >= 64) return new Response('Game is busy', { status: 503 });
+    if (sockets.length >= (this.record.game.pvp ? 8 : STREAM_MAX_PLAYERS * 2 + 32)
+      || sockets.filter(s => !this.attachment(s).identity).length >= (this.record.game.pvp ? 4 : 64)) return new Response('Game is busy', { status: 503 });
     const pair = new WebSocketPair(), client = pair[0], server = pair[1];
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({ opened: Date.now(), count: 0, since: Date.now() } satisfies Attachment);
@@ -104,12 +107,13 @@ export class StreamCoordinator extends DurableObject<Env> {
     for (const socket of this.ctx.getWebSockets()) if (this.attachment(socket).identity?.id === id) this.send(socket, message);
   }
   private hosts(message: ParallelServerMessage): void {
+    if (this.record?.game.pvp) return;
     for (const socket of this.ctx.getWebSockets()) if (this.attachment(socket).identity?.role === 'host') this.send(socket, message);
   }
   private receipt(socket: WebSocket, player: StreamParticipant, round: number): void {
     const guess = player.guesses[round];
     if (guess?.nonce && guess.revision) this.send(socket, { type: 'receipt', round: round + 1, roundId: this.record!.game.session.rounds[round].id,
-      nonce: guess.nonce, revision: guess.revision, accepted: true, point: guess.point ?? undefined, maximum: guess.maximum });
+      nonce: guess.nonce, revision: guess.revision, accepted: true, point: guess.point ?? undefined, maximum: guess.maximum, automatic: guess.automatic });
   }
   private roundView(round: number): StreamRoundView | undefined {
     if (!this.storedRounds.has(round)) return;
@@ -123,10 +127,11 @@ export class StreamCoordinator extends DurableObject<Env> {
     const record = this.record!, attachment = this.attachment(socket), identity = attachment.identity;
     if (!identity || identity.expiresAt <= Date.now()) return;
     const now = Date.now();
-    if (identity.role === 'host') this.send(socket, { type: 'host', game: { ...record.game, recentNonces: undefined, receipts: undefined }, metrics: record.metrics, now,
+    if (identity.role === 'host' && !record.game.pvp) this.send(socket, { type: 'host', game: { ...record.game, recentNonces: undefined, receipts: undefined }, metrics: record.metrics, now,
       publicationError: record.publicationError, ended: record.ended });
     else {
-      this.send(socket, { type: 'state', state: streamSnapshot(record.game, this.env.STREAM_IMAGE_ROOT ?? '', record.ended), now });
+      this.send(socket, { type: 'state', state: record.game.pvp ? pvpSnapshot(record.game, identity.id, this.env.STREAM_IMAGE_ROOT ?? '', record.ended)
+        : streamSnapshot(record.game, this.env.STREAM_IMAGE_ROOT ?? '', record.ended), now });
       if (history) {
         const player = record.game.participants.find(p => p.id === identity.id);
         if (player) player.guesses.forEach((_, i) => this.receipt(socket, player, i));
@@ -157,9 +162,13 @@ export class StreamCoordinator extends DurableObject<Env> {
         if (!identity || attachment.identity && attachment.identity.id !== identity.id) {
           this.send(socket, { type: 'error', code: 'auth', message: 'Sign in with Twitch to play.' }); socket.close(4001, 'Authorization required'); return;
         }
+        if (this.record!.game.pvp && identity.id === this.record!.game.session.host.id) {
+          identity.role = 'host'; identity.owner = this.record!.owner;
+        }
         await this.exclusive(async () => {
           const record = this.record!;
           const existing = record.game.participants.find(p => p.id === identity.id);
+          if (record.game.pvp && !existing && (record.game.stage === 'complete' || record.ended)) throw new ParallelActionError('This invitation is not available.');
           const active = !record.ended && record.game.stage !== 'complete';
           const player = active ? joinParallelPlayer(record, identity) : existing ?? {
             id: identity.id, login: identity.login, name: streamPlayerName(identity.name, identity.login), color: identity.color,
@@ -175,21 +184,30 @@ export class StreamCoordinator extends DurableObject<Env> {
             if (record.socketIdentities.includes(key)) record.metrics.reconnects++;
             else record.socketIdentities.push(key);
           }
+          if (record.game.pvp && !attachment.identity) {
+            record.game.pvp.controllers ??= {};
+            attachment.generation = (record.game.pvp.controllers[identity.id] ?? 0) + 1;
+            record.game.pvp.controllers[identity.id] = attachment.generation;
+          }
           attachment.identity = identity; socket.serializeAttachment(attachment);
           // Close older same-role sockets, preventing two host tabs from racing.
           for (const other of this.ctx.getWebSockets()) {
             const prior = this.attachment(other).identity;
             if (other !== socket && prior?.id === identity.id && prior.role === identity.role) other.close(4002, 'Opened in another tab');
           }
-          if (active) await this.persist([player]);
+          if (active || record.game.pvp) await this.persist(active ? [player] : []);
           this.send(socket, { type: 'authorized', player: { id: player.id, login: player.login, name: player.name, color: player.color },
             ticket: await socketTicket(this.env, record.game.session.id, identity), expiresAt: identity.expiresAt, now: Date.now(),
             acceptedRevisions: Object.fromEntries(player.guesses.flatMap((guess, round) => guess?.revision ? [[record.game.session.rounds[round].id, guess.revision]] : [])) });
           this.snapshot(socket, true);
-          if (active) this.hosts({ type: 'participant', participant: player, joined: Object.keys(record.game.joinedPlayers ?? {}).length });
+          if (active && record.game.pvp) this.broadcast();
+          else if (active) this.hosts({ type: 'participant', participant: player, joined: Object.keys(record.game.joinedPlayers ?? {}).length });
         });
       } catch (error) {
         if (error instanceof GameStorageError) throw error;
+        if (error instanceof ParallelActionError) {
+          this.send(socket, { type: 'error', code: 'capacity', message: error.message }); socket.close(4003, 'Invitation unavailable'); return;
+        }
         this.send(socket, { type: 'error', code: 'unavailable', message: 'Connection unavailable. Reconnecting…' }); socket.close(1013, 'Try again');
       }
       return;
@@ -213,6 +231,12 @@ export class StreamCoordinator extends DurableObject<Env> {
     // A busy final-second burst must not turn on-time frames into late guesses.
     const record = this.record!;
     record.metrics.socketMessages++;
+    if (record.game.pvp) {
+      if (this.attachment(socket).generation !== record.game.pvp.controllers?.[identity.id]) {
+        socket.close(4002, 'Opened in another tab'); return;
+      }
+      await this.processPvp(socket, identity, message, now); return;
+    }
     if (message.type === 'recover') { this.snapshot(socket, true); return; }
     if (message.type === 'guess' || message.type === 'relay') {
       let chat: StreamChatMessage | null;
@@ -252,6 +276,7 @@ export class StreamCoordinator extends DurableObject<Env> {
       const accepted = status === 'accepted' || status === 'duplicate';
       const player = record.game.participants.find(p => p.id === chat!.player.id);
       if (status === 'accepted' && player) {
+        if (direct) player.guesses[command.round - 1]!.automatic = message.submission.automatic;
         if (direct) record.metrics.firstBySocket++; else record.metrics.firstByTwitch++;
         await this.persist([player]); await this.schedule();
         if (record.game.timing!.revision !== oldRevision) this.broadcast();
@@ -259,7 +284,7 @@ export class StreamCoordinator extends DurableObject<Env> {
       } else if (status === 'duplicate') record.metrics.duplicates++;
       const response: ParallelServerMessage = { type: 'receipt', round: command.round, roundId: command.roundId!, nonce: command.nonce,
         playerId: chat.player.id, revision: command.revision, accepted, ...(accepted ? { point: { x: command.x, y: command.y }, maximum: command.maximum } : { reason: status === 'old' ? 'superseded' : 'closed' }),
-        ...(direct && message.submission.automatic ? { automatic: true } : {}) };
+        ...(player?.guesses[command.round - 1]?.automatic ? { automatic: true } : {}) };
       this.sendTo(chat.player.id, response);
       // Host mirrors these durable receipts onto Twitch when the direct player socket is unavailable.
       this.hosts(response);
@@ -285,6 +310,67 @@ export class StreamCoordinator extends DurableObject<Env> {
       await this.schedule(); this.broadcast();
     }
     this.send(socket, { type: 'command', id: message.id, accepted: true });
+  }
+  private async processPvp(socket: WebSocket, identity: ParallelIdentity, message: ParallelClientMessage, now: number): Promise<void> {
+    const record = this.record!, game = record.game, pvp = game.pvp!;
+    if (!game.participants.some(p => p.id === identity.id)) throw new ParallelActionError('This invitation is not available.');
+    if (message.type === 'recover') { this.snapshot(socket, true); return; }
+    if (message.type === 'guess') {
+      const chat = directGuessMessage(record, identity, message.submission, now);
+      if (!chat) throw new ParallelActionError('Invalid submission');
+      record.metrics.directGuesses++;
+      const { status, command } = acceptParallelGuess(record, chat, now);
+      if (!command?.nonce || !command.revision) throw new ParallelActionError('Invalid submission');
+      const accepted = status === 'accepted' || status === 'duplicate';
+      if (status === 'accepted') {
+        game.participants.find(p => p.id === identity.id)!.guesses[command.round - 1]!.automatic = message.submission.automatic;
+        record.metrics.firstBySocket++; tickParallel(record, now);
+        await this.persist(game.participants); await this.schedule();
+      } else if (status === 'duplicate') record.metrics.duplicates++;
+      else record.metrics.rejected++;
+      this.send(socket, { type: 'receipt', round: command.round, roundId: command.roundId!, nonce: command.nonce,
+        revision: command.revision, accepted, ...(accepted ? { point: { x: command.x, y: command.y }, maximum: command.maximum,
+          automatic: game.participants.find(p => p.id === identity.id)!.guesses[command.round - 1]?.automatic } : { reason: 'closed' }) });
+      if (status === 'accepted') this.broadcast();
+      return;
+    }
+    if (!['start', 'ready', 'reject-opponent', 'quit', 'publish'].includes(message.type)
+      || !('id' in message) || typeof message.id !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(message.id)) throw new ParallelActionError('Forbidden');
+    if (record.hostCommands.includes(message.id)) { this.send(socket, { type: 'command', id: message.id, accepted: true }); return; }
+    const removed: string[] = [];
+    if (message.type === 'start') {
+      if (identity.id !== game.session.host.id) throw new ParallelActionError('Forbidden');
+      beginParallel(record, message.id, now, message.opponentId);
+    } else if (message.type === 'ready') {
+      const lobby = game.timing!.phase === 'lobby';
+      if (typeof message.ready !== 'boolean' || message.round !== game.round
+        || message.phase !== (lobby ? 'lobby' : 'review') || !lobby && game.stage !== 'reveal') throw new ParallelActionError('This action is no longer available.');
+      pvp.ready = pvp.ready.filter(id => id !== identity.id);
+      if (message.ready) pvp.ready.push(identity.id);
+      if (!lobby && game.participants.every(p => pvp.ready.includes(p.id))) { pvp.ready = []; advanceStreamRound(game, now); }
+    } else if (message.type === 'reject-opponent') {
+      if (identity.id !== game.session.host.id || game.timing!.phase !== 'lobby'
+        || message.playerId !== game.participants[1]?.id) throw new ParallelActionError('Forbidden');
+      removed.push(message.playerId); pvp.declined = [...pvp.declined.slice(-31), message.playerId]; pvp.ready = [];
+      game.participants.splice(1, 1); delete game.joinedPlayers?.[message.playerId];
+    } else if (message.type === 'quit') {
+      if (game.stage !== 'complete') {
+        if (game.timing!.phase === 'lobby') {
+          if (identity.id === game.session.host.id) record.ended = true;
+          else { removed.push(identity.id); pvp.declined = [...pvp.declined.slice(-31), identity.id];
+            game.participants = game.participants.filter(p => p.id !== identity.id); delete game.joinedPlayers?.[identity.id]; pvp.ready = []; }
+        }
+        else { pvp.concededBy = identity.id; pvp.ready = []; game.stage = 'complete'; game.finishedAt = now; delete record.pendingRevealAt; }
+      }
+    }
+    if (!record.hostCommands.includes(message.id)) record.hostCommands = [...record.hostCommands.slice(-31), message.id];
+    game.timing!.revision++;
+    await this.persist(game.participants, removed);
+    if (game.stage === 'complete') await this.publish();
+    await this.schedule(); this.broadcast(); this.send(socket, { type: 'command', id: message.id, accepted: true });
+    for (const other of this.ctx.getWebSockets()) if (removed.includes(this.attachment(other).identity?.id ?? '')) {
+      this.send(other, { type: 'error', code: 'capacity', message: 'This invitation is not available.' }); other.close(4003, 'Invitation unavailable');
+    }
   }
   private async publish(): Promise<void> {
     const record = this.record!;
@@ -317,7 +403,8 @@ export class StreamCoordinator extends DurableObject<Env> {
     const record = this.record!;
     // Never erase completed scores merely because publication is unavailable.
     return record.publishedAt ? record.publishedAt + 86400000
-      : record.game.stage === 'complete' ? Infinity : record.game.session.createdAt + 86400000;
+      : record.game.stage === 'complete' ? Infinity : record.game.pvp && record.game.timing!.phase === 'lobby'
+        ? record.game.session.expiresAt : record.game.session.createdAt + 86400000;
   }
   async alarm(): Promise<void> {
     await this.exclusive(async () => {
@@ -328,7 +415,9 @@ export class StreamCoordinator extends DurableObject<Env> {
         if (!a.identity && now - a.opened >= 15000) socket.close(1008, 'Authentication required');
       }
       if (now >= this.retentionDeadline()) {
-        for (const socket of this.ctx.getWebSockets()) socket.close(1000, 'Game archived');
+        const lobbyExpired = !!record.game.pvp && record.game.timing!.phase === 'lobby';
+        if (lobbyExpired) { record.ended = true; this.broadcast(); }
+        for (const socket of this.ctx.getWebSockets()) socket.close(lobbyExpired ? 4003 : 1000, 'Game archived');
         await this.ctx.storage.deleteAll(); this.record = undefined; return;
       }
       if (tickParallel(record, now)) await this.persist([record.game.participants[0]]);

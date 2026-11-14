@@ -37,7 +37,7 @@ it('identifies a saved result viewer without authenticating, validating a token 
   localStorage.removeItem(key); expect(savedTwitchViewerId('client123')).toBeUndefined();
 });
 
-function fixture() {
+function fixture(chat = true) {
   const identity = { client_id: 'client123', user_id: '123', login: 'viewer', scopes: ['user:read:chat', 'user:write:chat'], expires_in: 7200 };
   const popup = { closed: false, close: vi.fn() };
   const open = vi.fn<(url: string, name: string, features: string) => typeof popup | null>(() => popup);
@@ -48,7 +48,7 @@ function fixture() {
     if (String(url).endsWith('/helix/chat/messages')) return json({ data: [{ is_sent: true, message_id: 'sent-id' }] });
     throw Error('Unexpected request');
   });
-  const client = new TwitchViewer({ clientId: 'client123', popup: open, fetch: request });
+  const client = new TwitchViewer({ clientId: 'client123', popup: open, fetch: request, chat });
   clients.push(client);
   const reply = (change: Record<string, unknown> = {}, origin = location.origin, source = popup) => {
     const authorization = new URL(open.mock.calls[0][0] as unknown as string);
@@ -61,6 +61,15 @@ function fixture() {
 }
 
 describe('viewer Twitch sending', () => {
+  it('uses identity-only Twitch authorization for private PvP', async () => {
+    const f = fixture(false); f.identity.scopes = [];
+    const connected = f.client.connect();
+    expect(new URL(f.open.mock.calls[0][0]).searchParams.get('scope')).toBe('');
+    f.reply(); await connected;
+    expect(f.client.getState()).toMatchObject({ connected: true, userId: '123' });
+    expect(f.sends()).toHaveLength(0);
+    expect(await f.client.transportAuthorization()).toMatchObject({ role: 'player', accessToken: token });
+  });
   it('asks for announcement permission only when the local streamer explicitly enables sharing', async () => {
     const f = fixture();
     f.identity.scopes.push('moderator:manage:announcements');

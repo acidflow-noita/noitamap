@@ -33,6 +33,7 @@ export function newStreamGame(
     guess: null,
     paused: false,
     reveals: [],
+    ...(session.mode === 'pvp' ? { pvp: { ready: [], declined: [] } } : {}),
     participants: [
       { ...session.host, guesses: session.rounds.map(() => null) },
     ],
@@ -168,6 +169,7 @@ export function advanceStreamRound(
   now = streamTime(game),
 ): void {
   if (game.stage !== "reveal") throw new Error("Reveal this round first.");
+  if (game.pvp) game.pvp.ready = [];
   if (game.round + 1 === game.session.rounds.length) {
     game.stage = "complete";
     game.finishedAt = now;
@@ -229,10 +231,12 @@ export function streamResult(game: StreamGame): StreamResult {
   if (
     game.stage !== "complete" ||
     !game.finishedAt ||
-    game.reveals.length !== game.session.rounds.length
+    !game.pvp?.concededBy && game.reveals.length !== game.session.rounds.length
   )
     throw new Error("Finish every round before publishing results.");
   return {
+    ...(game.session.mode === 'pvp' ? { mode: 'pvp' as const, scheduledRounds: game.session.rounds.length } : {}),
+    ...(game.pvp?.concededBy ? { concededBy: game.pvp.concededBy } : {}),
     schema: 1,
     id: game.session.id,
     version: game.session.version,
@@ -241,7 +245,7 @@ export function streamResult(game: StreamGame): StreamResult {
     host: game.session.host,
     config: game.session.config,
     positions: Object.fromEntries(game.participants.map(player => [player.id,
-      player.guesses.map(guess => guess?.point ? [guess.point.x, guess.point.y] as [number, number] : null)])),
+      player.guesses.slice(0, game.reveals.length).map(guess => guess?.point ? [guess.point.x, guess.point.y] as [number, number] : null)])),
     ...(game.transportStats ? { transportStats: game.transportStats } : {}),
     rounds: game.reveals.map((r) => ({
       id: r.roundId,
@@ -251,6 +255,7 @@ export function streamResult(game: StreamGame): StreamResult {
     })),
     players: streamStandings(game.participants, game.reveals).map((player) => ({
       ...player,
+      ...(game.pvp?.concededBy ? { rank: player.id === game.pvp.concededBy ? 2 : 1 } : {}),
       rounds: player.rounds.map(({ score, areaScore, positionScore }) => ({
         score,
         areaScore,

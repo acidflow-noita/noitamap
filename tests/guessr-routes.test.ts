@@ -37,7 +37,7 @@ describe('Guessr page routes', () => {
     expect(guessRouteUrl('stream-picker', link).href).toBe(link.href);
     expect(isGuessrPagePath(link.pathname)).toBe(true);
     expect(readGuessRoute(guessRouteUrl('stream-picker', link, { channel: 'other' })).game).toBeUndefined();
-    expect(gameIdFromCode('z'.repeat(26))).toBeUndefined();
+    expect(gameIdFromCode('z'.repeat(27))).toBeUndefined();
     for (let i = 0; i < 25; i++) {
       const next = crypto.randomUUID(); expect(gameIdFromCode(gameCode(next))).toBe(next);
       expect(gameCode(next)).not.toBe(gameCode(id));
@@ -55,6 +55,17 @@ describe('Guessr page routes', () => {
     expect(readGuessRoute(url)).toEqual({ pane: 'stream-picker', channel: 'wuote', game: id, transport: 'parallel' });
     expect(guessRouteUrl('stream-picker', url).href).toBe(url.href);
     expect(gameIdFromCode(gameCode(id, 'parallel'))).toBe(id);
+  });
+  it('keeps PvP links stable without confusing a Twitch channel named pvp with a duel', () => {
+    const game = crypto.randomUUID();
+    const url = guessRouteUrl('pvp-game', origin, { game });
+    expect(url.pathname).toBe(`/guess/pvp/${gameCode(game, 'pvp')}/`);
+    expect(readGuessRoute(url)).toEqual({ pane: 'pvp-game', game, transport: 'parallel' });
+    expect(guessRouteUrl('pvp-game', url).href).toBe(url.href);
+    expect(isGuessrPagePath(url.pathname)).toBe(true);
+    expect(readGuessRoute(new URL('/guess/pvp/', origin)).pane).toBe('pvp');
+    const stream = guessRouteUrl('stream-picker', origin, { channel: 'pvp', game, transport: 'parallel' });
+    expect(readGuessRoute(stream)).toEqual({ pane: 'stream-picker', channel: 'pvp', game, transport: 'parallel' });
   });
   it.each([
     ['/guess/?pane=stream', '/guess/stream/', 'stream'],

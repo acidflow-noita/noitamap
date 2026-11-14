@@ -12,14 +12,14 @@ import type { StreamChatMessage } from './stream-state';
 
 /** A compact game connection bar. The transport channel is never a chat UI. */
 export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, onChangeStreamer?: () => void,
-  events?: { message(message: StreamChatMessage): void; status(status: TwitchChatStatus, detail: string): void }, gameId?: string) {
+  events?: { message(message: StreamChatMessage): void; status(status: TwitchChatStatus, detail: string): void }, gameId?: string, options: { pvp?: boolean } = {}) {
   const panel = document.createElement('section'); panel.className = 'game-panel stream-connection-bar';
   const header = document.createElement('div'); header.className = 'stream-chat-header';
   const title = document.createElement('strong');
   const historyLink = document.createElement('a'); historyLink.className = 'stream-channel-link';
   historyLink.target = '_blank'; historyLink.rel = 'noopener noreferrer'; title.append(historyLink);
   const identity = document.createElement('div'); identity.className = 'stream-chat-identity';
-  const pro = streamerProStatus({ channel: initialChannel, local: !gameApiOrigin() && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) });
+  const pro = streamerProStatus({ channel: initialChannel, player: options.pvp, local: !gameApiOrigin() && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) });
   const changeStreamer = bindText(document.createElement('button'), 'Exit game');
   changeStreamer.type = 'button'; changeStreamer.className = 'btn btn-sm btn-outline theme-secondary stream-change-channel';
   changeStreamer.onclick = () => onChangeStreamer?.();
@@ -38,6 +38,16 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
   let channel = initialChannel, key = '', stop: (() => void) | undefined, closed = false, hasGame = false;
   let chatStatus: TwitchChatStatus = 'offline', chatDetail = '';
   let gameStatus: RoomConnection | null = null, gameDetail = '';
+  let pvpPlayers: import('./stream-types').StreamPlayer[] = [];
+  const renderPlayers = () => {
+    if (!pvpPlayers.length) { historyLink.textContent = tr('1v1'); return; }
+    const creator = document.createElement('span'); creator.className = 'stream-name';
+    const label = document.createElement('strong'); label.textContent = pvpPlayers[0].name;
+    creator.append(label, pro.badge);
+    const versus = document.createElement('span'); versus.textContent = ' vs ';
+    const opponent = document.createElement('strong'); opponent.textContent = pvpPlayers[1]?.name ?? tr('Waiting for an opponent');
+    historyLink.replaceChildren(creator, versus, opponent);
+  };
   const giftHelp = hoverHelp(gift, () => tr('Gift {{channel}} a subscription to wuote’s Twitch channel. Subscribers to wuote have Pro access and can start NoitaGuessr games for their chat.', { channel }));
   const explanation = () => {
     if (navigator.onLine === false) return tr('You are offline. Reconnect to continue.');
@@ -45,6 +55,7 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
     if (!state.connected) return twitchMessageText(state.error || 'Sign in with Twitch');
     const twitch = chatStatus === 'live' ? tr('Twitch chat connected') : twitchMessageText(chatDetail || 'Twitch chat disconnected');
     const game = gameStatus === 'connected' ? tr('Connected to the game.') : gameDetail ? tr(gameDetail) : '';
+    if (options.pvp) return game;
     return [game, twitch].filter(Boolean).join(' ');
   };
   const statusHelp = hoverHelp(light, explanation);
@@ -73,14 +84,16 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
     const state = viewer.getState();
     header.hidden = !channel;
     changeStreamer.hidden = !channel || !onChangeStreamer;
-    gift.hidden = !channel || !!gameId || hasGame || state.login === channel;
+    gift.hidden = !!options.pvp || !channel || !!gameId || hasGame || state.login === channel;
     bindText(gift, 'Gift Pro to {{channel}}', { channel }); giftHelp.update();
-    historyLink.textContent = channel;
-    historyLink.href = guessRouteUrl('history', location.origin, { channel }).href;
-    bindAttribute(historyLink, 'aria-label', '{{player}}’s results', { player: channel });
+    if (!options.pvp) {
+      historyLink.textContent = channel;
+      historyLink.href = guessRouteUrl('history', location.origin, { channel }).href;
+      bindAttribute(historyLink, 'aria-label', '{{player}}’s results', { player: channel });
+    } else renderPlayers();
     actions.hidden = gift.hidden;
     // Switching games does not reconnect the shared transport subscription.
-    const next = state.connected && channel ? `${state.userId}/${GUESSR_TRANSPORT_CHANNEL}` : '';
+    const next = !options.pvp && state.connected && channel ? `${state.userId}/${GUESSR_TRANSPORT_CHANNEL}` : '';
     if (next === key) { paint(); return; }
     key = next; stop?.(); stop = undefined;
     chatStatus = next ? 'connecting' : 'offline'; chatDetail = '';
@@ -98,6 +111,10 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
   const unsubscribe = viewer.subscribe(refresh), unsubscribeLanguage = onGuessrLanguageChanged(refresh);
   window.addEventListener('offline', refresh); window.addEventListener('online', refresh);
   return { panel, setProStatus(value: Parameters<typeof pro.update>[0]) { hasGame = !!value.gameId; pro.update(value); refresh(); },
+    setPlayers(players: import('./stream-types').StreamPlayer[]) {
+      if (!options.pvp || !players.length) return;
+      pvpPlayers = players; renderPlayers();
+    },
     transportState() { return { status: chatStatus, detail: chatDetail }; },
     setGameConnection(status: RoomConnection | null, detail = '') { gameStatus = status; gameDetail = detail; paint(); },
     setChannel(value: string) { channel = value; hasGame = false; pro.update({}); refresh(); },

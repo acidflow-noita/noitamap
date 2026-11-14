@@ -51,8 +51,8 @@ export class StreamApi {
       );
     return this.api.request<T>("/api/streams" + path, { body });
   }
-  start(transport?: 'twitch' | 'parallel', rounds = STREAM_DEFAULT_ROUNDS, seconds = 90): Promise<StreamSession> {
-    return this.request("/sessions", { ...(transport ? { transport } : {}), rounds, seconds });
+  start(transport?: 'twitch' | 'parallel', rounds = STREAM_DEFAULT_ROUNDS, seconds = 90, streaming?: boolean, mode: 'stream' | 'pvp' = 'stream'): Promise<StreamSession> {
+    return this.request("/sessions", { ...(transport ? { transport } : {}), rounds, seconds, ...(streaming === undefined ? {} : { streaming }), mode });
   }
   clock(): Promise<{ now: number }> {
     return this.request("/time", {});

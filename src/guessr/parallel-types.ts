@@ -47,7 +47,9 @@ export type ParallelClientMessage =
   | ({ type: 'authorize' } & ParallelAuthorization)
   | { type: 'guess'; submission: ParallelSubmission }
   | { type: 'relay'; message: StreamChatMessage }
-  | { type: 'start'; id: string }
+  | { type: 'start'; id: string; opponentId?: string }
+  | { type: 'ready'; id: string; ready: boolean; round: number; phase: 'lobby' | 'review' }
+  | { type: 'reject-opponent'; id: string; playerId: string }
   | { type: 'host-guess'; id: string; roundId: string; point: Point | null; maximum: number }
   | { type: 'quit'; id: string }
   | { type: 'publish'; id: string }
