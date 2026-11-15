@@ -6,6 +6,7 @@ import { validStreamSeconds } from './stream-timing';
 import { bindText, formatGuessrNumber, tr } from './i18n';
 import { pageHeading } from './page-heading';
 import { loadingPlaceholders } from './loading-placeholders';
+import { localizedError } from './messages';
 
 export function mountPvpSetup(main: HTMLElement, open: (id: string) => void, back: () => void): () => void {
   let closed = false, busy = false, streaming = false;
@@ -39,7 +40,7 @@ export function mountPvpSetup(main: HTMLElement, open: (id: string) => void, bac
       const session = await api.start('parallel', count, duration, streaming, 'pvp');
       if (session.mode !== 'pvp' || session.transport !== 'parallel') throw Error('1v1 is not available on this site yet.');
       if (!closed) open(session.id);
-    } catch (reason) { if (!closed) bindText(error, (reason as Error).message); }
+    } catch (reason) { if (!closed) bindText(error, () => localizedError(reason)); }
     finally { busy = false; if (!closed) settings.disabled = false; }
   };
   settings.append(lengthLabel, timeLabel, streamingSetting('pvp', value => { streaming = value; }).element, create, error); card.append(settings);

@@ -653,5 +653,9 @@
   "Game history shows each player's rank and score.": "Pelitilastot näyttävät kunkin pelaajan sijoituksen ja pistemäärän.",
   "Game images are temporarily unavailable. Try again shortly.": "Pelin kuvia ei ole tällä hetkellä saatavilla. Yritä uudelleen hetken kuluttua.",
   "Today’s generated map is still being prepared. Try again shortly.": "Tänään luotavaa karttaa valmistellaan vielä. Yritä uudelleen hetken kuluttua.",
-  "Uses {{mode}} map": "Tässä pelimuodossa käytetään ”{{mode}}”-karttaa."
+  "Uses {{mode}} map": "Tässä pelimuodossa käytetään ”{{mode}}”-karttaa.",
+  "You have reached today’s limit of 20 games.": "Olet saavuttanut tämän päivän 20 pelin rajan.",
+  "Today’s limit of 100 new games has been reached.": "Pelaajat ovat luoneet tänään 100 NoitaGuessr-ottelua. Tämä on päivittäinen enimmäismäärä.",
+  "Result storage is full. A new game cannot be started.": "Tulostietokanta on täynnä. Uutta peliä ei voi aloittaa.",
+  "The game creation limit resets at {{time}}.": "Pelin luomisen aikaraja nollautuu klo {{time}}."
 }

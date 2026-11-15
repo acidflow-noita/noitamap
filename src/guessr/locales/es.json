@@ -662,5 +662,9 @@
   "Game history shows each player's rank and score.": "El historial de partidas muestra la clasificación y la puntuación de cada jugador.",
   "Game images are temporarily unavailable. Try again shortly.": "Las imágenes del juego no están disponibles por el momento. Inténtalo de nuevo dentro de un rato.",
   "Today’s generated map is still being prepared. Try again shortly.": "El mapa generado hoy aún se está preparando. Inténtalo de nuevo dentro de un rato.",
-  "Uses {{mode}} map": "Este modo de juego utiliza el mapa «{{mode}}»."
+  "Uses {{mode}} map": "Este modo de juego utiliza el mapa «{{mode}}».",
+  "You have reached today’s limit of 20 games.": "Has alcanzado el límite diario de 20 partidas.",
+  "Today’s limit of 100 new games has been reached.": "Los jugadores han creado hoy 100 partidas de NoitaGuessr. Este es el límite diario.",
+  "Result storage is full. A new game cannot be started.": "El espacio de almacenamiento de resultados está lleno. No se puede iniciar una nueva partida.",
+  "The game creation limit resets at {{time}}.": "El límite de creación de partidas se restablecerá a las {{time}}."
 }

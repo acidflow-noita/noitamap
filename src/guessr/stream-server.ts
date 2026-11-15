@@ -143,16 +143,18 @@ export class StreamService {
     now = Date.now(),
     transport?: 'twitch' | 'parallel',
     roundCount = STREAM_DEFAULT_ROUNDS,
-    settings: { mode?: MultiplayerMode; streaming?: boolean } = {},
+    settings: { mode?: MultiplayerMode; streaming?: boolean; id?: string } = {},
   ): Promise<StreamSession> {
     if (!validStreamRoundCount(roundCount)) throw new ImageGameError(400, 'Choose 3, 5 or 10 rounds.');
+    if (settings.id !== undefined && !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(settings.id))
+      throw new ImageGameError(400, 'Invalid game identifier.');
     if (settings.mode !== undefined && settings.mode !== 'stream' && settings.mode !== 'pvp'
       || settings.streaming !== undefined && typeof settings.streaming !== 'boolean') throw new ImageGameError(400, 'Invalid game settings.');
     const mode = settings.mode ?? 'stream', streaming = settings.streaming ?? defaultStreaming(mode);
     const started = performance.now();
     const config = await this.source.config(),
       selected = await this.source.sampleRounds(roundCount);
-    const id = crypto.randomUUID(),
+    const id = settings.id ?? crypto.randomUUID(),
       expiresAt = now + (mode === 'pvp' ? 30 * 60000 : 30 * 86400000);
     const host = {
       id: user.twitchUserId,

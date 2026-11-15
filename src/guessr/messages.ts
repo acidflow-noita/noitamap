@@ -22,6 +22,14 @@ export function localizedDistance(distance: number | null): string {
  * their catalog entry and unexpected errors have a localized recovery message. */
 export function localizedError(cause: unknown): string {
   const source = cause instanceof Error ? cause.message : typeof cause === 'string' ? cause : '';
-  if (Object.hasOwn(english, source)) return tr(source);
+  if (Object.hasOwn(english, source)) {
+    const resetAt = (cause as { resetAt?: unknown } | null)?.resetAt;
+    const message = tr(source);
+    if (typeof resetAt === 'number' && Number.isFinite(resetAt) && resetAt > 0 && resetAt < 8640000000000000)
+      return message + ' ' + tr('The game creation limit resets at {{time}}.', { time: new Date(resetAt).toLocaleString(guessrLocale(), {
+        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+      }) });
+    return message;
+  }
   return guessrLocale().startsWith('en') && source ? source : tr('Something went wrong. Please try again.');
 }

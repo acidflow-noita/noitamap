@@ -671,5 +671,9 @@
   "Game history shows each player's rank and score.": "В истории игры отображаются рейтинг и количество очков каждого игрока.",
   "Game images are temporarily unavailable. Try again shortly.": "Изображения из игры временно недоступны. Попробуйте позже.",
   "Today’s generated map is still being prepared. Try again shortly.": "Созданная сегодня карта пока находится в стадии подготовки. Попробуйте позже.",
-  "Uses {{mode}} map": "В этом режиме игры используется карта «{{mode}}»."
+  "Uses {{mode}} map": "В этом режиме игры используется карта «{{mode}}».",
+  "You have reached today’s limit of 20 games.": "Вы достигли сегодняшнего лимита в 20 игр.",
+  "Today’s limit of 100 new games has been reached.": "Сегодня игроки создали 100 матчей в NoitaGuessr. Это суточный лимит.",
+  "Result storage is full. A new game cannot be started.": "Память для результатов переполнена. Невозможно начать новую игру.",
+  "The game creation limit resets at {{time}}.": "Ограничение на создание игр сбрасывается в {{time}}."
 }

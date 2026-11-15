@@ -653,5 +653,9 @@
   "Game history shows each player's rank and score.": "Riwayat permainan menampilkan peringkat dan skor masing-masing pemain.",
   "Game images are temporarily unavailable. Try again shortly.": "Gambar-gambar game saat ini tidak tersedia. Silakan coba lagi sebentar lagi.",
   "Today’s generated map is still being prepared. Try again shortly.": "Peta yang dihasilkan hari ini masih dalam proses penyiapan. Silakan coba lagi sebentar lagi.",
-  "Uses {{mode}} map": "Mode permainan ini menggunakan peta \"{{mode}}\"."
+  "Uses {{mode}} map": "Mode permainan ini menggunakan peta \"{{mode}}\".",
+  "You have reached today’s limit of 20 games.": "Anda telah mencapai batas 20 pertandingan untuk hari ini.",
+  "Today’s limit of 100 new games has been reached.": "Para pemain telah membuat 100 pertandingan NoitaGuessr hari ini. Ini adalah batas hariannya.",
+  "Result storage is full. A new game cannot be started.": "Penyimpanan hasil sudah penuh. Permainan baru tidak dapat dimulai.",
+  "The game creation limit resets at {{time}}.": "Batas pembuatan game akan disetel ulang pada pukul {{time}}."
 }

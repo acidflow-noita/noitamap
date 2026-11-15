@@ -653,5 +653,9 @@
   "Game history shows each player's rank and score.": "游戏历史记录中显示了每位玩家的排名和得分。",
   "Game images are temporarily unavailable. Try again shortly.": "游戏图片暂时无法显示。请稍后再试。",
   "Today’s generated map is still being prepared. Try again shortly.": "今天生成的地图仍在制作中。请稍后再试。",
-  "Uses {{mode}} map": "该游戏模式使用“{{mode}}”地图。"
+  "Uses {{mode}} map": "该游戏模式使用“{{mode}}”地图。",
+  "You have reached today’s limit of 20 games.": "您已达到今天20局的上限。",
+  "Today’s limit of 100 new games has been reached.": "今天，玩家们共创建了100场NoitaGuessr比赛。这已达到每日上限。",
+  "Result storage is full. A new game cannot be started.": "结果存储空间已满。无法开始新游戏。",
+  "The game creation limit resets at {{time}}.": "游戏创建限制将在 {{time}} 时重置。"
 }

@@ -57,6 +57,7 @@ import { streamHostName } from './stream-display-name';
 import { streamingSetting } from './streaming-setting';
 import { streamsAhead } from './match-settings';
 import { streamRevealAt } from './stream-timing';
+import { localizedError } from './messages';
 
 const SHARE_ANNOUNCEMENTS_KEY = 'noitamap-guessr-share-announcements';
 
@@ -583,7 +584,7 @@ export class StreamUI {
     try {
       await (await gameAuth()).connectTwitchChat({ announcements: this.shareAnnouncements });
     } catch (error) {
-      this.hooks.toast(tr((error as Error).message));
+      this.hooks.toast(localizedError(error));
     }
   }
   private async connectLocalTwitch(): Promise<void> {
@@ -627,7 +628,7 @@ export class StreamUI {
         this.connectGame();
       }
     } catch (error) {
-      this.hooks.toast(tr((error as Error).message));
+      this.hooks.toast(localizedError(error));
     } finally {
       this.busy = false;
     }

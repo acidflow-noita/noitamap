@@ -5,7 +5,8 @@ import { ImageGameError } from '../src/guessr/image-game-server';
 import { testGameKeys, signResultManagementTicket } from './helpers/game-ticket-keys';
 import { packStreamPublish } from "../src/guessr/stream-codec";
 import { readFileSync } from "node:fs";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { admitStreamGame } from '../workers/noitamap-guessr/src/stream-admission';
 import { streamRoute } from "../workers/noitamap-guessr/src/streams";
 import { STREAM_STORAGE_BUDGET_BYTES, STREAM_RESULT_OVERHEAD_BYTES } from '../workers/noitamap-guessr/src/result-storage';
 import { handle, type Env } from "../workers/noitamap-guessr/src/index";
@@ -46,6 +47,7 @@ async function fixture() {
   db.sqlite.exec(readFileSync("workers/noitamap-guessr/migrations/0006_stream_storage.sql", "utf8"));
   db.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/0007_result_ownership.sql', 'utf8'));
   db.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/0008_result_history_summaries.sql', 'utf8'));
+  db.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/0010_stream_game_admission.sql', 'utf8'));
   const ticket = await signGameTicket(
     streamHost.sub,
     streamHost.name,
@@ -115,6 +117,24 @@ async function fixture() {
   return { ...db, env, call, request, completed, publish };
 }
 describe("single-document stream publication", () => {
+  it('rejects an exhausted host before reading puzzle data or creating a coordinator, with the UTC reset', async () => {
+    const f = await fixture(), initialize = vi.fn();
+    f.env.STREAM_COORDINATORS = { getByName: () => ({ initialize, fetch: async () => new Response() }) };
+    for (let i = 0; i < 20; i++) await admitStreamGame(f.db, streamHost.twitchUserId, streamNow + 1000);
+    const source = { config: vi.fn(async () => { throw Error('Must not load'); }), sampleRounds: vi.fn(async () => []) };
+    const response = await streamRoute(f.request('/sessions', { protocol: 2, transport: 'parallel', rounds: 3 }), f.env, streamNow + 1000, source);
+    expect(response.status).toBe(429); expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0);
+    expect(await response.json()).toMatchObject({ resetAt: Date.parse(new Date(streamNow).toISOString().slice(0, 10)) + 86400000 });
+    expect(source.config).not.toHaveBeenCalled(); expect(initialize).not.toHaveBeenCalled();
+  });
+  it('does not charge a lobby slot when preparation fails before a game is created', async () => {
+    const f = await fixture(), initialize = vi.fn();
+    f.env.STREAM_COORDINATORS = { getByName: () => ({ initialize, fetch: async () => new Response() }) };
+    const source = { config: async () => { throw Error('Unavailable fixture'); }, sampleRounds: async () => [] };
+    expect((await streamRoute(f.request('/sessions', { protocol: 2, transport: 'parallel', rounds: 3 }), f.env, streamNow + 1000, source)).status).toBe(503);
+    expect(f.sqlite.prepare('SELECT COUNT(*) AS games FROM stream_game_admissions').get()!.games).toBe(0);
+    expect(initialize).not.toHaveBeenCalled();
+  });
   it('creates PvP only with Pro and private transport, without handing its creator any future clues or tokens', async () => {
     const f = await fixture(), initialized: ParallelInitialization[] = [];
     f.env.STREAM_COORDINATORS = { getByName: () => ({ initialize: async input => { initialized.push(input); }, fetch: async () => new Response() }) };
@@ -335,15 +355,14 @@ describe("single-document stream publication", () => {
     expect((f.sqlite.prepare('SELECT used_bytes FROM stream_result_storage').get() as { used_bytes: number }).used_bytes)
       .toBeLessThanOrEqual(STREAM_STORAGE_BUDGET_BYTES);
   });
-  it('distinguishes the daily publication limit from storage exhaustion and keeps the real retry time', async () => {
+  it('publishes a finished game even when the old daily publication count has been reached', async () => {
     const f = await fixture(), input = await f.completed();
     const insert = f.sqlite.prepare('INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json) VALUES(?,?,?,?,?,?,?)');
     const day = new Date(streamNow).toISOString().slice(0, 10);
     for (let i = 0; i < 100; i++) insert.run('quota-' + i, 'other', day, streamNow, 2, 'digest', '{}');
     const result = await f.publish( input);
-    expect(result.status).toBe(429); expect((await result.json() as any).error).toContain('Today’s result publishing limit');
-    expect(Number(result.headers.get('Retry-After'))).toBeGreaterThan(60);
-    expect(f.sqlite.prepare('SELECT COUNT(*) AS games FROM stream_results').get()).toEqual({ games: 100 });
+    expect(result.status).toBe(201); expect(result.headers.get('Retry-After')).toBeNull();
+    expect(f.sqlite.prepare('SELECT COUNT(*) AS games FROM stream_results').get()).toEqual({ games: 101 });
   });
   it("rejects coerced numeric or array player IDs before publication", async () => {
     const f = await fixture(),

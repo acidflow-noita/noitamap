@@ -43,7 +43,8 @@ it('prepares a reusable whole-world image set and publishes its matching private
   expect(await publishDailyPackage({ directory: input.outputDirectory })).toMatchObject({ published: false });
   const database = gameDatabase();
   try {
-    database.sqlite.exec(await readFile('workers/noitamap-guessr/migrations/0009_generated_stream_maps.sql', 'utf8'));
+    for (const migration of ['0002_stream_results', '0005_stream_history', '0006_stream_storage', '0007_result_ownership', '0008_result_history_summaries', '0009_generated_stream_maps', '0010_stream_game_admission'])
+      database.sqlite.exec(await readFile(`workers/noitamap-guessr/migrations/${migration}.sql`, 'utf8'));
     const secret = 'local-test-publisher-secret-01234567890123456789';
     const env: Env = { DB: database.db, ASSETS: { fetch: async () => new Response('', { status: 404 }) },
       GAME_SIGNING_SECRET: 'local-test-game-secret-01234567890123456789', ALLOWED_ORIGINS: '',

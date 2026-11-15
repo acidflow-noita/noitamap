@@ -653,5 +653,9 @@
   "Game history shows each player's rank and score.": "ゲーム履歴には、各プレイヤーのランクとスコアが表示されます。",
   "Game images are temporarily unavailable. Try again shortly.": "ゲームの画像は現在表示できません。しばらくしてからもう一度お試しください。",
   "Today’s generated map is still being prepared. Try again shortly.": "本日生成される地図は、現在準備中です。しばらくしてからもう一度お試しください。",
-  "Uses {{mode}} map": "このゲームモードでは、「{{mode}}」マップが使用されます。"
+  "Uses {{mode}} map": "このゲームモードでは、「{{mode}}」マップが使用されます。",
+  "You have reached today’s limit of 20 games.": "本日のプレイ上限である20試合に達しました。",
+  "Today’s limit of 100 new games has been reached.": "本日、プレイヤーによって100件の「NoitaGuessr」マッチが作成されました。これは1日の上限です。",
+  "Result storage is full. A new game cannot be started.": "結果の保存領域がいっぱいです。新しいゲームを開始できません。",
+  "The game creation limit resets at {{time}}.": "ゲーム作成の制限は{{time}}にリセットされます。"
 }

@@ -81,6 +81,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public resetAt?: number,
   ) {
     super(message);
   }
@@ -164,6 +165,7 @@ export class GameApi {
       throw new ApiError(
         response.status,
         data.error || "Could not contact the game. Please retry.",
+        typeof data.resetAt === 'number' && Number.isFinite(data.resetAt) ? data.resetAt : undefined,
       );
     }
     return data as T;

@@ -653,5 +653,9 @@
   "Game history shows each player's rank and score.": "Game history shows each player's rank and score.",
   "Game images are temporarily unavailable. Try again shortly.": "Game images are temporarily unavailable. Try again shortly.",
   "Today’s generated map is still being prepared. Try again shortly.": "Today’s generated map is still being prepared. Try again shortly.",
-  "Uses {{mode}} map": "Uses {{mode}} map"
+  "Uses {{mode}} map": "Uses {{mode}} map",
+  "You have reached today’s limit of 20 games.": "You have reached today’s limit of 20 games.",
+  "Today’s limit of 100 new games has been reached.": "Today’s limit of 100 new games has been reached.",
+  "Result storage is full. A new game cannot be started.": "Result storage is full. A new game cannot be started.",
+  "The game creation limit resets at {{time}}.": "The game creation limit resets at {{time}}."
 }

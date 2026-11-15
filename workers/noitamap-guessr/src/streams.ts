@@ -6,7 +6,6 @@ import {
   type StreamRoundSource,
 } from "../../../src/guessr/stream-server";
 import {
-  STREAM_MAX_DOCUMENT_BYTES,
   STREAM_DEFAULT_ROUNDS, validStreamRoundCount,
 } from "../../../src/guessr/stream-types";
 import { verifyGameTicket, verifyResultManagementTicket } from "./tickets";
@@ -15,7 +14,7 @@ import { storedResultResponse, type StoredResultBody } from './result-storage';
 import { GAME_PROTOCOL, GAME_RELOAD_MESSAGE } from '../../../src/guessr/game-protocol';
 import { storedHistorySummary } from './history-summary';
 import { generatedStreamSource } from './generated-stream-source';
-export { STREAM_DAILY_PUBLISH_CAP, STREAM_HOST_DAILY_CAP } from './result-publication';
+import { admitStreamGame, cancelStreamAdmission, StreamAdmissionError } from './stream-admission';
 
 const idPattern =
   /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
@@ -31,8 +30,8 @@ function json(value: unknown, status = 200): Response {
 async function boundedBody(request: Request): Promise<Record<string, unknown>> {
   if (!request.headers.get("Content-Type")?.startsWith("application/json"))
     throw new ImageGameError(415, "Send JSON.");
-  if (Number(request.headers.get("Content-Length")) > STREAM_MAX_DOCUMENT_BYTES)
-    throw new ImageGameError(413, "Result is too large; download it instead.");
+  if (Number(request.headers.get("Content-Length")) > 8192)
+    throw new ImageGameError(413, "Invalid game settings.");
   const reader = request.body?.getReader();
   if (!reader) throw new ImageGameError(400, "Missing request.");
   let bytes = 0,
@@ -42,11 +41,11 @@ async function boundedBody(request: Request): Promise<Record<string, unknown>> {
     const chunk = await reader.read();
     if (chunk.done) break;
     bytes += chunk.value.byteLength;
-    if (bytes > STREAM_MAX_DOCUMENT_BYTES) {
+    if (bytes > 8192) {
       await reader.cancel();
       throw new ImageGameError(
         413,
-        "Result is too large; download it instead.",
+        "Invalid game settings.",
       );
     }
     text += decoder.decode(chunk.value, { stream: true });
@@ -210,25 +209,37 @@ export async function streamRoute(
       if (mode !== 'stream' && mode !== 'pvp' || mode === 'pvp' && data.transport !== 'parallel') throw new ImageGameError(400, 'Invalid game settings.');
       if (data.streaming !== undefined && typeof data.streaming !== 'boolean') throw new ImageGameError(400, 'Invalid game settings.');
       if (!env.STREAM_COORDINATORS) throw new ImageGameError(503, 'Durable game connections are unavailable.');
-        const seconds = data.seconds === undefined ? 90 : data.seconds;
-        if (typeof seconds !== 'number' || !(seconds === 0 || Number.isInteger(seconds) && seconds >= 15 && seconds <= 600)) throw new ImageGameError(400, 'Invalid round duration.');
-        if (mode === 'pvp' && seconds === 0) throw new ImageGameError(400, 'Choose a round duration between 15 and 600 seconds.');
-        if (env.PUBLIC_GAME_RATE_LIMIT && !(await env.PUBLIC_GAME_RATE_LIMIT.limit({ key: 'stream-create:' + user.sub })).success) throw new ImageGameError(429, 'Too many games.');
-      const selected = source ? { source } : mode === 'pvp' ? { source: preparedSource(env) } : await generatedStreamSource(env, now);
-      const service = new StreamService(selected.source, env.STREAM_SIGNING_SECRET || '');
-      const session = { ...await service.start(user, now, data.transport, rounds, { mode, streaming: data.streaming as boolean | undefined }), live: true as const };
-      if ('dataset' in selected) { session.dataset = selected.dataset; session.imageRoot = selected.imageRoot; }
+      const seconds = data.seconds === undefined ? 90 : data.seconds;
+      if (typeof seconds !== 'number' || !(seconds === 0 || Number.isInteger(seconds) && seconds >= 15 && seconds <= 600)) throw new ImageGameError(400, 'Invalid round duration.');
+      if (mode === 'pvp' && seconds === 0) throw new ImageGameError(400, 'Choose a round duration between 15 and 600 seconds.');
+      if (env.PUBLIC_GAME_RATE_LIMIT && !(await env.PUBLIC_GAME_RATE_LIMIT.limit({ key: 'stream-create:' + user.sub })).success) throw new ImageGameError(429, 'Too many games.');
+      const id = await admitStreamGame(env.DB, user.twitchUserId, now);
+      try {
+        const selected = source ? { source } : mode === 'pvp' ? { source: preparedSource(env) } : await generatedStreamSource(env, now);
+        const service = new StreamService(selected.source, env.STREAM_SIGNING_SECRET || '');
+        const session = { ...await service.start(user, now, data.transport, rounds, { mode, streaming: data.streaming as boolean | undefined, id }), live: true as const };
+        if ('dataset' in selected) { session.dataset = selected.dataset; session.imageRoot = selected.imageRoot; }
         await env.STREAM_COORDINATORS.getByName(session.id).initialize({ owner: user.sub, session,
           reveals: await service.coordinatorReveals(session.token, user, now), seconds });
-      return json({ ...session, token: '', rounds: mode === 'pvp' ? [] : session.rounds.map(round => ({ ...round, token: '', clue: { frames: [] } })) }, 201);
+        return json({ ...session, token: '', rounds: mode === 'pvp' ? [] : session.rounds.map(round => ({ ...round, token: '', clue: { frames: [] } })) }, 201);
+      } catch (error) {
+        await cancelStreamAdmission(env.DB, id, user.twitchUserId).catch(() => {});
+        throw error;
+      }
     }
     throw new ImageGameError(410, 'This game transport has been retired.');
   } catch (error) {
+    if (error instanceof StreamAdmissionError) {
+      const limited = json({ error: error.message, resetAt: error.resetAt }, 429);
+      limited.headers.set('Retry-After', String(Math.max(1, Math.ceil((error.resetAt - now) / 1000))));
+      return limited;
+    }
     return json(
       {
         error:
           error instanceof ImageGameError
             ? error.message
+            : new URL(request.url).pathname.endsWith('/sessions') ? 'The game service is unavailable.'
             : "Publishing is unavailable. Your local game is safe; download the result or retry later.",
       },
       error instanceof ImageGameError ? error.status : 503,

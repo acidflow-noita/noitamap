@@ -653,5 +653,9 @@
   "Game history shows each player's rank and score.": "In de spelgeschiedenis worden de rang en de score van elke speler weergegeven.",
   "Game images are temporarily unavailable. Try again shortly.": "De afbeeldingen van het spel zijn tijdelijk niet beschikbaar. Probeer het straks nog eens.",
   "Today’s generated map is still being prepared. Try again shortly.": "De kaart van vandaag wordt nog samengesteld. Probeer het straks nog eens.",
-  "Uses {{mode}} map": "Deze spelmodus maakt gebruik van de kaart \"{{mode}}\"."
+  "Uses {{mode}} map": "Deze spelmodus maakt gebruik van de kaart \"{{mode}}\".",
+  "You have reached today’s limit of 20 games.": "Je hebt de limiet van 20 spellen voor vandaag bereikt.",
+  "Today’s limit of 100 new games has been reached.": "Spelers hebben vandaag 100 NoitaGuessr-wedstrijden aangemaakt. Dit is de dagelijkse limiet.",
+  "Result storage is full. A new game cannot be started.": "De opslagruimte voor resultaten is vol. Er kan geen nieuw spel worden gestart.",
+  "The game creation limit resets at {{time}}.": "De limiet voor het maken van spellen wordt om {{time}} opnieuw ingesteld."
 }

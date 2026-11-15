@@ -653,5 +653,9 @@
   "Game history shows each player's rank and score.": "Spelhistoriken visar varje spelares placering och poäng.",
   "Game images are temporarily unavailable. Try again shortly.": "Spelbilderna är tillfälligt otillgängliga. Försök igen om en stund.",
   "Today’s generated map is still being prepared. Try again shortly.": "Dagens karta är fortfarande under framtagning. Försök igen om en stund.",
-  "Uses {{mode}} map": "I det här spelläget används kartan ”{{mode}}”."
+  "Uses {{mode}} map": "I det här spelläget används kartan ”{{mode}}”.",
+  "You have reached today’s limit of 20 games.": "Du har nått dagens gräns på 20 spel.",
+  "Today’s limit of 100 new games has been reached.": "Spelarna har skapat 100 NoitaGuessr-matcher idag. Detta är den dagliga gränsen.",
+  "Result storage is full. A new game cannot be started.": "Resultatlagringen är full. Det går inte att starta ett nytt spel.",
+  "The game creation limit resets at {{time}}.": "Gränsen för skapande av spel återställs kl. {{time}}."
 }
