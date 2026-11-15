@@ -34,7 +34,12 @@ export async function authorizeSocket(env: Env, record: ParallelRecord, input: P
   if (input.role === 'host') {
     if (typeof input.ticket !== 'string') return null;
     const user = await verifyGameTicket(input.ticket, env.GAME_TICKET_PUBLIC_KEY ?? '', now);
-    if (!user || user.sub !== record.owner || user.twitchUserId !== record.game.session.host.id) return null;
+    if (!user || !user.twitchUserId || !user.twitchLogin) return null;
+    if (user.sub !== record.owner || user.twitchUserId !== record.game.session.host.id) {
+      if (!record.game.pvp) return null;
+      return { id: user.twitchUserId, login: user.twitchLogin, name: streamPlayerName(user.name, user.twitchLogin),
+        role: 'player', expiresAt: user.exp * 1000 };
+    }
     return { ...record.game.session.host, role: 'host', owner: user.sub, expiresAt: user.exp * 1000 };
   }
   if (input.role !== 'player' || typeof input.accessToken !== 'string' || !/^[a-zA-Z0-9]{10,512}$/.test(input.accessToken)) return null;

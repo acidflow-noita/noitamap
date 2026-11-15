@@ -61,6 +61,21 @@ function fixture(chat = true) {
 }
 
 describe('viewer Twitch sending', () => {
+  it('uses a verified site identity without opening a popup or contacting Twitch', async () => {
+    const request = vi.fn(), popup = vi.fn(), signOut = vi.fn(), authorize = vi.fn(async () => 'signed-game-ticket');
+    const client = new TwitchViewer({ chat: false, clientId: 'client123', fetch: request, popup,
+      siteIdentity: { userId: '123', login: 'wuote', displayName: 'WUOTE' }, siteAuthorization: authorize, siteSignOut: signOut });
+    clients.push(client); await client.ready;
+    expect(client.getState()).toMatchObject({ connected: true, userId: '123', login: 'wuote' });
+    expect(await client.transportAuthorization()).toEqual({ role: 'host', ticket: 'signed-game-ticket' });
+    await client.connect(); expect(popup).not.toHaveBeenCalled(); expect(request).not.toHaveBeenCalled();
+    expect(JSON.stringify(localStorage)).not.toContain('signed-game-ticket');
+    client.dispose(); expect(signOut).not.toHaveBeenCalled();
+  });
+  it.each([undefined, null])('accepts an identity-only token with empty scopes represented as %s', async scopes => {
+    const f = fixture(false); f.identity.scopes = scopes as any;
+    await f.connect(); expect(f.client.getState().connected).toBe(true);
+  });
   it('uses identity-only Twitch authorization for private PvP', async () => {
     const f = fixture(false); f.identity.scopes = [];
     const connected = f.client.connect();

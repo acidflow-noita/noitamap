@@ -346,15 +346,16 @@ async function openPvpGame(): Promise<void> {
   save(); streamUI?.suspend(); view = 'stream';
   const main = shell();
   try {
-    const [{ mountStreamPicker }, { TwitchViewer }, { StreamResultArchive }] = await Promise.all([
-      import('./stream-picker'), import('./twitch-viewer'), import('./stream-result-archive'),
+    const [{ mountStreamPicker }, { pvpViewer }, { StreamResultArchive }] = await Promise.all([
+      import('./stream-picker'), import('./pvp-identity'), import('./stream-result-archive'),
     ]);
     if (!main.isConnected) return;
     const id = readGuessRoute(new URL(location.href)).game;
     const saved = id ? await new StreamResultArchive().get(id).catch(() => undefined) : undefined;
     if (!main.isConnected) return;
     if (saved?.result.mode === 'pvp') { await streamUI?.publicResult(saved.result.id); return; }
-    const viewer = new TwitchViewer({ chat: false });
+    const viewer = await pvpViewer();
+    if (!main.isConnected) { viewer.dispose(); return; }
     const imageRoot = import.meta.env.VITE_GUESSR_IMAGE_ROOT || (gameApiOrigin() ? 'https://guessr-tiles.sage-data.xyz/images' : '/guessr-images/images');
     if (!pack.map) { viewer.dispose(); toast(msg('The game service is unavailable.')); return; }
     const close = mountStreamPicker(main, { ...pack, map: pack.map }, viewer, imageRoot, home);

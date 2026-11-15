@@ -1,0 +1,21 @@
+import { expect, it } from 'vitest';
+import { authorizeSocket } from '../workers/noitamap-guessr/src/stream-socket-auth';
+import { StreamService } from '../src/guessr/stream-server';
+import { createParallelRecord } from '../src/guessr/parallel-core';
+import { signGameTicket, testGameKeys } from './helpers/game-ticket-keys';
+import { streamHost, streamNow, streamSecret, streamSource } from './helpers/guessr-stream';
+import type { Env } from '../workers/noitamap-guessr/src/index';
+it('uses Pro tickets for either PvP seat without giving the opponent creator permissions', async () => {
+  const service = new StreamService(streamSource(), streamSecret);
+  const session = await service.start(streamHost, streamNow, 'parallel', 3, { mode: 'pvp' });
+  const record = createParallelRecord({ owner: streamHost.sub, session, seconds: 90, reveals: await service.coordinatorReveals(session.token, streamHost, streamNow) }, streamNow);
+  const env = { GAME_TICKET_PUBLIC_KEY: (await testGameKeys(streamSecret)).publicKey } as Env;
+  const own = await signGameTicket(streamHost.sub, streamHost.name, streamSecret, streamHost, streamNow);
+  expect(await authorizeSocket(env, record, { role: 'host', ticket: own.token }, streamNow)).toMatchObject({ role: 'host', id: streamHost.twitchUserId });
+  const opponent = await signGameTicket('account:opponent', 'Opponent', streamSecret, { twitchUserId: '200', twitchLogin: 'opponent' }, streamNow);
+  const player = await authorizeSocket(env, record, { role: 'host', ticket: opponent.token }, streamNow);
+  expect(player).toMatchObject({ role: 'player', id: '200', login: 'opponent' }); expect(player?.owner).toBeUndefined();
+  delete record.game.pvp;
+  expect(await authorizeSocket(env, record, { role: 'host', ticket: opponent.token }, streamNow)).toBeNull();
+  expect(await authorizeSocket(env, record, { role: 'host', ticket: opponent.token + 'bad' }, streamNow)).toBeNull();
+});

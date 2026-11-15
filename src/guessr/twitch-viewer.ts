@@ -7,6 +7,7 @@ import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import { ANNOUNCEMENT_SCOPE, canShareGameLink, postTwitchGameLink } from './twitch-announcement';
 import { gameCode } from './routes';
 import { twitchColor } from './player-color';
+import type { ParallelAuthorization } from './parallel-types';
 
 /** Keep transport state in source English so an open view can change language. */
 export function twitchMessageText(source: string): string {
@@ -63,6 +64,10 @@ export class TwitchViewerError extends Error {
 }
 export interface TwitchViewerPopup { readonly closed: boolean; close(): void }
 export interface TwitchViewerOptions {
+  /** A verified site identity uses game tickets, never a second provider popup. */
+  siteIdentity?: { userId: string; login: string; displayName: string };
+  siteAuthorization?: () => Promise<string>;
+  siteSignOut?: () => void;
   /** Private PvP needs identity only, without permission to read or send chat. */
   chat?: boolean;
   clientId?: string;
@@ -112,6 +117,11 @@ export class TwitchViewer {
     this.configured = /^[a-zA-Z0-9]{1,128}$/.test(this.clientId)
       && (location.protocol === 'https:' || location.protocol === 'http:'
         && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname));
+    if (options.siteIdentity && options.siteAuthorization) {
+      this.state = { ...emptyState(), ...options.siteIdentity, connected: true, savedUserId: options.siteIdentity.userId };
+      try { localStorage.setItem(IDENTITY_KEY + this.clientId, JSON.stringify({ userId: options.siteIdentity.userId })); } catch {}
+      this.ready = Promise.resolve(); return;
+    }
     this.purgeLegacyCredentials();
     this.state.savedUserId = savedTwitchViewerId(this.clientId) ?? null;
     this.ready = this.restoreSaved();
@@ -195,6 +205,9 @@ export class TwitchViewer {
   /** Call directly from the Connect button so the browser permits the popup. */
   connect(options: { announcements?: boolean } = {}): Promise<TwitchViewerState> {
     if (this.disposed) return Promise.reject(new TwitchViewerError('disconnected', 'This Twitch connection is closed.'));
+    if (this.options.siteIdentity && this.options.siteAuthorization) return this.options.siteAuthorization().then(() => {
+      this.update({ ...this.options.siteIdentity, connected: true, error: null }); return this.getState();
+    });
     if (!this.configured) return Promise.reject(new TwitchViewerError('configuration', 'Twitch chat sending is not configured on this site.'));
     if (this.state.sending) return Promise.reject(new TwitchViewerError('busy', 'Wait for the current guess to finish sending.'));
     if (this.pending) return this.pending.promise;
@@ -285,14 +298,15 @@ export class TwitchViewer {
     if (!response.ok) throw new TwitchViewerError(response.status === 401 ? 'expired' : 'validation',
       response.status === 401 ? 'Twitch sign-in expired. Connect again before sending.' : 'Twitch could not verify your sign-in. Please connect again.');
     const value = await response.json() as { client_id?: unknown; user_id?: unknown; login?: unknown; scopes?: unknown; expires_in?: unknown };
+    const scopes = value.scopes == null && this.requiredScopes.length === 0 ? [] : value.scopes;
     if (value.client_id !== this.clientId || typeof value.user_id !== 'string' || !/^\d{1,30}$/.test(value.user_id)
       || expectedUserId !== undefined && value.user_id !== expectedUserId
       || typeof value.login !== 'string' || !/^[a-z0-9_]{1,25}$/.test(value.login)
-      || !Array.isArray(value.scopes) || !this.requiredScopes.every(scope => (value.scopes as unknown[]).includes(scope))
+      || !Array.isArray(scopes) || !this.requiredScopes.every(scope => (scopes as unknown[]).includes(scope))
       || typeof value.expires_in !== 'number' || !Number.isSafeInteger(value.expires_in) || value.expires_in <= 5
       || !Number.isSafeInteger(Date.now() + value.expires_in * 1000))
       throw new TwitchViewerError('validation', this.options.chat === false ? 'Twitch could not verify your sign-in. Please connect again.' : 'Twitch sign-in did not match this app, account, or chat permission. Connect again.');
-    return { token, userId: value.user_id, login: value.login, scopes: value.scopes as string[], checkedAt: Date.now(), expiresAt: Date.now() + value.expires_in * 1000 };
+    return { token, userId: value.user_id, login: value.login, scopes: scopes as string[], checkedAt: Date.now(), expiresAt: Date.now() + value.expires_in * 1000 };
   }
   /** Local streamer testing uses the same direct announcement API as production. */
   canShare(announcements: boolean): boolean { return canShareGameLink(this.#credentials ?? undefined, announcements); }
@@ -439,7 +453,8 @@ export class TwitchViewer {
 
   /** Ephemeral first-frame authentication for the parallel game connection.
    * The coordinator validates it with Twitch and never stores the provider token. */
-  async transportAuthorization(): Promise<{ role: 'player'; accessToken: string }> {
+  async transportAuthorization(): Promise<ParallelAuthorization> {
+    if (this.options.siteAuthorization) return { role: 'host', ticket: await this.options.siteAuthorization() };
     const credentials = await this.currentCredentials();
     return { role: 'player', accessToken: credentials.token };
   }
@@ -504,6 +519,10 @@ export class TwitchViewer {
     this.update({ connected: false, userId: null, savedUserId: null, login: null, expiresAt: null, displayName: undefined, color: undefined });
   }
   disconnect(forget = true): void {
+    if (forget && this.options.siteSignOut) {
+      this.options.siteSignOut();
+      this.options.siteIdentity = undefined; this.options.siteAuthorization = undefined; this.options.siteSignOut = undefined;
+    }
     let revoked = this.#credentials?.token;
     if (forget && !revoked) try {
       const raw = sessionStorage.getItem(STORAGE_KEY + this.clientId);
