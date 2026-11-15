@@ -656,5 +656,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "В режиме 1 на 1 используется ваш существующий логин Pro. В лобби отображаются оба игрока и информация о том, готовы ли они к игре.",
   "If you give up a 1v1 match, the results page opens.": "Если вы сдадите матч 1 на 1, откроется страница с результатами.",
   "Buttons above the clue image now show keyboard shortcuts.": "Над изображением подсказки теперь отображаются сочетания клавиш.",
-  "The game results page has a smaller title and a narrower rank column.": "На странице результатов игры заголовок стал меньше, а столбец с рейтингом — уже."
+  "The game results page has a smaller title and a narrower rank column.": "На странице результатов игры заголовок стал меньше, а столбец с рейтингом — уже.",
+  "Shared internet connection": "Общее подключение к Интернету",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}} использовали одно и то же интернет-соединение в раунде {{round}}.",
+  "At least one of those accounts did not submit a guess for this round.": "По крайней мере один из этих аккаунтов не прислал своего варианта ответа в этом раунде.",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "Причиной появления этого флага могут стать совместные подключения. Это не является доказательством использования читов, и результаты остаются без изменений.",
+  "and {{count}} more": "и ещё {{count}}",
+  "Shared connection groups: {{count}}": "Группы общих подключений: {{count}}",
+  "Group {{number}}": "Группа {{number}}",
+  "Reload this page to use the updated game connection.": "Обновите эту страницу, чтобы воспользоваться обновленным подключением к игре.",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "Проверка личности на Twitch временно недоступна. Повторяю попытку…",
+  "Authorize Twitch posting access.": "Разрешить доступ к публикации в Twitch."
 }

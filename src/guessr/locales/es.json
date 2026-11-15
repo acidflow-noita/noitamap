@@ -647,5 +647,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1v1 utiliza tu inicio de sesión Pro actual. En la sala de espera se muestran ambos jugadores y si están listos.",
   "If you give up a 1v1 match, the results page opens.": "Si abandonas una partida 1 contra 1, se abre la página de resultados.",
   "Buttons above the clue image now show keyboard shortcuts.": "Los botones situados encima de la imagen de la pista muestran ahora los atajos de teclado.",
-  "The game results page has a smaller title and a narrower rank column.": "La página de resultados de los partidos tiene un título más pequeño y una columna de clasificación más estrecha."
+  "The game results page has a smaller title and a narrower rank column.": "La página de resultados de los partidos tiene un título más pequeño y una columna de clasificación más estrecha.",
+  "Shared internet connection": "Conexión a Internet compartida",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}} utilizaron la misma conexión a Internet en la ronda {{round}}.",
+  "At least one of those accounts did not submit a guess for this round.": "Al menos una de esas cuentas no ha enviado ninguna respuesta para esta ronda.",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "Las conexiones compartidas pueden provocar que se active este indicador. Esto no demuestra que se haya hecho trampa, y las puntuaciones no se ven afectadas.",
+  "and {{count}} more": "y {{count}} más",
+  "Shared connection groups: {{count}}": "Grupos de conexión compartidos: {{count}}",
+  "Group {{number}}": "Grupo {{number}}",
+  "Reload this page to use the updated game connection.": "Actualiza esta página para utilizar la conexión actualizada del juego.",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "La verificación de identidad de Twitch no está disponible temporalmente. Volviendo a intentarlo…",
+  "Authorize Twitch posting access.": "Autoriza el acceso para publicar en Twitch."
 }

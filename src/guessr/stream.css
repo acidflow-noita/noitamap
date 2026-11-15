@@ -93,6 +93,12 @@
 [aria-sort='ascending'] > .stream-table-sort::after { visibility: visible; transform: rotate(225deg); vertical-align: 0; }
 [aria-sort='descending'] > .stream-table-sort::after { visibility: visible; }
 .stream-score-table { --bs-table-color: var(--text); --bs-table-bg: transparent; --bs-table-border-color: var(--border); border-collapse: collapse; }
+.network-review { margin-block-start: .25rem; max-inline-size: 32rem; white-space: normal; }
+.network-review > summary { color: var(--danger-fg); font-size: .75rem; font-weight: 600; cursor: pointer; }
+.network-review > p { color: var(--text-muted); font-size: .8125rem; font-weight: 400; margin-block: .375rem; }
+.network-review-summary { max-inline-size: none; margin-block: .5rem; padding: .5rem .75rem; border: 1px solid var(--danger-fg); border-radius: var(--radius-control); }
+.network-review-summary h3 { color: var(--danger-fg); font-size: .875rem; margin-block: .5rem; }
+.network-review-summary p { color: var(--text-muted); font-size: .8125rem; }
 .stream-score-table :is(th, td) { padding: .65rem .9rem; border-block-end: 1px solid var(--border); vertical-align: middle; }
 .stream-score-table th { font-size: .8125rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
 .stream-channel-link { color: inherit; text-decoration: none; }

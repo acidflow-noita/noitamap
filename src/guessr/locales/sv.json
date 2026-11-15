@@ -638,5 +638,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1v1 använder din befintliga Pro-inloggning. I lobbyn visas båda spelarna och om de är redo.",
   "If you give up a 1v1 match, the results page opens.": "Om du ger upp en 1-mot-1-match öppnas resultatsidan.",
   "Buttons above the clue image now show keyboard shortcuts.": "Knapparna ovanför ledtrådsbilden visar nu kortkommandon.",
-  "The game results page has a smaller title and a narrower rank column.": "På sidan med matchresultat har rubriken blivit mindre och rangordningskolumnen smalare."
+  "The game results page has a smaller title and a narrower rank column.": "På sidan med matchresultat har rubriken blivit mindre och rangordningskolumnen smalare.",
+  "Shared internet connection": "Delad internetanslutning",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}} använde samma internetanslutning i omgång {{round}}.",
+  "At least one of those accounts did not submit a guess for this round.": "Minst ett av dessa konton lämnade inte in något gissning för den här omgången.",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "Delade anslutningar kan utlösa denna markering. Det är inget bevis på fusk, och poängen förblir oförändrade.",
+  "and {{count}} more": "och {{count}} till",
+  "Shared connection groups: {{count}}": "Delade anslutningsgrupper: {{count}}",
+  "Group {{number}}": "Grupp {{number}}",
+  "Reload this page to use the updated game connection.": "Uppdatera sidan för att använda den uppdaterade spelanslutningen.",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "Identitetsverifieringen på Twitch är tillfälligt otillgänglig. Försöker igen…",
+  "Authorize Twitch posting access.": "Godkänn åtkomst för inlägg på Twitch."
 }

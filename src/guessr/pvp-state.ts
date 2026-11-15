@@ -16,6 +16,7 @@ export function pvpSnapshot(game: StreamGame, playerId: string, imageRoot: strin
   const phase = game.stage === 'complete' ? 'complete' : game.stage === 'reveal' ? 'reveal'
     : ended || timing.phase === 'lobby' || !active ? 'waiting' : 'guess';
   return { schema: 1, mode: 'pvp', streaming: streamsAhead(game.session), channel: game.session.host.login,
+    config: game.session.config, imageRoot: game.session.imageRoot ?? imageRoot,
     hostId: game.session.host.id, hostPro: 'active', gameId: game.session.id, revision: timing.revision,
     phase, round: round + 1, roundId: game.session.rounds[round].id, totalRounds: game.session.rounds.length,
     clue: phase === 'guess' ? streamClue(game, round, imageRoot) : null,

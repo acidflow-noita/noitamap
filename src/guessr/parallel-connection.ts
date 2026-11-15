@@ -1,8 +1,14 @@
 import type { ParallelAuthorization, ParallelClientMessage, ParallelServerMessage, ParallelSubmission } from './parallel-types';
 import type { RoomConnection } from './live-room-types';
 import { connectionDiagnostic } from './connection-diagnostics';
+import { GAME_PROTOCOL } from './game-protocol';
 
 type Command = Extract<ParallelClientMessage, { id: string }>;
+function authorizationCloseCode(error: unknown): number {
+  const value = error as { code?: string; status?: number } | null;
+  return value?.status === 401 || value?.status === 403
+    || ['expired', 'validation', 'disconnected'].includes(value?.code ?? '') ? 4001 : 1013;
+}
 export class ParallelConnection {
   private socket?: WebSocket;
   private closed = false;
@@ -16,7 +22,7 @@ export class ParallelConnection {
   private refreshAuth?: ReturnType<typeof setTimeout>;
   private probe?: () => void;
   private outbox = new Map<string, ParallelSubmission>();
-  private relays = new Map<string, Extract<ParallelClientMessage, { type: 'relay' }>['message']>();
+  private revisions = new Map<string, number>();
   private commands = new Map<string, { message: Command; resolve(): void; reject(error: Error): void }>();
   private hostPending?: Extract<Command, { type: 'host-guess' }>;
   private offset = 0;
@@ -30,10 +36,13 @@ export class ParallelConnection {
   constructor(private origin: string, readonly gameId: string, readonly identity: string,
     private authorize: () => Promise<ParallelAuthorization>,
     private events: { message(value: ParallelServerMessage): void; status(value: RoomConnection, detail: string): void }) {
-    this.storageKey = `noitaguessr-socket:${gameId}:${identity}`;
+    this.storageKey = `noitaguessr-socket-v${GAME_PROTOCOL}:${gameId}:${identity}`;
     try {
       const saved = JSON.parse(localStorage.getItem(this.storageKey + ':pending') ?? '[]');
-      if (Array.isArray(saved)) for (const item of saved.slice(-10)) if (item?.roundId && /^[a-f0-9]{16}$/.test(item.nonce)) this.outbox.set(item.roundId, item);
+      if (Array.isArray(saved)) for (const item of saved.slice(-10)) if (item?.roundId && /^[a-f0-9]{16}$/.test(item.nonce)
+        && Number.isSafeInteger(item.revision) && item.revision > 0 && item.revision <= 0xffffffff) {
+        this.outbox.set(item.roundId, item); this.revisions.set(item.roundId, item.revision);
+      }
     } catch { /* Pending sends are optional recovery data, never credentials. */ }
     if (identity.startsWith('host:')) try {
       const saved = JSON.parse(localStorage.getItem(this.storageKey + ':host-guess') ?? 'null');
@@ -57,11 +66,13 @@ export class ParallelConnection {
     this.socket.send(JSON.stringify(message)); return true;
   }
   submit(submission: ParallelSubmission): void {
+    if ((this.outbox.get(submission.roundId)?.revision ?? 0) > submission.revision) return;
+    this.revisions.set(submission.roundId, Math.max(submission.revision, this.revisions.get(submission.roundId) ?? 0));
     this.outbox.set(submission.roundId, submission); this.persist();
     this.send({ type: 'guess', submission });
   }
-  relay(message: Extract<ParallelClientMessage, { type: 'relay' }>['message']): void {
-    if (!this.send({ type: 'relay', message }) && this.relays.size < 5000) this.relays.set(message.id, message);
+  nextRevision(roundId: string): number {
+    const next = (this.revisions.get(roundId) ?? 0) + 1; this.revisions.set(roundId, next); return next;
   }
   recover(): void { this.send({ type: 'recover' }); }
   command(message: Command): Promise<void> {
@@ -90,8 +101,8 @@ export class ParallelConnection {
         let resume: { ticket: string; expiresAt: number } | null = null;
         try { resume = JSON.parse(sessionStorage.getItem(this.storageKey) ?? 'null'); } catch {}
         const authorization = resume && resume.expiresAt > Date.now() + 60000 ? { role: 'resume' as const, ticket: resume.ticket } : await this.authorize();
-        if (current()) socket.send(JSON.stringify({ type: 'authorize', ...authorization }));
-      })().catch(() => { if (current()) socket.close(4001, 'Authorization required'); });
+        if (current()) socket.send(JSON.stringify({ type: 'authorize', protocol: GAME_PROTOCOL, ...authorization }));
+      })().catch(error => { if (current()) socket.close(authorizationCloseCode(error), 'Authorization unavailable'); });
     };
     socket.onmessage = event => {
       if (!current() || typeof event.data !== 'string') return;
@@ -104,8 +115,12 @@ export class ParallelConnection {
       if (message.type === 'error' && message.code === 'capacity') {
         this.update('stopped', message.message); socket.close(4003, 'Invitation unavailable'); return;
       }
-      if (message.type === 'published') this.completed = true;
+      if (message.type === 'published') {
+        this.completed = true; clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
+      }
       if (message.type === 'authorized') {
+        for (const [round, revision] of Object.entries(message.acceptedRevisions ?? {}))
+          this.revisions.set(round, Math.max(revision, this.revisions.get(round) ?? 0));
         connectionDiagnostic({ event: 'connected', transport: 'coordinator', code: this.ready ? 'reauthorized' : 'authorized' });
         clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.refreshAuth);
         this.ready = true; this.failures = 0; this.authFailures = 0;
@@ -114,7 +129,6 @@ export class ParallelConnection {
         for (const submission of this.outbox.values()) this.send({ type: 'guess', submission });
         for (const command of this.commands.values()) this.send(command.message);
         if (this.hostPending && !this.commands.has(this.hostPending.id)) this.send(this.hostPending);
-        for (const message of this.relays.values()) this.send({ type: 'relay', message }); this.relays.clear();
         this.probe = () => {
           if (!current() || document.visibilityState === 'hidden') return;
           socket.send('ping');
@@ -131,8 +145,8 @@ export class ParallelConnection {
         };
         this.heartbeat = setInterval(this.probe, 10000);
         this.refreshAuth = setTimeout(() => {
-          void this.authorize().then(auth => { if (current()) socket.send(JSON.stringify({ type: 'authorize', ...auth })); })
-            .catch(() => { if (current()) socket.close(4001, 'Authorization required'); });
+          void this.authorize().then(auth => { if (current()) socket.send(JSON.stringify({ type: 'authorize', protocol: GAME_PROTOCOL, ...auth })); })
+            .catch(error => { if (current()) socket.close(authorizationCloseCode(error), 'Authorization unavailable'); });
         }, Math.max(1000, message.expiresAt - this.now() - 60000));
       } else if (message.type === 'receipt') {
         const pending = this.outbox.get(message.roundId);
@@ -151,9 +165,10 @@ export class ParallelConnection {
       if (!current()) return;
       connectionDiagnostic({ event: 'socket-close', transport: 'coordinator', status: event.code });
       this.ready = false; clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
-      if (event.code === 1000 && this.completed) { this.update('connected', 'Game finished'); return; }
+      if (this.completed) { this.update('connected', 'Game finished'); return; }
       if (event.code === 4002) { this.update('stopped', 'This game is open in another tab. Continue there.'); return; }
       if (event.code === 4003) { this.update('stopped', 'This invitation is not available.'); return; }
+      if (event.code === 4004) { this.update('stopped', 'Reload this page to use the updated game connection.'); return; }
       if (event.code === 4001) {
         try { sessionStorage.removeItem(this.storageKey); } catch {}
         if (++this.authFailures > 1) { this.update('stopped', 'Sign in with Twitch to play.'); return; }

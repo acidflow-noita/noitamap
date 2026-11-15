@@ -638,5 +638,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1対1では、既存のプロアカウントでのログインが使用されます。ロビーには両プレイヤーが表示され、準備ができているかどうかも確認できます。",
   "If you give up a 1v1 match, the results page opens.": "1対1の対戦を放棄すると、結果ページが表示されます。",
   "Buttons above the clue image now show keyboard shortcuts.": "ヒント画像の上にあるボタンに、キーボードショートカットが表示されるようになりました。",
-  "The game results page has a smaller title and a narrower rank column.": "ゲーム結果ページでは、タイトルが小さくなり、順位欄の幅も狭くなっています。"
+  "The game results page has a smaller title and a narrower rank column.": "ゲーム結果ページでは、タイトルが小さくなり、順位欄の幅も狭くなっています。",
+  "Shared internet connection": "インターネット接続の共有",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}}は、{{round}}ラウンドで同じインターネット接続を使用しました。",
+  "At least one of those accounts did not submit a guess for this round.": "それらのアカウントのうち、少なくとも1つは今回のラウンドで予想を提出しませんでした。",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "接続の共有がこのフラグの原因となる場合があります。これは不正行為を証明するものではなく、スコアに変更はありません。",
+  "and {{count}} more": "さらに {{count}} 件",
+  "Shared connection groups: {{count}}": "共有接続グループ：{{count}}",
+  "Group {{number}}": "グループ {{number}}",
+  "Reload this page to use the updated game connection.": "更新されたゲーム接続を利用するには、このページを再読み込みしてください。",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "Twitchの本人確認サービスは一時的に利用できません。再試行中…",
+  "Authorize Twitch posting access.": "Twitchへの投稿権限を許可してください。"
 }

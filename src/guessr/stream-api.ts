@@ -9,6 +9,7 @@ import type {
   StreamHistoryPage,
 } from "./stream-types";
 import { STREAM_MAX_PLAYERS, STREAM_DEFAULT_ROUNDS } from "./stream-types";
+import { GAME_PROTOCOL } from './game-protocol';
 import type { LiveRoomView } from "./live-room-types";
 
 export class StreamApi {
@@ -52,7 +53,7 @@ export class StreamApi {
     return this.api.request<T>("/api/streams" + path, { body });
   }
   start(transport?: 'twitch' | 'parallel', rounds = STREAM_DEFAULT_ROUNDS, seconds = 90, streaming?: boolean, mode: 'stream' | 'pvp' = 'stream'): Promise<StreamSession> {
-    return this.request("/sessions", { ...(transport ? { transport } : {}), rounds, seconds, ...(streaming === undefined ? {} : { streaming }), mode });
+    return this.request("/sessions", { protocol: GAME_PROTOCOL, ...(transport ? { transport } : {}), rounds, seconds, ...(streaming === undefined ? {} : { streaming }), mode });
   }
   clock(): Promise<{ now: number }> {
     return this.request("/time", {});

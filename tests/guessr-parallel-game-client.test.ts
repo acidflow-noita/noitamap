@@ -13,7 +13,7 @@ vi.mock('../src/guessr/parallel-connection', () => ({ ParallelConnection: class 
   }
   connected() { return transport.connected; } now() { return Date.now() + transport.offset; } dispose = transport.dispose;
 } }));
-vi.mock('../src/guessr/twitch-game-client', () => ({ watchTwitchGame: () => { transport.twitch(); return { join: transport.join, dispose: vi.fn() }; } }));
+
 afterEach(() => { vi.clearAllMocks(); vi.unstubAllGlobals(); transport.connected = true; transport.offset = 0; });
 
 it('delivers the existing published-result socket event to chatters without fetching or reposting it', () => {
@@ -24,13 +24,14 @@ it('delivers the existing published-result socket event to chatters without fetc
     recovery: () => ({ missing: 0, receipts: [] }), durableReceipt: vi.fn(), roundResults: vi.fn(), published: vi.fn() };
   const id = '11111111-1111-4111-8111-111111111111';
   const client = watchParallelGame(viewer, 'wuote', id, handlers);
+  client.join();
   const result: StreamResult = { schema: 1, id, version: 'fixture', createdAt: 1, finishedAt: 2,
     host: { id: '456', login: 'wuote', name: 'WUOTE' }, rounds: [], players: [] };
   transport.receive({ type: 'published', result });
   expect(handlers.published).toHaveBeenCalledExactlyOnceWith(result);
   transport.receive({ type: 'published', result: { ...result, id: '22222222-2222-4222-8222-222222222222' } });
   expect(handlers.published).toHaveBeenCalledTimes(1);
-  expect(transport.join).toHaveBeenCalledTimes(1);
+  expect(client.hasJoined()).toBe(true);
   expect(fetch).not.toHaveBeenCalled();
   client.dispose(); expect(transport.dispose).toHaveBeenCalledTimes(1);
 });
@@ -41,6 +42,7 @@ it('keeps PvP time synchronized while reconnecting and preserves the actual stop
   const handlers = { state: vi.fn(), status: vi.fn(), reveal: vi.fn(), receipts: vi.fn(),
     recovery: () => ({ missing: 0, receipts: [] }), durableReceipt: vi.fn(), roundResults: vi.fn(), published: vi.fn() };
   const client = watchParallelGame(viewer, 'pvp', '11111111-1111-4111-8111-111111111111', handlers, { pvp: true });
+  client.join();
   transport.connected = false; transport.offset = 120000;
   transport.status('retrying', 'Reconnecting…');
   expect(client.now()).toBeGreaterThanOrEqual(Date.now() + 119990);

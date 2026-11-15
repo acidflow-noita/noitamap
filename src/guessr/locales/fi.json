@@ -638,5 +638,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1v1 käyttää olemassa olevaa Pro-kirjautumistunnustasi. Aulassa näkyvät molemmat pelaajat ja se, ovatko he valmiina.",
   "If you give up a 1v1 match, the results page opens.": "Jos luovutat 1v1-ottelun, tulosivu avautuu.",
   "Buttons above the clue image now show keyboard shortcuts.": "Vihjekuvan yläpuolella olevissa painikkeissa näkyy nyt pikanäppäimet.",
-  "The game results page has a smaller title and a narrower rank column.": "Ottelutulossivulla on pienempi otsikko ja kapeampi sijoitussarake."
+  "The game results page has a smaller title and a narrower rank column.": "Ottelutulossivulla on pienempi otsikko ja kapeampi sijoitussarake.",
+  "Shared internet connection": "Jaettu internetyhteys",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}} käytti samaa internetyhteyttä kierroksella {{round}}.",
+  "At least one of those accounts did not submit a guess for this round.": "Ainakin yksi näistä tileistä ei lähettänyt arvausvastausta tähän kierrokseen.",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "Yhteiset yhteydet voivat aiheuttaa tämän merkinnän. Se ei todista huijaamista, eikä pisteisiin tule muutoksia.",
+  "and {{count}} more": "ja {{count}} lisää",
+  "Shared connection groups: {{count}}": "Jaetut yhteysryhmät: {{count}}",
+  "Group {{number}}": "Ryhmä {{number}}",
+  "Reload this page to use the updated game connection.": "Päivitä tämä sivu, jotta voit käyttää päivitettyä peliyhteyttä.",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "Twitchin henkilöllisyyden vahvistus ei ole tilapäisesti käytettävissä. Yritetään uudelleen…",
+  "Authorize Twitch posting access.": "Myönnä Twitchille oikeus julkaista sisältöä."
 }

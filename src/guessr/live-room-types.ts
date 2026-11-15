@@ -4,6 +4,8 @@ import type { AreaDifficulty } from './area-rules.ts';
 
 /** Public room messages never contain future answers or private reveal tokens. */
 export interface LiveRoomView {
+  config?: import('./image-game').ImageGameConfig;
+  imageRoot?: string;
   schema: 1;
   streaming?: boolean;
   mode?: 'stream' | 'pvp';

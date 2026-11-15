@@ -390,6 +390,7 @@ function makePlayPanels(
   locked: boolean,
   onPick?: (point: Point) => void,
   readOnly = false,
+  config?: ImageGameConfig,
 ): { clue: HTMLElement; bar: HTMLElement; mapActions: HTMLElement } {
   const grid = node("div", "game-grid"),
     left = node("section", "game-panel"),
@@ -416,8 +417,8 @@ function makePlayPanels(
   main.append(grid);
   board = new MapBoard(
     map,
-    ranked && view === "ranked" ? ranked.bounds : pack.bounds,
-    ranked && view === 'ranked' && ranked.config ? ranked.config.overview : pack.overview,
+    config?.bounds ?? (ranked && view === "ranked" ? ranked.bounds : pack.bounds),
+    config?.overview ?? (ranked && view === 'ranked' && ranked.config ? ranked.config.overview : pack.overview),
     (p) => {
       if (onPick) onPick(p);
       else if (
@@ -450,7 +451,7 @@ function makePlayPanels(
       }
       announce(msg("Pin placed. Submit your guess when ready."));
     },
-    ranked && view === 'ranked' && ranked.config ? ranked.config.map : pack.map,
+    config?.map ?? (ranked && view === 'ranked' && ranked.config ? ranked.config.map : pack.map),
   );
   mapBar.append(mapControls(board, { readOnly }));
   board.setMarkers(guess);

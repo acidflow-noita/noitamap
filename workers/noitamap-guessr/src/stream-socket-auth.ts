@@ -4,21 +4,23 @@ import type { ParallelAuthorization, ParallelIdentity } from '../../../src/guess
 import type { ParallelRecord } from '../../../src/guessr/parallel-core';
 import { streamPlayerName } from '../../../src/guessr/stream-display-name';
 import { twitchColor } from '../../../src/guessr/player-color';
+import { GAME_PROTOCOL } from '../../../src/guessr/game-protocol';
 
 const utf8 = new TextEncoder();
 const b64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
 const unb64 = (value: string) => Uint8Array.from(atob(value.replaceAll('-', '+').replaceAll('_', '/')), c => c.charCodeAt(0));
 async function key(env: Env): Promise<CryptoKey> {
   if (!env.STREAM_SIGNING_SECRET || env.STREAM_SIGNING_SECRET.length < 32) throw Error('Missing socket signing key');
-  return crypto.subtle.importKey('raw', utf8.encode('noitaguessr-socket-v1:' + env.STREAM_SIGNING_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+  return crypto.subtle.importKey('raw', utf8.encode('noitaguessr-socket-v2:' + env.STREAM_SIGNING_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
 }
 export async function socketTicket(env: Env, gameId: string, identity: ParallelIdentity): Promise<string> {
-  const payload = b64(utf8.encode(JSON.stringify({ gameId, identity, purpose: 'socket-resume-v1' })));
+  const payload = b64(utf8.encode(JSON.stringify({ gameId, identity, purpose: 'socket-resume-v2' })));
   return payload + '.' + b64(new Uint8Array(await crypto.subtle.sign('HMAC', await key(env), utf8.encode(payload))));
 }
 /** Provider credentials are accepted only in the first TLS-protected frame.
  * Neither storage, attachments, URLs nor logs contain the provider token. */
-export async function authorizeSocket(env: Env, record: ParallelRecord, input: ParallelAuthorization, now: number): Promise<ParallelIdentity | null> {
+export async function authorizeSocket(env: Env, record: ParallelRecord, input: ParallelAuthorization & { protocol?: number }, now: number): Promise<ParallelIdentity | null> {
+  if (input.protocol !== GAME_PROTOCOL) return null;
   if (input.role === 'resume') {
     if (typeof input.ticket !== 'string' || input.ticket.length > 4096) return null;
     try {
@@ -26,7 +28,7 @@ export async function authorizeSocket(env: Env, record: ParallelRecord, input: P
       if (parts.length !== 2 || !parts.every(p => /^[\w-]+$/.test(p)) || !await crypto.subtle.verify('HMAC', await key(env), unb64(parts[1]), utf8.encode(parts[0]))) return null;
       const data = JSON.parse(new TextDecoder().decode(unb64(parts[0])));
       const p = data.identity as ParallelIdentity;
-      if (data.purpose !== 'socket-resume-v1' || data.gameId !== record.game.session.id || p.expiresAt <= now) return null;
+      if (data.purpose !== 'socket-resume-v2' || data.gameId !== record.game.session.id || p.expiresAt <= now) return null;
       if (p.role === 'host' && (p.owner !== record.owner || p.id !== record.game.session.host.id)) return null;
       return p;
     } catch { return null; }
@@ -47,10 +49,11 @@ export async function authorizeSocket(env: Env, record: ParallelRecord, input: P
   const validation = await fetch('https://id.twitch.tv/oauth2/validate', {
     headers: { Authorization: 'OAuth ' + input.accessToken }, signal: AbortSignal.timeout(10000),
   });
-  if (!validation.ok) return null;
+  if (validation.status === 401) return null;
+  if (!validation.ok) throw Error('Twitch identity verification is temporarily unavailable.');
   const data = await validation.json() as { client_id: string; user_id: string; login: string; expires_in: number; scopes?: string[] };
   if (!env.TWITCH_PLAYER_CLIENT_ID || data.client_id !== env.TWITCH_PLAYER_CLIENT_ID || !/^\d{1,30}$/.test(data.user_id)
-    || !/^[a-z0-9_]{1,25}$/.test(data.login) || !(data.expires_in > 0) || !record.game.pvp && !data.scopes?.includes('user:write:chat')) return null;
+    || !/^[a-z0-9_]{1,25}$/.test(data.login) || !(data.expires_in > 0)) return null;
   const headers = { Authorization: 'Bearer ' + input.accessToken, 'Client-Id': env.TWITCH_PLAYER_CLIENT_ID };
   const [profile, colorResponse] = await Promise.all([
     fetch('https://api.twitch.tv/helix/users?id=' + data.user_id, { headers, signal: AbortSignal.timeout(5000) }).catch(() => null),

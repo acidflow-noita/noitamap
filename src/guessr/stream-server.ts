@@ -8,6 +8,7 @@ import { within, type Point } from "./rules.ts";
 import { rankStreamPlayers } from "./stream-ranking.ts";
 import { streamPlayerName } from './stream-display-name.ts';
 import { defaultStreaming, type MultiplayerMode } from './match-settings.ts';
+import { GAME_PROTOCOL } from './game-protocol.ts';
 import {
   STREAM_MAX_PLAYERS,
   STREAM_DEFAULT_ROUNDS, validStreamRoundCount,
@@ -190,6 +191,7 @@ export class StreamService {
     );
     return {
       mode, streaming,
+      protocol: GAME_PROTOCOL,
       ...(transport ? { transport } : {}),
       id,
       version: config.version,

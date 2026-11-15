@@ -656,5 +656,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "Režim 1v1 využívá vaše stávající přihlášení k účtu Pro. V čekárně se zobrazují oba hráči a informace o tom, zda jsou připraveni.",
   "If you give up a 1v1 match, the results page opens.": "Pokud se vzdáš zápasu 1v1, otevře se stránka s výsledky.",
   "Buttons above the clue image now show keyboard shortcuts.": "Tlačítka nad obrázkem nápovědy nyní zobrazují klávesové zkratky.",
-  "The game results page has a smaller title and a narrower rank column.": "Stránka s výsledky zápasů má menší nadpis a užší sloupec s pořadím."
+  "The game results page has a smaller title and a narrower rank column.": "Stránka s výsledky zápasů má menší nadpis a užší sloupec s pořadím.",
+  "Shared internet connection": "Sdílené připojení k internetu",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}} využívali ve {{round}}. kole stejné internetové připojení.",
+  "At least one of those accounts did not submit a guess for this round.": "Alespoň jeden z těchto účtů v tomto kole neodeslal tip.",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "Tuto značku mohou způsobit sdílená připojení. Neznamená to, že došlo k podvádění, a skóre se nemění.",
+  "and {{count}} more": "a dalších {{count}}",
+  "Shared connection groups: {{count}}": "Sdílené skupiny připojení: {{count}}",
+  "Group {{number}}": "Skupina {{number}}",
+  "Reload this page to use the updated game connection.": "Obnovte tuto stránku, abyste mohli využít aktualizované připojení ke hře.",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "Ověření identity na Twitchi je dočasně nedostupné. Pokouším se o to znovu…",
+  "Authorize Twitch posting access.": "Povolit přístup k publikování na Twitchi."
 }

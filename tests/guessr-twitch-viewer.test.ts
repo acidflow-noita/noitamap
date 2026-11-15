@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import { parseGuessCommand } from '../src/guessr/guess-command';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { TwitchViewer, TWITCH_VIEWER_MESSAGE, savedTwitchViewerId } from '../src/guessr/twitch-viewer';
@@ -38,7 +37,7 @@ it('identifies a saved result viewer without authenticating, validating a token 
 });
 
 function fixture(chat = true) {
-  const identity = { client_id: 'client123', user_id: '123', login: 'viewer', scopes: ['user:read:chat', 'user:write:chat'], expires_in: 7200 };
+  const identity = { client_id: 'client123', user_id: '123', login: 'viewer', scopes: ['user:write:chat'], expires_in: 7200 };
   const popup = { closed: false, close: vi.fn() };
   const open = vi.fn<(url: string, name: string, features: string) => typeof popup | null>(() => popup);
   const request = vi.fn<typeof fetch>(async (url) => {
@@ -60,7 +59,7 @@ function fixture(chat = true) {
   return { client, identity, popup, open, request, reply, connect, sends };
 }
 
-describe('viewer Twitch sending', () => {
+describe('Twitch identity and optional host sharing', () => {
   it('uses a verified site identity without opening a popup or contacting Twitch', async () => {
     const request = vi.fn(), popup = vi.fn(), signOut = vi.fn(), authorize = vi.fn(async () => 'signed-game-ticket');
     const client = new TwitchViewer({ chat: false, clientId: 'client123', fetch: request, popup,
@@ -90,7 +89,7 @@ describe('viewer Twitch sending', () => {
     f.identity.scopes.push('moderator:manage:announcements');
     const pending = f.client.connect({ announcements: true });
     expect(new URL(f.open.mock.calls[0][0]).searchParams.get('scope'))
-      .toBe('user:read:chat user:write:chat moderator:manage:announcements');
+      .toBe('user:write:chat moderator:manage:announcements');
     f.reply(); await pending;
     expect(f.sends()).toHaveLength(0);
     f.request.mockResolvedValueOnce(new Response(null, { status: 204 }));
@@ -103,7 +102,7 @@ describe('viewer Twitch sending', () => {
     expect(f.client.connect()).toBe(pending);
     const auth = new URL(f.open.mock.calls[0][0] as unknown as string);
     expect(auth.origin).toBe('https://id.twitch.tv');
-    expect(auth.searchParams.get('scope')).toBe('user:read:chat user:write:chat');
+    expect(auth.searchParams.get('scope')).toBe('user:write:chat');
     expect(auth.searchParams.get('redirect_uri')).toBe(location.origin + '/guess/twitch-callback.html');
     expect(auth.searchParams.get('state')).toMatch(/^[a-f0-9]{64}$/);
     f.reply({}, 'https://untrusted.example');
@@ -116,68 +115,13 @@ describe('viewer Twitch sending', () => {
     expect(f.sends()).toHaveLength(0);
     expect(f.client.getState()).toMatchObject({ connected: true, login: 'viewer', userId: '123' });
     expect(JSON.stringify(f.client.getState())).not.toContain(token);
-    expect(JSON.parse(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')!)).toMatchObject({ token, userId: '123' });
+    expect(JSON.parse(sessionStorage.getItem('noitamap-guessr-twitch-tab-v3:client123')!)).toMatchObject({ token, userId: '123' });
     expect(localStorage.getItem('noitamap-guessr-twitch-identity-v2:client123')).not.toContain(token);
     expect(localStorage.getItem('noitamap-guessr-twitch-v1:client123')).toBeNull();
   });
 
-  it('sends the selected round and rounded pin to the shared transport, bound to the signed-in sender', async () => {
-    const f = fixture(); await f.connect();
-    await expect(f.client.sendGuess('WUOTE', 2, { x: -3152.2, y: 874.1 })).resolves.toBe('sent-id');
-    expect(f.request.mock.calls[1][0]).toBe('https://api.twitch.tv/helix/users?login=noitaguessr');
-    const [url, init] = f.sends()[0];
-    expect(url).toBe('https://api.twitch.tv/helix/chat/messages');
-    expect(init).toMatchObject({ method: 'POST', credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error',
-      headers: { Authorization: 'Bearer ' + token, 'Client-Id': 'client123' } });
-    const sent = JSON.parse(init!.body as string);
-    expect(sent).toMatchObject({ broadcaster_id: '456', sender_id: '123' });
-    expect(parseGuessCommand(sent.message, { rounds: 10, bounds: { x: -10000, y: -10000, width: 20000, height: 20000 } }))
-      .toMatchObject({ round: 2, x: -3152, y: 874, userId: '123', nonce: expect.stringMatching(/^[a-f0-9]{16}$/) });
-    expect(f.request.mock.calls.every(([url]) => /^https:\/\/(id|api)\.twitch\.tv\//.test(String(url)))).toBe(true);
-  });
-
-  it('spaces a guess after a synchronization message instead of violating the per-channel send limit', async () => {
-    const f = fixture(); await f.connect();
-    await f.client.sendMessage('noitaguessr', '!noitaguessr_sync viewer - 0');
-    const pending = f.client.sendGuess('viewer', 1, { x: 0, y: 0 });
-    await vi.advanceTimersByTimeAsync(1000);
-    expect(f.sends()).toHaveLength(1); expect(f.client.getState().sending).toBe(true);
-    await vi.advanceTimersByTimeAsync(100);
-    await pending; expect(f.sends()).toHaveLength(2);
-  });
-
-  it('sends a last-second guess through the normal queue within its allowance, without retries', async () => {
-    const f = fixture(); await f.connect();
-    await f.client.sendMessage('noitaguessr', '!noitaguessr_sync viewer - 0');
-    const pending = f.client.sendGuess('viewer', 3, { x: 1, y: 2 }, 4900, undefined, undefined, undefined, Date.now() + 3000);
-    await vi.advanceTimersByTimeAsync(1100); await pending;
-    expect(f.sends()).toHaveLength(2);
-  });
-
-  it('does not send a queued guess when the queue would overrun its allowance', async () => {
-    const f = fixture(); await f.connect();
-    await f.client.sendMessage('noitaguessr', '!noitaguessr_sync viewer - 0');
-    await expect(f.client.sendGuess('viewer', 3, { x: 1, y: 2 }, 4900, undefined, undefined, undefined, Date.now() + 500))
-      .rejects.toMatchObject({ code: 'round-closed' });
-    await vi.advanceTimersByTimeAsync(30_000);
-    expect(f.sends()).toHaveLength(1);
-    expect(f.client.getState().sending).toBe(false);
-  });
-
   it.each([
-    [200, { data: [] }, 'channel-not-found', 'No Twitch account matches that username.'],
-    [503, {}, 'channel', 'Twitch could not check this channel.'],
-    [200, { data: [{ login: 'someone-else', id: '456' }] }, 'channel', 'Twitch could not check this channel.'],
-  ])('distinguishes missing Twitch accounts from lookup failures (%s, %j)', async (status, body, code, detail) => {
-    const f = fixture(); await f.connect();
-    f.request.mockResolvedValueOnce(json(body, status as number));
-    await expect(f.client.sendGuess('missing_streamer', 1, { x: 0, y: 0 })).rejects.toMatchObject({ code, message: expect.stringContaining(detail as string) });
-    expect(f.sends()).toHaveLength(0);
-    expect(f.client.getState().connected).toBe(true);
-  });
-
-  it.each([
-    { client_id: 'different' }, { scopes: [] }, { scopes: ['user:write:chat'] }, { user_id: 'bad-id' }, { expires_in: 0 },
+    { client_id: 'different' }, { scopes: [] }, { scopes: ['user:read:chat'] }, { user_id: 'bad-id' }, { expires_in: 0 },
   ])('rejects invalid token validation: %j', async change => {
     const f = fixture(); Object.assign(f.identity, change);
     await expect(f.connect()).rejects.toMatchObject({ code: 'validation' });
@@ -203,7 +147,7 @@ describe('viewer Twitch sending', () => {
     await vi.advanceTimersByTimeAsync(3600000);
     expect(f.request).toHaveBeenCalledTimes(2);
     expect(f.client.getState().connected).toBe(false);
-    await expect(f.client.sendGuess('wuote', 1, { x: 0, y: 0 })).rejects.toMatchObject({ code: 'disconnected' });
+    await expect(f.client.transportAuthorization()).rejects.toMatchObject({ code: 'disconnected' });
     expect(f.sends()).toHaveLength(0);
   });
 
@@ -211,39 +155,6 @@ describe('viewer Twitch sending', () => {
     const f = fixture(); f.identity.expires_in = 10; await f.connect();
     await vi.advanceTimersByTimeAsync(5000);
     expect(f.client.getState()).toMatchObject({ connected: false, error: expect.stringContaining('expired') });
-    expect(f.sends()).toHaveLength(0);
-  });
-
-  it.each([
-    [401, 'expired'], [403, 'forbidden'], [429, 'rate-limit'], [500, 'uncertain'],
-  ])('reports HTTP %i and never automatically retries', async (status, code) => {
-    const f = fixture(); await f.connect();
-    f.request.mockResolvedValueOnce(json({ data: [{ id: '456', login: 'noitaguessr' }] }))
-      .mockResolvedValueOnce(json({}, status as number));
-    await expect(f.client.sendGuess('wuote', 1, { x: 0, y: 0 })).rejects.toMatchObject({ code });
-    await vi.advanceTimersByTimeAsync(10000);
-    expect(f.sends()).toHaveLength(1);
-    expect(f.client.getState().sending).toBe(false);
-  });
-
-  it.each([false, null, 'network'] as const)('does not treat a dropped or unconfirmed message as delivered: %j', async result => {
-    const f = fixture(); await f.connect();
-    f.request.mockResolvedValueOnce(json({ data: [{ id: '456', login: 'noitaguessr' }] }));
-    if (result === 'network') f.request.mockRejectedValueOnce(new Error('Network failed'));
-    else f.request.mockResolvedValueOnce(json({ data: [{ is_sent: result, drop_reason: { message: 'Slow mode' } }] }));
-    await expect(f.client.sendGuess('wuote', 1, { x: 0, y: 0 })).rejects.toMatchObject({ code: result === false ? 'dropped' : 'uncertain' });
-    expect(f.sends()).toHaveLength(1);
-  });
-
-  it('prevents concurrent sends and a send after disconnect during channel lookup', async () => {
-    const f = fixture(); await f.connect();
-    let finish!: (response: Response) => void;
-    f.request.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-    const sending = f.client.sendGuess('wuote', 1, { x: 0, y: 0 });
-    await expect(f.client.sendGuess('wuote', 1, { x: 0, y: 0 })).rejects.toMatchObject({ code: 'busy' });
-    f.client.disconnect();
-    finish(json({ data: [{ id: '456', login: 'noitaguessr' }] }));
-    await expect(sending).rejects.toMatchObject({ code: 'disconnected' });
     expect(f.sends()).toHaveLength(0);
   });
 
@@ -269,7 +180,7 @@ describe('viewer Twitch sending', () => {
     expect(next.getState()).toMatchObject({ connected: true, login: 'viewer', restoring: false });
     expect(popup).not.toHaveBeenCalled(); expect(f.sends()).toHaveLength(0);
     next.disconnect();
-    expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')).toBeNull();
+    expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v3:client123')).toBeNull();
   });
 
   it('retains a read-only saved identity for score recovery when Twitch is unreachable', async () => {
@@ -290,7 +201,7 @@ describe('viewer Twitch sending', () => {
     const next = new TwitchViewer({ clientId: 'client123', fetch: f.request, popup }); clients.push(next);
     await next.ready;
     expect(next.getState().connected).toBe(false);
-    expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')).toBeNull();
+    expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v3:client123')).toBeNull();
     expect(popup).not.toHaveBeenCalled(); expect(f.sends()).toHaveLength(0);
   });
 
@@ -301,20 +212,7 @@ describe('viewer Twitch sending', () => {
     const next = new TwitchViewer({ clientId: 'client123', fetch: f.request }); clients.push(next);
     next.disconnect(); finish(json(f.identity)); await next.ready;
     expect(next.getState().connected).toBe(false);
-    expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')).toBeNull();
-  });
-
-  it('uses the same validated account to send a normal chat message', async () => {
-    const f = fixture(); await f.connect();
-    await f.client.sendMessage('wuote', 'hello');
-    expect(JSON.parse(f.sends()[0][1]!.body as string)).toMatchObject({ sender_id: '123', broadcaster_id: '456', message: 'hello' });
-  });
-  it('includes the viewer exploration allowance in the submitted chat command', async () => {
-    const f = fixture(); await f.connect();
-    await f.client.sendGuess('wuote', 2, { x: 100, y: 200 }, 4500);
-    expect(parseGuessCommand(JSON.parse(f.sends()[0][1]!.body as string).message,
-      { rounds: 10, bounds: { x: -10000, y: -10000, width: 20000, height: 20000 } }))
-      .toMatchObject({ round: 2, x: 100, y: 200, maximum: 4500, userId: '123' });
+    expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v3:client123')).toBeNull();
   });
 });
 
@@ -323,7 +221,7 @@ it('removes and revokes old persistent tokens without importing them into the cu
   localStorage.setItem('noitamap-guessr-twitch-v1:client123', JSON.stringify({ token, userId: '123', expiresAt: Date.now() + 3600000 }));
   const f = fixture(); await f.client.ready;
   expect(f.client.getState().connected).toBe(false);
-  expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')).toBeNull();
+  expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v3:client123')).toBeNull();
   expect(localStorage.getItem('noitamap-guessr-twitch-v1:client123')).toBeNull();
   expect(f.request).toHaveBeenCalledOnce();
   const [url, init] = f.request.mock.calls[0]; expect(url).toBe('https://id.twitch.tv/oauth2/revoke');
@@ -336,7 +234,7 @@ it('revokes on explicit sign-out but preserves a current-tab connection through 
   const next = new TwitchViewer({ clientId: 'client123', fetch: f.request }); clients.push(next); await next.ready;
   next.disconnect(); await Promise.resolve();
   expect(f.request.mock.calls.filter(([url]) => String(url).endsWith('/revoke'))).toHaveLength(1);
-  expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')).toBeNull();
+  expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v3:client123')).toBeNull();
   expect(savedTwitchViewerId('client123')).toBeUndefined();
 });
 it('cannot restore a connection in a fresh tab from the public saved identity', async () => {
@@ -345,4 +243,27 @@ it('cannot restore a connection in a fresh tab from the public saved identity', 
   const next = new TwitchViewer({ clientId: 'client123', fetch: f.request }); clients.push(next); await next.ready;
   expect(next.getState()).toMatchObject({ connected: false, savedUserId: '123' });
   expect(f.request).not.toHaveBeenCalled();
+});
+
+it('discards the old chat-transport credential once and requests identity-only access for gameplay', async () => {
+  sessionStorage.setItem('noitamap-guessr-twitch-tab-v2:client123', JSON.stringify({ token, userId: '123', expiresAt: Date.now() + 3600000 }));
+  const f = fixture(false); await f.client.ready;
+  expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v2:client123')).toBeNull();
+  expect(f.client.getState().connected).toBe(false);
+  expect(f.request.mock.calls.map(([url]) => String(url))).toEqual(['https://id.twitch.tv/oauth2/revoke']);
+  const pending = f.client.connect(); expect(new URL(f.open.mock.calls[0][0]).searchParams.get('scope')).toBe('');
+  f.reply(); await pending;
+  expect(f.client.getState().connected).toBe(true); expect(f.sends()).toHaveLength(0);
+});
+
+it('restores after a temporary verification outage without another popup or discarding the saved token', async () => {
+  const f = fixture(false); await f.connect(); f.client.dispose();
+  f.request.mockResolvedValueOnce(json({}, 503));
+  const popup = vi.fn(); const next = new TwitchViewer({ clientId: 'client123', fetch: f.request, popup }); clients.push(next);
+  await next.ready;
+  expect(next.getState()).toMatchObject({ connected: false, restoring: true });
+  expect(sessionStorage.getItem('noitamap-guessr-twitch-tab-v3:client123')).not.toBeNull();
+  await vi.advanceTimersByTimeAsync(30000);
+  expect(next.getState()).toMatchObject({ connected: true, restoring: false, userId: '123' });
+  expect(popup).not.toHaveBeenCalled(); expect(f.sends()).toHaveLength(0);
 });

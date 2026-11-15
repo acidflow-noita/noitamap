@@ -647,5 +647,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "Le mode 1 contre 1 utilise votre identifiant Pro existant. Le hall d'attente affiche les deux joueurs et indique s'ils sont prêts.",
   "If you give up a 1v1 match, the results page opens.": "Si vous abandonnez un match en 1 contre 1, la page des résultats s'affiche.",
   "Buttons above the clue image now show keyboard shortcuts.": "Les boutons situés au-dessus de l'image d'indice affichent désormais les raccourcis clavier.",
-  "The game results page has a smaller title and a narrower rank column.": "La page des résultats des matchs présente un titre plus petit et une colonne « Classement » plus étroite."
+  "The game results page has a smaller title and a narrower rank column.": "La page des résultats des matchs présente un titre plus petit et une colonne « Classement » plus étroite.",
+  "Shared internet connection": "Connexion Internet partagée",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}} ont utilisé la même connexion Internet lors de la manche {{round}}.",
+  "At least one of those accounts did not submit a guess for this round.": "Au moins un de ces comptes n'a pas donné de réponse pour cette manche.",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "Ce drapeau peut être déclenché par des connexions partagées. Cela ne prouve pas qu'il y ait eu tricherie, et les scores restent inchangés.",
+  "and {{count}} more": "et {{count}} autres",
+  "Shared connection groups: {{count}}": "Groupes de connexions partagées : {{count}}",
+  "Group {{number}}": "Groupe {{number}}",
+  "Reload this page to use the updated game connection.": "Actualisez cette page pour utiliser la connexion au jeu mise à jour.",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "La vérification d'identité sur Twitch est temporairement indisponible. Nouvelle tentative…",
+  "Authorize Twitch posting access.": "Autoriser l'accès à la publication sur Twitch."
 }

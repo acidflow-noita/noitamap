@@ -8,12 +8,11 @@ import {
 import {
   STREAM_MAX_DOCUMENT_BYTES,
   STREAM_DEFAULT_ROUNDS, validStreamRoundCount,
-  type StreamPublishWireInput,
 } from "../../../src/guessr/stream-types";
 import { verifyGameTicket, verifyResultManagementTicket } from "./tickets";
 import type { Env } from "./index";
 import { storedResultResponse, type StoredResultBody } from './result-storage';
-import { persistStreamResult } from './result-publication';
+import { GAME_PROTOCOL, GAME_RELOAD_MESSAGE } from '../../../src/guessr/game-protocol';
 export { STREAM_DAILY_PUBLISH_CAP, STREAM_HOST_DAILY_CAP } from './result-publication';
 
 const idPattern =
@@ -88,10 +87,8 @@ async function hostIdentity(
   };
 }
 
-/** This branch deliberately never calls the legacy admit() request counters.
- * Twitch carries round updates; publication writes one final D1 document.
- * Reads are indexed, immutable and write-free, still subject to Workers/D1 Free
- * quotas. Application caps cannot turn Worker reads into unlimited static reads. */
+/** Game sockets coordinate play. Results are immutable D1 documents with
+ * indexed, write-free public reads. */
 export async function streamRoute(
   request: Request,
   env: Env,
@@ -188,34 +185,27 @@ export async function streamRoute(
     const user = await hostIdentity(request, env, now);
     if (path.endsWith("/time")) return json({ now });
     const data = await boundedBody(request);
+    if (!path.endsWith('/sessions')) throw new ImageGameError(410, 'This game transport has been retired.');
+    if (data.protocol !== GAME_PROTOCOL) throw new ImageGameError(410, GAME_RELOAD_MESSAGE);
     const service = new StreamService(source ?? preparedSource(env), env.STREAM_SIGNING_SECRET || '');
     if (path.endsWith('/sessions')) {
-      if (data.transport !== 'twitch' && data.transport !== 'parallel') throw new ImageGameError(400, 'Use Twitch game transport.');
+      if (data.transport !== 'parallel') throw new ImageGameError(410, 'This game transport has been retired.');
       const rounds = data.rounds === undefined ? STREAM_DEFAULT_ROUNDS : data.rounds;
       if (!validStreamRoundCount(rounds)) throw new ImageGameError(400, 'Choose 3, 5 or 10 rounds.');
       const mode = data.mode === undefined ? 'stream' : data.mode;
       if (mode !== 'stream' && mode !== 'pvp' || mode === 'pvp' && data.transport !== 'parallel') throw new ImageGameError(400, 'Invalid game settings.');
       if (data.streaming !== undefined && typeof data.streaming !== 'boolean') throw new ImageGameError(400, 'Invalid game settings.');
-      const session = { ...await service.start(user, now, data.transport, rounds, { mode, streaming: data.streaming as boolean | undefined }), live: true as const };
-      if (data.transport === 'parallel') {
-        if (!env.STREAM_COORDINATORS) throw new ImageGameError(503, 'Durable game connections are unavailable.');
+      if (!env.STREAM_COORDINATORS) throw new ImageGameError(503, 'Durable game connections are unavailable.');
         const seconds = data.seconds === undefined ? 90 : data.seconds;
         if (typeof seconds !== 'number' || !(seconds === 0 || Number.isInteger(seconds) && seconds >= 15 && seconds <= 600)) throw new ImageGameError(400, 'Invalid round duration.');
         if (mode === 'pvp' && seconds === 0) throw new ImageGameError(400, 'Choose a round duration between 15 and 600 seconds.');
         if (env.PUBLIC_GAME_RATE_LIMIT && !(await env.PUBLIC_GAME_RATE_LIMIT.limit({ key: 'stream-create:' + user.sub })).success) throw new ImageGameError(429, 'Too many games.');
+      const session = { ...await service.start(user, now, data.transport, rounds, { mode, streaming: data.streaming as boolean | undefined }), live: true as const };
         await env.STREAM_COORDINATORS.getByName(session.id).initialize({ owner: user.sub, session,
           reveals: await service.coordinatorReveals(session.token, user, now), seconds });
-      }
-      return json(data.transport === 'parallel' ? { ...session, token: '', rounds: mode === 'pvp' ? [] : session.rounds.map(round => ({ ...round, token: '' })) } : session, 201);
+      return json({ ...session, token: '', rounds: mode === 'pvp' ? [] : session.rounds.map(round => ({ ...round, token: '', clue: { frames: [] } })) }, 201);
     }
-    if (path.endsWith('/reveal')) {
-      const { reveal, transport } = await service.revealForRoom(data.token, user, now);
-      if (transport !== 'twitch') throw new ImageGameError(410, 'This game transport has been retired.');
-      return json(reveal);
-    }
-    const { owner, result, transport } = await service.result(data as unknown as StreamPublishWireInput, user, now);
-    if (transport !== 'twitch') throw new ImageGameError(410, 'This game transport has been retired.');
-    return await persistStreamResult(env, owner, result, user.ticketIssuedAt ?? now, now);
+    throw new ImageGameError(410, 'This game transport has been retired.');
   } catch (error) {
     return json(
       {

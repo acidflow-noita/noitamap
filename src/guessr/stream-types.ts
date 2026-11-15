@@ -27,12 +27,15 @@ export interface StreamRound {
   token: string;
 }
 export interface StreamSession {
+  protocol?: number;
+  imageRoot?: string;
+  dataset?: { day: string; seed: number; renderId: string };
   mode?: import('./match-settings').MultiplayerMode;
   streaming?: boolean;
   transport?: 'twitch' | 'parallel';
-  /** Current rounds are coordinated through the Twitch broadcast transport. */
+  /** Current rounds are coordinated through a game connection. */
   live?: true;
-  /** Loopback testing: real Twitch channel, separate synthetic host score. */
+  /** Loopback testing: optional link posting, separate synthetic host score. */
   localChat?: true;
   id: string;
   version: string;
@@ -50,7 +53,7 @@ export interface StreamGuess {
   automatic?: boolean;
   point: Point | null;
   maximum: number;
-  /** Twitch message IDs prevent duplicate delivery from replacing a guess. */
+  /** Submission IDs prevent duplicate delivery from replacing a guess. */
   messageId: string;
   sentAt: number;
   nonce?: string;
@@ -61,7 +64,7 @@ export interface StreamReveal {
   answer: Point;
   area: AreaDefinition;
 }
-/** The host submits its Twitch-received roster once when closing the round. */
+/** Local simulation input for a completed round. */
 export interface StreamRoundSubmission {
   player: StreamPlayer;
   guess: Point | null;
@@ -86,10 +89,12 @@ export interface StreamParticipant extends StreamPlayer {
   guesses: (StreamGuess | null)[];
 }
 export interface StreamGame {
+  submittedCounts?: number[];
+  reviewFlags?: NetworkReviewFlag[];
   pvp?: { ready: string[]; declined: string[]; controllers?: Record<string, number>; concededBy?: string };
   schema: 1;
   session: StreamSession;
-  /** Server epoch minus browser epoch; chat timestamps already use server time. */
+  /** Server epoch minus browser epoch. */
   clockOffset: number;
   round: number;
   stage: "guess" | "closing" | "reveal" | "complete";
@@ -124,6 +129,8 @@ export interface StreamPlayerResult extends StreamPlayer {
 }
 /** No credentials, unrevealed tokens, raw chat, or account IDs in public results. */
 export interface StreamResult {
+  reviewFlags?: NetworkReviewFlag[];
+  dataset?: StreamSession['dataset'];
   mode?: import('./match-settings').MultiplayerMode;
   concededBy?: string;
   scheduledRounds?: number;
@@ -141,6 +148,12 @@ export interface StreamResult {
   players: (Omit<StreamPlayerResult, "rounds"> & {
     rounds: Pick<AreaGuessResult, "score" | "areaScore" | "positionScore">[];
   })[];
+}
+export interface NetworkReviewFlag {
+  round: number;
+  highScorers: string[];
+  explorers: string[];
+  nonSubmitting: string[];
 }
 export interface StreamPublishInput {
   token: string;

@@ -6,27 +6,29 @@ import { acceptParallelGuess, beginParallel, createParallelRecord, directGuessMe
   nextParallelAlarm, parallelResult, submitParallelHost, tickParallel, ParallelActionError, type ParallelRecord } from '../../../src/guessr/parallel-core';
 import type { ParallelClientMessage, ParallelIdentity, ParallelInitialization, ParallelServerMessage } from '../../../src/guessr/parallel-types';
 import { streamSnapshot } from '../../../src/guessr/stream-snapshot';
-import { advanceStreamRound, streamResult, type StreamChatMessage } from '../../../src/guessr/stream-state';
+import { advanceStreamRound, streamResult } from '../../../src/guessr/stream-state';
 import type { StreamParticipant } from '../../../src/guessr/stream-types';
 import { STREAM_MAX_PLAYERS } from '../../../src/guessr/stream-types';
-import { parseGuessCommand } from '../../../src/guessr/guess-command';
-import { streamJoinRequest } from '../../../src/guessr/stream-join-request';
 import { ImageGameError } from '../../../src/guessr/image-game-server';
 import { streamPlayerName } from '../../../src/guessr/stream-display-name';
 import { streamRoundData, type StreamRoundView } from '../../../src/guessr/stream-round-data';
 import { pvpSnapshot } from '../../../src/guessr/pvp-state';
+import { hostSnapshot, hostPlayer, submittedCounts } from '../../../src/guessr/host-snapshot';
+import { GAME_PROTOCOL } from '../../../src/guessr/game-protocol';
+import { networkTag, newNetworkKey, newPlayerReview, roundNetworkFlags, type PrivatePlayerReview } from '../../../src/guessr/network-review';
 
-interface Attachment { revealed?: number; generation?: number; identity?: ParallelIdentity; opened: number; count: number; since: number }
+interface Attachment { protocol?: number; networkTag?: string; revealed?: number; generation?: number; identity?: ParallelIdentity; opened: number; count: number; since: number }
 class GameStorageError extends Error {
   constructor(cause: unknown) { super('Game storage is temporarily unavailable.', { cause }); }
 }
-/** One authenticated, hibernating coordinator per game. Both delivery paths
- * converge here; a receipt is emitted only after its transaction is durable. */
+/** One authenticated, hibernating coordinator per game. A receipt is emitted
+ * only after the submission transaction is durable. */
 export class StreamCoordinator extends DurableObject<Env> {
   private record?: ParallelRecord;
   private queue: Promise<unknown> = Promise.resolve();
   private roundViews = new Map<number, StreamRoundView>();
   private storedRounds = new Set<number>();
+  private reviews = new Map<string, PrivatePlayerReview>();
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
@@ -37,7 +39,12 @@ export class StreamCoordinator extends DurableObject<Env> {
     const row = this.ctx.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').toArray()[0];
     if (!row) { this.record = undefined; return; }
     this.record = JSON.parse(row.data);
-    this.record!.game.participants = this.ctx.storage.sql.exec<{ data: string }>('SELECT data FROM players ORDER BY ordinal').toArray().map(r => JSON.parse(r.data));
+    this.reviews.clear();
+    this.record!.game.participants = this.ctx.storage.sql.exec<{ data: string }>('SELECT data FROM players ORDER BY ordinal').toArray().map(r => {
+      const value = JSON.parse(r.data);
+      if (value.player && value.review) { this.reviews.set(value.player.id, value.review); return value.player; }
+      return value;
+    });
     this.storedRounds = new Set(this.ctx.storage.sql.exec<{ ordinal: number }>('SELECT ordinal FROM round_results').toArray().map(r => r.ordinal));
     this.roundViews.clear();
   }
@@ -64,13 +71,16 @@ export class StreamCoordinator extends DurableObject<Env> {
         for (const id of removed) record.metrics.storageRowsWritten += this.ctx.storage.sql.exec('DELETE FROM players WHERE id=?', id).rowsWritten;
         record.game.reveals.forEach((reveal, round) => {
           if (!reveal || this.storedRounds.has(round)) return;
+          const flags = roundNetworkFlags(record.game, round, this.reviews);
+          if (flags.length) record.game.reviewFlags = [...(record.game.reviewFlags ?? []), ...flags];
           const view = streamRoundData(record.game, round);
           const write = this.ctx.storage.sql.exec('INSERT INTO round_results(ordinal,data) VALUES(?,?)', round, JSON.stringify(view));
           record.metrics.storageRowsWritten += write.rowsWritten; this.storedRounds.add(round); this.roundViews.set(round, view);
         });
         for (const player of players) {
           const write = this.ctx.storage.sql.exec('INSERT INTO players(id,ordinal,data) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data',
-            player.id, record.game.participants.indexOf(player), JSON.stringify(player));
+            player.id, record.game.participants.indexOf(player), JSON.stringify(this.reviews.has(player.id)
+              ? { player, review: this.reviews.get(player.id) } : player));
           record.metrics.storageRowsWritten += write.rowsWritten;
         }
         record.metrics.storageRowsWritten++; // The single integer-primary-key metadata row.
@@ -88,12 +98,14 @@ export class StreamCoordinator extends DurableObject<Env> {
     if (!origin || !(this.env.ALLOWED_ORIGINS ?? '').split(',').map(v => v.trim()).includes(origin)) return new Response('Forbidden', { status: 403 });
     if (request.method !== 'GET' || request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') return new Response('WebSocket required', { status: 426 });
     if (!this.record || Date.now() > this.retentionDeadline()) return new Response('Game unavailable', { status: 404 });
+    this.record.networkKey ??= newNetworkKey();
     const sockets = this.ctx.getWebSockets();
     if (sockets.length >= (this.record.game.pvp ? 8 : STREAM_MAX_PLAYERS * 2 + 32)
       || sockets.filter(s => !this.attachment(s).identity).length >= (this.record.game.pvp ? 4 : 64)) return new Response('Game is busy', { status: 503 });
     const pair = new WebSocketPair(), client = pair[0], server = pair[1];
     this.ctx.acceptWebSocket(server);
-    server.serializeAttachment({ opened: Date.now(), count: 0, since: Date.now() } satisfies Attachment);
+    const tag = this.record.networkKey ? await networkTag(this.record.networkKey, this.record.game.session.id, request.headers.get('CF-Connecting-IP')) : undefined;
+    server.serializeAttachment({ ...(tag ? { networkTag: tag } : {}), opened: Date.now(), count: 0, since: Date.now() } satisfies Attachment);
     this.record.metrics.upgrades++;
     const alarm = await this.ctx.storage.getAlarm();
     if (alarm === null || alarm > Date.now() + 15000) await this.ctx.storage.setAlarm(Date.now() + 15000);
@@ -104,11 +116,11 @@ export class StreamCoordinator extends DurableObject<Env> {
     try { socket.send(JSON.stringify(message)); } catch { try { socket.close(1011, 'Connection interrupted'); } catch {} }
   }
   private sendTo(id: string, message: ParallelServerMessage): void {
-    for (const socket of this.ctx.getWebSockets()) if (this.attachment(socket).identity?.id === id) this.send(socket, message);
+    for (const socket of this.ctx.getWebSockets()) if (this.attachment(socket).protocol === GAME_PROTOCOL && this.attachment(socket).identity?.id === id) this.send(socket, message);
   }
   private hosts(message: ParallelServerMessage): void {
     if (this.record?.game.pvp) return;
-    for (const socket of this.ctx.getWebSockets()) if (this.attachment(socket).identity?.role === 'host') this.send(socket, message);
+    for (const socket of this.ctx.getWebSockets()) if (this.attachment(socket).protocol === GAME_PROTOCOL && this.attachment(socket).identity?.role === 'host') this.send(socket, message);
   }
   private receipt(socket: WebSocket, player: StreamParticipant, round: number): void {
     const guess = player.guesses[round];
@@ -125,9 +137,9 @@ export class StreamCoordinator extends DurableObject<Env> {
   }
   private snapshot(socket: WebSocket, history = false): void {
     const record = this.record!, attachment = this.attachment(socket), identity = attachment.identity;
-    if (!identity || identity.expiresAt <= Date.now()) return;
+    if (!identity || attachment.protocol !== GAME_PROTOCOL || identity.expiresAt <= Date.now()) return;
     const now = Date.now();
-    if (identity.role === 'host' && !record.game.pvp) this.send(socket, { type: 'host', game: { ...record.game, recentNonces: undefined, receipts: undefined }, metrics: record.metrics, now,
+    if (identity.role === 'host' && !record.game.pvp) this.send(socket, { type: 'host', game: hostSnapshot(record.game), metrics: record.metrics, now,
       publicationError: record.publicationError, ended: record.ended });
     else {
       this.send(socket, { type: 'state', state: record.game.pvp ? pvpSnapshot(record.game, identity.id, this.env.STREAM_IMAGE_ROOT ?? '', record.ended)
@@ -150,12 +162,13 @@ export class StreamCoordinator extends DurableObject<Env> {
     if (typeof raw !== 'string' || raw.length > 8192) { socket.close(1009, 'Message too large'); return; }
     const attachment = this.attachment(socket), now = Date.now();
     if (now - attachment.since > 30000) { attachment.since = now; attachment.count = 0; }
-    if (++attachment.count > (attachment.identity?.role === 'host' ? 20000 : 90)) { socket.close(1008, 'Slow down'); return; }
+    if (++attachment.count > 90) { socket.close(1008, 'Slow down'); return; }
     socket.serializeAttachment(attachment);
     let message: ParallelClientMessage;
     try { message = JSON.parse(raw); } catch { socket.close(1007, 'Invalid message'); return; }
     if (!message || typeof message !== 'object') { socket.close(1007, 'Invalid message'); return; }
     if (message.type === 'authorize') {
+      if (message.protocol !== GAME_PROTOCOL) { socket.close(4004, 'Reload required'); return; }
       if (!attachment.identity && now - attachment.opened > 15000) { socket.close(1008, 'Authentication expired'); return; }
       try {
         const identity = await authorizeSocket(this.env, this.record!, message, now);
@@ -176,6 +189,11 @@ export class StreamCoordinator extends DurableObject<Env> {
           };
           // Strip authorization fields before participant persistence/publication.
           delete (player as Partial<ParallelIdentity>).role; delete (player as Partial<ParallelIdentity>).owner; delete (player as Partial<ParallelIdentity>).expiresAt;
+          if (active && attachment.networkTag && !record.game.pvp) {
+            const review = this.reviews.get(player.id) ?? newPlayerReview();
+            if (!review.joined.includes(attachment.networkTag) && review.joined.length < 4) review.joined.push(attachment.networkTag);
+            this.reviews.set(player.id, review);
+          }
           if (attachment.identity) record.metrics.reauthorizations = (record.metrics.reauthorizations ?? 0) + 1;
           else {
             record.metrics.authenticated++;
@@ -189,7 +207,8 @@ export class StreamCoordinator extends DurableObject<Env> {
             attachment.generation = (record.game.pvp.controllers[identity.id] ?? 0) + 1;
             record.game.pvp.controllers[identity.id] = attachment.generation;
           }
-          attachment.identity = identity; socket.serializeAttachment(attachment);
+          attachment.identity = identity; attachment.protocol = GAME_PROTOCOL; socket.serializeAttachment(attachment);
+          record.game.session.protocol = GAME_PROTOCOL;
           // Close older same-role sockets, preventing two host tabs from racing.
           for (const other of this.ctx.getWebSockets()) {
             const prior = this.attachment(other).identity;
@@ -201,7 +220,8 @@ export class StreamCoordinator extends DurableObject<Env> {
             acceptedRevisions: Object.fromEntries(player.guesses.flatMap((guess, round) => guess?.revision ? [[record.game.session.rounds[round].id, guess.revision]] : [])) });
           this.snapshot(socket, true);
           if (active && record.game.pvp) this.broadcast();
-          else if (active) this.hosts({ type: 'participant', participant: player, joined: Object.keys(record.game.joinedPlayers ?? {}).length });
+          else if (active) this.hosts({ type: 'participant', participant: hostPlayer(record.game, player), joined: Object.keys(record.game.joinedPlayers ?? {}).length,
+            submittedCounts: submittedCounts(record.game) });
         });
       } catch (error) {
         if (error instanceof GameStorageError) throw error;
@@ -212,6 +232,7 @@ export class StreamCoordinator extends DurableObject<Env> {
       }
       return;
     }
+    if (attachment.identity && attachment.protocol !== GAME_PROTOCOL) { socket.close(4004, 'Reload required'); return; }
     if (!attachment.identity || attachment.identity.expiresAt <= now) {
       this.send(socket, { type: 'error', code: 'auth', message: 'Sign in with Twitch to play.' }); socket.close(4001, 'Authorization required'); return;
     }
@@ -231,6 +252,19 @@ export class StreamCoordinator extends DurableObject<Env> {
     // A busy final-second burst must not turn on-time frames into late guesses.
     const record = this.record!;
     record.metrics.socketMessages++;
+    if (message.type === 'relay') throw new ParallelActionError('This game transport has been retired.');
+    if (message.type === 'activity') {
+      const round = record.game.session.rounds.findIndex(r => r.id === message.roundId);
+      if (!/^[a-zA-Z0-9_-]{1,80}$/.test(message.id) || round < 0) throw new ParallelActionError('Invalid activity.');
+      const player = record.game.participants.find(p => p.id === identity.id), tag = this.attachment(socket).networkTag;
+      const window = record.game.timing?.windows[round];
+      if (player && tag && identity.role !== 'host' && !record.game.pvp && !record.ended && record.game.stage !== 'complete'
+        && window && now >= window.opensAt && !record.game.reveals[round] && (window.closesAt === null || now <= window.closesAt + 5000)) {
+        const review = this.reviews.get(identity.id) ?? newPlayerReview();
+        if (!review.explored[round]) { review.explored[round] = tag; this.reviews.set(identity.id, review); await this.persist([player]); }
+      }
+      this.send(socket, { type: 'command', id: message.id, accepted: true }); return;
+    }
     if (record.game.pvp) {
       if (this.attachment(socket).generation !== record.game.pvp.controllers?.[identity.id]) {
         socket.close(4002, 'Opened in another tab'); return;
@@ -238,56 +272,35 @@ export class StreamCoordinator extends DurableObject<Env> {
       await this.processPvp(socket, identity, message, now); return;
     }
     if (message.type === 'recover') { this.snapshot(socket, true); return; }
-    if (message.type === 'guess' || message.type === 'relay') {
-      let chat: StreamChatMessage | null;
-      const direct = message.type === 'guess';
-      if (direct) { record.metrics.directGuesses++; chat = directGuessMessage(record, identity, message.submission, now); }
-      else {
-        if (identity.role !== 'host') throw new ParallelActionError('Forbidden');
-        chat = message.message;
-        if (!chat || typeof chat.text !== 'string' || chat.text.length > 2048 || !chat.player || typeof chat.player.name !== 'string'
-          || !/^[a-z0-9_]{1,25}$/.test(chat.player.login) || !/^\d{1,30}$/.test(chat.player.id) || chat.player.name.length > 512) throw new ParallelActionError('Invalid relay');
-        const join = streamJoinRequest(chat.text);
-        if (join) {
-          if (record.ended || record.game.stage === 'complete' || join.gameId !== record.game.session.id || join.channel !== record.game.session.host.login) return;
-          if (!record.game.participants.some(p => p.id === chat!.player.id)) {
-            const player = joinParallelPlayer(record, chat.player); await this.persist([player]);
-            this.hosts({ type: 'participant', participant: player, joined: Object.keys(record.game.joinedPlayers ?? {}).length });
-          }
-          return;
+    if (message.type === 'guess') {
+      record.metrics.directGuesses++;
+      const chat = directGuessMessage(record, identity, message.submission, now);
+      if (!chat) {
+        const input = message.submission, round = record.game.session.rounds.findIndex(r => r.id === input?.roundId);
+        if (round >= 0 && /^[a-f0-9]{16}$/.test(input.nonce) && Number.isSafeInteger(input.revision)) {
+          this.send(socket, { type: 'receipt', round: round + 1, roundId: input.roundId, nonce: input.nonce,
+            revision: input.revision, accepted: false, reason: 'invalid' }); return;
         }
-        record.metrics.twitchGuesses++;
-      }
-      if (!chat) throw new ParallelActionError('Invalid submission');
-      if (!direct && chat.player.id === record.game.session.host.id) {
-        const guess = parseGuessCommand(chat.text, { rounds: record.game.session.rounds.length, bounds: record.game.session.config.bounds });
-        if (!guess?.nonce || guess.userId !== chat.player.id || guess.roundId !== record.game.session.rounds[guess.round - 1]?.id) throw new ParallelActionError('Invalid host guess');
-        const timing = record.game.timing!;
-        if (!Number.isFinite(chat.sentAt) || chat.sentAt < timing.startsAt || chat.sentAt > now + 5000
-          || timing.deadline !== null && (chat.sentAt > timing.deadline + 2000 || now > timing.deadline + 5000)) throw new ParallelActionError('Round closed');
-        if (submitParallelHost(record, guess.nonce, guess.roundId, { x: guess.x, y: guess.y }, guess.maximum ?? 5000, now, true)) {
-          await this.persist([record.game.participants[0]]); await this.schedule(); this.broadcast();
-        }
-        return;
+        throw new ParallelActionError('Invalid submission');
       }
       const oldRevision = record.game.timing!.revision;
       const { status, command } = acceptParallelGuess(record, chat, now);
       if (!command?.nonce || !command.revision) throw new ParallelActionError('Invalid submission');
       const accepted = status === 'accepted' || status === 'duplicate';
-      const player = record.game.participants.find(p => p.id === chat!.player.id);
+      const player = record.game.participants.find(p => p.id === identity.id);
       if (status === 'accepted' && player) {
-        if (direct) player.guesses[command.round - 1]!.automatic = message.submission.automatic;
-        if (direct) record.metrics.firstBySocket++; else record.metrics.firstByTwitch++;
+        player.guesses[command.round - 1]!.automatic = message.submission.automatic;
+        const tag = this.attachment(socket).networkTag;
+        if (tag) { const review = this.reviews.get(identity.id) ?? newPlayerReview(); review.submitted[command.round - 1] = tag; this.reviews.set(identity.id, review); }
+        record.metrics.firstBySocket++;
         await this.persist([player]); await this.schedule();
         if (record.game.timing!.revision !== oldRevision) this.broadcast();
-        this.hosts({ type: 'participant', participant: player, joined: Object.keys(record.game.joinedPlayers ?? {}).length });
+        this.hosts({ type: 'participant', participant: hostPlayer(record.game, player), joined: Object.keys(record.game.joinedPlayers ?? {}).length,
+          submittedCounts: submittedCounts(record.game), submitted: true });
       } else if (status === 'duplicate') record.metrics.duplicates++;
-      const response: ParallelServerMessage = { type: 'receipt', round: command.round, roundId: command.roundId!, nonce: command.nonce,
-        playerId: chat.player.id, revision: command.revision, accepted, ...(accepted ? { point: { x: command.x, y: command.y }, maximum: command.maximum } : { reason: status === 'old' ? 'superseded' : 'closed' }),
-        ...(player?.guesses[command.round - 1]?.automatic ? { automatic: true } : {}) };
-      this.sendTo(chat.player.id, response);
-      // Host mirrors these durable receipts onto Twitch when the direct player socket is unavailable.
-      this.hosts(response);
+      this.sendTo(identity.id, { type: 'receipt', round: command.round, roundId: command.roundId!, nonce: command.nonce,
+        revision: command.revision, accepted, ...(accepted ? { point: { x: command.x, y: command.y }, maximum: command.maximum } : { reason: status === 'old' ? 'superseded' : 'closed' }),
+        ...(player?.guesses[command.round - 1]?.automatic ? { automatic: true } : {}) });
       return;
     }
     if (identity.role !== 'host' || !('id' in message) || typeof message.id !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(message.id)) throw new ParallelActionError('Forbidden');
@@ -397,7 +410,10 @@ export class StreamCoordinator extends DurableObject<Env> {
     const now = Date.now(), record = this.record!;
     const at = nextParallelAlarm(record, now);
     const pending = this.ctx.getWebSockets().filter(socket => socket.readyState === WebSocket.OPEN).map(socket => this.attachment(socket)).filter(a => !a.identity).map(a => a.opened + 15000);
-    if (at !== null) await this.ctx.storage.setAlarm(Math.max(now + 1, Math.min(at, this.retentionDeadline(), ...pending)));
+    if (at !== null) {
+      const target = Math.max(now + 1, Math.min(at, this.retentionDeadline(), ...pending));
+      if (await this.ctx.storage.getAlarm() !== target) await this.ctx.storage.setAlarm(target);
+    }
   }
   private retentionDeadline(): number {
     const record = this.record!;

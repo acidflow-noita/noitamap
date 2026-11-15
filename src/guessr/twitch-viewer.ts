@@ -1,12 +1,5 @@
-import { formatGuessCommand } from './guess-command';
-import type { Point } from './rules';
-import { STREAM_ROUNDS } from './stream-types';
-import { TwitchChatConnection, type TwitchChatOptions } from './twitch-chat';
 import { tr } from './i18n';
-import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import { ANNOUNCEMENT_SCOPE, canShareGameLink, postTwitchGameLink } from './twitch-announcement';
-import { gameCode } from './routes';
-import { twitchColor } from './player-color';
 import type { ParallelAuthorization } from './parallel-types';
 
 /** Keep transport state in source English so an open view can change language. */
@@ -22,13 +15,11 @@ export function twitchMessageText(source: string): string {
 export const DEFAULT_TWITCH_CLIENT_ID = '9wmgerb87z6v5i8yb1q5ggy2ya2khj';
 export const TWITCH_VIEWER_CALLBACK = '/guess/twitch-callback.html';
 export const TWITCH_VIEWER_MESSAGE = 'noitamap-twitch-viewer-oauth';
-const SCOPES = ['user:read:chat', 'user:write:chat'];
+const SCOPES = ['user:write:chat'];
 const VALIDATE_URL = 'https://id.twitch.tv/oauth2/validate';
-const USERS_URL = 'https://api.twitch.tv/helix/users';
-const SEND_URL = 'https://api.twitch.tv/helix/chat/messages';
 const VALIDATE_INTERVAL = 60 * 60 * 1000;
 const AUTH_TIMEOUT = 5 * 60 * 1000;
-const STORAGE_KEY = 'noitamap-guessr-twitch-tab-v2:';
+const STORAGE_KEY = 'noitamap-guessr-twitch-tab-v3:';
 const LEGACY_KEY = 'noitamap-guessr-twitch-v1:';
 const IDENTITY_KEY = 'noitamap-guessr-twitch-identity-v2:';
 
@@ -58,7 +49,7 @@ export interface TwitchViewerState {
   error: string | null;
 }
 export type TwitchViewerErrorCode = 'configuration' | 'popup' | 'denied' | 'expired' | 'validation'
-  | 'disconnected' | 'busy' | 'invalid-guess' | 'invalid-message' | 'channel' | 'channel-not-found' | 'forbidden' | 'rate-limit' | 'dropped' | 'uncertain' | 'round-closed';
+  | 'disconnected' | 'busy' | 'unavailable' | 'forbidden';
 export class TwitchViewerError extends Error {
   constructor(public readonly code: TwitchViewerErrorCode, message: string) { super(message); this.name = 'TwitchViewerError'; }
 }
@@ -68,13 +59,12 @@ export interface TwitchViewerOptions {
   siteIdentity?: { userId: string; login: string; displayName: string };
   siteAuthorization?: () => Promise<string>;
   siteSignOut?: () => void;
-  /** Private PvP needs identity only, without permission to read or send chat. */
+  /** Local host sharing may request posting permission. Gameplay needs identity only. */
   chat?: boolean;
   clientId?: string;
   /** Dependency injection for unit tests; the default calls only Twitch APIs. */
   fetch?: typeof fetch;
   popup?: (url: string, name: string, features: string) => TwitchViewerPopup | null;
-  socket?: TwitchChatOptions['socket'];
 }
 interface Credentials { token: string; userId: string; login: string; scopes: string[]; expiresAt: number; checkedAt: number }
 interface PendingAuth {
@@ -89,10 +79,10 @@ interface PendingAuth {
 const emptyState = (): TwitchViewerState => ({ connected: false, connecting: false, sending: false,
   userId: null, login: null, expiresAt: null, error: null });
 
-/** Viewer-only browser OAuth. No Noitamap auth, Worker calls or queued
- * messages. connect() grants permission; sendGuess() is a separate user action. */
+/** Browser identity for the game. Optional host sharing posts only invitation
+ * and result links to the broadcaster's own channel. */
 export class TwitchViewer {
-  private get requiredScopes(): string[] { return this.options.chat === false ? [] : SCOPES; }
+  private get requiredScopes(): string[] { return this.options.chat === true ? SCOPES : []; }
   readonly configured: boolean;
   readonly clientId: string;
   readonly redirectUri: string;
@@ -104,11 +94,8 @@ export class TwitchViewer {
   private validation: Promise<Credentials> | null = null;
   private timer?: ReturnType<typeof setTimeout>;
   private controllers = new Set<AbortController>();
-  private channels = new Map<string, string>();
-  private chats = new Set<() => void>();
   private disposed = false;
   private generation = 0;
-  private sends: { at: number; channel: string }[] = [];
 
   constructor(private options: TwitchViewerOptions = {}) {
     this.clientId = options.clientId ?? import.meta.env.VITE_GUESSR_TWITCH_CLIENT_ID
@@ -117,12 +104,12 @@ export class TwitchViewer {
     this.configured = /^[a-zA-Z0-9]{1,128}$/.test(this.clientId)
       && (location.protocol === 'https:' || location.protocol === 'http:'
         && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname));
+    this.purgeLegacyCredentials();
     if (options.siteIdentity && options.siteAuthorization) {
       this.state = { ...emptyState(), ...options.siteIdentity, connected: true, savedUserId: options.siteIdentity.userId };
       try { localStorage.setItem(IDENTITY_KEY + this.clientId, JSON.stringify({ userId: options.siteIdentity.userId })); } catch {}
       this.ready = Promise.resolve(); return;
     }
-    this.purgeLegacyCredentials();
     this.state.savedUserId = savedTwitchViewerId(this.clientId) ?? null;
     this.ready = this.restoreSaved();
   }
@@ -139,6 +126,12 @@ export class TwitchViewer {
     } catch { console.error('[Twitch] Token revocation was not confirmed.'); }
   }
   private purgeLegacyCredentials(): void {
+    try {
+      const key = 'noitamap-guessr-twitch-tab-v2:' + this.clientId, raw = sessionStorage.getItem(key);
+      sessionStorage.removeItem(key);
+      const saved = raw && raw.length < 4096 ? JSON.parse(raw) : null;
+      if (typeof saved?.token === 'string') void this.revoke(saved.token);
+    } catch { /* Old transport credentials are never imported. */ }
     try {
       const keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)).filter((key): key is string => !!key?.startsWith(LEGACY_KEY));
       for (const key of keys) {
@@ -171,6 +164,7 @@ export class TwitchViewer {
         || !Number.isSafeInteger(saved.expiresAt) || saved.expiresAt <= Date.now() + 5000) throw Error();
     } catch { this.forgetSaved(); return; }
     const generation = this.generation;
+    let retry = false;
     this.update({ connecting: true, restoring: true, savedUserId: saved.userId });
     try {
       const credentials = await this.validateToken(saved.token, saved.userId);
@@ -184,10 +178,15 @@ export class TwitchViewer {
       if (this.disposed || generation !== this.generation) return;
       if (error instanceof TwitchViewerError && ['expired', 'validation'].includes(error.code)) {
         this.forgetSaved(); this.update({ savedUserId: null });
+        this.update({ error: 'Could not restore Twitch access. Please sign in again.' });
+      } else {
+        retry = true;
+        this.update({ error: 'Twitch identity verification is temporarily unavailable. Retrying…' });
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => { if (!this.disposed && generation === this.generation) void this.restoreSaved(); }, 30000);
       }
-      this.update({ error: 'Could not restore Twitch access. Please sign in again.' });
     } finally {
-      if (generation === this.generation) this.update({ connecting: false, restoring: false });
+      if (generation === this.generation && !retry) this.update({ connecting: false, restoring: false });
     }
   }
 
@@ -213,7 +212,7 @@ export class TwitchViewer {
     if (this.pending) return this.pending.promise;
     if (this.state.restoring) return this.ready.then(() => {
       if (this.state.connected) return this.getState();
-      throw new TwitchViewerError('expired', 'Please sign in to Twitch again.');
+      throw new TwitchViewerError('unavailable', 'Twitch identity verification is temporarily unavailable. Retrying…');
     });
     if (this.#credentials && this.#credentials.expiresAt > Date.now() + 5000
       && (!options.announcements || this.#credentials.scopes.includes(ANNOUNCEMENT_SCOPE))) return Promise.resolve(this.getState());
@@ -295,8 +294,8 @@ export class TwitchViewer {
   }
   private async validateToken(token: string, expectedUserId?: string): Promise<Credentials> {
     const response = await this.request(VALIDATE_URL, { headers: { Authorization: 'OAuth ' + token } });
-    if (!response.ok) throw new TwitchViewerError(response.status === 401 ? 'expired' : 'validation',
-      response.status === 401 ? 'Twitch sign-in expired. Connect again before sending.' : 'Twitch could not verify your sign-in. Please connect again.');
+    if (!response.ok) throw new TwitchViewerError(response.status === 401 ? 'expired' : 'unavailable',
+      response.status === 401 ? 'Twitch sign-in expired. Connect again before sending.' : 'Twitch identity verification is temporarily unavailable. Retrying…');
     const value = await response.json() as { client_id?: unknown; user_id?: unknown; login?: unknown; scopes?: unknown; expires_in?: unknown };
     const scopes = value.scopes == null && this.requiredScopes.length === 0 ? [] : value.scopes;
     if (value.client_id !== this.clientId || typeof value.user_id !== 'string' || !/^\d{1,30}$/.test(value.user_id)
@@ -305,7 +304,7 @@ export class TwitchViewer {
       || !Array.isArray(scopes) || !this.requiredScopes.every(scope => (scopes as unknown[]).includes(scope))
       || typeof value.expires_in !== 'number' || !Number.isSafeInteger(value.expires_in) || value.expires_in <= 5
       || !Number.isSafeInteger(Date.now() + value.expires_in * 1000))
-      throw new TwitchViewerError('validation', this.options.chat === false ? 'Twitch could not verify your sign-in. Please connect again.' : 'Twitch sign-in did not match this app, account, or chat permission. Connect again.');
+      throw new TwitchViewerError('validation', this.requiredScopes.length === 0 ? 'Twitch could not verify your sign-in. Please connect again.' : 'Twitch sign-in did not match this app, account, or chat permission. Connect again.');
     return { token, userId: value.user_id, login: value.login, scopes: scopes as string[], checkedAt: Date.now(), expiresAt: Date.now() + value.expires_in * 1000 };
   }
   /** Local streamer testing uses the same direct announcement API as production. */
@@ -329,8 +328,12 @@ export class TwitchViewer {
       return credentials;
     }).catch(error => {
       if (generation === this.generation) {
-        this.clearCredentials();
-        this.update({ error: error instanceof TwitchViewerError ? error.message : 'Could not verify Twitch access. Connect again before sending.' });
+        if (error instanceof TwitchViewerError && ['expired', 'validation'].includes(error.code)) this.clearCredentials();
+        else {
+          clearTimeout(this.timer);
+          this.timer = setTimeout(() => { void this.refreshValidation().catch(() => {}); }, 30000);
+        }
+        this.update({ error: error instanceof TwitchViewerError ? error.message : 'Twitch identity verification is temporarily unavailable. Retrying…' });
       }
       throw error;
     }).finally(() => { if (this.validation === job) this.validation = null; });
@@ -359,98 +362,6 @@ export class TwitchViewer {
     return this.validation || Date.now() - credentials.checkedAt >= VALIDATE_INTERVAL
       ? this.refreshValidation() : credentials;
   }
-  private async broadcaster(channel: string, credentials: Credentials): Promise<string> {
-    const known = this.channels.get(channel);
-    if (known) return known;
-    const url = new URL(USERS_URL);
-    url.searchParams.set('login', channel);
-    const response = await this.request(url.href, { headers: this.headers(credentials) });
-    if (response.status === 401) {
-      this.clearCredentials();
-      throw new TwitchViewerError('expired', 'Twitch sign-in expired. Connect again before sending.');
-    }
-    if (response.status === 429) throw new TwitchViewerError('rate-limit', 'Twitch is limiting requests. Wait before trying again.');
-    if (!response.ok) throw new TwitchViewerError('channel', 'Twitch could not check this channel. Please try again.');
-    const data = await response.json() as { data?: { id?: unknown; login?: unknown }[] };
-    if (Array.isArray(data.data) && data.data.length === 0)
-      throw new TwitchViewerError('channel-not-found', 'No Twitch account matches that username. Check the Twitch channel name.');
-    const user = Array.isArray(data.data) && data.data.length === 1 ? data.data[0] : null;
-    if (!user || user.login !== channel || typeof user.id !== 'string' || !/^\d{1,30}$/.test(user.id))
-      throw new TwitchViewerError('channel', 'Twitch could not check this channel. Please try again.');
-    if (this.channels.size >= 32) this.channels.delete(this.channels.keys().next().value!);
-    this.channels.set(channel, user.id);
-    return user.id;
-  }
-  private headers(credentials: Credentials): Record<string, string> {
-    return { Authorization: 'Bearer ' + credentials.token, 'Client-Id': this.clientId };
-  }
-
-  /** Reading and sending use the same validated viewer identity and channel. */
-  watchChat(channel: string, handlers: Pick<TwitchChatOptions, 'message' | 'status' | 'remove'>): () => void {
-    let stopped = false, retries = 0;
-    let retryTimer: ReturnType<typeof setTimeout> | undefined;
-    let connection: TwitchChatConnection | undefined;
-    const generation = this.generation;
-    const stop = () => {
-      if (stopped) return;
-      stopped = true;
-      clearTimeout(retryTimer); connection?.stop();
-      this.chats.delete(stop);
-    };
-    this.chats.add(stop);
-    const start = async () => {
-      try {
-        if (!/^[a-z0-9_]{1,25}$/i.test(channel)) throw new TwitchViewerError('channel', 'Choose a Twitch channel.');
-        const identity = await this.currentCredentials();
-        const broadcasterId = await this.broadcaster(channel.toLowerCase(), identity);
-        if (stopped || generation !== this.generation) return;
-        connection = new TwitchChatConnection({ ...handlers, userId: identity.userId, broadcasterId,
-          message: message => {
-            if (message.player.id === identity.userId && (message.player.name !== this.state.displayName || twitchColor(message.player.color) !== this.state.color))
-              this.update({ displayName: message.player.name, color: twitchColor(message.player.color) });
-            handlers.message(message);
-          },
-          credentials: async () => {
-            const current = await this.currentCredentials();
-            return { accessToken: current.token, clientId: this.clientId, userId: current.userId,
-              login: current.login, expiresAt: current.expiresAt };
-          },
-          status: (status, detail) => {
-            if (stopped) return;
-            handlers.status(status, detail);
-            if (status === 'auth-required') {
-              this.clearCredentials();
-              this.update({ error: 'Sign in to Twitch again to use chat and send guesses.' });
-            }
-          },
-          fetch: (url, init) => this.request(String(url), init ?? {}), socket: this.options.socket,
-        });
-        connection.start();
-      } catch (error) {
-        if (stopped) return;
-        const terminal = error instanceof TwitchViewerError && ['channel-not-found', 'expired', 'disconnected'].includes(error.code);
-        handlers.status(terminal ? error.code === 'channel-not-found' ? 'channel-not-found' : 'auth-required' : 'reconnecting',
-          error instanceof Error ? error.message : 'Could not connect to chat.');
-        if (!terminal) retryTimer = setTimeout(() => void start(), Math.min(15000, 1000 * 2 ** Math.min(retries++, 4)));
-      }
-    };
-    void start();
-    return stop;
-  }
-
-  /** Exactly one send attempt, called explicitly after connect() has completed.
-   * An uncertain response is never retried: Twitch may already have sent it. */
-  async sendGuess(channel: string, round: number, point: Point, maximum?: number, roundId?: string, nonce?: Uint8Array, gameId?: string, sendDeadline?: number, revision?: number): Promise<string> {
-    const credentials = await this.currentCredentials();
-    let command: string;
-    try {
-      if (typeof channel !== 'string' || !/^[a-z0-9_]{1,25}$/i.test(channel) || round > STREAM_ROUNDS) throw Error();
-      const label = `${this.state.displayName || credentials.login} submitted a guess for round ${round} in ${channel}'s NoitaGuessr game ${gameId ? gameCode(gameId, revision ? 'parallel' : 'twitch') : ''}.`;
-      command = formatGuessCommand(round, point, maximum, roundId, { userId: credentials.userId, nonce, label, revision });
-    } catch { throw new TwitchViewerError('invalid-guess', 'Choose a valid round, map position, and Twitch channel before sending.'); }
-    return this.sendMessage(GUESSR_TRANSPORT_CHANNEL, command, credentials.userId, sendDeadline);
-  }
-
   /** Ephemeral first-frame authentication for the parallel game connection.
    * The coordinator validates it with Twitch and never stores the provider token. */
   async transportAuthorization(): Promise<ParallelAuthorization> {
@@ -459,62 +370,10 @@ export class TwitchViewer {
     return { role: 'player', accessToken: credentials.token };
   }
 
-  async sendMessage(channel: string, message: string, expectedUserId?: string, sendDeadline?: number): Promise<string> {
-    if (this.state.sending) throw new TwitchViewerError('busy', 'Your previous message is still being sent.');
-    if (!/^[a-z0-9_]{1,25}$/i.test(channel) || typeof message !== 'string' || !message.trim() || message.length > 500)
-      throw new TwitchViewerError('invalid-message', 'Choose a channel and enter a message of up to 500 characters.');
-    const generation = this.generation;
-    this.update({ sending: true, error: null });
-    let attempted = false;
-    try {
-      const credentials = await this.currentCredentials();
-      const id = await this.broadcaster(channel.toLowerCase(), credentials);
-      const now = Date.now(), target = channel.toLowerCase();
-      this.sends = this.sends.filter(send => send.at > now - 30000);
-      const last = this.sends.slice().reverse().find(send => send.channel === target)?.at ?? 0;
-      const wait = Math.max(0, last + 1100 - now, this.sends.length >= 14 ? this.sends[0].at + 30001 - now : 0);
-      // Do not post an obsolete guess after waiting out Twitch's send budget.
-      // This local guard saves a send; the host still validates Twitch's time.
-      if (sendDeadline !== undefined && (!Number.isFinite(sendDeadline) || now + wait > sendDeadline))
-        throw new TwitchViewerError('round-closed', 'This round is closed');
-      if (wait) await new Promise(resolve => setTimeout(resolve, wait));
-      if (generation !== this.generation || this.#credentials?.token !== credentials.token || this.disposed
-        || expectedUserId !== undefined && credentials.userId !== expectedUserId)
-        throw new TwitchViewerError('disconnected', 'The Twitch connection changed. Click Send after connecting again.');
-      if (sendDeadline !== undefined && Date.now() > sendDeadline)
-        throw new TwitchViewerError('round-closed', 'This round is closed');
-      attempted = true;
-      this.sends.push({ at: Date.now(), channel: target });
-      const response = await this.request(SEND_URL, { method: 'POST', headers: { ...this.headers(credentials), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ broadcaster_id: id, sender_id: credentials.userId, message }) });
-      if (response.status === 401) {
-        if (generation === this.generation) this.clearCredentials();
-        throw new TwitchViewerError('expired', 'Twitch sign-in expired. Connect again before sending.');
-      }
-      if (response.status === 403) throw new TwitchViewerError('forbidden', 'Twitch does not allow this account to send messages in that channel.');
-      if (response.status === 429) throw new TwitchViewerError('rate-limit', 'Twitch is limiting messages. Wait before sending again.');
-      if (!response.ok) throw new TwitchViewerError('uncertain', 'Twitch did not confirm delivery. Check chat before sending again.');
-      const data = await response.json() as { data?: { is_sent?: unknown; message_id?: unknown; drop_reason?: { message?: unknown } }[] };
-      const sent = Array.isArray(data.data) && data.data.length === 1 ? data.data[0] : null;
-      if (sent?.is_sent === false) throw new TwitchViewerError('dropped', typeof sent.drop_reason?.message === 'string'
-        ? 'Twitch did not send this message: ' + sent.drop_reason.message.slice(0, 200) : 'Twitch did not send this message. Check the channel’s chat restrictions.');
-      if (sent?.is_sent !== true || typeof sent.message_id !== 'string' || !sent.message_id || sent.message_id.length > 256)
-        throw new TwitchViewerError('uncertain', 'Twitch did not confirm delivery. Check chat before sending again.');
-      return sent.message_id;
-    } catch (error) {
-      const failure = error instanceof TwitchViewerError ? error : new TwitchViewerError(attempted ? 'uncertain' : 'channel', attempted
-        ? 'Delivery could not be confirmed. Check Twitch chat before sending again.' : 'Could not contact Twitch. No guess was sent.');
-      if (generation === this.generation) this.update({ error: failure.message });
-      throw failure;
-    } finally { if (generation === this.generation) this.update({ sending: false }); }
-  }
-
   private clearCredentials(forget = true): void {
     clearTimeout(this.timer);
     this.#credentials = null;
     this.validation = null;
-    this.channels.clear();
-    for (const stop of this.chats) stop();
     if (forget) this.forgetSaved();
     this.update({ connected: false, userId: null, savedUserId: null, login: null, expiresAt: null, displayName: undefined, color: undefined });
   }

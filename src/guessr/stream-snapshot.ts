@@ -5,6 +5,7 @@ import { streamsAhead } from './match-settings';
 
 const clueCache = new WeakMap<StreamGame['session'], Map<number, string>>();
 export function streamClue(game: StreamGame, round: number, imageRoot: string): string {
+  imageRoot = game.session.imageRoot ?? imageRoot;
   let clues = clueCache.get(game.session);
   if (!clues) { clues = new Map(); clueCache.set(game.session, clues); }
   if (!clues.has(round)) clues.set(round, encodeViewerClue({ source: game.session.rounds[round].clue, round: round + 1,
@@ -18,6 +19,7 @@ export function streamSnapshot(game: StreamGame, imageRoot: string, ended = fals
   const round = timing.chatRound ?? game.session.rounds.length - 1;
   const window = timing.windows[round];
   return { schema: 1, streaming: streamsAhead(game.session), channel: game.session.host.login, hostId: game.session.host.id, hostPro: 'active',
+    config: game.session.config, imageRoot: game.session.imageRoot ?? imageRoot,
     gameId: game.session.id, revision: timing.revision,
     phase: ended || timing.phase === 'lobby' ? 'waiting' : game.stage === 'complete' ? 'complete' : window?.closed ? 'reveal' : 'guess',
     online: !ended && !game.paused, paused: ended || game.paused, ...(ended ? { ended: true } : {}),

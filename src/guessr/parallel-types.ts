@@ -44,7 +44,8 @@ export type ParallelAuthorization =
   | { role: 'player'; accessToken: string }
   | { role: 'resume'; ticket: string };
 export type ParallelClientMessage =
-  | ({ type: 'authorize' } & ParallelAuthorization)
+  | ({ type: 'authorize'; protocol?: number } & ParallelAuthorization)
+  | { type: 'activity'; id: string; roundId: string }
   | { type: 'guess'; submission: ParallelSubmission }
   | { type: 'relay'; message: StreamChatMessage }
   | { type: 'start'; id: string; opponentId?: string }
@@ -59,7 +60,7 @@ export type ParallelServerMessage =
   | { type: 'authorized'; ticket: string; expiresAt: number; player: StreamPlayer; now: number; acceptedRevisions?: Record<string, number> }
   | { type: 'state'; state: LiveRoomView; now: number }
   | { type: 'host'; game: StreamGame; now: number; metrics: ParallelMetrics; publicationError?: string; ended?: boolean }
-  | { type: 'participant'; participant: StreamParticipant; joined: number }
+  | { type: 'participant'; participant: StreamParticipant; joined: number; submittedCounts?: number[]; submitted?: boolean }
   | { type: 'command'; id: string; accepted: boolean }
   | { type: 'receipt'; round: number; roundId: string; nonce: string; revision: number; accepted: boolean;
       playerId?: string; reason?: 'closed' | 'superseded' | 'invalid'; point?: Point; maximum?: number; automatic?: boolean }

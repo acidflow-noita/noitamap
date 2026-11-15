@@ -11,11 +11,11 @@ it('uses Pro tickets for either PvP seat without giving the opponent creator per
   const record = createParallelRecord({ owner: streamHost.sub, session, seconds: 90, reveals: await service.coordinatorReveals(session.token, streamHost, streamNow) }, streamNow);
   const env = { GAME_TICKET_PUBLIC_KEY: (await testGameKeys(streamSecret)).publicKey } as Env;
   const own = await signGameTicket(streamHost.sub, streamHost.name, streamSecret, streamHost, streamNow);
-  expect(await authorizeSocket(env, record, { role: 'host', ticket: own.token }, streamNow)).toMatchObject({ role: 'host', id: streamHost.twitchUserId });
+  expect(await authorizeSocket(env, record, { protocol: 2, role: 'host', ticket: own.token }, streamNow)).toMatchObject({ role: 'host', id: streamHost.twitchUserId });
   const opponent = await signGameTicket('account:opponent', 'Opponent', streamSecret, { twitchUserId: '200', twitchLogin: 'opponent' }, streamNow);
-  const player = await authorizeSocket(env, record, { role: 'host', ticket: opponent.token }, streamNow);
+  const player = await authorizeSocket(env, record, { protocol: 2, role: 'host', ticket: opponent.token }, streamNow);
   expect(player).toMatchObject({ role: 'player', id: '200', login: 'opponent' }); expect(player?.owner).toBeUndefined();
   delete record.game.pvp;
-  expect(await authorizeSocket(env, record, { role: 'host', ticket: opponent.token }, streamNow)).toBeNull();
-  expect(await authorizeSocket(env, record, { role: 'host', ticket: opponent.token + 'bad' }, streamNow)).toBeNull();
+  expect(await authorizeSocket(env, record, { protocol: 2, role: 'host', ticket: opponent.token }, streamNow)).toBeNull();
+  expect(await authorizeSocket(env, record, { protocol: 2, role: 'host', ticket: opponent.token + 'bad' }, streamNow)).toBeNull();
 });

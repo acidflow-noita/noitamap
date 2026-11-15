@@ -656,5 +656,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "Tryb 1 na 1 wykorzystuje Twoje dotychczasowe dane logowania do konta Pro. W lobby wyświetlani są obaj gracze oraz informacja, czy są gotowi do gry.",
   "If you give up a 1v1 match, the results page opens.": "Jeśli zrezygnujesz z pojedynku 1 na 1, otworzy się strona z wynikami.",
   "Buttons above the clue image now show keyboard shortcuts.": "Przyciski nad obrazkiem podpowiedzi wyświetlają teraz skróty klawiaturowe.",
-  "The game results page has a smaller title and a narrower rank column.": "Strona z wynikami meczu ma mniejszy nagłówek i węższą kolumnę z rankingiem."
+  "The game results page has a smaller title and a narrower rank column.": "Strona z wynikami meczu ma mniejszy nagłówek i węższą kolumnę z rankingiem.",
+  "Shared internet connection": "Wspólne łącze internetowe",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}} korzystali z tego samego połączenia internetowego w rundzie {{round}}.",
+  "At least one of those accounts did not submit a guess for this round.": "Przynajmniej jedno z tych kont nie przesłało odpowiedzi w tej rundzie.",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "Przyczyną pojawienia się tego oznaczenia mogą być wspólne połączenia. Nie świadczy to o oszukiwaniu, a wyniki pozostają bez zmian.",
+  "and {{count}} more": "oraz {{count}} więcej",
+  "Shared connection groups: {{count}}": "Wspólne grupy połączeń: {{count}}",
+  "Group {{number}}": "Grupa {{number}}",
+  "Reload this page to use the updated game connection.": "Odśwież tę stronę, aby skorzystać ze zaktualizowanego połączenia z grą.",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "Weryfikacja tożsamości na Twitchu jest chwilowo niedostępna. Próbuję ponownie…",
+  "Authorize Twitch posting access.": "Zezwól na publikowanie postów na Twitchu."
 }

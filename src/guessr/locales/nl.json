@@ -638,5 +638,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1v1 maakt gebruik van je bestaande Pro-aanmelding. In de lobby worden beide spelers weergegeven en is te zien of ze klaar zijn.",
   "If you give up a 1v1 match, the results page opens.": "Als je een 1-tegen-1-wedstrijd opgeeft, wordt de resultatenpagina geopend.",
   "Buttons above the clue image now show keyboard shortcuts.": "De knoppen boven de afbeelding met de aanwijzing geven nu sneltoetsen weer.",
-  "The game results page has a smaller title and a narrower rank column.": "Op de pagina met wedstrijdresultaten is de titel kleiner en is de kolom met de ranglijst smaller."
+  "The game results page has a smaller title and a narrower rank column.": "Op de pagina met wedstrijdresultaten is de titel kleiner en is de kolom met de ranglijst smaller.",
+  "Shared internet connection": "Gedeelde internetverbinding",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}} hebben in ronde {{round}} dezelfde internetverbinding gebruikt.",
+  "At least one of those accounts did not submit a guess for this round.": "Ten minste één van die accounts heeft voor deze ronde geen gok ingediend.",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "Gedeelde verbindingen kunnen ervoor zorgen dat deze markering wordt weergegeven. Dit is geen bewijs van valsspelen en de scores blijven ongewijzigd.",
+  "and {{count}} more": "en nog {{count}} meer",
+  "Shared connection groups: {{count}}": "Gedeelde verbindingsgroepen: {{count}}",
+  "Group {{number}}": "Groep {{number}}",
+  "Reload this page to use the updated game connection.": "Laad deze pagina opnieuw om de bijgewerkte spelverbinding te gebruiken.",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "Identiteitsverificatie op Twitch is tijdelijk niet beschikbaar. Ik probeer het opnieuw…",
+  "Authorize Twitch posting access.": "Geef toestemming voor het plaatsen van berichten op Twitch."
 }

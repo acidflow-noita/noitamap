@@ -647,5 +647,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "La modalità 1v1 utilizza le tue credenziali di accesso Pro esistenti. Nella lobby vengono visualizzati entrambi i giocatori e il loro stato di disponibilità.",
   "If you give up a 1v1 match, the results page opens.": "Se abbandoni una partita 1 contro 1, si apre la pagina dei risultati.",
   "Buttons above the clue image now show keyboard shortcuts.": "I pulsanti sopra l'immagine dell'indizio ora mostrano le scorciatoie da tastiera.",
-  "The game results page has a smaller title and a narrower rank column.": "La pagina dei risultati delle partite presenta un titolo più piccolo e una colonna dedicata alla classifica più stretta."
+  "The game results page has a smaller title and a narrower rank column.": "La pagina dei risultati delle partite presenta un titolo più piccolo e una colonna dedicata alla classifica più stretta.",
+  "Shared internet connection": "Connessione Internet condivisa",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}} hanno utilizzato la stessa connessione Internet nel round {{round}}.",
+  "At least one of those accounts did not submit a guess for this round.": "Almeno uno di questi account non ha inviato una risposta per questo round.",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "Le connessioni condivise possono far scattare questo avviso. Ciò non costituisce prova di frode e i punteggi rimangono invariati.",
+  "and {{count}} more": "e altri {{count}}",
+  "Shared connection groups: {{count}}": "Gruppi di connessioni condivise: {{count}}",
+  "Group {{number}}": "Gruppo {{number}}",
+  "Reload this page to use the updated game connection.": "Aggiorna questa pagina per utilizzare la connessione di gioco aggiornata.",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "La verifica dell'identità su Twitch non è temporaneamente disponibile. Si sta riprovando…",
+  "Authorize Twitch posting access.": "Autorizza l'accesso alla pubblicazione su Twitch."
 }

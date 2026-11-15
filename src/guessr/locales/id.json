@@ -638,5 +638,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "Mode 1v1 menggunakan akun Pro yang sudah Anda miliki. Lobi menampilkan kedua pemain serta status kesiapan mereka.",
   "If you give up a 1v1 match, the results page opens.": "Jika kamu menyerah dalam pertandingan 1v1, halaman hasil akan terbuka.",
   "Buttons above the clue image now show keyboard shortcuts.": "Tombol-tombol di atas gambar petunjuk kini menampilkan pintasan keyboard.",
-  "The game results page has a smaller title and a narrower rank column.": "Halaman hasil permainan memiliki judul yang lebih kecil dan kolom peringkat yang lebih sempit."
+  "The game results page has a smaller title and a narrower rank column.": "Halaman hasil permainan memiliki judul yang lebih kecil dan kolom peringkat yang lebih sempit.",
+  "Shared internet connection": "Koneksi internet bersama",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}} menggunakan koneksi internet yang sama pada babak {{round}}.",
+  "At least one of those accounts did not submit a guess for this round.": "Setidaknya salah satu dari akun-akun tersebut tidak mengirimkan tebakannya untuk putaran ini.",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "Koneksi bersama dapat memicu munculnya tanda ini. Hal ini tidak membuktikan adanya kecurangan, dan skor tetap tidak berubah.",
+  "and {{count}} more": "dan {{count}} lagi",
+  "Shared connection groups: {{count}}": "Kelompok koneksi bersama: {{count}}",
+  "Group {{number}}": "Kelompok {{number}}",
+  "Reload this page to use the updated game connection.": "Muat ulang halaman ini untuk menggunakan koneksi game yang telah diperbarui.",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "Verifikasi identitas Twitch untuk sementara tidak tersedia. Mencoba lagi…",
+  "Authorize Twitch posting access.": "Izinkan akses untuk memposting di Twitch."
 }

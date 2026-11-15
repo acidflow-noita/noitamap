@@ -638,5 +638,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "Bei „1v1“ wird deine bestehende Pro-Anmeldung verwendet. In der Lobby werden beide Spieler angezeigt und ob sie bereit sind.",
   "If you give up a 1v1 match, the results page opens.": "Wenn du ein 1-gegen-1-Spiel aufgibst, wird die Ergebnisseite geöffnet.",
   "Buttons above the clue image now show keyboard shortcuts.": "Die Schaltflächen über dem Hinweisbild zeigen nun Tastaturkürzel an.",
-  "The game results page has a smaller title and a narrower rank column.": "Die Seite mit den Spielergebnissen hat eine kleinere Überschrift und eine schmalere Spalte für die Platzierungen."
+  "The game results page has a smaller title and a narrower rank column.": "Die Seite mit den Spielergebnissen hat eine kleinere Überschrift und eine schmalere Spalte für die Platzierungen.",
+  "Shared internet connection": "Gemeinsam genutzte Internetverbindung",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}} haben in Runde {{round}} dieselbe Internetverbindung genutzt.",
+  "At least one of those accounts did not submit a guess for this round.": "Mindestens eines dieser Konten hat für diese Runde keinen Tipp abgegeben.",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "Gemeinsam genutzte Verbindungen können dieses Flag auslösen. Dies ist kein Beweis für Betrug, und die Punktestände bleiben unverändert.",
+  "and {{count}} more": "und {{count}} weitere",
+  "Shared connection groups: {{count}}": "Gemeinsam genutzte Verbindungsgruppen: {{count}}",
+  "Group {{number}}": "Gruppe {{number}}",
+  "Reload this page to use the updated game connection.": "Lade diese Seite neu, um die aktualisierte Spielverbindung zu nutzen.",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "Die Identitätsprüfung bei Twitch ist vorübergehend nicht verfügbar. Es wird erneut versucht…",
+  "Authorize Twitch posting access.": "Zugriff auf Twitch-Beiträge autorisieren."
 }

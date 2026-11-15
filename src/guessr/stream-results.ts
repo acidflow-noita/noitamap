@@ -8,6 +8,7 @@ import { streamResultShare } from './stream-share';
 import { streamResultReviews } from './stream-result-review';
 import type { ImageGameConfig } from './image-game';
 import { pvpResultHeadline } from './pvp-results';
+import { networkReviewView, networkReviewText, networkReviewSummary } from './network-review-view';
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -64,6 +65,7 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
     el('p', 'Open the saved web page in a browser to search and sort every player’s scores offline.', 'fine-print'));
   menu.append(download, more); section.append(menu);
   section.append(hero);
+  const networkReview = networkReviewSummary(result.reviewFlags, result.players); if (networkReview) section.append(networkReview);
   const reviews = streamResultReviews(result, config); section.append(reviews.element);
   section.append(
     el(
@@ -153,6 +155,7 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
         ),
       );
       (row.children[1] as HTMLElement).style.color = playerColor(player, pvp ? '' : result.host.id);
+      const warning = networkReviewView(result.reviewFlags, result.players, player.id); if (warning) row.children[1].append(warning);
       for (const round of player.rounds) {
         const cell = el("td", () => formatGuessrNumber(round.score), "numeric");
         cell.classList.toggle('score-perfect', round.score === 5000);
@@ -192,6 +195,8 @@ export function streamResultHtml(result: StreamResult): string {
     .replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029');
   const labels = {
     locale: guessrLocale(),
+    reviewTitle: tr('Review suggested'),
+    reviews: (result.reviewFlags ?? []).map(flag => networkReviewText(flag, result.players)),
     title: tr('NoitaGuessr stream results'),
     heading: result.mode === 'pvp' ? `NoitaGuessr, ${tr('1v1')}` : tr('NoitaGuessr, Chat vs Streamer'),
     rank: result.mode === 'pvp' ? pvpResultHeadline(result) : tr('{{player}} — rank {{rank}} of {{players}}', { player: host.name, rank: formatGuessrNumber(host.rank), players: formatGuessrNumber(result.players.length) }),
@@ -217,8 +222,8 @@ export function streamResultHtml(result: StreamResult): string {
   .host{background:rgb(145 70 255 / .12)}tbody tr:last-child td{border-bottom:0}.score-perfect{color:#fcd34d;font-weight:700;text-shadow:0 0 .45rem rgb(251 191 36 / .6),0 0 1rem rgb(251 191 36 / .3)}
   #rank{font-variant-numeric:tabular-nums slashed-zero;font-size:1rem;font-weight:600}h1{font-size:1.125rem}th:first-child,td:first-child{width:1%;white-space:nowrap;padding-inline:.5rem}th[aria-sort="ascending"] button::after{content:" ↑"}th[aria-sort="descending"] button::after{content:" ↓"}
   </style>
-  <h1 id="heading"></h1><div id="rank"></div><p id="summary"></p><input id="filter" type="search"><div class="wrap" tabindex="0"><table><thead><tr id="head"></tr></thead><tbody id="rows"></tbody></table></div><p id="count"></p><small id="note"></small>
-  <script>const result=${json(result)},labels=${json(labels)};document.documentElement.lang=labels.locale;document.title=labels.title;for(const key of ['heading','rank','summary','note'])document.getElementById(key).textContent=labels[key];const filter=document.getElementById('filter');filter.placeholder=labels.filter;filter.setAttribute('aria-label',labels.filter);const host=result.players.find(p=>p.id===result.host.id),number=n=>n.toLocaleString(labels.locale);let key=0,dir=1;const cols=labels.columns;cols.forEach((label,i)=>{const th=document.createElement('th'),b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>{dir=key===i?-dir:i<2?1:-1;key=i;draw()};th.append(b);document.querySelector('#head').append(th)});const value=(p,i)=>i===0?p.rank:i===1?p.name:i===cols.length-1?p.score:p.rounds[i-2].score;function draw(){const q=filter.value.toLocaleLowerCase(labels.locale);const list=result.players.filter(p=>(p.name+' '+p.login).toLocaleLowerCase(labels.locale).includes(q));list.sort((a,b)=>dir*(key===1?a.name.localeCompare(b.name,labels.locale):value(a,key)-value(b,key))||a.name.localeCompare(b.name,labels.locale));const rows=document.createDocumentFragment();for(const p of list){const row=document.createElement('tr');if(result.mode!=='pvp'&&p.id===host.id)row.className='host';cols.forEach((_,i)=>{const td=document.createElement('td');if(i===1)td.style.color=result.mode!=='pvp'&&p.id===result.host.id?'#9146FF':/^#[a-f0-9]{6}$/i.test(p.color||'')?p.color:'#E2E8F0';td.textContent=typeof value(p,i)==='number'?number(value(p,i)):String(value(p,i))+(i===1&&p.id===host.id?labels.streamer:'');if(i>1&&i<cols.length-1&&value(p,i)===5000)td.classList.add('score-perfect');if(i>1&&i<cols.length-1)td.title=labels.scores.replaceAll('{{area}}',number(p.rounds[i-2].areaScore)).replaceAll('{{proximity}}',number(p.rounds[i-2].positionScore));row.append(td)});rows.append(row)}document.querySelector('#rows').replaceChildren(rows);document.querySelector('#count').textContent=labels.count.replaceAll('{{shown}}',number(list.length));[...document.querySelector('#head').children].forEach((th,i)=>th.setAttribute('aria-sort',i===key?(dir===1?'ascending':'descending'):'none'))}filter.oninput=draw;draw();</script></html>`;
+  <h1 id="heading"></h1><div id="rank"></div><p id="summary"></p><input id="filter" type="search"><div class="wrap" tabindex="0"><table><thead><tr id="head"></tr></thead><tbody id="rows"></tbody></table></div><p id="count"></p><small id="note"></small><section id="review-warnings" style="color:#fca5a5"></section>
+  <script>const result=${json(result)},labels=${json(labels)};document.documentElement.lang=labels.locale;document.title=labels.title;for(const key of ['heading','rank','summary','note'])document.getElementById(key).textContent=labels[key];const filter=document.getElementById('filter');filter.placeholder=labels.filter;filter.setAttribute('aria-label',labels.filter);const host=result.players.find(p=>p.id===result.host.id),number=n=>n.toLocaleString(labels.locale);let key=0,dir=1;const cols=labels.columns;cols.forEach((label,i)=>{const th=document.createElement('th'),b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>{dir=key===i?-dir:i<2?1:-1;key=i;draw()};th.append(b);document.querySelector('#head').append(th)});const value=(p,i)=>i===0?p.rank:i===1?p.name:i===cols.length-1?p.score:p.rounds[i-2].score;function draw(){const q=filter.value.toLocaleLowerCase(labels.locale);const list=result.players.filter(p=>(p.name+' '+p.login).toLocaleLowerCase(labels.locale).includes(q));list.sort((a,b)=>dir*(key===1?a.name.localeCompare(b.name,labels.locale):value(a,key)-value(b,key))||a.name.localeCompare(b.name,labels.locale));const rows=document.createDocumentFragment();for(const p of list){const row=document.createElement('tr');if(result.mode!=='pvp'&&p.id===host.id)row.className='host';cols.forEach((_,i)=>{const td=document.createElement('td');if(i===1)td.style.color=result.mode!=='pvp'&&p.id===result.host.id?'#9146FF':/^#[a-f0-9]{6}$/i.test(p.color||'')?p.color:'#E2E8F0';td.textContent=typeof value(p,i)==='number'?number(value(p,i)):String(value(p,i))+(i===1&&p.id===host.id?labels.streamer:'');if(i>1&&i<cols.length-1&&value(p,i)===5000)td.classList.add('score-perfect');if(i>1&&i<cols.length-1)td.title=labels.scores.replaceAll('{{area}}',number(p.rounds[i-2].areaScore)).replaceAll('{{proximity}}',number(p.rounds[i-2].positionScore));row.append(td)});rows.append(row)}document.querySelector('#rows').replaceChildren(rows);document.querySelector('#count').textContent=labels.count.replaceAll('{{shown}}',number(list.length));[...document.querySelector('#head').children].forEach((th,i)=>th.setAttribute('aria-sort',i===key?(dir===1?'ascending':'descending'):'none'))}filter.oninput=draw;draw();if(labels.reviews.length){const section=document.getElementById('review-warnings'),heading=document.createElement('h2');heading.textContent=labels.reviewTitle;section.append(heading);for(const text of labels.reviews){const p=document.createElement('p');p.textContent=text;section.append(p)}};</script></html>`;
 }
 
 export function downloadStreamResult(

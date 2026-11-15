@@ -5,6 +5,7 @@ import type { ImageGameConfig } from './image-game';
 import type { StreamGame } from './stream-types';
 import { bindText, formatGuessrNumber, guessrGameTerm, guessrLocale, onGuessrLanguageChanged, tr } from './i18n';
 import { playerColor } from './player-color';
+import { networkReviewView } from './network-review-view';
 
 export function streamRoundResults(main: HTMLElement, game: StreamGame, index: number, actions: HTMLElement): () => void {
   return sharedRoundResults(main, game.session.config, streamRoundData(game, index), actions);
@@ -68,6 +69,7 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
         if (column !== 1) cell.className = 'numeric';
         if (column === 2 && player.score === 5000) cell.classList.add('score-perfect');
         else if (column === 1) cell.style.color = playerColor(player, streamerId);
+        if (column === 1) { const warning = networkReviewView(data.reviewFlags, players, player.id); if (warning) cell.append(warning); }
         if (column === 2 && !(player.recorded ?? !!player.guess)) cell.setAttribute('aria-label', tr(data.mode === 'pvp' ? 'No recorded guesses' : 'No guess recorded by the streamer'));
         row.append(cell);
       }

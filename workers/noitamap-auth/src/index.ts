@@ -168,7 +168,7 @@ interface OAuthState {
 }
 
 function twitchChatScopes(chat: boolean, announcements = false): string {
-  return chat ? 'user:read:chat user:write:chat' + (announcements ? ' moderator:manage:announcements' : '') : '';
+  return chat ? 'user:write:chat' + (announcements ? ' moderator:manage:announcements' : '') : '';
 }
 
 // -- Main Worker --
@@ -587,7 +587,7 @@ async function completeProviderOAuth(request: Request, env: Env, secrets: Sessio
   if (identity.provider === 'twitch' && !state.chat) {
     const previous = await env.ACCOUNT_DB!.prepare("SELECT * FROM auth_identities WHERE provider = 'twitch' AND provider_user_id = ?")
       .bind(identity.provider_user_id).first<Identity>();
-    if (previous?.status === 'active' && (await readCredentials(previous, secrets))?.scopes.includes('user:read:chat')) {
+    if (previous?.status === 'active' && (await readCredentials(previous, secrets))?.scopes.includes('user:write:chat')) {
       // A later ordinary sign-in must not discard earlier explicit chat
       // consent. The endpoint still validates/refreshes this token before use.
       identity.credentials = previous.credentials;
@@ -778,9 +778,9 @@ async function handleTwitchChatSession(request: Request, env: Env, secrets: Sess
   const account = session ? await sessionAccount(env, session) : null;
   if (!account) return jsonResponse({ error: 'Connect Twitch to this account first.' }, origin, 401);
   let identity = account.identities.find(row => row.provider === 'twitch' && row.status === 'active');
-  if (!identity) return jsonResponse({ error: 'Connect Twitch to read your chat.' }, origin, 409);
+  if (!identity) return jsonResponse({ error: 'Connect your Twitch channel before hosting.' }, origin, 409);
   let credentials = await readCredentials(identity, secrets);
-  if (!credentials?.scopes.includes('user:read:chat')) return jsonResponse({ error: 'Authorize Twitch chat access.' }, origin, 409);
+  if (!credentials?.scopes.includes('user:write:chat')) return jsonResponse({ error: 'Authorize Twitch posting access.' }, origin, 409);
   if (credentials.expiresAt <= Date.now() + 60000) {
     await refreshLinkedIdentity(env, identity, secrets, true);
     identity = (await sessionAccount(env, session!))?.identities.find(row => row.provider === 'twitch' && row.status === 'active');
@@ -795,10 +795,10 @@ async function handleTwitchChatSession(request: Request, env: Env, secrets: Sess
   if (!validation.ok) return jsonResponse({ error: 'Reconnect Twitch chat.' }, origin, 409);
   const verified = await validation.json() as { client_id: string; user_id: string; login: string; scopes: string[]; expires_in: number };
   if (verified.client_id !== twitch.clientId || verified.user_id !== identity.provider_user_id
-    || !Array.isArray(verified.scopes) || !verified.scopes.includes('user:read:chat')
-    || verified.scopes.some(scope => !['user:read:chat', 'user:write:chat', 'moderator:manage:announcements'].includes(scope))
+    || !Array.isArray(verified.scopes) || !verified.scopes.includes('user:write:chat')
+    || verified.scopes.some(scope => !['user:write:chat', 'moderator:manage:announcements'].includes(scope))
     || !verified.login || !Number.isFinite(verified.expires_in) || verified.expires_in <= 60) {
-    return jsonResponse({ error: 'Reconnect Twitch with chat read permission.' }, origin, 409);
+    return jsonResponse({ error: 'Authorize Twitch posting access.' }, origin, 409);
   }
   return jsonResponse({ accessToken: credentials.accessToken, clientId: twitch.clientId,
     userId: verified.user_id, login: verified.login, scopes: verified.scopes, expiresAt: Date.now() + verified.expires_in * 1000 }, origin);
@@ -1246,7 +1246,7 @@ async function handleTwitchCallback(request: Request, env: Env, secrets: Session
 
     if (!env.ACCOUNT_DB) return textResponse('Account storage is not configured.', 503);
     {
-      if (oauthState.chat && !viewerTokens.scope?.includes('user:read:chat')) return redirectWithError(finalRedirectUrl, 'chat_permission_required', request);
+      if (oauthState.chat && !viewerTokens.scope?.includes('user:write:chat')) return redirectWithError(finalRedirectUrl, 'chat_permission_required', request);
       return completeProviderOAuth(request, env, secrets, oauthState, await twitchIdentity(viewer, viewerTokens, isSubscriber, secrets));
     }
 

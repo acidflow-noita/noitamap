@@ -44,11 +44,11 @@ it('automatically reconnects and replays exactly the same unacknowledged submiss
   expect(JSON.stringify(sessionStorage)).not.toContain('provider-token');
   first.close(1011); await vi.advanceTimersByTimeAsync(1500);
   const second = Socket.all[1]; await authorized(second);
-  expect(JSON.parse(second.sent[0])).toEqual({ type: 'authorize', role: 'resume', ticket: 'safe-resume-ticket' });
+  expect(JSON.parse(second.sent[0])).toEqual({ type: 'authorize', protocol: 2, role: 'resume', ticket: 'safe-resume-ticket' });
   expect(auth).toHaveBeenCalledOnce();
   expect(JSON.parse(second.sent[1])).toEqual({ type: 'guess', submission });
   second.receive({ type: 'receipt', round: 1, roundId: submission.roundId, nonce: submission.nonce, revision: 1, accepted: true });
-  expect(localStorage.getItem(`noitaguessr-socket:${game}:200:pending`)).toBe('[]');
+  expect(localStorage.getItem(`noitaguessr-socket-v2:${game}:200:pending`)).toBe('[]');
   expect(connection.connected()).toBe(true);
 });
 it('keeps a newer update queued when a delayed receipt for the old pin arrives, including across F5', async () => {
@@ -86,4 +86,35 @@ it('does not manufacture a disconnect when the page is backgrounded during a hea
   visibility.mockReturnValue('visible'); document.dispatchEvent(new Event('visibilitychange'));
   Socket.all[0].onmessage?.({ data: 'pong' });
   await vi.advanceTimersByTimeAsync(5000); expect(connection.connected()).toBe(true);
+});
+
+it('uses a revision above both the saved outbox and server receipt after a lost confirmation', async () => {
+  localStorage.setItem(`noitaguessr-socket-v2:${game}:200:pending`, JSON.stringify([{ ...submission, revision: 4 }]));
+  connection = new ParallelConnection('https://guessr-api.sage-data.xyz', game, '200', async () => ({ role: 'player', accessToken: 'test-only-token' }), { message: vi.fn(), status: vi.fn() });
+  const socket = Socket.all[0]; await authorized(socket);
+  socket.receive({ type: 'authorized', ticket: 'safe-resume-ticket', expiresAt: Date.now() + 600000,
+    player: { id: '200', name: 'Player', login: 'player' }, now: Date.now(), acceptedRevisions: { [submission.roundId]: 5 } });
+  expect(connection.nextRevision(submission.roundId)).toBe(6);
+  connection.submit({ ...submission, revision: 6 });
+  connection.submit({ ...submission, revision: 2 });
+  expect(JSON.parse(localStorage.getItem(`noitaguessr-socket-v2:${game}:200:pending`)!)[0].revision).toBe(6);
+});
+
+it('retries temporary authorization failures instead of exhausting sign-in retries', async () => {
+  const auth = vi.fn().mockRejectedValueOnce(Object.assign(Error('Provider unavailable'), { code: 'unavailable' }))
+    .mockResolvedValue({ role: 'player', accessToken: 'test-only-token' });
+  connection = new ParallelConnection('https://guessr-api.sage-data.xyz', game, '200', auth, { message: vi.fn(), status: vi.fn() });
+  Socket.all[0].open(); await vi.advanceTimersByTimeAsync(1500);
+  expect(connection.state()).not.toBe('stopped');
+  await authorized(Socket.all[1]); expect(connection.connected()).toBe(true); expect(auth).toHaveBeenCalledTimes(2);
+});
+
+it('stops keepalives and reconnect attempts after the completed result arrives', async () => {
+  connection = new ParallelConnection('https://guessr-api.sage-data.xyz', game, '200', async () => ({ role: 'player', accessToken: 'test-only-token' }), { message: vi.fn(), status: vi.fn() });
+  const socket = Socket.all[0]; await authorized(socket);
+  socket.receive({ type: 'published', result: { schema: 1, id: game, version: 'fixture', createdAt: 1, finishedAt: 2,
+    host: { id: '100', login: 'host', name: 'Host' }, rounds: [], players: [] } });
+  const sent = socket.sent.length;
+  socket.close(1011); await vi.advanceTimersByTimeAsync(700000);
+  expect(socket.sent).toHaveLength(sent); expect(Socket.all).toHaveLength(1); expect(connection.state()).toBe('connected');
 });

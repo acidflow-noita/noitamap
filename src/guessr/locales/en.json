@@ -638,5 +638,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.",
   "If you give up a 1v1 match, the results page opens.": "If you give up a 1v1 match, the results page opens.",
   "Buttons above the clue image now show keyboard shortcuts.": "Buttons above the clue image now show keyboard shortcuts.",
-  "The game results page has a smaller title and a narrower rank column.": "The game results page has a smaller title and a narrower rank column."
+  "The game results page has a smaller title and a narrower rank column.": "The game results page has a smaller title and a narrower rank column.",
+  "Shared internet connection": "Shared internet connection",
+  "{{players}} used the same internet connection in round {{round}}.": "{{players}} used the same internet connection in round {{round}}.",
+  "At least one of those accounts did not submit a guess for this round.": "At least one of those accounts did not submit a guess for this round.",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.",
+  "and {{count}} more": "and {{count}} more",
+  "Shared connection groups: {{count}}": "Shared connection groups: {{count}}",
+  "Group {{number}}": "Group {{number}}",
+  "Reload this page to use the updated game connection.": "Reload this page to use the updated game connection.",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "Twitch identity verification is temporarily unavailable. Retrying…",
+  "Authorize Twitch posting access.": "Authorize Twitch posting access."
 }

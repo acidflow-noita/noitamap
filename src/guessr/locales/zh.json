@@ -638,5 +638,15 @@
   "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1v1 模式使用您现有的 Pro 账号登录。大厅中会显示两名玩家及其是否已准备就绪。",
   "If you give up a 1v1 match, the results page opens.": "如果你放弃一场1v1对决，结果页面就会打开。",
   "Buttons above the clue image now show keyboard shortcuts.": "提示图片上方的按钮现在会显示键盘快捷键。",
-  "The game results page has a smaller title and a narrower rank column.": "比赛结果页面的标题较小，排名栏也较窄。"
+  "The game results page has a smaller title and a narrower rank column.": "比赛结果页面的标题较小，排名栏也较窄。",
+  "Shared internet connection": "共享互联网连接",
+  "{{players}} used the same internet connection in round {{round}}.": "在第 {{round}} 轮中，{{players}} 使用了同一条互联网连接。",
+  "At least one of those accounts did not submit a guess for this round.": "这些账号中至少有一个在本轮中未提交猜测。",
+  "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged.": "共享连接可能会触发此提示。这并不证明存在作弊行为，且分数保持不变。",
+  "and {{count}} more": "以及另外 {{count}} 个",
+  "Shared connection groups: {{count}}": "共享连接组：{{count}}",
+  "Group {{number}}": "第 {{number}} 组",
+  "Reload this page to use the updated game connection.": "请刷新此页面以使用更新的游戏连接。",
+  "Twitch identity verification is temporarily unavailable. Retrying…": "Twitch 身份验证服务暂时不可用。正在重试……",
+  "Authorize Twitch posting access.": "授权 Twitch 发布权限。"
 }

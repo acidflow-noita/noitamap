@@ -8,11 +8,13 @@ import { streamPlayerName } from './stream-display-name';
 import { formatGuessCommand, parseGuessCommand } from './guess-command';
 import { within } from './rules';
 import { streamsAhead } from './match-settings';
+import { newNetworkKey } from './network-review';
 
 /** Invalid player actions are distinct from storage/runtime failures. */
 export class ParallelActionError extends Error {}
 
 export interface ParallelRecord {
+  networkKey?: string;
   schema: 1;
   owner: string;
   game: StreamGame;
@@ -35,6 +37,7 @@ export function createParallelRecord(input: ParallelInitialization, now: number)
   game.clockOffset = 0;
   startStreamTiming(game, input.seconds, now, true);
   return { schema: 1, owner: input.owner, game, privateReveals: input.reveals,
+    ...(game.session.mode !== 'pvp' ? { networkKey: newNetworkKey() } : {}),
     metrics: emptyParallelMetrics(), hostCommands: [], socketIdentities: [] };
 }
 export function joinParallelPlayer(record: ParallelRecord, player: StreamPlayer): StreamParticipant {

@@ -261,7 +261,7 @@ describe('explicit Twitch chat consent', () => {
     expect((await request('/auth/twitch/chat-session', linked.token)).status).toBe(409);
     const start = await beginLink(linked.token, 'twitch', true, announcements);
     const authorize = new URL(start.headers.get('Location')!);
-    const scopes = ['user:read:chat', 'user:write:chat', ...(announcements ? ['moderator:manage:announcements'] : [])];
+    const scopes = ['user:write:chat', ...(announcements ? ['moderator:manage:announcements'] : [])];
     expect(authorize.searchParams.get('scope')).toBe(scopes.join(' '));
     expect(authorize.searchParams.get('force_verify')).toBe('true');
     people.twitch.scope = scopes;
@@ -279,7 +279,7 @@ describe('explicit Twitch chat consent', () => {
   it.each([false, true])('keeps the same optional scope choice for a direct Twitch sign-in (%s)', async announcements => {
     const start = await request(`/auth/twitch/login?redirect=https://noitamap.test/guess/?auth_nonce=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&chat=1&announcements=${announcements ? '1' : '0'}`);
     const scope = new URL(start.headers.get('Location')!).searchParams.get('scope');
-    expect(scope).toBe('user:read:chat user:write:chat' + (announcements ? ' moderator:manage:announcements' : ''));
+    expect(scope).toBe('user:write:chat' + (announcements ? ' moderator:manage:announcements' : ''));
     const ordinary = await request('/auth/twitch/login?redirect=https://noitamap.test/guess/?auth_nonce=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&announcements=1');
     expect(new URL(ordinary.headers.get('Location')!).searchParams.get('scope')).toBe('');
   });
@@ -288,14 +288,14 @@ describe('explicit Twitch chat consent', () => {
     { client_id: 'wrong-client' }, { user_id: 'different-owner' },
     { scopes: ['user:read:chat', 'channel:manage:broadcast'] }, { scopes: [] }, { expires_in: 0 },
   ])('refuses a token with invalid owner/client/scope/lifetime: %o', async (override) => {
-    people.twitch.scope = ['user:read:chat'];
+    people.twitch.scope = ['user:write:chat'];
     const twitch = await login('twitch', 'twitch', true);
-    validation = { client_id: 'twitch-client', user_id: '12345', login: 'mychannel', scopes: ['user:read:chat'], expires_in: 3500, ...override };
+    validation = { client_id: 'twitch-client', user_id: '12345', login: 'mychannel', scopes: ['user:write:chat'], expires_in: 3500, ...override };
     expect((await request('/auth/twitch/chat-session', twitch.token)).status).toBe(409);
   });
 
   it('rotates an expired chat credential server-side and never returns its refresh token', async () => {
-    people.twitch.scope = ['user:read:chat'];
+    people.twitch.scope = ['user:write:chat'];
     const twitch = await login('twitch', 'twitch', true);
     const later = Date.now() + 2 * 3600000;
     vi.spyOn(Date, 'now').mockReturnValue(later);
@@ -309,7 +309,7 @@ describe('explicit Twitch chat consent', () => {
   });
 
   it('keeps existing chat consent when signing in normally with Twitch later', async () => {
-    people.twitch.scope = ['user:read:chat'];
+    people.twitch.scope = ['user:write:chat'];
     await login('twitch', 'twitch', true);
     const old = db.sqlite.prepare("SELECT credentials FROM auth_identities WHERE provider = 'twitch'").get()!.credentials;
     people.twitch.scope = [];

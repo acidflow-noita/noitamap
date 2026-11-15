@@ -1,3 +1,7 @@
+import { persistStreamResult } from '../workers/noitamap-guessr/src/result-publication';
+import { StreamService } from '../src/guessr/stream-server';
+import { verifyGameTicket } from '../workers/noitamap-guessr/src/tickets';
+import { ImageGameError } from '../src/guessr/image-game-server';
 import { testGameKeys, signResultManagementTicket } from './helpers/game-ticket-keys';
 import { packStreamPublish } from "../src/guessr/stream-codec";
 import { readFileSync } from "node:fs";
@@ -83,81 +87,66 @@ async function fixture() {
       streamNow + 1000,
       streamSource(),
     );
+  const service = new StreamService(streamSource(), streamSecret);
+  async function owner(token: string) {
+    const user = (await verifyGameTicket(token, env.GAME_TICKET_PUBLIC_KEY!, streamNow + 1000))!;
+    return { sub: user.sub, name: user.name, twitchUserId: user.twitchUserId!, twitchLogin: user.twitchLogin!, ticketIssuedAt: user.iat * 1000 };
+  }
   async function completed(hostToken = ticket.token) {
-    const session = (await (
-      await call("/sessions", { transport: "twitch", rounds: 10 }, hostToken)
-    ).json()) as StreamSession;
+    const user = await owner(hostToken), session = await service.start(user, streamNow + 1000, 'parallel', 10);
     const game = newStreamGame(session, streamNow + 1000);
     for (let i = 0; i < session.rounds.length; i++) {
       closeStreamRound(game, streamAnswer, streamNow + 1000);
-      revealStreamRound(
-        game,
-        await (
-          await call("/reveal", { token: session.rounds[i].token }, hostToken)
-        ).json(),
-      );
+      revealStreamRound(game, await service.reveal(session.rounds[i].token, user, streamNow + 1000));
       advanceStreamRound(game, streamNow + 1000);
     }
-    return packStreamPublish({
-      token: session.token,
-      finishedAt: game.finishedAt!,
-      players: streamResult(game).players,
-    });
+    return packStreamPublish({ token: session.token, finishedAt: game.finishedAt!, players: streamResult(game).players });
   }
-  return { ...db, env, call, request, completed };
+  async function publish(input: unknown, hostToken = ticket.token) {
+    try {
+      const user = await owner(hostToken);
+      const { owner: id, result } = await service.result(input as Parameters<typeof service.result>[0], user, streamNow + 1000);
+      return await persistStreamResult(env, id, result, user.ticketIssuedAt, streamNow + 1000);
+    } catch (error) {
+      return Response.json({ error: (error as Error).message }, { status: error instanceof ImageGameError ? error.status : 503 });
+    }
+  }
+  return { ...db, env, call, request, completed, publish };
 }
 describe("single-document stream publication", () => {
   it('creates PvP only with Pro and private transport, without handing its creator any future clues or tokens', async () => {
     const f = await fixture(), initialized: ParallelInitialization[] = [];
     f.env.STREAM_COORDINATORS = { getByName: () => ({ initialize: async input => { initialized.push(input); }, fetch: async () => new Response() }) };
-    expect((await f.call('/sessions', { mode: 'pvp', transport: 'parallel', rounds: 3 }, null)).status).toBe(401);
-    expect((await f.call('/sessions', { mode: 'pvp', transport: 'twitch', rounds: 3 })).status).toBe(400);
-    expect((await f.call('/sessions', { transport: 'parallel', streaming: 'false' })).status).toBe(400);
+    expect((await f.call('/sessions', { protocol: 2, mode: 'pvp', transport: 'parallel', rounds: 3 }, null)).status).toBe(401);
+    expect((await f.call('/sessions', { protocol: 2, mode: 'pvp', transport: 'twitch', rounds: 3 })).status).toBe(410);
+    expect((await f.call('/sessions', { protocol: 2, transport: 'parallel', streaming: 'false' })).status).toBe(400);
     expect(initialized).toHaveLength(0);
-    const response = await f.call('/sessions', { mode: 'pvp', transport: 'parallel', rounds: 3 });
+    const response = await f.call('/sessions', { protocol: 2, mode: 'pvp', transport: 'parallel', rounds: 3 });
     expect(response.status).toBe(201);
     const result = await response.json() as StreamSession;
     expect(result.mode).toBe('pvp'); expect(result.streaming).toBe(false); expect(result.token).toBe(''); expect(result.rounds).toEqual([]);
     expect(initialized).toHaveLength(1); expect(initialized[0].reveals).toHaveLength(3);
     expect(initialized[0].session.rounds).toHaveLength(3);
     expect(JSON.stringify(result)).not.toContain(initialized[0].session.rounds[0].clue.frames![0].image);
-    expect((await f.call('/sessions', { transport: 'parallel', rounds: 3 })).status).toBe(201);
+    expect((await f.call('/sessions', { protocol: 2, transport: 'parallel', rounds: 3 })).status).toBe(201);
     expect(initialized[1].session.streaming).toBe(true);
   });
-  it('runs a Twitch game with no live object or per-round database work, then writes one final result', async () => {
+  it('rejects retired Twitch game creation, reveals and client result uploads without database work', async () => {
     const f = await fixture();
-    const start = await f.call('/sessions', { transport: 'twitch', rounds: 10 });
-    expect(start.status).toBe(201);
-    const session = await start.json() as StreamSession;
-    expect(session.transport).toBe('twitch');
-    const game = newStreamGame(session, streamNow + 1000);
-    for (let round = 0; round < 10; round++) {
-      closeStreamRound(game, streamAnswer, streamNow + 1000);
-      const response = await f.call('/reveal', { token: session.rounds[round].token });
-      expect(response.status).toBe(200);
-      revealStreamRound(game, await response.json());
-      advanceStreamRound(game, streamNow + 1000);
-    }
+    expect((await f.call('/sessions', { transport: 'twitch', rounds: 10 })).status).toBe(410);
+    expect((await f.call('/reveal', { token: 'retired' })).status).toBe(410);
+    expect((await f.call('/results', { token: 'retired', players: [] })).status).toBe(410);
     expect(f.calls()).toBe(0);
-    game.participants.push({ id: '888', login: 'viewer', name: 'Viewer', color: '#FF4500', guesses: [...game.participants[0].guesses] });
-    const published = await f.call('/results', packStreamPublish({ token: session.token,
-      finishedAt: game.finishedAt!, players: streamResult(game).players }));
-    expect(published.status).toBe(201);
-    expect(f.sqlite.prepare('SELECT COUNT(*) AS total FROM stream_results').get()!.total).toBe(1);
-    const stored = await (await f.call('/results/' + session.id, undefined, null)).json() as any;
-    expect(stored.players.find((p: { id: string }) => p.id === '888').color).toBe('#FF4500');
-    expect((await f.call('/reveal', { token: session.rounds[0].token }, null)).status).toBe(401);
   });
   it.each(['/advance', '/pulse', '/pause', '/quit', '/rooms/wuote'])('retires %s before any auth, source or database work', async path => {
     const f = await fixture();
     expect((await f.call(path, path.startsWith('/rooms/') ? undefined : {}, null)).status).toBe(404);
     expect(f.calls()).toBe(0);
   });
-  it('requires explicit Twitch transport and trusts only verified host entitlement', async () => {
+  it('requires the current game protocol and private coordinator', async () => {
     const f = await fixture();
-    expect((await f.call('/sessions', {})).status).toBe(400);
-    const session = await (await f.call('/sessions', { transport: 'twitch', hostProVerifiedUntil: streamNow + 86400000 })).json() as StreamSession;
-    expect(session.hostProVerifiedUntil).toBe(streamNow + 1200000);
+    expect((await f.call('/sessions', {})).status).toBe(410);
+    expect((await f.call('/sessions', { protocol: 2, transport: 'parallel' })).status).toBe(503);
     expect(f.calls()).toBe(0);
   });
 
@@ -168,20 +157,20 @@ describe("single-document stream publication", () => {
       { length: STREAM_MAX_PLAYERS + 1 },
       () => input.players[0],
     );
-    const response = await f.call("/results", input);
+    const response = await f.publish( input);
     expect(response.status).toBe(413);
     expect(((await response.json()) as any).error).toMatch(/complete result/);
     expect(f.calls()).toBe(0);
     expect(input.players).toHaveLength(STREAM_MAX_PLAYERS + 1);
   });
-  it("has zero database work for start/reveal and one result row across repeat publication", async () => {
+  it("persists one result row across repeat internal publication", async () => {
     const f = await fixture(),
       input = await f.completed();
     expect(f.calls()).toBe(0);
-    const published = await f.call("/results", input);
+    const published = await f.publish( input);
     expect(published.status).toBe(201);
     const data = (await published.json()) as { id: string };
-    expect((await f.call("/results", input)).status).toBe(200);
+    expect((await f.publish( input)).status).toBe(200);
     expect(
       f.sqlite.prepare("SELECT COUNT(*) AS n FROM stream_results").get(),
     ).toEqual({ n: 1 });
@@ -202,11 +191,11 @@ describe("single-document stream publication", () => {
     );
     input.players[0].rounds[0] = [0, 0];
     input.players[0].score -= 5000;
-    expect((await f.call("/results", input)).status).toBe(409);
+    expect((await f.publish( input)).status).toBe(409);
   });
   it('lists only published games for one channel, with indexed pagination and no read-side writes', async () => {
     const f = await fixture(), input = await f.completed();
-    const publication = await (await f.call('/results', input)).json() as any;
+    const publication = await (await f.publish( input)).json() as any;
     const stored = f.sqlite.prepare('SELECT * FROM stream_results WHERE id=?').get(publication.id) as any;
     const original = await (await f.call('/results/' + publication.id, undefined, null)).json() as any;
     const insert = f.sqlite.prepare('INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json,host_id,host_verified_at) VALUES(?,?,?,?,?,?,?,?,?)');
@@ -265,13 +254,13 @@ describe("single-document stream publication", () => {
     const f = await fixture(), input = await f.completed();
     const insert = f.sqlite.prepare('INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json) VALUES(?,?,?,?,?,?,?)');
     for (let i = 0; i < 250; i++) insert.run('fixture-' + i, 'other', '2026-01-01', 1, 2, 'digest', '{}');
-    const result = await f.call('/results', input);
+    const result = await f.publish( input);
     expect(result.status).toBe(201);
     expect(f.sqlite.prepare('SELECT COUNT(*) AS games FROM stream_results').get()).toEqual({ games: 251 });
     const sum = f.sqlite.prepare('SELECT SUM(bytes+?) AS used_bytes, COUNT(*) AS games FROM stream_results').get(STREAM_RESULT_OVERHEAD_BYTES);
     expect(f.sqlite.prepare('SELECT used_bytes,games FROM stream_result_storage WHERE id=1').get()).toEqual(sum);
     const before = f.sqlite.prepare('SELECT total_changes() AS n').get();
-    expect((await f.call('/results', input)).status).toBe(200);
+    expect((await f.publish( input)).status).toBe(200);
     expect(f.sqlite.prepare('SELECT total_changes() AS n').get()).toEqual(before);
   });
   it("stops at the byte budget without changing existing results", async () => {
@@ -283,7 +272,7 @@ describe("single-document stream publication", () => {
     insert.run('fixture', 'other', '2026-01-01', 1, 2, 'digest', '{}');
     f.sqlite.prepare('UPDATE stream_result_storage SET used_bytes=? WHERE id=1').run(STREAM_STORAGE_BUDGET_BYTES);
     const writes = f.sqlite.prepare("SELECT total_changes() AS n").get();
-    const result = await f.call("/results", input);
+    const result = await f.publish( input);
     expect(result.status).toBe(507);
     expect(((await result.json()) as any).error).toMatch(/download/i);
     expect(f.sqlite.prepare("SELECT total_changes() AS n").get()).toEqual(
@@ -292,10 +281,10 @@ describe("single-document stream publication", () => {
   });
   it('acknowledges an already-published result even when all storage budget is used', async () => {
     const f = await fixture(), input = await f.completed();
-    expect((await f.call('/results', input)).status).toBe(201);
+    expect((await f.publish( input)).status).toBe(201);
     f.sqlite.prepare('UPDATE stream_result_storage SET used_bytes=? WHERE id=1').run(STREAM_STORAGE_BUDGET_BYTES);
     const before = f.sqlite.prepare('SELECT total_changes() AS n').get();
-    expect((await f.call('/results', input)).status).toBe(200);
+    expect((await f.publish( input)).status).toBe(200);
     expect(f.sqlite.prepare('SELECT total_changes() AS n').get()).toEqual(before);
   });
   it('admits only one concurrent publication when the remaining byte budget fits one', async () => {
@@ -304,7 +293,7 @@ describe("single-document stream publication", () => {
     // allowances alone exceed it. Both requests see the same owner/day.
     f.sqlite.prepare('UPDATE stream_result_storage SET used_bytes=? WHERE id=1')
       .run(STREAM_STORAGE_BUDGET_BYTES - 7000);
-    const responses = await Promise.all([f.call('/results', first), f.call('/results', second)]);
+    const responses = await Promise.all([f.publish( first), f.publish( second)]);
     expect(responses.map(r => r.status).sort()).toEqual([201, 507]);
     expect(f.sqlite.prepare('SELECT COUNT(*) AS games FROM stream_results').get()).toEqual({ games: 1 });
     expect((f.sqlite.prepare('SELECT used_bytes FROM stream_result_storage').get() as { used_bytes: number }).used_bytes)
@@ -315,7 +304,7 @@ describe("single-document stream publication", () => {
     const insert = f.sqlite.prepare('INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json) VALUES(?,?,?,?,?,?,?)');
     const day = new Date(streamNow).toISOString().slice(0, 10);
     for (let i = 0; i < 100; i++) insert.run('quota-' + i, 'other', day, streamNow, 2, 'digest', '{}');
-    const result = await f.call('/results', input);
+    const result = await f.publish( input);
     expect(result.status).toBe(429); expect((await result.json() as any).error).toContain('Today’s result publishing limit');
     expect(Number(result.headers.get('Retry-After'))).toBeGreaterThan(60);
     expect(f.sqlite.prepare('SELECT COUNT(*) AS games FROM stream_results').get()).toEqual({ games: 100 });
@@ -328,7 +317,7 @@ describe("single-document stream publication", () => {
         ...input,
         players: [...input.players, { ...input.players[0], id }],
       };
-      expect((await f.call("/results", invalid)).status).toBe(400);
+      expect((await f.publish( invalid)).status).toBe(400);
     }
     expect(f.calls()).toBe(0);
   });
@@ -364,7 +353,7 @@ describe("single-document stream publication", () => {
     for (const mutate of mutations) {
       const input = structuredClone(original);
       mutate(input);
-      expect((await f.call("/results", input)).status).toBe(400);
+      expect((await f.publish( input)).status).toBe(400);
     }
     expect(f.calls()).toBe(0);
   });
@@ -387,22 +376,22 @@ it('rejects excessive anonymous demo calls before reading puzzle assets or D1', 
 it('uses the current verified host name and stable ID after a rename, without transferring history to a recycled name', async () => {
   const f = await fixture(), input = await f.completed();
   const renamed = await signGameTicket(streamHost.sub, 'Renamed', streamSecret, { ...streamHost, twitchLogin: 'renamed' }, streamNow + 1000);
-  expect((await f.call('/results', input, renamed.token)).status).toBe(201);
+  expect((await f.publish( input, renamed.token)).status).toBe(201);
   const id = (await (await f.call('/history/renamed', undefined, null)).json() as any).games[0].id;
   const result = await (await f.call('/results/' + id, undefined, null)).json() as any;
   expect(result.host).toEqual({ id: streamHost.twitchUserId, name: 'Renamed', login: 'renamed' });
   expect((await (await f.call('/history/streamer', undefined, null)).json() as any).games).toEqual([]);
   const recycled = await signGameTicket('account:other', 'New streamer', streamSecret, { twitchUserId: '200', twitchLogin: 'streamer' }, streamNow + 1000);
   const otherGame = await f.completed(recycled.token);
-  expect((await f.call('/results', otherGame, recycled.token)).status).toBe(201);
+  expect((await f.publish( otherGame, recycled.token)).status).toBe(201);
   const oldName = await (await f.call('/history/streamer', undefined, null)).json() as any;
   expect(oldName.games).toHaveLength(1); expect(oldName.games[0].id).not.toBe(id);
   const laterLabel = await signGameTicket(streamHost.sub, 'Renamed again', streamSecret, { ...streamHost, twitchLogin: 'renamedagain' }, streamNow + 1000);
-  expect((await f.call('/results', input, laterLabel.token)).status).toBe(200);
+  expect((await f.publish( input, laterLabel.token)).status).toBe(200);
 });
 it.each(['name\nforged log', 'abc\u202edef', '<script>user</script>', 'user\u200dname', ' ', '\u061c\u061c007'])('sanitizes display label %j without dropping anyone’s scores', async name => {
   const f = await fixture(), input = await f.completed(); input.players.push({ ...structuredClone(input.players[0]), id: '999', login: 'omicron', name });
-  const response = await f.call('/results', input);
+  const response = await f.publish( input);
   expect(response.status).toBe(201);
   const { id } = await response.json();
   const result = await (await f.call('/results/' + id)).json();
@@ -414,19 +403,19 @@ it.each(['name\nforged log', 'abc\u202edef', '<script>user</script>', 'user\u200
 });
 it('allows owner/admin removal without Pro, blocks other users and prevents re-publication', async () => {
   const f = await fixture(), input = await f.completed();
-  const result = await (await f.call('/results', input)).json() as { id: string };
+  const result = await (await f.publish( input)).json() as { id: string };
   const path = '/results/' + result.id + '/delete';
   expect((await f.call(path, {}, null)).status).toBe(401);
   const stranger = await signResultManagementTicket('account:stranger', 'Stranger', streamSecret, { twitchUserId: '200', twitchLogin: 'other' }, streamNow);
   expect((await f.call(path, {}, stranger.token)).status).toBe(404);
   const owner = await signResultManagementTicket(streamHost.sub, streamHost.name, streamSecret, streamHost, streamNow);
-  expect((await f.call('/sessions', { transport: 'twitch' }, owner.token)).status).toBe(401);
+  expect((await f.call('/sessions', { protocol: 2, transport: 'twitch' }, owner.token)).status).toBe(401);
   expect((await f.call(path, {}, owner.token)).status).toBe(204);
   expect((await f.call(path, {}, owner.token)).status).toBe(204);
   expect((await f.call('/results/' + result.id, undefined, null)).status).toBe(404);
-  expect((await f.call('/results', input)).status).toBe(410);
+  expect((await f.publish( input)).status).toBe(410);
   expect(f.sqlite.prepare('SELECT used_bytes,games FROM stream_result_storage').get()).toEqual({ used_bytes: 0, games: 0 });
-  const next = await f.completed(), nextId = (await (await f.call('/results', next)).json() as any).id;
+  const next = await f.completed(), nextId = (await (await f.publish( next)).json() as any).id;
   const admin = await signResultManagementTicket('account:admin', 'WUOTE', streamSecret, { twitchUserId: '564553302', twitchLogin: 'renamed_admin' }, streamNow);
   expect((await f.call('/results/' + nextId + '/delete', {}, admin.token)).status).toBe(204);
 });

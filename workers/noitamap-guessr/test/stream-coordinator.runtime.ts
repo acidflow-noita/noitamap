@@ -22,12 +22,12 @@ async function fixture(mode: 'stream' | 'pvp' = 'stream') {
   const stub = env.STREAM_COORDINATORS.getByName(session.id);
   await stub.initialize({ owner: streamHost.sub, session, seconds: 30,
     reveals: await service.coordinatorReveals(session.token, streamHost, now) });
-  const join = async (role: 'host' | 'player' = 'player', playerId = '200', rejected = false) => {
+  const join = async (role: 'host' | 'player' = 'player', playerId = '200', rejected = false, address?: string) => {
     const identity: ParallelIdentity = role === 'host' ? { ...session.host, role, owner: streamHost.sub, expiresAt: now + 600000 }
       : { id: playerId, login: 'omicron', name: '\u061c\u061c007', role, expiresAt: now + 600000 };
     const ticket = await socketTicket({ STREAM_SIGNING_SECRET: secret } as Env, session.id, identity);
     const response = await handle(new Request(`https://api.test/api/streams/live/${session.id}/socket`, {
-      headers: { Origin: 'https://dynamic-map.noitamap.com', Upgrade: 'websocket' },
+      headers: { Origin: 'https://dynamic-map.noitamap.com', Upgrade: 'websocket', ...(address ? { 'CF-Connecting-IP': address } : {}) },
     }), { ...env, STREAM_ENABLED: 'true', GAME_SIGNING_SECRET: '' } as Env);
     expect(response.status).toBe(101);
     const socket = response.webSocket!; sockets.push(socket); socket.accept();
@@ -43,12 +43,12 @@ async function fixture(mode: 'stream' | 'pvp' = 'stream') {
       waiters.push({ match, resolve: value => { clearTimeout(timeout); resolve(value); } });
     });
     const authorized = wait(m => rejected ? m.type === 'error' && m.code === 'capacity' : m.type === 'authorized');
-    socket.send(JSON.stringify({ type: 'authorize', role: 'resume', ticket })); await authorized;
+    socket.send(JSON.stringify({ type: 'authorize', protocol: 2, role: 'resume', ticket })); await authorized;
     return { socket, messages, wait, send: (data: unknown) => socket.send(JSON.stringify(data)) };
   };
   return { stub, session, join };
 }
-it('persists one latest guess across both paths, hibernation, reconnect and closed-window recovery', async () => {
+it('persists one latest guess across hibernation and reconnect, and rejects retired relays', async () => {
   const { stub, session, join } = await fixture();
   const host = await join('host'), player = await join();
   let ack = host.wait(m => m.type === 'command'); host.send({ type: 'start', id: 'start' }); await ack;
@@ -70,7 +70,9 @@ it('persists one latest guess across both paths, hibernation, reconnect and clos
   expect(await receipt).toMatchObject({ type: 'receipt', accepted: true, revision: 1 });
   const relay = { player: { id: '200', login: 'omicron', name: '\u061c\u061c007' }, id: 'twitch1', sentAt: Date.now(),
     text: formatGuessCommand(1, streamAnswer, 5000, session.rounds[0].id, { userId: '200', nonce: new Uint8Array(8).fill(17), revision: 1 }) };
-  receipt = player.wait(m => m.type === 'receipt'); host.send({ type: 'relay', message: relay });
+  const rejectedRelay = host.wait(m => m.type === 'error'); host.send({ type: 'relay', message: relay });
+  expect(await rejectedRelay).toMatchObject({ code: 'invalid' });
+  receipt = player.wait(m => m.type === 'receipt'); player.send({ type: 'guess', submission });
   expect(await receipt).toMatchObject({ accepted: true, revision: 1 });
   receipt = player.wait(m => m.type === 'receipt'); player.send({ type: 'guess', submission: { ...submission, revision: 2, nonce: '2222222222222222', maximum: 4900 } });
   expect(await receipt).toMatchObject({ accepted: true, revision: 2 });
@@ -83,6 +85,52 @@ it('persists one latest guess across both paths, hibernation, reconnect and clos
   expect(player.messages.filter(m => m.type === 'state').every(m => !JSON.stringify(m).includes('privateReveals') && !JSON.stringify(m).includes(session.token))).toBe(true);
   const again = await join(); const recovery = again.wait(m => m.type === 'receipt'); again.send({ type: 'recover' });
   expect(await recovery).toMatchObject({ accepted: true, revision: 2, maximum: 4900 });
+});
+
+it('persists one exploration signal per player and round, keeps pins private, and releases separate network groups', async () => {
+  const { stub, session, join } = await fixture();
+  const host = await join('host');
+  const highA = await join('player', '200', false, '192.0.2.1'), scoutA = await join('player', '201', false, '192.0.2.1');
+  const highB = await join('player', '300', false, '192.0.2.2'), scoutB = await join('player', '301', false, '192.0.2.2');
+  const start = host.wait(m => m.type === 'command'); host.send({ type: 'start', id: 'start' }); await start;
+  await runInDurableObject(stub, (_, state) => {
+    const record = JSON.parse(state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data);
+    record.game.timing.startsAt = Date.now() - 100; record.game.timing.windows[0].opensAt = Date.now() - 100;
+    state.storage.sql.exec('UPDATE game SET data=? WHERE id=1', JSON.stringify(record));
+  });
+  await evictDurableObject(stub);
+  const activity = { type: 'activity', roundId: session.rounds[0].id, id: 'first-exploration' };
+  for (const scout of [scoutA, scoutB]) { const ack = scout.wait(m => m.type === 'command'); scout.send(activity); expect(await ack).toMatchObject({ accepted: true }); }
+  const writes = () => runInDurableObject(stub, (_, state) => JSON.parse(state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data).metrics.storageRowsWritten);
+  const before = await writes();
+  const duplicate = scoutA.wait(m => m.type === 'command'); scoutA.send(activity); await duplicate;
+  expect(await writes()).toBe(before);
+  for (const player of [highA, highB]) {
+    const ack = player.wait(m => m.type === 'receipt'); player.send({ type: 'guess', submission: {
+      roundId: session.rounds[0].id, point: streamAnswer, maximum: 5000, nonce: '1111111111111111', revision: 1,
+    } }); expect(await ack).toMatchObject({ accepted: true });
+  }
+  const snapshot = host.wait(m => m.type === 'host'); host.send({ type: 'recover' });
+  const message = await snapshot;
+  if (message.type !== 'host') throw Error('Missing host snapshot');
+  expect(message.game.submittedCounts?.[0]).toBe(2);
+  expect(message.game.participants.filter(p => p.id !== session.host.id).every(p => !p.guesses[0])).toBe(true);
+  const stored = await runInDurableObject(stub, (_, state) => state.storage.sql.exec<{ data: string }>('SELECT data FROM players').toArray().map(row => row.data).join('\n'));
+  expect(stored).not.toContain('192.0.2.'); expect(stored).toContain('"explored"');
+  expect(JSON.stringify(host.messages)).not.toMatch(/networkKey|networkTag|"explored"|192\.0\.2\./);
+  // Exercise the exact persistence boundary used when a round is released.
+  const flags = await runInDurableObject(stub, async instance => {
+    const internal = instance as unknown as { record: import('../../../src/guessr/parallel-core').ParallelRecord; persist(): Promise<void> };
+    internal.record.game.reveals[0] = internal.record.privateReveals[0]; await internal.persist();
+    return internal.record.game.reviewFlags;
+  });
+  expect(flags).toEqual([
+    { round: 1, highScorers: ['200'], explorers: ['201'], nonSubmitting: ['201'] },
+    { round: 1, highScorers: ['300'], explorers: ['301'], nonSubmitting: ['301'] },
+  ]);
+  await evictDurableObject(stub);
+  const recovered = highA.wait(m => m.type === 'reveal'); highA.send({ type: 'recover' });
+  expect(await recovered).toMatchObject({ results: { reviewFlags: flags, players: expect.arrayContaining([expect.objectContaining({ id: '200', score: 5000 })]) } });
 });
 
 it('keeps both PvP players private, locks accepted guesses and restores the same state after hibernation', async () => {

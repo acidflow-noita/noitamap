@@ -1,4 +1,3 @@
-import { streamJoinRequest } from './stream-join-request';
 import "./stream.css";
 import { ParallelConnection } from './parallel-connection';
 import type { ParallelServerMessage } from './parallel-types';
@@ -33,11 +32,10 @@ import {
   type StreamGame,
   type StreamResult,
 } from "./stream-types";
-import { TwitchChatConnection, type TwitchChatStatus, type TwitchChatCredentials } from "./twitch-chat";
+import type { TwitchChatStatus, TwitchChatCredentials } from "./twitch-chat";
 import { TwitchViewer, savedTwitchViewerId } from "./twitch-viewer";
 import { TwitchAnnouncementError, canShareGameLink } from './twitch-announcement';
 import { hoverHelp } from './hover-help';
-import { GUESSR_TRANSPORT_CHANNEL } from './chat-transport';
 import { mountStreamPicker } from "./stream-picker";
 import { liveRoomLink } from "./live-room-game";
 import { buttonNotice } from './button-notice';
@@ -49,7 +47,7 @@ import { pageHeading } from './page-heading';
 import { loadingPlaceholders } from './loading-placeholders';
 import type { LiveRoomView, RoomConnection } from './live-room-types';
 import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, tr } from './i18n';
-import { StreamBroadcastHost } from './stream-broadcast-host';
+import { GAME_PROTOCOL } from './game-protocol';
 import { startStreamTiming, beginStreamTiming, startHostWindow, streamTick, hostMayGuess, suspendStreamTiming, resumeStreamTiming, validStreamSeconds, shortenFinishedWindow, STREAM_DELIVERY_GRACE_MS } from './stream-timing';
 import { streamRoundResults } from './stream-round-results';
 import { confirmQuitGame } from './quit-game';
@@ -71,6 +69,7 @@ export interface StreamUIHooks {
     locked: boolean,
     pick: (point: Point) => void,
     readOnly?: boolean,
+    config?: ImageGameConfig,
   ): { clue: HTMLElement; bar: HTMLElement };
   cleanupClue(cleanup: () => void): void;
   markers(guess: Point | null, answer?: Point): void;
@@ -149,12 +148,10 @@ function copyAction(label: string, value: () => string, toast: (message: string)
 export class StreamUI {
   readonly api = new StreamApi();
   game: StreamGame | null = null;
-  private chat?: TwitchChatConnection;
   private parallel?: ParallelConnection;
   private parallelAutoRound = '';
   private publicationError = '';
   private parallelDetail = '';
-  private broadcastRecovery?: ReturnType<typeof setTimeout>;
   private get durable(): boolean { return this.game?.session.transport === 'parallel'; }
   private connectParallel(): void {
     const game = this.game;
@@ -164,6 +161,7 @@ export class StreamUI {
         status: (status, detail) => {
           if (this.game !== game) return;
           this.roomHealthy = status === 'connected'; this.parallelDetail = detail;
+          this.status = status === 'connected' ? 'live' : status === 'retrying' ? 'reconnecting' : status === 'stopped' ? 'auth-required' : 'connecting';
           this.updateStatus(); this.updateTimer();
         },
         message: message => { if (this.game === game) this.parallelMessage(message); },
@@ -187,9 +185,7 @@ export class StreamUI {
         this.hooks.home(); return;
       }
       this.roomHealthy = true; this.save();
-      if (this.status === 'live' && !this.broadcast) this.transportChanged(this.status, this.statusDetail);
-      this.broadcast?.publishState();
-      for (let i = revealed; i < game.reveals.length; i++) this.broadcast?.publishReveal(i);
+      this.connectGame();
       const after = `${game.round}/${game.stage}/${game.paused}/${game.timing?.phase}/${game.timing?.startsAt}/${game.published}`;
       if (before !== after || message.publicationError && game.stage === 'complete') this.render();
       this.updateStatus(); this.updateTimer(); if (game.stage !== 'complete') this.startTick();
@@ -199,10 +195,13 @@ export class StreamUI {
       if (message.participant.id !== game.session.host.id) {
         game.joinedPlayers ??= {}; game.joinedPlayers[message.participant.id] = message.participant;
       }
+      if (message.submittedCounts) game.submittedCounts = message.submittedCounts;
+      if (message.submitted) {
+        this.recentGuesser = message.participant.name; this.activityUntil = Date.now() + 6000;
+        const notice = document.getElementById('stream-activity-message');
+        if (notice) { bindText(notice, '{{player}} submitted a guess', { player: this.recentGuesser }); notice.style.visibility = 'visible'; }
+      }
       this.saveTimer ??= setTimeout(this.save, 250); this.updateLobby(true); this.updateStatus();
-    } else if (message.type === 'receipt' && message.playerId) {
-      if (message.accepted) void this.broadcast?.remember(message.round - 1, message.playerId, message.nonce);
-      else void this.broadcast?.reject(message.round - 1, message.playerId, message.nonce, message.reason === 'superseded' ? 'superseded' : 'closed');
     } else if (message.type === 'published') {
       const changed = !game.published; game.published = true; this.save();
       if (changed && game.stage === 'complete') this.finish();
@@ -214,7 +213,6 @@ export class StreamUI {
     await this.parallel!.command({ type, id: crypto.randomUUID() });
   }
   private viewer?: TwitchViewer;
-  private stopLocalChat?: () => void;
   private status: TwitchChatStatus = "offline";
   private statusDetail = "Chat disconnected.";
   private busy = false;
@@ -236,7 +234,6 @@ export class StreamUI {
   private shareAnnouncements = false;
   private sharingPermissionFailed = false;
   private setupCredentials?: TwitchChatCredentials;
-  private broadcast?: StreamBroadcastHost;
   private tickTimer?: ReturnType<typeof setInterval>;
   private tickSavedAt = 0;
   private timedRounds = true;
@@ -277,8 +274,7 @@ export class StreamUI {
       if (
         saved?.schema === 1 &&
         (pane !== 'stream-result' || saved.stage === 'complete' && saved.session?.id === readGuessRoute(new URL(location.href)).result) &&
-        (this.api.local || ['twitch', 'parallel'].includes(saved.session?.transport ?? '')) &&
-        saved.session?.version === hooks.config.version &&
+        (this.api.local || saved.stage === 'complete' || saved.session?.transport === 'parallel' && saved.session.protocol === GAME_PROTOCOL) &&
         typeof saved.session.token === "string" &&
         /^[a-f0-9-]{36}$/.test(saved.session.id) &&
         validStreamRoundCount(saved.session.rounds?.length) &&
@@ -323,19 +319,15 @@ export class StreamUI {
     this.disposeHeader();
     const wasHosting = this.mounted;
     this.parallel?.dispose(); this.parallel = undefined;
-    clearTimeout(this.broadcastRecovery);
     this.mounted = false;
     clearInterval(this.tickTimer);
     if (!this.durable && this.game?.timing && wasHosting && this.game.stage !== 'complete') {
-      suspendStreamTiming(this.game, streamTime(this.game)); void this.broadcast?.close();
-    } else this.broadcast?.dispose();
-    this.broadcast = undefined;
+      suspendStreamTiming(this.game, streamTime(this.game));
+    }
     this.hostRelease?.(); this.hostRelease = undefined;
     clearTimeout(this.pulseTimer);
     this.pulseTimer = undefined;
-    this.chat?.stop();
-    this.chat = undefined;
-    this.stopLocalChat?.(); this.stopLocalChat = undefined;
+
     if (!this.durable && wasHosting && this.game?.stage === "guess") {
       if (this.game.timing) suspendStreamTiming(this.game, streamTime(this.game));
       else this.game.paused = true;
@@ -362,11 +354,9 @@ export class StreamUI {
       this.disposeHeader();
       clearTimeout(this.pulseTimer); this.pulseTimer = undefined;
       clearTimeout(this.saveTimer); this.saveTimer = undefined;
-      this.chat?.stop(); this.chat = undefined;
-      this.stopLocalChat?.(); this.stopLocalChat = undefined;
+
       clearInterval(this.tickTimer);
-      if (this.broadcast) await this.broadcast.close(true);
-      this.broadcast = undefined;
+
       this.hostRelease?.(); this.hostRelease = undefined;
       if (this.api.local && game.session.live && !game.timing) await this.api.quit(game.session.id);
       // Another tab may have saved a different game while the request ran.
@@ -527,23 +517,16 @@ export class StreamUI {
           );
           return;
         }
-        const credentials = await auth.getTwitchChatSession();
-        if (!main.isConnected) return;
-        if (!credentials || !credentials.scopes?.includes('user:write:chat')) {
+        const state = auth.getState();
+        if (state.provider !== 'twitch' && !state.linkedAccounts?.some(account => account.provider === 'twitch')) {
           loading.remove();
-          accountStep.append(
-            el('p', 'Connect Twitch to receive guesses and send round updates.'),
-            action("Connect Twitch", () => this.connectAuth(), "primary"),
-          );
+          accountStep.append(el('p', 'Connect your Twitch channel before hosting.'),
+            action('Connect Twitch', () => auth.loginTwitch(), 'primary'));
           return;
         }
-        this.setupCredentials = credentials;
+        try { this.setupCredentials = await auth.getTwitchChatSession() ?? undefined; } catch { this.setupCredentials = undefined; }
+        if (!main.isConnected) return;
         sharingReady = true; refreshSharing();
-        if (this.game && this.game.stage !== 'complete' && this.game.session.host.id !== credentials.userId) {
-          bindText(loading, 'The saved game belongs to {{channel}}. Sign in to that channel to resume, or start a new game.', { channel: this.game.session.host.login });
-          setupActions.append(action("Start new game", () => this.start(), "primary"));
-          return;
-        }
       }
       if (this.game && this.game.stage !== "complete") {
         const clock = await this.api.clock();
@@ -622,29 +605,25 @@ export class StreamUI {
         if (useTwitch && (!identity?.connected || !identity.login)) throw new Error(tr('Connect Twitch before starting a live test.'));
         this.api.setLocalChannel(useTwitch ? identity!.login! : undefined);
       }
-      const session = await this.api.start(useTwitch ? this.api.local || import.meta.env.VITE_GUESSR_PARALLEL_TRANSPORT === 'false' ? 'twitch' : 'parallel' : undefined, this.roundCount, this.timedRounds ? this.roundSeconds : 0, this.streaming);
+      const session = await this.api.start(this.api.local ? undefined : 'parallel', this.roundCount, this.timedRounds ? this.roundSeconds : 0, this.streaming);
       if (session.transport === 'parallel' && !this.streaming && session.streaming !== false) throw Error('This timing option is not available on this site yet.');
       if (session.transport !== 'parallel') session.streaming = this.streaming;
       if (session.transport) await this.acquireHost(session.host.id);
       this.parallel?.dispose(); this.parallel = undefined;
-      this.broadcast?.dispose(); this.broadcast = undefined;
-      this.chat?.stop();
-      this.chat = undefined;
-      this.stopLocalChat?.(); this.stopLocalChat = undefined;
+
       this.game = newStreamGame(session);
       this.shareStatus = ''; this.sharedUntil = 0;
       this.autoShareOnConnect = useTwitch;
       this.game.shareAnnouncements = this.shareAnnouncements;
       if (session.transport) {
         startStreamTiming(this.game, this.timedRounds ? this.roundSeconds : 0, session.serverNow, true);
-        if (!this.durable) suspendStreamTiming(this.game, streamTime(this.game));
       }
       this.roomHealthy = true;
       this.connectParallel(); this.startPulse();
       this.save();
       if (this.mounted) {
         this.render();
-        this.connectChat();
+        this.connectGame();
       }
     } catch (error) {
       this.hooks.toast(tr((error as Error).message));
@@ -660,54 +639,6 @@ export class StreamUI {
         await new Promise<void>(release => { this.hostRelease = release; resolve(); });
       }).catch(reject);
     });
-  }
-  private transportChanged(status: TwitchChatStatus, detail: string): void {
-    this.status = status; this.statusDetail = detail;
-    const game = this.game;
-    if (game?.timing && this.mounted) {
-      if (status === 'live') {
-        const needsRender = game.paused || !this.broadcast;
-        this.roomHealthy = this.durable ? !!this.parallel?.connected() : true;
-        if (game.paused && !this.durable) resumeStreamTiming(game, streamTime(game));
-        if (!this.broadcast) {
-          let publisher: StreamBroadcastHost;
-          const failed = (error: unknown, key?: string) => {
-            if (this.game !== game || !this.mounted || this.broadcast !== publisher) return;
-            console.warn('[NoitaGuessr] Broadcast failed:', error);
-            // Confirmed guesses remain saved even if one receipt is rejected.
-            // A later delivery check can request it again without killing play.
-            if (key?.startsWith('receipts-')) return;
-            // An outgoing API failure says nothing about the receiving socket.
-            // Keep collecting and let the durable path continue independently.
-            this.statusDetail = 'Reconnecting…';
-            clearTimeout(this.broadcastRecovery);
-            this.broadcastRecovery = setTimeout(() => {
-              if (this.game === game && this.mounted && this.status === 'live') this.broadcast?.publishState(true, true);
-            }, 10000);
-            this.updateStatus();
-          };
-          const viewer = this.viewer, receiver = this.chat;
-          publisher = new StreamBroadcastHost(game, this.viewerImageRoot(), text => this.api.local
-            ? viewer!.sendMessage(GUESSR_TRANSPORT_CHANNEL, text) : receiver!.sendTransport(text), failed, this.save, () => {
-              this.saveTimer ??= setTimeout(this.save, 250);
-              this.lobbyTimer ??= setTimeout(() => {
-                this.lobbyTimer = undefined;
-                if (this.mounted && this.game === game) this.updateLobby(true);
-              }, 250);
-            });
-          this.broadcast = publisher;
-          void this.broadcast.start().catch(failed);
-        } else this.broadcast.publishState();
-        this.save(); if (needsRender) this.render(); this.startTick();
-        if (this.autoShareOnConnect && game.timing.phase === 'lobby') {
-          this.autoShareOnConnect = false;
-          void this.shareGameLink(true);
-        }
-      } else if (!this.durable && !game.paused) {
-        suspendStreamTiming(game, streamTime(game)); this.save(); this.broadcast?.publishState(); this.render();
-      }
-    }
-    this.updateStatus();
   }
   private startTick(): void {
     clearInterval(this.tickTimer);
@@ -726,14 +657,13 @@ export class StreamUI {
         }
         return;
       }
-      if (shortenFinishedWindow(game, now)) { this.save(); this.broadcast?.publishState(false); this.updateTimer(); }
+      if (shortenFinishedWindow(game, now)) { this.save(); this.updateTimer(); }
       if (game.stage === 'closing' && streamRevealAt(game, now) <= now) { void this.submit(true); return; }
       if (document.querySelector('.stream-host-shell[data-starting]') && now >= game.timing.startsAt && !game.paused) this.render();
       const revision = game.timing.revision;
       const next = streamTick(game, now);
-      if (!next && game.timing.revision !== revision) this.broadcast?.publishState(false);
       if (next === 'warmup-finished') {
-        startHostWindow(game, now); this.save(); this.broadcast?.publishState(); this.render();
+        startHostWindow(game, now); this.save();  this.render();
       } else if (next === 'submit') void this.submit(true);
       else if (next === 'advance' || next === 'finish') void this.nextRound();
       else if (now - this.tickSavedAt >= 5000) { this.tickSavedAt = now; this.save(); }
@@ -808,7 +738,7 @@ export class StreamUI {
         const game = this.game!;
         if (game.paused || !this.roomHealthy || this.sharePending) return;
         if (this.durable) { void this.durableCommand('start').catch(e => this.hooks.toast(tr(e.message))); return; }
-        beginStreamTiming(game, streamTime(game)); this.save(); this.broadcast?.publishState(); this.render();
+        beginStreamTiming(game, streamTime(game)); this.save();  this.render();
       }, 'primary');
       start.id = 'stream-start-game'; section.append(count, names, start); main.append(section); this.updateLobby(); return;
     }
@@ -825,66 +755,20 @@ export class StreamUI {
         const game = this.game!;
         if (game.paused || streamTime(game) < game.timing!.startsAt) return;
         if (this.durable) { void this.durableCommand('advance').catch(e => this.hooks.toast(tr(e.message))); return; }
-        startHostWindow(game, streamTime(game)); this.save(); this.broadcast?.publishState(); this.render();
+        startHostWindow(game, streamTime(game)); this.save();  this.render();
       }, 'primary');
       start.id = 'stream-first-round'; section.append(start);
     }
     main.append(section); this.updateLobby();
   }
-  private connectChat(): void {
-    if (
-      this.chat || this.stopLocalChat ||
-      !this.game ||
-      this.game.stage === "complete" ||
-      !this.mounted
-    )
-      return;
-    if (this.api.local) {
-      if (!this.game.session.localChat) return;
-      this.viewer ??= new TwitchViewer();
-      this.stopLocalChat = this.viewer.watchChat(GUESSR_TRANSPORT_CHANNEL, {
-        message: this.receiveChat,
-        status: (status, detail) => this.transportChanged(status, detail),
-      });
-      return;
+  private connectGame(): void {
+    this.connectParallel();
+    if (!this.mounted || !this.game || this.game.stage === 'complete') return;
+    if (this.api.local && !this.durable) { this.roomHealthy = true; this.status = 'live'; this.updateStatus(); }
+    if (this.autoShareOnConnect && (this.parallel?.connected() || this.api.local) && this.game.timing?.phase === 'lobby') {
+      this.autoShareOnConnect = false; void this.shareGameLink(true);
     }
-    this.chat = new TwitchChatConnection({
-      userId: this.game.session.host.id,
-      broadcasterLogin: GUESSR_TRANSPORT_CHANNEL,
-      credentials: async () => (await gameAuth()).getTwitchChatSession(),
-      status: (status, detail) => {
-        this.transportChanged(status, detail);
-      },
-      message: this.receiveChat,
-    });
-    this.chat.start();
   }
-  private receiveChat = (message: StreamChatMessage): void => {
-    if (!this.game || this.game.stage === 'complete') return;
-    this.broadcast?.receiveRequest(message);
-    if (this.durable) { if (streamJoinRequest(message.text) || parseGuessCommand(message.text, { rounds: this.game.session.rounds.length, bounds: this.game.session.config.bounds })) this.parallel?.relay(message); return; }
-    const admission = acceptStreamGuess(this.game, message);
-    const command = parseGuessCommand(message.text, { rounds: this.game.session.rounds.length, bounds: this.game.session.config.bounds });
-    if (admission === 'accepted') {
-      this.recentGuesser = message.player.name;
-      this.guessNoticeTimer ??= setTimeout(() => {
-        this.guessNoticeTimer = undefined;
-        this.activityUntil = Date.now() + 6000;
-        const activity = document.getElementById('stream-activity-message');
-        if (activity) { bindText(activity, '{{player}} submitted a guess', { player: this.recentGuesser }); activity.style.visibility = 'visible'; }
-      }, 1000);
-      if (command?.nonce) void this.broadcast?.remember(command.round - 1, message.player.id, command.nonce);
-      this.saveTimer ??= setTimeout(this.save, 250);
-      this.updateStatus();
-    } else if (command?.nonce && command.userId === message.player.id && command.roundId === this.game.session.rounds[command.round - 1]?.id) {
-      const index = command.round - 1;
-      const saved = this.game.recentNonces?.[`${index}/${message.player.id}`] ?? [];
-      if (admission === 'duplicate' && saved.includes(command.nonce))
-        void this.broadcast?.remember(index, message.player.id, command.nonce);
-      else void this.broadcast?.reject(index, message.player.id, command.nonce,
-        admission === 'host' ? 'streamer' : admission === 'duplicate' ? 'superseded' : admission === 'future' ? 'round' : 'closed');
-    }
-  };
   private connectionState(): RoomConnection {
     if (this.durable) return this.parallel?.state() ?? 'connecting';
     if (this.api.local && !this.game?.session.localChat || this.roomHealthy && this.status === 'live') return 'connected';
@@ -917,7 +801,7 @@ export class StreamUI {
     const count = document.getElementById("stream-guess-count");
     if (count && this.game) {
       const round = this.game.timing?.chatRound ?? this.game.round;
-      const total = this.game.participants.filter(p => p.id !== this.game!.session.host.id && p.guesses[round]).length;
+      const total = this.game.submittedCounts?.[round] ?? this.game.participants.filter(p => p.id !== this.game!.session.host.id && p.guesses[round]).length;
       if (this.game.timing?.chatRound === null) bindText(count, 'Chatters have finished all rounds.', { rounds: formatGuessrNumber(this.game.session.rounds.length) });
       else bindText(count, 'Chat round {{round}}: {{total}} submitted', { round: formatGuessrNumber(round + 1), total: formatGuessrNumber(total) });
       count.hidden = this.game.timing?.phase === 'lobby';
@@ -943,7 +827,7 @@ export class StreamUI {
   private canPostGameLink(): boolean {
     const announcements = this.game?.shareAnnouncements === true;
     return !this.sharingPermissionFailed && (this.api.local ? !!this.viewer?.canShare(announcements)
-      : !!this.chat?.canShare(announcements));
+      : canShareGameLink(this.setupCredentials, announcements));
   }
   private async shareGameLink(automatic = false): Promise<boolean> {
     const game = this.game;
@@ -962,7 +846,7 @@ export class StreamUI {
       for (let index = alreadySent; index < posts; index++) {
         if (this.game !== game || !this.mounted) return false;
         if (this.api.local) await this.viewer!.postGameLink(game.session.host.login, message, game.shareAnnouncements === true);
-        else await this.chat!.postGameLink(game.session.host.id, message, game.shareAnnouncements === true);
+        else await postTwitchGameLink(this.setupCredentials, game.session.host.id, message, game.shareAnnouncements === true);
         if (automatic) { game.initialShareCount = index + 1; this.save(); }
         if (index + 1 < posts) await new Promise(resolve => setTimeout(resolve, 1100));
       }
@@ -980,7 +864,7 @@ export class StreamUI {
     } finally { this.sharePending = false; this.updateShareButton(); }
   }
   private viewerImageRoot(): string {
-    return import.meta.env.VITE_GUESSR_IMAGE_ROOT || (this.api.local
+    return this.game?.session.imageRoot || import.meta.env.VITE_GUESSR_IMAGE_ROOT || (this.api.local
       ? '/guessr-images/images'
       : 'https://guessr-tiles.sage-data.xyz/images');
   }
@@ -1028,17 +912,14 @@ export class StreamUI {
   }
   private async resume(): Promise<void> {
     if (!this.game || this.busy) return;
-    if (this.durable) { this.connectParallel(); this.roomHealthy = !!this.parallel?.connected(); this.startTick(); this.render(); this.connectChat(); return; }
+    if (this.durable) { this.connectParallel(); this.roomHealthy = !!this.parallel?.connected(); this.startTick(); this.render(); this.connectGame(); return; }
     if (this.game.stage === "complete") { this.finish(); return; }
     this.busy = true;
     try {
       if (this.game.timing) {
         await this.acquireHost(this.game.session.host.id);
-        this.broadcast?.dispose(); this.broadcast = undefined;
-        this.chat?.stop(); this.chat = undefined;
-        this.stopLocalChat?.(); this.stopLocalChat = undefined;
-        // Keep recovery paused until the Twitch receiver is actually connected.
-        this.game.paused = true;
+
+        this.game.paused = false;
       } else if (this.api.local && this.game.session.live) {
         const room = await this.api.pulse(this.game.session.id);
         this.updateProStatus(room);
@@ -1048,7 +929,7 @@ export class StreamUI {
       }
       if (this.game.stage === 'guess' && !this.game.timing) this.game.paused = false;
       this.game.shareAnnouncements = this.shareAnnouncements;
-      this.roomHealthy = true; this.save(); this.startPulse(); this.busy = false; this.render(); this.connectChat();
+      this.roomHealthy = true; this.save(); this.startPulse(); this.busy = false; this.render(); this.connectGame();
     } catch (error) { this.hooks.toast(tr((error as Error).message)); }
     finally { this.busy = false; }
   }
@@ -1060,7 +941,6 @@ export class StreamUI {
     try {
       if (this.api.local && !game.timing) await this.api.advance(game.session.id, game.session.rounds[game.round].id);
       advanceStreamRound(game); this.roomHealthy = true; this.save();
-      if (game.stage !== 'complete') this.broadcast?.publishState();
       this.busy = false; this.render();
     } catch (error) { this.hooks.toast(tr((error as Error).message)); }
     finally { this.busy = false; }
@@ -1121,8 +1001,8 @@ export class StreamUI {
     const reconnect = action('Reconnect', () => {
       if (this.status === 'auth-required' || this.parallel?.state() === 'stopped') return this.api.local ? this.connectLocalTwitch() : this.connectAuth();
       if (!this.roomHealthy || game.paused) return this.resume();
-      this.chat?.stop(); this.chat = undefined;
-      this.stopLocalChat?.(); this.stopLocalChat = undefined; this.connectChat();
+
+      this.connectGame();
     }, 'btn btn-sm btn-outline theme-secondary');
     reconnect.id = 'stream-reconnect'; commands.append(reconnect);
     const activity = el('div', '', 'stream-activity');
@@ -1154,6 +1034,7 @@ export class StreamUI {
         }
       },
       !!reveal,
+      game.session.config,
     );
     updateRoundIndicators(main, game.clue, reveal?.area.difficultyTier ?? game.session.rounds[index].difficultyTier);
     if (reveal || game.stage === "closing") {
@@ -1297,11 +1178,6 @@ export class StreamUI {
         const id = Array.from(nonce, n => n.toString(16).padStart(2, '0')).join('');
         const roundId = game.session.rounds[game.round].id, maximum = maximumScore(game.clue);
         const durable = this.parallel!.command({ type: 'host-guess', id, roundId, point: game.guess, maximum });
-        if (game.guess) {
-          const text = formatGuessCommand(game.round + 1, game.guess, maximum, roundId, { userId: game.session.host.id, nonce, revision: 1,
-            label: `${game.session.host.name} submitted a guess for round ${game.round + 1} in their NoitaGuessr game.` });
-          void this.chat?.sendTransport(text).catch(() => {});
-        }
         await durable; return;
       }
       const wasClosing = this.game.stage === 'closing';
@@ -1321,7 +1197,7 @@ export class StreamUI {
         })),
       );
       revealStreamRound(game, reveal);
-      if (game.timing) { game.timing.revision++; this.broadcast?.publishState(false); this.broadcast?.publishReveal(game.round); }
+      if (game.timing) { game.timing.revision++;   }
       this.save();
       if (this.mounted) this.render();
     } catch (error) {
@@ -1337,10 +1213,6 @@ export class StreamUI {
     history.replaceState(null, '', guessRouteUrl('stream-result', location.href, { result: this.game.session.id }));
     clearTimeout(this.pulseTimer); this.pulseTimer = undefined;
     clearInterval(this.tickTimer);
-    if (!this.game.timing) {
-      this.chat?.stop(); this.chat = undefined;
-      this.stopLocalChat?.(); this.stopLocalChat = undefined;
-    }
     const result = streamResult(this.game),
       main = this.hooks.shell();
     allowGuessrChangelog(true);
@@ -1436,16 +1308,10 @@ export class StreamUI {
     }
   }
   private finishBroadcast(game: StreamGame): void {
-    if (this.game !== game) return;
-    const broadcast = this.broadcast;
-    if (!broadcast) return;
-    void broadcast.complete().finally(() => {
-      if (this.game !== game || this.broadcast !== broadcast) return;
-      this.broadcast = undefined; this.chat?.stop(); this.chat = undefined;
-      this.stopLocalChat?.(); this.stopLocalChat = undefined;
-      this.hostRelease?.(); this.hostRelease = undefined;
-    });
+    if (this.game !== game || !game.published) return;
+    this.parallel?.dispose(); this.parallel = undefined; clearInterval(this.tickTimer);
   }
+
   private publish(entry: ArchivedStreamResult, game?: StreamGame): Promise<void> {
     const id = entry.result.id;
     const active = this.publications.get(id);

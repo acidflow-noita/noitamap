@@ -38,6 +38,7 @@ export function resultClue(config: ImageGameConfig, answer: Point): ClueSource |
 export function resultRoundView(result: StreamResult, index: number): StreamRoundView {
   const round = result.rounds[index];
   return { ...(result.mode ? { mode: result.mode } : {}), round: index + 1, host: result.host, answer: round.answer, label: round.name,
+    ...(result.reviewFlags?.some(flag => flag.round === index + 1) ? { reviewFlags: result.reviewFlags.filter(flag => flag.round === index + 1) } : {}),
     players: result.players.map(player => {
       const position = result.positions?.[player.id]?.[index];
       return { id: player.id, name: player.name, login: player.login, color: player.color,
