@@ -12,6 +12,7 @@ import type { AreaDefinition } from '../../src/guessr/area-rules';
 import { loadDailyBackground, composeDailyWorld } from './daily-background.mts';
 import { withProgress } from './progress.mts';
 import { prepareFeaturelessViews } from './featureless-views.mts';
+import { prepareStreamSource } from './prepare-stream-source.mts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const pendingImages = 'https://images.invalid/images';
@@ -106,15 +107,17 @@ export async function prepareDaily(options: {
   const pack: DailyImagePack = {
     schemaVersion: 1, day: options.day, seed, version: config.version, renderId: manifest.renderId,
     generatedAt: manifest.generatedAt, config, rounds,
+    preparedSource: await withProgress('Preparing multiplayer map data', null, () => prepareStreamSource(workerDirectory, join(output, 'clues'))),
   };
   await writeFile(join(privateRoot, 'daily.json'), JSON.stringify(pack), { mode: 0o600 });
   const summary = {
     schemaVersion: 1, complete: true, day: pack.day, seed, version: pack.version, renderId: pack.renderId,
-    clueFiles: images.stats.assets + 2, referenceFiles: composed.tiles + 2, backgroundIdentity: composed.backgroundIdentity,
+    clueFiles: images.stats.assets + 2 + Object.keys(pack.preparedSource!.files).length, referenceFiles: composed.tiles + 2, backgroundIdentity: composed.backgroundIdentity,
     eligibleAreas: prepared.areas, eligiblePositions: prepared.positions, excludedAreas: prepared.excluded,
     featurelessVariants: prepared.featurelessVariants, featurelessPositions: prepared.featurelessPositions,
     rounds: rounds.length,
   };
+  if (summary.clueFiles > 20000) throw Error('Clue images and prepared data exceed the Pages Free file budget.');
   await writeFile(join(output, 'manifest.json'), JSON.stringify(summary, null, 2) + '\n');
   return summary;
 }

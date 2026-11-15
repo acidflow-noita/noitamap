@@ -3,6 +3,8 @@ import { DAILY_PUBLISH_LIMIT, DAILY_ROUNDS, type DailyImagePack } from '../../..
 import { scoreAreaGuess } from '../../../src/guessr/area-rules';
 import { within } from '../../../src/guessr/rules';
 import { supportedCamera } from '../../../src/guessr/clue-camera';
+import { validatePreparedSourcePackage } from '../../../src/guessr/prepared-source-package';
+import { generatedMapStatements } from './generated-stream-source';
 
 interface PublisherEnv { DB: Database; DAILY_PUBLISH_SECRET?: string; DAILY_ASSET_HOSTS?: string }
 const encoder = new TextEncoder();
@@ -52,6 +54,9 @@ export function validateDailyPack(value: unknown, projects: string[], now: numbe
         || !supportedCamera({ frames: round.frames }, { dx: 0, dy: 0, level: 6 }))
       throw new Error('Daily clue images do not cover all zoom levels.');
   }
+  if (pack.sourceOnly !== undefined && typeof pack.sourceOnly !== 'boolean') throw Error('Invalid publication mode.');
+  if (pack.sourceOnly && !pack.preparedSource) throw Error('Prepared multiplayer map data is missing.');
+  if (pack.preparedSource) validatePreparedSourcePackage(pack.preparedSource, pack.version, new URL(pack.rounds[0].frames[0].image).origin);
   return pack;
 }
 
@@ -92,6 +97,14 @@ export async function publishDaily(request: Request, env: PublisherEnv, now: num
   const digest = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(n => n.toString(16).padStart(2, '0')).join('');
   const id = `daily-${pack.day}`, opens = Date.parse(pack.day), closes = opens + 2 * 86400000;
   const created = Date.parse(pack.generatedAt);
+  if (pack.sourceOnly) {
+    await env.DB.batch(generatedMapStatements(env.DB, pack, now));
+    const activated = await env.DB.prepare("SELECT generated_at,json_extract(source_json,'$.version') AS version FROM stream_maps WHERE day=?")
+      .bind(pack.day).first<{ generated_at: number; version: string }>();
+    if (!activated || activated.generated_at !== created || activated.version !== pack.version)
+      return response({ error: 'A newer generated map is already published.' }, 409);
+    return response({ id: `stream-map-${pack.day}`, day: pack.day, seed: pack.seed, version: pack.version, streamReady: true, complete: true });
+  }
   const previous = await env.DB.prepare('SELECT id,publication_hash,publication_created_at FROM challenges WHERE day=?').bind(pack.day).first<{ id: string; publication_hash: string | null; publication_created_at: number | null }>();
   if (previous?.publication_hash === digest) return response({ id: previous.id, day: pack.day, seed: pack.seed, version: pack.version, unchanged: true });
   if (previous?.publication_created_at && previous.publication_created_at > created) return response({ error: 'A newer daily bake is already published.' }, 409);
@@ -101,7 +114,7 @@ export async function publishDaily(request: Request, env: PublisherEnv, now: num
     VALUES(?,?,?,?,?,?,?,600,1,?,?,?,?) ON CONFLICT(day) DO UPDATE SET title=excluded.title,opens_at=excluded.opens_at,closes_at=excluded.closes_at,reveal_at=excluded.reveal_at,
     bounds_json=excluded.bounds_json,image_config_json=excluded.image_config_json,dataset_version=excluded.dataset_version,publication_hash=excluded.publication_hash,publication_created_at=excluded.publication_created_at,enabled=1
     WHERE NOT EXISTS(SELECT 1 FROM attempts WHERE challenge_id=challenges.id) AND COALESCE(challenges.publication_created_at,0)<=excluded.publication_created_at`)
-    .bind(id, pack.day, `NoitaGuessr · ${pack.day}`, opens, closes, closes, JSON.stringify(pack.config.bounds), JSON.stringify(pack.config), pack.version, digest, created)];
+    .bind(id, pack.day, `NoitaGuessr (${pack.day})`, opens, closes, closes, JSON.stringify(pack.config.bounds), JSON.stringify(pack.config), pack.version, digest, created)];
   for (const [ordinal, round] of pack.rounds.entries()) {
     const image = new URL(round.frames[0].image).pathname.split('/').at(-1)!;
     statements.push(env.DB.prepare(`INSERT INTO questions(challenge_id,ordinal,asset_key,name,biome,x,y,seed,area_json,clue_json) VALUES(?,?,?,?,?,?,?,?,?,?)
@@ -109,7 +122,7 @@ export async function publishDaily(request: Request, env: PublisherEnv, now: num
       WHERE NOT EXISTS(SELECT 1 FROM attempts WHERE challenge_id=questions.challenge_id) AND EXISTS(SELECT 1 FROM challenges WHERE id=questions.challenge_id AND publication_hash=?)`)
       .bind(id, ordinal, image, round.area.label, round.area.label, round.answer.x, round.answer.y, pack.seed, JSON.stringify(round.area), JSON.stringify({ frames: round.frames }), digest));
   }
-  await env.DB.batch(statements);
+  await env.DB.batch([...statements, ...generatedMapStatements(env.DB, pack, now)]);
   const current = await env.DB.prepare('SELECT publication_hash FROM challenges WHERE id=?').bind(id).first<{ publication_hash: string }>();
   if (current?.publication_hash !== digest) return response({ error: 'A player started this daily during publication; the existing daily was preserved.' }, 409);
   return response({ id, day: pack.day, seed: pack.seed, version: pack.version, complete: true });

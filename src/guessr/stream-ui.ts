@@ -286,7 +286,8 @@ export class StreamUI {
         Array.isArray(saved.participants) &&
         Array.isArray(saved.reveals) &&
         saved.reveals.length <= saved.session.rounds.length &&
-        supportedCamera(saved.session.rounds[saved.round].clue, saved.clue)
+        (supportedCamera(saved.session.rounds[saved.round].clue, saved.clue)
+          || saved.session.transport === 'parallel' && ['lobby', 'warmup'].includes(saved.timing?.phase ?? ''))
       ) {
         this.game = saved;
         if ((saved.initialShareCount ?? 0) >= (saved.shareAnnouncements ? 1 : 3)) this.shareStatus = 'Game link shared in chat.';
@@ -1076,7 +1077,7 @@ export class StreamUI {
         main,
         reveal.area.label,
         scored.distance,
-        `/?m=r&x=${reveal.answer.x}&y=${reveal.answer.y}&z=850`,
+        `/?${game.session.dataset ? `m=dy&ds=1&se=${game.session.dataset.seed}` : 'm=r'}&x=${reveal.answer.x}&y=${reveal.answer.y}&z=850`,
         scored.score,
         scored.difficultyTier,
       );

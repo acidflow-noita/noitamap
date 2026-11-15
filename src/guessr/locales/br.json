@@ -668,5 +668,8 @@
   "Twitch identity verification is temporarily unavailable. Retrying…": "A verificação de identidade do Twitch está temporariamente indisponível. Tentando novamente…",
   "Authorize Twitch posting access.": "Autorize o acesso para postar no Twitch.",
   "This player did not join the game.": "Esse jogador não entrou no jogo.",
-  "Game history shows each player's rank and score.": "O histórico do jogo mostra a classificação e a pontuação de cada jogador."
+  "Game history shows each player's rank and score.": "O histórico do jogo mostra a classificação e a pontuação de cada jogador.",
+  "Game images are temporarily unavailable. Try again shortly.": "As imagens do jogo estão temporariamente indisponíveis. Tente novamente daqui a pouco.",
+  "Today’s generated map is still being prepared. Try again shortly.": "O mapa gerado hoje ainda está sendo preparado. Tente novamente daqui a pouco.",
+  "Uses {{mode}} map": "Este modo de jogo utiliza o mapa “{{mode}}”."
 }

@@ -650,5 +650,8 @@
   "Twitch identity verification is temporarily unavailable. Retrying…": "Twitchの本人確認サービスは一時的に利用できません。再試行中…",
   "Authorize Twitch posting access.": "Twitchへの投稿権限を許可してください。",
   "This player did not join the game.": "このプレイヤーはゲームに参加しませんでした。",
-  "Game history shows each player's rank and score.": "ゲーム履歴には、各プレイヤーのランクとスコアが表示されます。"
+  "Game history shows each player's rank and score.": "ゲーム履歴には、各プレイヤーのランクとスコアが表示されます。",
+  "Game images are temporarily unavailable. Try again shortly.": "ゲームの画像は現在表示できません。しばらくしてからもう一度お試しください。",
+  "Today’s generated map is still being prepared. Try again shortly.": "本日生成される地図は、現在準備中です。しばらくしてからもう一度お試しください。",
+  "Uses {{mode}} map": "このゲームモードでは、「{{mode}}」マップが使用されます。"
 }

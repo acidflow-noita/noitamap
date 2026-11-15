@@ -668,5 +668,8 @@
   "Twitch identity verification is temporarily unavailable. Retrying…": "Ověření identity na Twitchi je dočasně nedostupné. Pokouším se o to znovu…",
   "Authorize Twitch posting access.": "Povolit přístup k publikování na Twitchi.",
   "This player did not join the game.": "Tento hráč se do hry nepřipojil.",
-  "Game history shows each player's rank and score.": "Historie hry zobrazuje pozici a skóre každého hráče."
+  "Game history shows each player's rank and score.": "Historie hry zobrazuje pozici a skóre každého hráče.",
+  "Game images are temporarily unavailable. Try again shortly.": "Obrázky z hry nejsou momentálně k dispozici. Zkuste to za chvíli znovu.",
+  "Today’s generated map is still being prepared. Try again shortly.": "Dnešní mapa se právě připravuje. Zkuste to za chvíli znovu.",
+  "Uses {{mode}} map": "Tento herní režim využívá mapu „{{mode}}“."
 }

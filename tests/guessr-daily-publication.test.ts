@@ -5,6 +5,7 @@ import { handle, type Env } from '../workers/noitamap-guessr/src/index';
 import { gameDatabase } from './helpers/guessr-database';
 import { signGameTicket } from './helpers/game-ticket-keys';
 import type { DailyImagePack } from '../src/guessr/daily-pack';
+import { readFileSync } from 'node:fs';
 
 const now = Date.UTC(2026, 9, 25, 12), secret = 'local-test-only-daily-publisher-key-0123456789';
 const gameSecret = 'local-test-only-game-key-01234567890123456789';
@@ -24,6 +25,7 @@ function pack(): DailyImagePack {
 }
 async function fixture() {
   const db = gameDatabase(); cleanups.push(db.close);
+  db.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/0009_generated_stream_maps.sql', 'utf8'));
   const env: Env = { DB: db.db, ASSETS: { fetch: async () => new Response('', { status: 404 }) },
     ALLOWED_ORIGINS: 'https://dynamic-map.noitamap.com', GAME_ENABLED: 'true', GAME_SIGNING_SECRET: gameSecret, GAME_TICKET_PUBLIC_KEY: (await testGameKeys(gameSecret)).publicKey,
     DAILY_PUBLISH_SECRET: secret, DAILY_ASSET_HOSTS: 'clue-test.pages.dev,map-test.pages.dev' };
@@ -36,6 +38,26 @@ async function fixture() {
 }
 
 describe('prepared Daily publication and gameplay', () => {
+  it('can publish the generated multiplayer source without replacing a played Daily', async () => {
+    const f = await fixture(), original = pack(); await f.publish(original);
+    f.sqlite.prepare('INSERT INTO attempts(id,challenge_id,user_id,display_name,started_at,round_started_at) VALUES(?,?,?,?,?,?)')
+      .run('played', 'daily-2026-10-25', 'twitch:player', 'Player', now, now);
+    const questions = f.sqlite.prepare('SELECT * FROM questions ORDER BY ordinal').all();
+    const next = pack(); next.sourceOnly = true; next.generatedAt = new Date(now).toISOString(); next.rounds[0].answer.x += 1;
+    next.preparedSource = { schemaVersion: 1, version: next.version, root: 'https://a1b2c3d4.clue-test.pages.dev/prepared', key: '1'.repeat(64), files: {
+      '/game-data/catalog.json': { file: '1'.repeat(64) + '.bin', bytes: 100 },
+      '/game-data/native-grid.bin': { file: '2'.repeat(64) + '.bin', bytes: 100 },
+      ['/game-data/starts/' + '3'.repeat(32) + '.bin']: { file: '3'.repeat(64) + '.bin', bytes: 28 },
+    } };
+    const response = await f.publish(next); expect(response.status).toBe(200);
+    const receipt = await response.json(); expect(receipt).toMatchObject({ streamReady: true, seed: next.seed, day: next.day });
+    expect(JSON.stringify(receipt)).not.toContain(next.preparedSource.key);
+    expect(f.sqlite.prepare('SELECT * FROM questions ORDER BY ordinal').all()).toEqual(questions);
+    expect(f.sqlite.prepare('SELECT enabled FROM stream_map_control').get()).toEqual({ enabled: 1 });
+    const stored = JSON.parse(f.sqlite.prepare('SELECT source_json FROM stream_maps').get()!.source_json as string);
+    expect(stored.preparedSource.files).toEqual(next.preparedSource.files); expect(stored).not.toHaveProperty('rounds');
+    next.generatedAt = new Date(now - 2000).toISOString(); expect((await f.publish(next)).status).toBe(409);
+  });
   it('plays all ten rounds through the API, allows the final image, and caps the total at 50,000', async () => {
     const f = await fixture(), p = pack();
     p.rounds[0] = { ...p.rounds[0], area: { ...p.rounds[0].area, id: 'terrain/edr',

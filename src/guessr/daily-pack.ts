@@ -12,6 +12,8 @@ export interface DailyImagePack {
   generatedAt: string;
   config: ImageGameConfig;
   rounds: PreparedRound[];
+  preparedSource?: import('./prepared-source-package').PreparedSourcePackage;
+  sourceOnly?: boolean;
 }
 
 export const DAILY_ROUNDS = ROUND_COUNT;

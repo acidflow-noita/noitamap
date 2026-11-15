@@ -650,5 +650,8 @@
   "Twitch identity verification is temporarily unavailable. Retrying…": "Twitch identity verification is temporarily unavailable. Retrying…",
   "Authorize Twitch posting access.": "Authorize Twitch posting access.",
   "This player did not join the game.": "This player did not join the game.",
-  "Game history shows each player's rank and score.": "Game history shows each player's rank and score."
+  "Game history shows each player's rank and score.": "Game history shows each player's rank and score.",
+  "Game images are temporarily unavailable. Try again shortly.": "Game images are temporarily unavailable. Try again shortly.",
+  "Today’s generated map is still being prepared. Try again shortly.": "Today’s generated map is still being prepared. Try again shortly.",
+  "Uses {{mode}} map": "Uses {{mode}} map"
 }

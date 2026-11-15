@@ -14,6 +14,7 @@ import type { Env } from "./index";
 import { storedResultResponse, type StoredResultBody } from './result-storage';
 import { GAME_PROTOCOL, GAME_RELOAD_MESSAGE } from '../../../src/guessr/game-protocol';
 import { storedHistorySummary } from './history-summary';
+import { generatedStreamSource } from './generated-stream-source';
 export { STREAM_DAILY_PUBLISH_CAP, STREAM_HOST_DAILY_CAP } from './result-publication';
 
 const idPattern =
@@ -201,7 +202,6 @@ export async function streamRoute(
     const data = await boundedBody(request);
     if (!path.endsWith('/sessions')) throw new ImageGameError(410, 'This game transport has been retired.');
     if (data.protocol !== GAME_PROTOCOL) throw new ImageGameError(410, GAME_RELOAD_MESSAGE);
-    const service = new StreamService(source ?? preparedSource(env), env.STREAM_SIGNING_SECRET || '');
     if (path.endsWith('/sessions')) {
       if (data.transport !== 'parallel') throw new ImageGameError(410, 'This game transport has been retired.');
       const rounds = data.rounds === undefined ? STREAM_DEFAULT_ROUNDS : data.rounds;
@@ -214,7 +214,10 @@ export async function streamRoute(
         if (typeof seconds !== 'number' || !(seconds === 0 || Number.isInteger(seconds) && seconds >= 15 && seconds <= 600)) throw new ImageGameError(400, 'Invalid round duration.');
         if (mode === 'pvp' && seconds === 0) throw new ImageGameError(400, 'Choose a round duration between 15 and 600 seconds.');
         if (env.PUBLIC_GAME_RATE_LIMIT && !(await env.PUBLIC_GAME_RATE_LIMIT.limit({ key: 'stream-create:' + user.sub })).success) throw new ImageGameError(429, 'Too many games.');
+      const selected = source ? { source } : mode === 'pvp' ? { source: preparedSource(env) } : await generatedStreamSource(env, now);
+      const service = new StreamService(selected.source, env.STREAM_SIGNING_SECRET || '');
       const session = { ...await service.start(user, now, data.transport, rounds, { mode, streaming: data.streaming as boolean | undefined }), live: true as const };
+      if ('dataset' in selected) { session.dataset = selected.dataset; session.imageRoot = selected.imageRoot; }
         await env.STREAM_COORDINATORS.getByName(session.id).initialize({ owner: user.sub, session,
           reveals: await service.coordinatorReveals(session.token, user, now), seconds });
       return json({ ...session, token: '', rounds: mode === 'pvp' ? [] : session.rounds.map(round => ({ ...round, token: '', clue: { frames: [] } })) }, 201);

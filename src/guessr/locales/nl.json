@@ -650,5 +650,8 @@
   "Twitch identity verification is temporarily unavailable. Retrying…": "Identiteitsverificatie op Twitch is tijdelijk niet beschikbaar. Ik probeer het opnieuw…",
   "Authorize Twitch posting access.": "Geef toestemming voor het plaatsen van berichten op Twitch.",
   "This player did not join the game.": "Deze speler heeft niet aan het spel deelgenomen.",
-  "Game history shows each player's rank and score.": "In de spelgeschiedenis worden de rang en de score van elke speler weergegeven."
+  "Game history shows each player's rank and score.": "In de spelgeschiedenis worden de rang en de score van elke speler weergegeven.",
+  "Game images are temporarily unavailable. Try again shortly.": "De afbeeldingen van het spel zijn tijdelijk niet beschikbaar. Probeer het straks nog eens.",
+  "Today’s generated map is still being prepared. Try again shortly.": "De kaart van vandaag wordt nog samengesteld. Probeer het straks nog eens.",
+  "Uses {{mode}} map": "Deze spelmodus maakt gebruik van de kaart \"{{mode}}\"."
 }

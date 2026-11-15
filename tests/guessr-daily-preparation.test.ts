@@ -8,10 +8,14 @@ import { prepareDaily } from '../build_scripts/guessr/prepare-daily.mts';
 import { publishDailyPackage } from '../build_scripts/guessr/publish-daily.mts';
 import { handle, type Env } from '../workers/noitamap-guessr/src/index';
 import { gameDatabase } from './helpers/guessr-database';
+import { generatedStreamSource } from '../workers/noitamap-guessr/src/generated-stream-source';
+import { signGameTicket, testGameKeys } from './helpers/game-ticket-keys';
+import { streamRoute } from '../workers/noitamap-guessr/src/streams';
+import type { ParallelInitialization } from '../src/guessr/parallel-types';
 
 let directory: string;
 beforeEach(async () => { directory = await mkdtemp(join(tmpdir(), 'guessr-daily-')); vi.spyOn(console, 'log').mockImplementation(() => {}); });
-afterEach(async () => { vi.restoreAllMocks(); await rm(directory, { recursive: true, force: true }); });
+afterEach(async () => { vi.restoreAllMocks(); vi.unstubAllGlobals(); await rm(directory, { recursive: true, force: true }); });
 async function fixture(material = { r: 30, g: 40, b: 50, alpha: 1 }) {
   const png = join(directory, 'source.png'), bake = join(directory, 'middle');
   await sharp({ create: { width: 2048, height: 2048, channels: 4, background: material } }).png().toFile(png);
@@ -39,6 +43,7 @@ it('prepares a reusable whole-world image set and publishes its matching private
   expect(await publishDailyPackage({ directory: input.outputDirectory })).toMatchObject({ published: false });
   const database = gameDatabase();
   try {
+    database.sqlite.exec(await readFile('workers/noitamap-guessr/migrations/0009_generated_stream_maps.sql', 'utf8'));
     const secret = 'local-test-publisher-secret-01234567890123456789';
     const env: Env = { DB: database.db, ASSETS: { fetch: async () => new Response('', { status: 404 }) },
       GAME_SIGNING_SECRET: 'local-test-game-secret-01234567890123456789', ALLOWED_ORIGINS: '',
@@ -48,7 +53,8 @@ it('prepares a reusable whole-world image set and publishes its matching private
       const url = String(resource);
       if (url.includes('/current_seed.txt')) return new Response('123');
       if (url.includes('api.cloudflare.com')) return Response.json({ success: true, result: { production_branch: 'main', subdomain: url.endsWith('clue-test') ? 'clue-test.pages.dev' : 'map-test.pages.dev' } });
-      if (init?.method === 'HEAD') { verified++; return new Response(null, { headers: { 'Content-Type': url.endsWith('.webp') ? 'image/webp' : 'application/json' } }); }
+      if (init?.method === 'HEAD') { verified++; return new Response(null, { headers: { 'Content-Type': url.endsWith('.webp') ? 'image/webp' : url.endsWith('.bin') ? 'application/octet-stream' : 'application/json' } }); }
+      if (new URL(url).pathname.startsWith('/prepared/')) return new Response(new Uint8Array(await readFile(join(input.outputDirectory, 'clues', new URL(url).pathname))));
       if (url.endsWith('/api/admin/daily')) {
         expect(verified).toBeGreaterThan(1); activated = true;
         return handle(new Request(url, init), env, Date.UTC(2026, 9, 25, 12));
@@ -71,6 +77,35 @@ it('prepares a reusable whole-world image set and publishes its matching private
     });
     expect(activated).toBe(true); expect(published.published).toBe(true);
     expect(database.sqlite.prepare('SELECT COUNT(*) n FROM questions').get()).toMatchObject({ n: 10 });
+    const saved = database.sqlite.prepare('SELECT source_json FROM stream_maps').get()!;
+    expect(saved.source_json).not.toContain('"rounds"');
+    const readPrepared: typeof fetch = async resource => {
+      const url = new URL(String(resource));
+      expect(url.pathname).toMatch(/^\/prepared\/[a-f0-9]{64}\.bin$/);
+      return new Response(new Uint8Array(await readFile(join(input.outputDirectory, 'clues', url.pathname))));
+    };
+    const generated = await generatedStreamSource(env, Date.UTC(2026, 9, 25, 12), readPrepared);
+    expect(generated.dataset).toMatchObject({ day: '2026-10-25', seed: 123 });
+    const selected = await generated.source.sampleRounds(5); expect(selected).toHaveLength(5);
+    expect(selected.every(round => round.frames.every(frame => frame.image.startsWith(published.clueDeployment + '/images/')))).toBe(true);
+    expect((await generated.source.config()).map.tiles).toBe(published.referenceDeployment + '/map_files/');
+    const initialized: ParallelInitialization[] = [], signing = 'test-only-generated-map-ticket-signing-key';
+    env.STREAM_ENABLED = 'true'; env.STREAM_SIGNING_SECRET = signing;
+    env.GAME_TICKET_PUBLIC_KEY = (await testGameKeys(signing)).publicKey;
+    env.STREAM_COORDINATORS = { getByName: () => ({ initialize: async value => { initialized.push(value); }, fetch: async () => new Response() }) };
+    const ticket = await signGameTicket('account:host', 'Host', signing, { twitchUserId: '123', twitchLogin: 'host' }, Date.UTC(2026, 9, 25, 12));
+    vi.stubGlobal('fetch', readPrepared);
+    const created = await streamRoute(new Request('https://api.test/api/streams/sessions', { method: 'POST', headers: {
+      Authorization: 'Bearer ' + ticket.token, 'Content-Type': 'application/json',
+    }, body: JSON.stringify({ protocol: 2, transport: 'parallel', rounds: 3 }) }), env, Date.UTC(2026, 9, 25, 12));
+    expect(created.status).toBe(201);
+    const session = await created.json() as any;
+    expect(session.dataset).toMatchObject({ day: '2026-10-25', seed: 123 });
+    expect(session.config.map.tiles).toBe(published.referenceDeployment + '/map_files/');
+    expect(session.rounds.every((round: any) => !round.token && !round.clue.frames.length)).toBe(true);
+    expect(JSON.stringify(session)).not.toContain(JSON.parse(saved.source_json as string).preparedSource.key);
+    expect(initialized[0].reveals).toHaveLength(3);
+    await expect(generatedStreamSource(env, Date.UTC(2026, 9, 26, 12))).rejects.toThrow('still being prepared');
   } finally { database.close(); }
 });
 
@@ -107,7 +142,8 @@ it.each(['missing image', 'changed seed'])('keeps the previous Daily active afte
     if (url.includes('api.cloudflare.com')) return Response.json({ success: true, result: { production_branch: 'main',
       subdomain: url.endsWith('clue-test') ? 'clue-test.pages.dev' : 'map-test.pages.dev' } });
     if (init?.method === 'HEAD') return new Response(null, { status: failure === 'missing image' ? 404 : 200,
-      headers: { 'Content-Type': url.endsWith('.webp') ? 'image/webp' : 'application/xml' } });
+      headers: { 'Content-Type': url.endsWith('.webp') ? 'image/webp' : url.endsWith('.bin') ? 'application/octet-stream' : 'application/xml' } });
+    if (new URL(url).pathname.startsWith('/prepared/')) return new Response(new Uint8Array(await readFile(join(input.outputDirectory, 'clues', new URL(url).pathname))));
     if (url.endsWith('/api/admin/daily')) activations++;
     throw new Error('Unexpected network request');
   };

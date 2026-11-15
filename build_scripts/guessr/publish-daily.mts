@@ -1,6 +1,6 @@
 /** Publish versioned static imagery first; activate the matching private daily last. */
 import { readFile, writeFile, readdir, lstat } from 'node:fs/promises';
-import { createHmac } from 'node:crypto';
+import { createHmac, createHash } from 'node:crypto';
 import { resolve, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateDailyPack } from '../../workers/noitamap-guessr/src/daily-publish';
@@ -8,6 +8,8 @@ import type { DailyImagePack } from '../../src/guessr/daily-pack';
 import { DAILY_ROUNDS } from '../../src/guessr/daily-pack';
 import { deployPagesDirectory, type PagesCommand } from './pages-deploy.mts';
 import { withProgress } from './progress.mts';
+import { encryptedPreparedReader, PREPARED_SOURCE_FILE_LIMIT } from '../../src/guessr/prepared-source-package';
+import { createPreparedRoundSource } from '../../src/guessr/prepared-rounds';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const branch = 'daily-images';
@@ -24,11 +26,17 @@ export async function validatePublicDirectory(directory: string, kind: 'clues' |
       for (const entry of await readdir(path, { withFileTypes: true })) {
         const relative = prefix + entry.name, filename = join(path, entry.name);
         if (entry.isDirectory()) { await walk(filename, relative + '/'); continue; }
-        const allowed = kind === 'clues' ? /^(?:_headers|dataset\.json|images\/[a-f0-9]{32}\.webp)$/
+        const allowed = kind === 'clues' ? /^(?:_headers|dataset\.json|images\/[a-f0-9]{32}\.webp|prepared\/[a-f0-9]{64}\.bin)$/
           : /^(?:_headers|map\.dzi|map_files\/\d+\/\d+_\d+\.webp)$/;
         const stat = await lstat(filename);
         if (!allowed.test(relative) || !stat.isFile() || !stat.size || stat.size > 25 * 1024 ** 2)
           throw new Error(`Unexpected, private, or oversized file in ${kind} output: ${relative}`);
+        if (relative.startsWith('prepared/')) {
+          if (stat.size > PREPARED_SOURCE_FILE_LIMIT + 32) throw Error('Prepared map file is oversized.');
+          const bytes = await readFile(filename);
+          if (bytes.subarray(0, 4).toString() !== 'NGD1' || createHash('sha256').update(bytes).digest('hex') + '.bin' !== entry.name)
+            throw Error('Prepared map files must be encrypted and content-addressed.');
+        }
         files++; progress.advance();
       }
     }
@@ -58,10 +66,12 @@ export async function publishDailyPackage(options: {
   deploy?: (directory: string, project: string, settings: Settings) => Promise<string>;
   now?: number;
   pagesCommand?: PagesCommand;
+  sourceOnly?: boolean;
 }) {
   const directory = resolve(options.directory), env = options.env ?? process.env, fetcher = options.fetch ?? fetch;
   const [manifest, draft] = await Promise.all([json(join(directory, 'manifest.json')), json(join(directory, 'private/daily.json'))]);
   const pack = draft as DailyImagePack;
+  if (options.sourceOnly) { if (!pack.preparedSource) throw Error('Prepared multiplayer map data is missing.'); pack.sourceOnly = true; }
   if (manifest.complete !== true || manifest.schemaVersion !== 1 || manifest.day !== pack.day || manifest.seed !== pack.seed
       || manifest.version !== pack.version || manifest.renderId !== pack.renderId
       || manifest.rounds !== DAILY_ROUNDS || pack.rounds.length !== DAILY_ROUNDS)
@@ -111,9 +121,11 @@ export async function publishDailyPackage(options: {
     frame.image = clueDeployment + image.pathname;
   }
   pack.config.map.tiles = referenceDeployment + '/map_files/';
+  if (pack.preparedSource) pack.preparedSource.root = clueDeployment + '/prepared';
   validateDailyPack(pack, [...hosts.values()], options.now ?? Date.now());
   const urls = [...new Set(pack.rounds.flatMap(round => round.frames.map(frame => frame.image)))];
   urls.push(referenceDeployment + '/map.dzi');
+  if (pack.preparedSource) for (const file of Object.values(pack.preparedSource.files)) urls.push(pack.preparedSource.root + '/' + file.file);
   // Verify the images players will need before exposing the new daily.
   await withProgress('Checking published images', urls.length, async progress => {
     let next = 0;
@@ -121,23 +133,29 @@ export async function publishDailyPackage(options: {
       while (next < urls.length) {
         const url = urls[next++];
         const response = await fetcher(url, { method: 'HEAD', signal: AbortSignal.timeout(15000) });
-        if (!response.ok || url.endsWith('.webp') && !response.headers.get('Content-Type')?.includes('image/webp'))
+        if (!response.ok || url.endsWith('.webp') && !response.headers.get('Content-Type')?.includes('image/webp')
+          || url.endsWith('.bin') && !response.headers.get('Content-Type')?.includes('application/octet-stream'))
           throw new Error('A published daily image is not available yet; the daily was not activated.');
         progress.advance();
       }
     }));
   });
+  if (pack.preparedSource) await withProgress('Checking published multiplayer map data', null, async () => {
+    const source = createPreparedRoundSource(encryptedPreparedReader(pack.preparedSource!, fetcher), clueDeployment + '/images', pack.config.map.tiles);
+    if (JSON.stringify(await source.config()) !== JSON.stringify(pack.config)) throw Error('Published multiplayer map geometry does not match.');
+    await source.sampleRounds(1);
+  });
   await checkSeed();
   const body = JSON.stringify(pack), signature = createHmac('sha256', cfg.signingSecret).update(body).digest('hex');
-  const receipt: any = await withProgress('Activating Daily', null, async () => {
+  const receipt: any = await withProgress(options.sourceOnly ? 'Activating multiplayer map' : 'Activating Daily', null, async () => {
     const response = await fetcher(cfg.api + '/api/admin/daily', { method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Guessr-Publish-Signature': signature }, body, signal: AbortSignal.timeout(30000) });
     const receipt: any = await response.json();
     if (!response.ok || receipt.day !== pack.day || receipt.seed !== pack.seed || receipt.version !== pack.version)
-      throw new Error(`Daily activation failed: ${typeof receipt.error === 'string' ? receipt.error : response.status}. Existing daily data remains active.`);
+      throw new Error(`${options.sourceOnly ? 'Multiplayer map' : 'Daily'} activation failed: ${typeof receipt.error === 'string' ? receipt.error : response.status}. Existing daily data remains active.`);
     return receipt;
   });
-  const published = { ...manifest, published: true, id: receipt.id, clueDeployment, referenceDeployment };
+  const published = { ...manifest, published: true, sourceOnly: options.sourceOnly === true, id: receipt.id, clueDeployment, referenceDeployment };
   await writeFile(join(directory, 'publication.json'), JSON.stringify(published, null, 2) + '\n');
   return published;
 }
@@ -145,5 +163,5 @@ export async function publishDailyPackage(options: {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const directory = process.argv.find(arg => arg.startsWith('--input='))?.slice(8);
   if (!directory) throw new Error('Required: --input=<prepared daily directory>; add --publish to deploy.');
-  console.log(JSON.stringify(await publishDailyPackage({ directory, publish: process.argv.includes('--publish') }), null, 2));
+  console.log(JSON.stringify(await publishDailyPackage({ directory, publish: process.argv.includes('--publish'), sourceOnly: process.argv.includes('--source-only') }), null, 2));
 }

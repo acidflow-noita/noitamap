@@ -650,5 +650,8 @@
   "Twitch identity verification is temporarily unavailable. Retrying…": "Twitchin henkilöllisyyden vahvistus ei ole tilapäisesti käytettävissä. Yritetään uudelleen…",
   "Authorize Twitch posting access.": "Myönnä Twitchille oikeus julkaista sisältöä.",
   "This player did not join the game.": "Tämä pelaaja ei liittynyt peliin.",
-  "Game history shows each player's rank and score.": "Pelitilastot näyttävät kunkin pelaajan sijoituksen ja pistemäärän."
+  "Game history shows each player's rank and score.": "Pelitilastot näyttävät kunkin pelaajan sijoituksen ja pistemäärän.",
+  "Game images are temporarily unavailable. Try again shortly.": "Pelin kuvia ei ole tällä hetkellä saatavilla. Yritä uudelleen hetken kuluttua.",
+  "Today’s generated map is still being prepared. Try again shortly.": "Tänään luotavaa karttaa valmistellaan vielä. Yritä uudelleen hetken kuluttua.",
+  "Uses {{mode}} map": "Tässä pelimuodossa käytetään ”{{mode}}”-karttaa."
 }

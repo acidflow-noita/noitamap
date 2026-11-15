@@ -42,6 +42,12 @@ The primary auth Worker requests `user:write:chat` only when the streamer enable
 
 ## Prepared imagery
 
+Apply `0009_generated_stream_maps.sql` before deploying generated SvC support. The existing Guessr CI job now also prepares the full eligible location catalog as bounded encrypted static files. The publisher stores only private metadata and the per-dataset key in D1. It verifies the uploaded files before activation. No new secret, binding, paid service or request per clue movement is needed.
+
+The first authenticated publication for the current UTC day enables generated maps for SvC. After that, a missing current-day package returns a preparation message instead of falling back to captured terrain. A game pins its day, seed, render identity, clue root and reference map. SvC selects fresh rounds from the full prepared location pool, independently of the ten Daily puzzles. PvP and Demo keep their current source.
+
+For an upgrade after people already played today's Daily, run biome-baker on `main` through **New pipeline** with `GUESSR_SOURCE_ONLY=1`, `BAKE_KIND=daily`, and `DEPLOY=1`, then start **guessr-source-refresh**. This manual job restores the verified current-seed archive, uses the pinned Guessr tools and publishes with `--source-only`. It does not rerender/deploy the main map or replace Daily questions and attempts. Normal daily pipelines continue to publish both Daily puzzles and the generated SvC catalog in the separate, non-blocking Guessr job.
+
 Clue and reference images are static Pages assets. Viewing or moving an image does not invoke this Worker. Daily publication uses prepared generated terrain from the separate non-blocking Guessr job in the biome-baker pipeline. Each game pins its imagery version so a publication cannot change an active game's locations.
 
 Prepared sampling files are private Worker assets. Public requests cannot fetch `/game-data/` files. Anonymous demo calls are rate limited before sampling work. Origin checks allow the configured production site only.

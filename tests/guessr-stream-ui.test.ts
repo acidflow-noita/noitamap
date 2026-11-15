@@ -74,6 +74,20 @@ async function fixture() {
 }
 async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
 
+it.each(['lobby', 'warmup'] as const)('restores the coordinator-owned %s without requiring unrevealed clue images', async phase => {
+  const f = await fixture(); history.replaceState(null, '', '/guess/stream/');
+  f.game.session.transport = 'parallel'; f.game.session.protocol = 2;
+  startStreamTiming(f.game, 90, streamNow, true);
+  if (phase === 'warmup') {
+    f.game.timing!.phase = 'warmup'; f.game.timing!.startsAt = streamNow + 3000; f.game.timing!.deadline = streamNow + 93000;
+  }
+  f.game.session.rounds = f.game.session.rounds.map(round => ({ ...round, token: '', clue: { frames: [] } }));
+  localStorage.setItem(STREAM_SESSION_KEY, JSON.stringify(f.game));
+  ui = new StreamUI(f.hooks);
+  expect(ui.game?.session.id).toBe(f.game.session.id);
+  expect(ui.game?.timing?.phase).toBe(phase); expect(ui.game?.timing?.deadline).toBe(f.game.timing!.deadline);
+});
+
 async function liveFixture(announcements = false) {
   const f = await fixture();
   f.game.session.host = { id: '900000000', login: 'streamer', name: 'Local host' };
