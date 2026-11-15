@@ -30,7 +30,7 @@ it('decrypts only the bound dataset and path and rejects swapped or oversized fi
   } };
   expect(validatePreparedSourcePackage(source, version, 'https://12345678.clues.pages.dev')).toBe(source);
   const read = encryptedPreparedReader(source, async (_url, options) => {
-    expect(options?.redirect).toBe('error'); return new Response(new Uint8Array(encrypted));
+    expect(options?.redirect).toBe('manual'); return new Response(new Uint8Array(encrypted));
   });
   expect(await (await read(path)).text()).toBe(plain.toString());
   await expect(read('/game-data/native-grid.bin')).rejects.toThrow();
@@ -38,4 +38,18 @@ it('decrypts only the bound dataset and path and rejects swapped or oversized fi
   const bad = encryptedPreparedReader(source, async () => new Response(new Uint8Array(encrypted.length + 1)));
   await expect(bad(path)).rejects.toThrow('size bound');
   expect(() => validatePreparedSourcePackage({ ...source, root: 'https://evil.test/prepared' }, version, 'https://12345678.clues.pages.dev')).toThrow();
+});
+
+it.each([301, 302, 303, 307, 308])('rejects a %s redirect without following it', async status => {
+  const path = '/game-data/catalog.json';
+  const source: PreparedSourcePackage = { schemaVersion: 1, version: 'guessr-images-' + 'a'.repeat(32),
+    root: 'https://12345678.clues.pages.dev/prepared', key: '07'.repeat(32),
+    files: { [path]: { file: 'b'.repeat(64) + '.bin', bytes: 8 } } };
+  let calls = 0;
+  const read = encryptedPreparedReader(source, async (_url, init) => {
+    calls++; expect(init?.redirect).toBe('manual');
+    return new Response(null, { status, headers: { Location: 'https://other.test/private' } });
+  });
+  await expect(read(path)).rejects.toMatchObject({ code: 'http', status });
+  expect(calls).toBe(1);
 });

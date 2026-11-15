@@ -7,6 +7,9 @@ export interface PreparedSourcePackage {
   files: Record<string, { file: string; bytes: number }>;
 }
 export const PREPARED_SOURCE_FILE_LIMIT = 1024 * 1024;
+export class PreparedSourceReadError extends Error {
+  constructor(message: string, readonly code: string, readonly status?: number) { super(message); }
+}
 const logicalFile = /^\/game-data\/(?:catalog\.json|native-grid\.bin|starts\/[a-f0-9]{32}\.bin)$/;
 
 export function validatePreparedSourcePackage(value: unknown, version: string, imageOrigin: string): PreparedSourcePackage {
@@ -31,23 +34,28 @@ export function encryptedPreparedReader(data: PreparedSourcePackage, fetcher: ty
   let key: CryptoKey | undefined;
   return async (path: string): Promise<Response> => {
     const file = data.files[path];
-    if (!logicalFile.test(path) || !file) throw Error('Prepared map file is missing.');
-    const response = await fetcher(`${data.root}/${file.file}`, { redirect: 'error', signal: AbortSignal.timeout(15000) });
-    if (!response.ok || Number(response.headers.get('Content-Length')) > file.bytes + 32) throw Error('Prepared map file is unavailable.');
+    if (!logicalFile.test(path) || !file) throw new PreparedSourceReadError('Prepared map file is missing.', 'missing');
+    let response: Response;
+    // Workers supports manual/follow, not the Fetch standard's error mode.
+    // Keep redirects forbidden by returning them here and rejecting !ok below.
+    try { response = await fetcher(`${data.root}/${file.file}`, { redirect: 'manual', signal: AbortSignal.timeout(15000) }); }
+    catch { throw new PreparedSourceReadError('Prepared map file is unavailable.', 'fetch'); }
+    if (!response.ok || Number(response.headers.get('Content-Length')) > file.bytes + 32)
+      throw new PreparedSourceReadError('Prepared map file is unavailable.', response.ok ? 'content-length' : 'http', response.status);
     const reader = response.body?.getReader();
-    if (!reader) throw Error('Prepared map file is empty.');
+    if (!reader) throw new PreparedSourceReadError('Prepared map file is empty.', 'empty');
     const chunks: Uint8Array[] = []; let size = 0;
     try {
       while (true) {
         const part = await reader.read(); if (part.done) break;
-        size += part.value.byteLength; if (size > file.bytes + 32) throw Error('Prepared map file exceeds its size bound.');
+        size += part.value.byteLength; if (size > file.bytes + 32) throw new PreparedSourceReadError('Prepared map file exceeds its size bound.', 'oversized');
         chunks.push(part.value);
       }
     } finally { await reader.cancel().catch(() => {}); }
-    if (size !== file.bytes + 32) throw Error('Prepared map file is truncated.');
+    if (size !== file.bytes + 32) throw new PreparedSourceReadError('Prepared map file is truncated.', 'truncated');
     const encoded = new Uint8Array(size); let offset = 0;
     for (const chunk of chunks) { encoded.set(chunk, offset); offset += chunk.length; }
-    if (String.fromCharCode(...encoded.subarray(0, 4)) !== 'NGD1') throw Error('Invalid prepared map encoding.');
+    if (String.fromCharCode(...encoded.subarray(0, 4)) !== 'NGD1') throw new PreparedSourceReadError('Invalid prepared map encoding.', 'encoding');
     key ??= await crypto.subtle.importKey('raw', Uint8Array.from(data.key.match(/../g)!, value => parseInt(value, 16)), 'AES-GCM', false, ['decrypt']);
     const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: encoded.subarray(4, 16),
       additionalData: preparedSourceAad(data.version, path) }, key, encoded.subarray(16));

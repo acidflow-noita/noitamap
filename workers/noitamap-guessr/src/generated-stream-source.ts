@@ -1,5 +1,5 @@
 import { createPreparedRoundSource, createPreparedSourceCache, type PreparedSourceCache } from '../../../src/guessr/prepared-rounds';
-import { encryptedPreparedReader, validatePreparedSourcePackage, type PreparedSourcePackage } from '../../../src/guessr/prepared-source-package';
+import { encryptedPreparedReader, PreparedSourceReadError, validatePreparedSourcePackage, type PreparedSourcePackage } from '../../../src/guessr/prepared-source-package';
 import type { ImageGameConfig } from '../../../src/guessr/image-game';
 import type { DailyImagePack } from '../../../src/guessr/daily-pack';
 import { ImageGameError } from '../../../src/guessr/image-game-server';
@@ -11,6 +11,19 @@ interface GeneratedMap {
   config: ImageGameConfig; preparedSource: PreparedSourcePackage;
 }
 const caches = new Map<string, PreparedSourceCache>();
+const sourceErrors = new Map([
+  ['Prepared game data is unavailable. Run prepare-worker-data.mts.', 'data-unavailable'],
+  ['Prepared game data exceeds its size limit.', 'data-size'],
+  ['Prepared game catalog is invalid.', 'catalog-invalid'],
+  ['Prepared map geometry is invalid.', 'geometry-invalid'],
+  ['Prepared area sampling data is invalid.', 'sampler-metadata'],
+  ['Prepared image grid is invalid.', 'grid-invalid'],
+  ['Prepared starting positions are truncated.', 'sampler-truncated'],
+  ['Prepared starting positions are invalid.', 'sampler-invalid'],
+  ['Prepared starting position lies outside its mask.', 'sampler-position'],
+  ['Prepared starting view is outside the captured map.', 'view-outside-map'],
+  ['Not enough eligible puzzle areas.', 'areas-unavailable'],
+]);
 
 export function generatedMapStatements(db: Database, pack: DailyImagePack, now: number) {
   if (!pack.preparedSource) return [];
@@ -25,9 +38,16 @@ export function generatedMapStatements(db: Database, pack: DailyImagePack, now: 
 
 export async function generatedStreamSource(env: Env, now: number, fetcher: typeof fetch = fetch) {
   const day = new Date(now).toISOString().slice(0, 10);
+  const unavailable = (stage: string, error?: unknown) => {
+    const reason = error instanceof PreparedSourceReadError ? error.code : error instanceof Error && sourceErrors.has(error.message) ? sourceErrors.get(error.message)
+      : error instanceof Error && ['Error', 'TypeError', 'RangeError', 'SyntaxError', 'OperationError', 'DataError', 'AbortError', 'TimeoutError'].includes(error.name) ? error.name : 'validation';
+    console.error(JSON.stringify({ event: 'generated_map_load_failed', day, stage, reason,
+      ...(error instanceof PreparedSourceReadError && error.status ? { status: error.status } : {}) }));
+    return new ImageGameError(503, 'Game images are temporarily unavailable. Try again shortly.');
+  };
   const row = await env.DB.prepare('SELECT enabled,(SELECT source_json FROM stream_maps WHERE day=?) AS source_json FROM stream_map_control WHERE id=1')
     .bind(day).first<{ enabled: number; source_json: string | null }>();
-  if (!row) throw new ImageGameError(503, 'Game images are temporarily unavailable. Try again shortly.');
+  if (!row) throw unavailable('control');
   // Explicit rollout state. The first authenticated generated-map publication
   // switches this on permanently; a missing later Daily never falls back.
   if (!row.enabled) return { source: preparedSource(env) };
@@ -43,11 +63,11 @@ export async function generatedStreamSource(env: Env, now: number, fetcher: type
   }
   const source = createPreparedRoundSource(encryptedPreparedReader(map.preparedSource, fetcher), imageRoot, map.config.map.tiles, undefined, cache);
   let config: ImageGameConfig;
-  try { config = await source.config(); } catch { throw new ImageGameError(503, 'Game images are temporarily unavailable. Try again shortly.'); }
+  try { config = await source.config(); } catch (error) { throw unavailable('catalog', error); }
   if (map.day !== day || config.version !== map.version || JSON.stringify(config) !== JSON.stringify(map.config))
-    throw new ImageGameError(503, 'Game images are temporarily unavailable. Try again shortly.');
+    throw unavailable('geometry');
   return { source: { config: async () => config, sampleRounds: async (count: number) => {
     try { return await source.sampleRounds(count); }
-    catch { throw new ImageGameError(503, 'Game images are temporarily unavailable. Try again shortly.'); }
+    catch (error) { throw unavailable('rounds', error); }
   } }, imageRoot, dataset: { day: map.day, seed: map.seed, renderId: map.renderId } };
 }
