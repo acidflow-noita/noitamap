@@ -97,8 +97,10 @@ it('changes live labels and formatted costs without replacing icons, moving the 
   expect(document.querySelector('[data-clue-difficulty]')?.textContent).toBe('Normal');
   expect(document.querySelector('[data-clue-difficulty]')?.getAttribute('aria-label')).toBe('Normale Schwierigkeit');
   expect(document.querySelector('[data-clue-maximum]')?.textContent).toBe('Bis zu 2.000 Punkte');
-  expect(out.getAttribute('aria-description')).toBe('Verkleinern — Kostet 1.000 Punkte');
+  expect(out.getAttribute('aria-description')).toBe('Verkleinern — Kostet 1.000 Punkte (Q)');
   expect(out.querySelector('.clue-control-cost')?.textContent).toBe('-1.000');
+  expect(out.querySelector('.hotkey-letter')?.textContent).toBe('Q');
+  expect(out.getAttribute('aria-keyshortcuts')).toBe('Q');
   expect(document.querySelector('[data-bs-toggle="popover"], .popover')).toBeNull();
   expect(canvas?.getAttribute('aria-label')).toBe('Gesuchter Ort');
   expect(f.clue.dataset.loadingLabel).toBe('Karte wird geladen…');
@@ -106,10 +108,10 @@ it('changes live labels and formatted costs without replacing icons, moving the 
   expect(document.querySelector('.camera-zoom')?.getAttribute('aria-label')).toBe('Zoom und Rückkehr zum Start');
   out.click(); await flush();
   expect(maximumScore(f.progress)).toBe(1000);
-  expect(inside.getAttribute('aria-description')).toBe('Vergrößern — Kostenlose Aktion');
+  expect(inside.getAttribute('aria-description')).toBe('Vergrößern — Kostenlose Aktion (E)');
   expect(inside.querySelector('.clue-control-cost')?.textContent).toBe('Kostenlos');
   expect(east.disabled).toBe(true);
-  expect(east.getAttribute('aria-description')).toBe('Nach Osten bewegen — Zum Bewegen vergrößern');
+  expect(east.getAttribute('aria-description')).toBe('Nach Osten bewegen — Zum Bewegen vergrößern (D)');
   expect(east.querySelector('.clue-control-cost')?.textContent).toBe('—');
   inside.click(); await flush();
   expect(maximumScore(f.progress)).toBe(1000);
@@ -123,7 +125,7 @@ it('keeps return and backtracking free and translates the position without chang
   expect(maximumScore(f.progress)).toBe(4900);
   expect(start.getAttribute('aria-description')).toBe('Return to start — Free action');
   expect(start.querySelector('.clue-control-cost')?.textContent).toBe('Free');
-  expect(west.getAttribute('aria-description')).toBe('Travel west — Free action');
+  expect(west.getAttribute('aria-description')).toBe('Travel west — Free action (A)');
   expect(west.querySelector('.clue-control-cost')?.textContent).toBe('Free');
   await i18next.changeLanguage('de');
   expect(document.querySelector('.fine-print')!.textContent).toBe('24 px nach Osten vom Start. Der Start bleibt die Lösung.');
@@ -131,7 +133,7 @@ it('keeps return and backtracking free and translates the position without chang
   west.click(); await flush();
   expect(f.progress.dx).toBe(0);
   expect(maximumScore(f.progress)).toBe(4900);
-  expect(east.getAttribute('aria-description')).toBe('Nach Osten bewegen — Kostenlose Aktion');
+  expect(east.getAttribute('aria-description')).toBe('Nach Osten bewegen — Kostenlose Aktion (D)');
   expect(east.querySelector('.clue-control-cost')?.textContent).toBe('Kostenlos');
 });
 
@@ -155,7 +157,7 @@ it('uses singular remaining point costs and keeps the retry action alive when th
   const f = await fixture({ ...newClueProgress(), widest: 6, travelSpent: 999 });
   const east = f.button('Travel east');
   await i18next.changeLanguage('de');
-  expect(east.getAttribute('aria-description')).toBe('Nach Osten bewegen — Kostet 1 Punkt');
+  expect(east.getAttribute('aria-description')).toBe('Nach Osten bewegen — Kostet 1 Punkt (D)');
   expect(east.querySelector('.clue-control-cost')?.textContent).toBe('-1');
   vi.mocked(ClueViewport.prototype.show).mockRejectedValueOnce(Error('Image failure'));
   east.click(); await flush();

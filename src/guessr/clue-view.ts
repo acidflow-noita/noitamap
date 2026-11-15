@@ -7,10 +7,13 @@ import {
 } from "./clue-camera";
 import { ClueViewport } from "./clue-viewport";
 import { setControlIcon } from "./control-icons";
-import { bindAttribute, bindText, formatGuessrNumber, tr } from "./i18n";
+import { bindAttribute, bindText, formatGuessrNumber, tr, onGuessrLanguageChanged } from "./i18n";
 import type { AreaDifficulty } from './area-rules';
 import { updateRoundIndicators } from './round-status';
 import { gameShortcut } from './game-keyboard';
+import { Popover } from '../bootstrap';
+
+const shortcuts: Record<string, string> = { 'Travel north': 'W', 'Travel west': 'A', 'Travel south': 'S', 'Travel east': 'D', 'Zoom out': 'Q', 'Zoom in': 'E' };
 
 let controlId = 0;
 
@@ -56,6 +59,8 @@ export function attachClueControls(
     costLabel: HTMLElement;
     target: () => [number, number, number];
     label: string;
+    shortcut?: string;
+    popover?: InstanceType<typeof Popover>;
   }[] = [];
 
   const add = (
@@ -70,7 +75,7 @@ export function attachClueControls(
     button.className = "btn btn-sm btn-outline theme-secondary clue-control";
     setControlIcon(button, icon, label, false);
     button.addEventListener("click", () => void load(...target()));
-    // Keep disabled actions keyboard-readable without an interactive popover.
+    // The drawing toolbar's hotkey-letter presentation, including disabled controls.
     const anchor = document.createElement('span');
     anchor.className = 'control-help focus-ring';
     anchor.setAttribute('aria-labelledby', button.id);
@@ -84,7 +89,21 @@ export function attachClueControls(
       sizer.setAttribute('aria-hidden', 'true'); bindText(sizer, source); price.append(sizer);
     }
     button.append(price);
-    buttons.push({ button, anchor, costLabel, target, label });
+    const shortcut = shortcuts[label];
+    let popover: InstanceType<typeof Popover> | undefined;
+    if (shortcut) {
+      const letter = document.createElement('span'); letter.className = 'hotkey-letter'; letter.textContent = shortcut;
+      letter.setAttribute('aria-hidden', 'true'); button.append(letter);
+      button.setAttribute('aria-keyshortcuts', shortcut);
+      const content = letter.cloneNode(true) as HTMLElement;
+      content.removeAttribute('aria-hidden');
+      popover = new Popover(anchor, { title: () => tr(label), content, html: true, trigger: 'hover focus',
+        placement: 'top', container: 'body', animation: false, delay: { show: 80, hide: 120 } });
+      anchor.addEventListener('show.bs.popover', event => {
+        if (typeof matchMedia === 'function' && matchMedia('(hover: none), (pointer: coarse)').matches && !anchor.matches(':focus-visible') && !button.matches(':focus-visible')) event.preventDefault();
+      });
+    }
+    buttons.push({ button, anchor, costLabel, target, label, shortcut, popover });
     return button;
   };
   const zoomTarget = (level: number): [number, number, number] => {
@@ -139,7 +158,7 @@ export function attachClueControls(
   function update(): void {
     updateRoundIndicators(clue.closest('.game-grid, .stream-viewer-layout') ?? clue.parentElement!, progress,
       typeof options.difficultyTier === 'function' ? options.difficultyTier() : options.difficultyTier);
-    for (const { button, anchor, costLabel, target, label } of buttons) {
+    for (const { button, anchor, costLabel, target, label, shortcut } of buttons) {
       const { available, same } = preview(target);
       button.disabled = pending || !available || same;
       anchor.tabIndex = button.disabled ? 0 : -1;
@@ -157,8 +176,8 @@ export function attachClueControls(
           ? tr("Costs {{points}} points", { count: cost, points: formatGuessrNumber(cost) })
           : tr("Free action"));
       };
-      bindAttribute(button, 'aria-description', hint);
-      bindAttribute(anchor, 'aria-description', hint);
+      bindAttribute(button, 'aria-description', () => hint() + (shortcut ? ` (${shortcut})` : ''));
+      bindAttribute(anchor, 'aria-description', () => hint() + (shortcut ? ` (${shortcut})` : ''));
     }
     bindText(description, () => {
       const position = [
@@ -234,10 +253,17 @@ export function attachClueControls(
     lastKey = performance.now(); control.button.click();
   };
   document.addEventListener('keydown', keydown);
+  const unsubscribeKeys = onGuessrLanguageChanged(() => {
+    for (const { popover, label, shortcut } of buttons) if (popover) {
+      const key = document.createElement('span'); key.className = 'hotkey-letter'; key.textContent = shortcut!;
+      popover.setContent({ '.popover-header': tr(label), '.popover-body': key });
+    }
+  });
   void load(progress.dx, progress.dy, progress.level);
   return () => {
     stopped = true;
     document.removeEventListener('keydown', keydown);
+    unsubscribeKeys(); for (const { popover } of buttons) popover?.dispose();
     viewport.destroy();
     controls.remove();
   };

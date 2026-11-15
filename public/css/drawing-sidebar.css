@@ -1,3 +1,5 @@
+@import "./hotkey-label.css";
+
 @layer custom {
 /* Drawing layout and Bootstrap 6 controls. Legacy class aliases also support
    an independently cached Pro bundle during rollout. */
@@ -156,16 +158,7 @@
   padding: var(--control-padding-y);
 }
 
-/* Hotkey letter in popover content — monospace, tinted */
-.hotkey-letter {
-  font-family: 'Inter', 'Courier New', monospace;
-  font-size: 1.2em;
-  font-weight: 600;
-  color: var(--accent-fg);
-  line-height: 1;
-  vertical-align: baseline;
-  margin-left: 0.15em;
-}
+
 
 #sidebar-content {
   flex-grow: 1;

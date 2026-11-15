@@ -1,0 +1,10 @@
+/* Hotkey letter in popover content — monospace, tinted */
+.hotkey-letter {
+  font-family: 'Inter', 'Courier New', monospace;
+  font-size: 1.2em;
+  font-weight: 600;
+  color: var(--accent-fg);
+  line-height: 1;
+  vertical-align: baseline;
+  margin-inline-start: 0.15em;
+}
