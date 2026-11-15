@@ -284,7 +284,7 @@
 .stream-viewer-shell:has(.show-results) { display: block; }
 .stream-viewer-layout.show-results { display: block; }
 .stream-viewer-layout.show-results > .stream-connection-bar { margin-block-end: var(--game-gutter); }
-.pvp-lobby { grid-column: 1 / -1; grid-row: 2 / -1; }
+.pvp-lobby { grid-column: 1 / -1; grid-row: 2 / -1; justify-self: center; }
 .pvp-lobby .action-row { justify-content: center; }
 .pvp-lobby [hidden] { display: none; }
 .stream-viewer-layout.show-pvp-lobby { grid-template-rows: auto minmax(0, 1fr); }
