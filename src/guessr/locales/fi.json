@@ -457,7 +457,6 @@
   "Twitch could not post the game link.": "Twitch ei voinut julkaista pelilinkkiä.",
   "Share game links as announcements": "Jaa pelilinkit ilmoituksina",
   "When off, Share posts a normal message in your Twitch channel.": "Kun asetus on pois päältä, linkki julkaistaan tavallisena viestinä Twitch-chatissasi.",
-  "Sharing permission is optional. Without it, you can copy the link.": "Jakamislupa on valinnainen. Ilman sitä voit kopioida linkin.",
   "Enable sharing in chat": "Salli jakaminen chattiin",
   "Sharing permission is unavailable. You can copy the game link.": "Jakamislupa puuttuu. Voit kopioida pelilinkin.",
   "This game is no longer active.": "Tämä peli ei ole enää käynnissä.",
@@ -667,5 +666,8 @@
   "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "Kunkin kierroksen tuloksissa vain pelaajien nimet on merkitty pelaajien väreillä. Täydellinen pistemäärä, 5 000 pistettä, näkyy kultaisella.",
   "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "”{{received}}”-painike näyttää nyt olevan pois käytöstä, kun arvauksesi on vahvistettu.",
   "If you reach a game-creation limit, setup shows when you can create another game.": "Jos saavutat pelien luomisen rajan, asetuksissa näkyy, milloin voit luoda uuden pelin.",
-  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Avaa ”{{howToPlay}}” ja valitse ”{{whatsNew}}”, jotta voit lukea nämä ohjeet uudelleen."
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Avaa ”{{howToPlay}}” ja valitse ”{{whatsNew}}”, jotta voit lukea nämä ohjeet uudelleen.",
+  "First, allow NoitaGuessr to post messages in your Twitch chat.": "Anna ensin NoitaGuessr:lle lupa lähettää viestejä Twitch-chatissasi.",
+  "Fixed an error that stopped you from creating a game in {{streamMode}} mode.": "Korjattiin virhe, joka esti pelin luomisen {{streamMode}}-tilassa.",
+  "Before you start a {{streamMode}} game, allow NoitaGuessr to post messages in your Twitch chat.": "Ennen kuin aloitat {{streamMode}}-pelin, anna NoitaGuessr:lle lupa lähettää viestejä Twitch-chatissasi."
 }

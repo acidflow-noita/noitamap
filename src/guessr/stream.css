@@ -66,7 +66,8 @@
 .stream-start-panel > h2 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 650; }
 .stream-start-panel > p { max-inline-size: 40ch; color: var(--text-muted); }
 .stream-start-panel > .badge-subtle { align-self: center; }
-.stream-start-panel > button { align-self: center; min-inline-size: 12rem; }
+.stream-start-panel > button,
+.stream-start-panel > .control-help > button { align-self: center; min-inline-size: 12rem; }
 .stream-waiting-timer { display: block; min-block-size: 1.1em; font-size: 1.75rem; line-height: 1.1; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
 .stream-waiting-timer[data-clock='true'] { font-size: clamp(4rem, 8vw, 6rem); }
 .stream-start-panel > .progress { inline-size: min(100%, 24rem); --bs-progress-height: .5rem; --bs-progress-bg: var(--border); --bs-progress-bar-bg: var(--game-action); }

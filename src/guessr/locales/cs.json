@@ -475,7 +475,6 @@
   "Twitch could not post the game link.": "Twitch nemohl zveřejnit odkaz na hru.",
   "Share game links as announcements": "Sdílet odkazy na hry jako oznámení",
   "When off, Share posts a normal message in your Twitch channel.": "Když je přepínač vypnutý, odkaz se zveřejní jako běžná zpráva ve vašem chatu na Twitchi.",
-  "Sharing permission is optional. Without it, you can copy the link.": "Oprávnění ke sdílení je volitelné. Bez něj můžete odkaz zkopírovat.",
   "Enable sharing in chat": "Povolit sdílení v chatu",
   "Sharing permission is unavailable. You can copy the game link.": "Oprávnění ke sdílení není dostupné. Odkaz na hru můžete zkopírovat.",
   "This game is no longer active.": "Tato hra už není aktivní.",
@@ -685,5 +684,8 @@
   "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "Ve výsledcích jednotlivých kol jsou barvy hráčů uvedeny pouze u jmen hráčů. Dokonalý výsledek 5 000 bodů je vyznačen zlatě.",
   "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "Tlačítko „{{received}}“ se nyní po potvrzení vašeho tipu zobrazuje jako neaktivní.",
   "If you reach a game-creation limit, setup shows when you can create another game.": "Pokud dosáhnete limitu pro vytváření her, v nastavení se zobrazí, kdy budete moci vytvořit další hru.",
-  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Otevřete „{{howToPlay}}“ a vyberte „{{whatsNew}}“, abyste si tyto poznámky přečetli znovu."
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Otevřete „{{howToPlay}}“ a vyberte „{{whatsNew}}“, abyste si tyto poznámky přečetli znovu.",
+  "First, allow NoitaGuessr to post messages in your Twitch chat.": "Nejprve povolte aplikaci NoitaGuessr, aby mohla zveřejňovat zprávy ve vašem chatu na Twitchi.",
+  "Fixed an error that stopped you from creating a game in {{streamMode}} mode.": "Byla opravena chyba, kvůli které nebylo možné vytvořit hru v režimu {{streamMode}}.",
+  "Before you start a {{streamMode}} game, allow NoitaGuessr to post messages in your Twitch chat.": "Než spustíte hru v režimu {{streamMode}}, povolte aplikaci NoitaGuessr zveřejňovat zprávy ve vašem chatu na Twitchi."
 }

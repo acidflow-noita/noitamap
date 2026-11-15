@@ -475,7 +475,6 @@
   "Twitch could not post the game link.": "Не вдалося надіслати посилання на гру в Twitch.",
   "Share game links as announcements": "Надсилати посилання на гру оголошеннями",
   "When off, Share posts a normal message in your Twitch channel.": "Якщо вимкнено, посилання надсилається звичайним повідомленням у ваш чат Twitch.",
-  "Sharing permission is optional. Without it, you can copy the link.": "Дозвіл на надсилання необов’язковий. Без нього можна скопіювати посилання.",
   "Enable sharing in chat": "Дозволити надсилання в чат",
   "Sharing permission is unavailable. You can copy the game link.": "Немає дозволу на надсилання. Ви можете скопіювати посилання на гру.",
   "This game is no longer active.": "Ця гра вже не активна.",
@@ -685,5 +684,8 @@
   "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "У результатах кожного раунду кольори гравців відображаються лише поруч з їхніми іменами. Максимальний результат — 5 000 очок — виділено золотим кольором.",
   "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "Кнопка «{{received}}» тепер виглядає неактивною після підтвердження вашого припущення.",
   "If you reach a game-creation limit, setup shows when you can create another game.": "Якщо ви досягнете обмеження на створення ігор, у налаштуваннях буде вказано, коли ви зможете створити ще одну гру.",
-  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Відкрийте «{{howToPlay}}» і виберіть «{{whatsNew}}», щоб ще раз ознайомитися з цими примітками."
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Відкрийте «{{howToPlay}}» і виберіть «{{whatsNew}}», щоб ще раз ознайомитися з цими примітками.",
+  "First, allow NoitaGuessr to post messages in your Twitch chat.": "Спочатку надайте NoitaGuessr дозвіл на публікацію повідомлень у вашому чаті на Twitch.",
+  "Fixed an error that stopped you from creating a game in {{streamMode}} mode.": "Виправлено помилку, яка не дозволяла створювати гру в режимі {{streamMode}}.",
+  "Before you start a {{streamMode}} game, allow NoitaGuessr to post messages in your Twitch chat.": "Перш ніж розпочати гру в режимі {{streamMode}}, дозвольте NoitaGuessr публікувати повідомлення у вашому чаті на Twitch."
 }

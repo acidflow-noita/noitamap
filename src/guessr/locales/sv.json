@@ -457,7 +457,6 @@
   "Twitch could not post the game link.": "Twitch kunde inte publicera spellänken.",
   "Share game links as announcements": "Dela spellänkar som tillkännagivanden",
   "When off, Share posts a normal message in your Twitch channel.": "När inställningen är av publiceras länken som ett vanligt meddelande i din Twitch-chatt.",
-  "Sharing permission is optional. Without it, you can copy the link.": "Tillstånd att dela är valfritt. Utan det kan du kopiera länken.",
   "Enable sharing in chat": "Tillåt delning i chatten",
   "Sharing permission is unavailable. You can copy the game link.": "Tillstånd att dela saknas. Du kan kopiera spellänken.",
   "This game is no longer active.": "Det här spelet är inte längre aktivt.",
@@ -667,5 +666,8 @@
   "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "I resultaten för varje omgång är det endast spelarnas namn som visas i deras respektive färger. Ett perfekt resultat på 5 000 poäng visas i guld.",
   "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "Knappen ”{{received}}” ser nu ut att vara inaktiverad efter att ditt gissning har bekräftats.",
   "If you reach a game-creation limit, setup shows when you can create another game.": "Om du når gränsen för antalet spel du kan skapa visas i inställningarna när du kan skapa ett nytt spel.",
-  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Öppna ”{{howToPlay}}” och välj ”{{whatsNew}}” för att läsa dessa anvisningar igen."
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Öppna ”{{howToPlay}}” och välj ”{{whatsNew}}” för att läsa dessa anvisningar igen.",
+  "First, allow NoitaGuessr to post messages in your Twitch chat.": "Börja med att ge NoitaGuessr behörighet att skicka meddelanden i din Twitch-chatt.",
+  "Fixed an error that stopped you from creating a game in {{streamMode}} mode.": "Ett fel som hindrade dig från att skapa ett spel i {{streamMode}}-läget har åtgärdats.",
+  "Before you start a {{streamMode}} game, allow NoitaGuessr to post messages in your Twitch chat.": "Innan du startar ett {{streamMode}}-spel ska du ge NoitaGuessr tillstånd att skicka meddelanden i din Twitch-chatt."
 }

@@ -457,7 +457,6 @@
   "Twitch could not post the game link.": "Twitch tidak dapat mengirim tautan permainan.",
   "Share game links as announcements": "Bagikan tautan permainan sebagai pengumuman",
   "When off, Share posts a normal message in your Twitch channel.": "Saat nonaktif, tautan dikirim sebagai pesan biasa di chat Twitch Anda.",
-  "Sharing permission is optional. Without it, you can copy the link.": "Izin berbagi bersifat opsional. Tanpa izin, Anda tetap dapat menyalin tautan.",
   "Enable sharing in chat": "Izinkan berbagi di chat",
   "Sharing permission is unavailable. You can copy the game link.": "Izin berbagi tidak tersedia. Anda dapat menyalin tautan permainan.",
   "This game is no longer active.": "Permainan ini sudah tidak aktif.",
@@ -667,5 +666,8 @@
   "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "Dalam hasil setiap babak, hanya nama pemain yang ditampilkan dengan warna masing-masing pemain. Skor sempurna sebesar 5.000 poin ditampilkan dalam warna emas.",
   "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "Tombol \"{{received}}\" kini tampak dinonaktifkan setelah tebakan Anda dikonfirmasi.",
   "If you reach a game-creation limit, setup shows when you can create another game.": "Jika Anda mencapai batas pembuatan game, sistem akan menampilkan kapan Anda dapat membuat game baru.",
-  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Buka \"{{howToPlay}}\" dan pilih \"{{whatsNew}}\" untuk membaca catatan ini lagi."
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Buka \"{{howToPlay}}\" dan pilih \"{{whatsNew}}\" untuk membaca catatan ini lagi.",
+  "First, allow NoitaGuessr to post messages in your Twitch chat.": "Pertama, izinkan NoitaGuessr untuk mengirim pesan di obrolan Twitch Anda.",
+  "Fixed an error that stopped you from creating a game in {{streamMode}} mode.": "Telah diperbaiki kesalahan yang sebelumnya menghalangi Anda untuk membuat permainan dalam mode {{streamMode}}.",
+  "Before you start a {{streamMode}} game, allow NoitaGuessr to post messages in your Twitch chat.": "Sebelum kamu memulai permainan {{streamMode}}, izinkan NoitaGuessr untuk mengirim pesan di obrolan Twitch-mu."
 }

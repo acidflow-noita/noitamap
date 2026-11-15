@@ -3,12 +3,14 @@ import { bindAttribute, bindText, guessrLocale, tr } from './i18n';
 
 // Change this ID only when the player-facing notes below change.
 export const GUESSR_CHANGELOG = {
-  id: '2026-11-15-roundup',
+  id: '2026-11-15-start-permission',
   date: '2026-11-15',
   notes: [
     'Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.',
     'The "{{streaming}}" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.',
     '{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.',
+    'Fixed an error that stopped you from creating a game in {{streamMode}} mode.',
+    'Before you start a {{streamMode}} game, allow NoitaGuessr to post messages in your Twitch chat.',
     'Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.',
     "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.",
     '1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.',

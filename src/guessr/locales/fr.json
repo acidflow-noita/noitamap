@@ -466,7 +466,6 @@
   "Twitch could not post the game link.": "Twitch n’a pas pu publier le lien de la partie.",
   "Share game links as announcements": "Partager les liens de partie en annonce",
   "When off, Share posts a normal message in your Twitch channel.": "Si cette option est désactivée, le lien est publié comme message normal dans votre chat Twitch.",
-  "Sharing permission is optional. Without it, you can copy the link.": "L’autorisation de publier est facultative. Sans elle, vous pouvez copier le lien.",
   "Enable sharing in chat": "Autoriser le partage dans le chat",
   "Sharing permission is unavailable. You can copy the game link.": "L’autorisation de publier est indisponible. Vous pouvez copier le lien de la partie.",
   "This game is no longer active.": "Cette partie n’est plus active.",
@@ -676,5 +675,8 @@
   "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "Dans les résultats de chaque manche, seuls les noms des joueurs sont accompagnés de leurs couleurs. Un score parfait de 5 000 points apparaît en doré.",
   "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "Le bouton « {{received}} » apparaît désormais comme désactivé une fois votre réponse validée.",
   "If you reach a game-creation limit, setup shows when you can create another game.": "Si vous atteignez la limite de création de parties, l'interface vous indique quand vous pourrez en créer une autre.",
-  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Ouvrez « {{howToPlay}} » et sélectionnez « {{whatsNew}} » pour relire ces notes."
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Ouvrez « {{howToPlay}} » et sélectionnez « {{whatsNew}} » pour relire ces notes.",
+  "First, allow NoitaGuessr to post messages in your Twitch chat.": "Commencez par autoriser NoitaGuessr à publier des messages dans votre chat Twitch.",
+  "Fixed an error that stopped you from creating a game in {{streamMode}} mode.": "Correction d'une erreur qui empêchait de créer une partie en mode {{streamMode}}.",
+  "Before you start a {{streamMode}} game, allow NoitaGuessr to post messages in your Twitch chat.": "Avant de lancer une partie en mode {{streamMode}}, autorisez NoitaGuessr à publier des messages dans votre chat Twitch."
 }

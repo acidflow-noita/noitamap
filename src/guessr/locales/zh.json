@@ -457,7 +457,6 @@
   "Twitch could not post the game link.": "无法在 Twitch 中发布游戏链接。",
   "Share game links as announcements": "以公告形式分享游戏链接",
   "When off, Share posts a normal message in your Twitch channel.": "关闭时，链接会以普通消息的形式发送到你自己的 Twitch 聊天中。",
-  "Sharing permission is optional. Without it, you can copy the link.": "分享权限不是必需的。未授权时，你仍可复制链接。",
   "Enable sharing in chat": "允许在聊天中分享",
   "Sharing permission is unavailable. You can copy the game link.": "分享权限不可用。你可以复制游戏链接。",
   "This game is no longer active.": "这场游戏已不再进行。",
@@ -667,5 +666,8 @@
   "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "在每轮的成绩中，只有玩家姓名会显示玩家的代表色。满分5,000分以金色显示。",
   "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "在您的猜测得到确认后，“{{received}}”按钮现在看起来处于禁用状态。",
   "If you reach a game-creation limit, setup shows when you can create another game.": "如果您达到了创建游戏的上限，系统会提示您何时可以再次创建游戏。",
-  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "打开“{{howToPlay}}”，然后选择“{{whatsNew}}”以再次阅读这些说明。"
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "打开“{{howToPlay}}”，然后选择“{{whatsNew}}”以再次阅读这些说明。",
+  "First, allow NoitaGuessr to post messages in your Twitch chat.": "首先，请允许 NoitaGuessr 在您的 Twitch 聊天频道中发布消息。",
+  "Fixed an error that stopped you from creating a game in {{streamMode}} mode.": "修复了一个导致无法在 {{streamMode}} 模式下创建游戏的错误。",
+  "Before you start a {{streamMode}} game, allow NoitaGuessr to post messages in your Twitch chat.": "在开始 {{streamMode}} 游戏之前，请允许 NoitaGuessr 在您的 Twitch 聊天室中发布消息。"
 }

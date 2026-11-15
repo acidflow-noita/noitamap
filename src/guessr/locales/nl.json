@@ -457,7 +457,6 @@
   "Twitch could not post the game link.": "Twitch kon de spellink niet plaatsen.",
   "Share game links as announcements": "Deel spellinks als aankondigingen",
   "When off, Share posts a normal message in your Twitch channel.": "Als dit uitstaat, wordt de link als normaal bericht in je Twitch-chat geplaatst.",
-  "Sharing permission is optional. Without it, you can copy the link.": "Toestemming om te delen is optioneel. Zonder toestemming kun je de link kopiëren.",
   "Enable sharing in chat": "Delen in chat toestaan",
   "Sharing permission is unavailable. You can copy the game link.": "Toestemming om te delen ontbreekt. Je kunt de spellink kopiëren.",
   "This game is no longer active.": "Dit spel is niet meer actief.",
@@ -667,5 +666,8 @@
   "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "In de uitslagen van elke ronde worden de spelerskleuren alleen bij de namen van de spelers weergegeven. Een perfecte score van 5.000 punten wordt in goud weergegeven.",
   "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "De knop \"{{received}}\" ziet er nu uit alsof hij is uitgeschakeld nadat je antwoord is bevestigd.",
   "If you reach a game-creation limit, setup shows when you can create another game.": "Als je de limiet voor het aanmaken van spellen bereikt, wordt in de instellingen aangegeven wanneer je weer een spel kunt aanmaken.",
-  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Open \"{{howToPlay}}\" en kies \"{{whatsNew}}\" om deze opmerkingen nog eens door te lezen."
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Open \"{{howToPlay}}\" en kies \"{{whatsNew}}\" om deze opmerkingen nog eens door te lezen.",
+  "First, allow NoitaGuessr to post messages in your Twitch chat.": "Geef NoitaGuessr eerst toestemming om berichten in je Twitch-chat te plaatsen.",
+  "Fixed an error that stopped you from creating a game in {{streamMode}} mode.": "Er is een fout verholpen waardoor je geen spel kon starten in de {{streamMode}}-modus.",
+  "Before you start a {{streamMode}} game, allow NoitaGuessr to post messages in your Twitch chat.": "Voordat je een {{streamMode}}-spel start, moet je NoitaGuessr toestemming geven om berichten in je Twitch-chat te plaatsen."
 }
