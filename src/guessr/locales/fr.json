@@ -639,5 +639,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Carte interactive. Les touches fléchées permettent de se déplacer, les touches « + » et « - » de zoomer, et la touche « Home » de réinitialiser l'affichage. Centrez la carte et appuyez sur la barre d'espace pour placer un repère au centre.",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Commandes de Clue : les touches W, A, S et D permettent de déplacer la vue. La touche Q permet de zoomer en arrière et la touche E de zoomer en avant.",
   "Not ready": "Pas prêt",
-  "vs": "contre"
+  "vs": "contre",
+  "What's new": "Quoi de neuf ?",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "Utilisez les touches W, A, S et D pour déplacer l'image indice. La touche Q permet de zoomer en arrière. La touche E permet de zoomer en avant.",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "Déplacez la carte d'estimation à l'aide des touches fléchées. Zoomez à l'aide des touches + et -.",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "Sur les téléphones, les écrans de jeu occupent toute la largeur, ce qui laisse davantage de place à l'indice et aux commandes tactiles.",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "Le mode 1 contre 1 utilise votre identifiant Pro existant. Le hall d'attente affiche les deux joueurs et indique s'ils sont prêts.",
+  "If you give up a 1v1 match, the results page opens.": "Si vous abandonnez un match en 1 contre 1, la page des résultats s'affiche.",
+  "Buttons above the clue image now show keyboard shortcuts.": "Les boutons situés au-dessus de l'image d'indice affichent désormais les raccourcis clavier.",
+  "The game results page has a smaller title and a narrower rank column.": "La page des résultats des matchs présente un titre plus petit et une colonne « Classement » plus étroite."
 }

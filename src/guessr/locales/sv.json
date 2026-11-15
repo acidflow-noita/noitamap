@@ -630,5 +630,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Gissa kartan. Piltangenterna används för att panorera, plus och minus för att zooma, och Home återställer vyn. Fokusera på kartan och tryck på mellanslagstangenten för att placera en markör i mitten.",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Kontroller i Clue: W, A, S och D för att flytta kameran. Q för att zooma ut och E för att zooma in.",
   "Not ready": "Inte redo",
-  "vs": "vs"
+  "vs": "vs",
+  "What's new": "Vad är nytt?",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "Använd W, A, S och D för att flytta ledtrådsbilden. Q zoomar ut. E zoomar in.",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "Flytta kartan med piltangenterna. Zooma med + och -.",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "På mobiltelefoner utnyttjar spelpanelerna hela bredden, vilket ger mer utrymme för ledtråden och pekkontrollerna.",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1v1 använder din befintliga Pro-inloggning. I lobbyn visas båda spelarna och om de är redo.",
+  "If you give up a 1v1 match, the results page opens.": "Om du ger upp en 1-mot-1-match öppnas resultatsidan.",
+  "Buttons above the clue image now show keyboard shortcuts.": "Knapparna ovanför ledtrådsbilden visar nu kortkommandon.",
+  "The game results page has a smaller title and a narrower rank column.": "På sidan med matchresultat har rubriken blivit mindre och rangordningskolumnen smalare."
 }

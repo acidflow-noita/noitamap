@@ -648,5 +648,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Mapa de adivinhação. As setas do teclado permitem deslocar a imagem; os botões “+” e “-” aumentam e diminuem o zoom; a tecla Home reinicia a exibição. Foque no mapa e pressione a barra de espaço para colocar um marcador no centro.",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Controles do Clue: as teclas W, A, S e D movem a visão. A tecla Q diminui o zoom e a tecla E aumenta o zoom.",
   "Not ready": "Ainda não está pronto",
-  "vs": "vs"
+  "vs": "vs",
+  "What's new": "Novidades",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "Use as teclas W, A, S e D para mover a imagem da pista. A tecla Q diminui o zoom. A tecla E aumenta o zoom.",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "Mova o mapa de suposições com as setas do teclado. Aumente ou diminua o zoom com + e -.",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "Nos celulares, os painéis dos jogos ocupam toda a largura da tela, oferecendo mais espaço para a pista e os controles sensíveis ao toque.",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "O modo 1v1 usa seu login Pro já existente. A sala de espera mostra os dois jogadores e se eles estão prontos.",
+  "If you give up a 1v1 match, the results page opens.": "Se você desistir de uma partida 1x1, a página de resultados será exibida.",
+  "Buttons above the clue image now show keyboard shortcuts.": "Os botões acima da imagem da pista agora exibem atalhos de teclado.",
+  "The game results page has a smaller title and a narrower rank column.": "A página de resultados dos jogos apresenta um título menor e uma coluna de classificação mais estreita."
 }

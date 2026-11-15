@@ -91,6 +91,18 @@ body::before {
   z-index: -1;
 }
 body:has(.game-shell, .stream-viewer-shell)::before { height: 20dvh; }
+.guessr-changelog {
+  --bs-dialog-width: 38rem;
+  max-inline-size: calc(100vw - 1.5rem);
+  max-block-size: calc(100dvh - 1.5rem);
+}
+.guessr-changelog-notes {
+  display: grid;
+  gap: .75rem;
+  margin-block: 1rem 0;
+  padding-inline-start: 1.25rem;
+}
+.guessr-changelog .dialog-footer { flex-shrink: 0; }
 .with-icon {
   display: inline-flex;
   align-items: center;

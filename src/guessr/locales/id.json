@@ -630,5 +630,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Tebak peta. Tombol panah untuk menggeser tampilan, tombol plus dan minus untuk memperbesar atau memperkecil, tombol Home untuk mengembalikan tampilan ke posisi semula. Arahkan kursor ke peta dan tekan tombol Spasi untuk menempatkan penanda di tengah.",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Kontrol Clue: Tombol W, A, S, dan D untuk menggerakkan sudut pandang. Tombol Q untuk memperkecil tampilan dan tombol E untuk memperbesar tampilan.",
   "Not ready": "Belum siap",
-  "vs": "vs"
+  "vs": "vs",
+  "What's new": "Apa yang baru",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "Gunakan tombol W, A, S, dan D untuk menggerakkan gambar petunjuk. Tombol Q untuk memperkecil tampilan. Tombol E untuk memperbesar tampilan.",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "Gerakkan peta perkiraan menggunakan tombol panah. Perbesar atau perkecil tampilan dengan tombol + dan -.",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "Di ponsel, panel permainan memanfaatkan lebar layar secara penuh, sehingga ada lebih banyak ruang untuk petunjuk dan kontrol sentuh.",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "Mode 1v1 menggunakan akun Pro yang sudah Anda miliki. Lobi menampilkan kedua pemain serta status kesiapan mereka.",
+  "If you give up a 1v1 match, the results page opens.": "Jika kamu menyerah dalam pertandingan 1v1, halaman hasil akan terbuka.",
+  "Buttons above the clue image now show keyboard shortcuts.": "Tombol-tombol di atas gambar petunjuk kini menampilkan pintasan keyboard.",
+  "The game results page has a smaller title and a narrower rank column.": "Halaman hasil permainan memiliki judul yang lebih kecil dan kolom peringkat yang lebih sempit."
 }

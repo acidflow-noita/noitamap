@@ -630,5 +630,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Raad de kaart. Met de pijltjestoetsen kun je de kaart verschuiven, met plus en min kun je in- en uitzoomen, en met Home kun je het beeld resetten. Breng de kaart scherp in beeld en druk op de spatiebalk om een speldje in het midden te plaatsen.",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Besturing van Clue: met W, A, S en D verplaats je het beeld. Met Q zoom je uit en met E zoom je in.",
   "Not ready": "Nog niet klaar",
-  "vs": "vs"
+  "vs": "vs",
+  "What's new": "Wat is er nieuw?",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "Gebruik de toetsen W, A, S en D om de afbeelding met de aanwijzing te verplaatsen. Met Q zoom je uit. Met E zoom je in.",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "Beweeg de kaart met de pijltjestoetsen. Zoom in en uit met + en -.",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "Op telefoons beslaan de spelpanelen de volledige breedte, waardoor er meer ruimte is voor de aanwijzing en de aanraakbediening.",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1v1 maakt gebruik van je bestaande Pro-aanmelding. In de lobby worden beide spelers weergegeven en is te zien of ze klaar zijn.",
+  "If you give up a 1v1 match, the results page opens.": "Als je een 1-tegen-1-wedstrijd opgeeft, wordt de resultatenpagina geopend.",
+  "Buttons above the clue image now show keyboard shortcuts.": "De knoppen boven de afbeelding met de aanwijzing geven nu sneltoetsen weer.",
+  "The game results page has a smaller title and a narrower rank column.": "Op de pagina met wedstrijdresultaten is de titel kleiner en is de kolom met de ranglijst smaller."
 }

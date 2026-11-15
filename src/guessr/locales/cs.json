@@ -648,5 +648,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Hádací mapa. Šipkami posouváte mapu, tlačítky plus a minus přibližujete a oddalujete, klávesou Home obnovíte výchozí zobrazení. Zaměřte mapu a stisknutím mezerníku umístěte značku do středu.",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Ovládání hry Clue: Klávesami W, A, S a D pohybujete pohledem. Klávesou Q oddálíte pohled a klávesou E přiblížíte.",
   "Not ready": "Ještě nejsem připravený",
-  "vs": "vs"
+  "vs": "vs",
+  "What's new": "Co je nového",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "Pomocí kláves W, A, S a D pohybujte obrázkem s vodítkem. Klávesou Q oddálíte zobrazení. Klávesou E přiblížíte zobrazení.",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "Mapu odhadů posouvejte pomocí šipek. Měřítko měňte pomocí tlačítek + a -.",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "Na mobilních telefonech zabírají herní panely celou šířku obrazovky, takže zbývá více místa pro nápovědu a dotykové ovládací prvky.",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "Režim 1v1 využívá vaše stávající přihlášení k účtu Pro. V čekárně se zobrazují oba hráči a informace o tom, zda jsou připraveni.",
+  "If you give up a 1v1 match, the results page opens.": "Pokud se vzdáš zápasu 1v1, otevře se stránka s výsledky.",
+  "Buttons above the clue image now show keyboard shortcuts.": "Tlačítka nad obrázkem nápovědy nyní zobrazují klávesové zkratky.",
+  "The game results page has a smaller title and a narrower rank column.": "Stránka s výsledky zápasů má menší nadpis a užší sloupec s pořadím."
 }

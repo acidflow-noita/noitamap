@@ -630,5 +630,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.",
   "Not ready": "Not ready",
-  "vs": "vs"
+  "vs": "vs",
+  "What's new": "What's new",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "Move the guess map with the arrow keys. Zoom with + and -.",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "On phones, game panels use the full width, with more room for the clue and touch controls.",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.",
+  "If you give up a 1v1 match, the results page opens.": "If you give up a 1v1 match, the results page opens.",
+  "Buttons above the clue image now show keyboard shortcuts.": "Buttons above the clue image now show keyboard shortcuts.",
+  "The game results page has a smaller title and a narrower rank column.": "The game results page has a smaller title and a narrower rank column."
 }

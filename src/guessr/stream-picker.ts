@@ -1,4 +1,5 @@
 import { sharedRoundResults } from './stream-round-results';
+import { allowGuessrChangelog } from './changelog';
 import { StreamRoundCache } from './stream-round-cache';
 import { mapControls } from './map-controls';
 import { ClueViewport } from './clue-viewport';
@@ -553,6 +554,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     }
   };
   refresh = () => {
+    allowGuessrChangelog(live?.timing?.phase === 'lobby' || live?.phase === 'complete');
     const state = viewer.getState();
     personal.identify(live?.gameId ?? requestedGame, state.userId ?? state.savedUserId ?? null);
     if (twitchUpdates && live?.phase === 'complete' && !state.connected) connection.insertBefore(connect, disconnect);

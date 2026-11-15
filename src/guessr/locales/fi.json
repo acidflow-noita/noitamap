@@ -630,5 +630,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Arvaa kartta. Nuolinäppäimillä voit siirtää näkymää, plus- ja miinus-näppäimillä zoomata, ja Home-näppäimellä palauttaa näkymän alkuasetuksiin. Kohdista kartta ja paina välilyöntinäppäintä, niin merkki sijoittuu keskelle.",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Clue-ohjaus: W, A, S ja D liikuttavat näkymää. Q loitontaa ja E lähentää.",
   "Not ready": "Ei valmis",
-  "vs": "vs"
+  "vs": "vs",
+  "What's new": "Uutta",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "Liikuta vihjekuvaa näppäimillä W, A, S ja D. Q pienentää kuvaa. E suurentaa kuvaa.",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "Liikuta arvauskarttaa nuolinäppäimillä. Zoomaa +- ja --näppäimillä.",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "Puhelimissa pelipaneelit täyttävät koko leveyden, jolloin vihjeelle ja kosketusohjaimille jää enemmän tilaa.",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1v1 käyttää olemassa olevaa Pro-kirjautumistunnustasi. Aulassa näkyvät molemmat pelaajat ja se, ovatko he valmiina.",
+  "If you give up a 1v1 match, the results page opens.": "Jos luovutat 1v1-ottelun, tulosivu avautuu.",
+  "Buttons above the clue image now show keyboard shortcuts.": "Vihjekuvan yläpuolella olevissa painikkeissa näkyy nyt pikanäppäimet.",
+  "The game results page has a smaller title and a narrower rank column.": "Ottelutulossivulla on pienempi otsikko ja kapeampi sijoitussarake."
 }

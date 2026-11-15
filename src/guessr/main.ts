@@ -2,6 +2,7 @@ import { mapControls } from './map-controls';
 import { readPvpResume, leaveSavedPvp, forgetPvp } from './pvp-resume';
 import "./game.css";
 import Dialog from "bootstrap/js/dist/dialog.js";
+import { initializeGuessrChangelog, allowGuessrChangelog, showGuessrChangelog } from './changelog';
 import { bindText, bindAttribute, tr, initializeGuessrTranslations, guessrLocale, guessrGameTerm, formatGuessrNumber } from './i18n';
 import { createGuessrLanguagePicker, disposeGuessrLanguagePickers } from './language-picker';
 import { difficultyIndicator, maximumIndicator, updateDifficultyIndicators, updateRoundIndicators } from './round-status';
@@ -184,6 +185,7 @@ function cleanup(): void {
   imageUrl = undefined;
 }
 function shell(game = false): HTMLElement {
+  allowGuessrChangelog(false);
   cleanup();
   disposeGuessrLanguagePickers(root);
   root.replaceChildren();
@@ -240,6 +242,7 @@ function home(): void {
   view = "home";
   historyReplace(guessRouteUrl('home', location.href));
   const main = shell();
+  allowGuessrChangelog(true);
   const stream = streamUI?.game;
   const entries = readHistory(storage);
   const latest = entries[0];
@@ -339,6 +342,7 @@ async function openPvp(): Promise<void> {
     clearClue = mountPvpSetup(main, id => {
       historyReplace(guessRouteUrl('pvp-game', location.href, { game: id })); void openPvpGame();
     }, home);
+    allowGuessrChangelog(true);
   } catch (error) { if (main.isConnected) toast(msg(() => localizedError(error))); }
 }
 async function openPvpGame(): Promise<void> {
@@ -687,6 +691,7 @@ function finish(): void {
   if (!session) return;
   view = "practice";
   const main = shell();
+  allowGuessrChangelog(true);
   saveHistory(session, storage);
   const score = session.results.reduce((n, r) => n + r.score, 0),
     hero = node("section", "finish-hero");
@@ -932,6 +937,7 @@ function finishImageGame(): void {
   view = "practice";
   const main = shell(),
     score = imageSession.results.reduce((n, r) => n + r.score, 0);
+  allowGuessrChangelog(true);
   if (imageSession.stage === "complete") {
     const entries = readHistory(storage);
     if (!entries.some((e) => e.id === imageSession!.id)) {
@@ -1025,6 +1031,7 @@ function history(): void {
   view = "history";
   setPane('history');
   const main = shell();
+  allowGuessrChangelog(true);
   if (channel && /^[a-z0-9_]{1,25}$/.test(channel)) {
     historyReplace(guessRouteUrl('history', location.href, { channel }));
     main.append(pageHeading(node('h1', '', msg('{{player}}’s results', { player: channel }), 'clock-history'),
@@ -1165,6 +1172,7 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
   }
   const main = shell();
   const dailyTitle = node('h1', '', msg(resumeId ? 'Daily result' : 'Daily'));
+  if (!resumeId) allowGuessrChangelog(true);
   const title = node('div', 'daily-page-title');
   title.append(dailyTitle);
   if (!resumeId) title.append(node('span', 'badge pro animation-pop', msg('Pro')));
@@ -1318,6 +1326,7 @@ function renderPublicDaily(summary: DailyResultSummary): void {
   historyReplace(url);
   forgetDailyResume(summary.id, storage);
   const main = shell(), version = generation;
+  allowGuessrChangelog(true);
   main.append(pageHeading(node('h1', '', msg('Daily result')), button(msg('Back to daily'), rankedLobby)));
   const hero = node('section', 'finish-hero');
   const date = node('time', '', msg(() => new Date(summary.day + 'T00:00:00Z').toLocaleDateString(guessrLocale(), { dateStyle: 'long', timeZone: 'UTC' })));
@@ -1403,6 +1412,7 @@ function renderRanked(): void {
   view = "ranked";
   const main = shell(true);
   if (ranked.status !== "active") {
+    allowGuessrChangelog(true);
     const hero = node("section", "finish-hero");
     hero.append(
       node("span", "badge pro animation-pop", msg("Daily result")),
@@ -1594,10 +1604,14 @@ function help(): void {
     node('p', 'fine-print', msg('Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.')),
   );
   const footer = node("div", "dialog-footer");
+  const updates = button(msg("What's new"), () => {
+    dialog.addEventListener('hidden.bs.dialog', () => showGuessrChangelog(trigger ?? undefined), { once: true });
+    void Dialog.getOrCreateInstance(dialog).hide();
+  }, 'btn btn-outline theme-secondary');
   const close = node("button", "btn-solid theme-primary", msg("Close"));
   close.type = "button";
   close.setAttribute("data-bs-dismiss", "dialog");
-  footer.append(close);
+  footer.append(updates, close);
   dialog.append(header, body, footer);
   document.body.append(dialog);
   const instance = new Dialog(dialog);
@@ -1618,6 +1632,7 @@ if (!isGuessrAvailable(location.hostname, import.meta.env.DEV)) {
 } else
   try {
     await initializeGuessrTranslations();
+    initializeGuessrChangelog();
     const config = await imageGameRequest<ImageGameConfig>("/config");
     const route = readGuessRoute(new URL(location.href)), pane = route.pane;
     historyReplace(guessRouteUrl(pane, location.href, route));

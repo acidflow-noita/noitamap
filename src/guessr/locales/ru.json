@@ -648,5 +648,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Карта-загадка. Стрелки — панорамирование, «+» и «-» — масштабирование, клавиша «Home» — сброс вида. Наведите курсор на карту и нажмите пробел, чтобы поставить метку в центре.",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Управление в игре «Clue»: клавиши W, A, S и D — перемещение камеры. Клавиша Q — уменьшение масштаба, клавиша E — увеличение масштаба.",
   "Not ready": "Не готов",
-  "vs": "против"
+  "vs": "против",
+  "What's new": "Что нового",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "Используйте клавиши W, A, S и D для перемещения изображения-подсказки. Клавиша Q уменьшает масштаб. Клавиша E увеличивает масштаб.",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "Перемещайте карту предположений с помощью клавиш со стрелками. Меняйте масштаб с помощью клавиш «+» и «-».",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "На мобильных устройствах игровые панели занимают всю ширину экрана, оставляя больше места для подсказки и сенсорных элементов управления.",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "В режиме 1 на 1 используется ваш существующий логин Pro. В лобби отображаются оба игрока и информация о том, готовы ли они к игре.",
+  "If you give up a 1v1 match, the results page opens.": "Если вы сдадите матч 1 на 1, откроется страница с результатами.",
+  "Buttons above the clue image now show keyboard shortcuts.": "Над изображением подсказки теперь отображаются сочетания клавиш.",
+  "The game results page has a smaller title and a narrower rank column.": "На странице результатов игры заголовок стал меньше, а столбец с рейтингом — уже."
 }

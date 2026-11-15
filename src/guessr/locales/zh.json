@@ -630,5 +630,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "地图定位。使用方向键平移，加号和减号调整缩放，Home键重置视图。将光标对准地图并按空格键，即可在中心位置放置一个图钉。",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "《Clue》操作说明：W、A、S 和 D 键控制视角移动。Q 键缩小视图，E 键放大视图。",
   "Not ready": "还没准备好",
-  "vs": "vs简体中文（大陆）"
+  "vs": "vs简体中文（大陆）",
+  "What's new": "最新动态",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "使用 W、A、S 和 D 键移动线索图片。按 Q 键缩小。按 E 键放大。",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "使用方向键移动猜测地图。使用“+”和“-”进行缩放。",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "在手机上，游戏面板会占据整个屏幕宽度，为提示和触控操作留出更多空间。",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1v1 模式使用您现有的 Pro 账号登录。大厅中会显示两名玩家及其是否已准备就绪。",
+  "If you give up a 1v1 match, the results page opens.": "如果你放弃一场1v1对决，结果页面就会打开。",
+  "Buttons above the clue image now show keyboard shortcuts.": "提示图片上方的按钮现在会显示键盘快捷键。",
+  "The game results page has a smaller title and a narrower rank column.": "比赛结果页面的标题较小，排名栏也较窄。"
 }

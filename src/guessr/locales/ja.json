@@ -630,5 +630,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "地図を推測してください。矢印キーで地図を移動し、プラスとマイナスのキーでズームします。Homeキーを押すと表示がリセットされます。地図にカーソルを合わせ、スペースキーを押すと、その中心にピンを配置できます。",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "『Clue』の操作方法：W、A、S、Dキーで視点を移動します。Qキーでズームアウト、Eキーでズームインします。",
   "Not ready": "まだ準備ができていない",
-  "vs": "vs"
+  "vs": "vs",
+  "What's new": "新着情報",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "W、A、S、Dキーを使って手がかりの画像を移動させてください。Qキーでズームアウト、Eキーでズームインします。",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "矢印キーで推測マップを移動します。+ と - でズームします。",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "スマートフォンでは、ゲーム画面が画面幅いっぱいに表示され、ヒントやタッチ操作のためのスペースがより広くなっています。",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "1対1では、既存のプロアカウントでのログインが使用されます。ロビーには両プレイヤーが表示され、準備ができているかどうかも確認できます。",
+  "If you give up a 1v1 match, the results page opens.": "1対1の対戦を放棄すると、結果ページが表示されます。",
+  "Buttons above the clue image now show keyboard shortcuts.": "ヒント画像の上にあるボタンに、キーボードショートカットが表示されるようになりました。",
+  "The game results page has a smaller title and a narrower rank column.": "ゲーム結果ページでは、タイトルが小さくなり、順位欄の幅も狭くなっています。"
 }

@@ -630,5 +630,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Karte erraten. Mit den Pfeiltasten kannst du die Ansicht verschieben, mit Plus und Minus zoomen und mit der Home-Taste die Ansicht zurücksetzen. Richte den Fokus auf die Karte und drücke die Leertaste, um eine Markierung in der Mitte zu setzen.",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Steuerung in „Clue“: Mit den Tasten W, A, S und D bewegst du die Ansicht. Mit Q zoomst du heraus, mit E zoomst du hinein.",
   "Not ready": "Noch nicht bereit",
-  "vs": "vs"
+  "vs": "vs",
+  "What's new": "Was gibt’s Neues?",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "Bewege das Hinweisbild mit den Tasten W, A, S und D. Mit Q zoomst du heraus. Mit E zoomst du hinein.",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "Bewegen Sie die Vermutungskarte mit den Pfeiltasten. Zoomen Sie mit + und -.",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "Auf Smartphones nehmen die Spielfelder die gesamte Breite ein, sodass mehr Platz für den Hinweis und die Touch-Steuerung bleibt.",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "Bei „1v1“ wird deine bestehende Pro-Anmeldung verwendet. In der Lobby werden beide Spieler angezeigt und ob sie bereit sind.",
+  "If you give up a 1v1 match, the results page opens.": "Wenn du ein 1-gegen-1-Spiel aufgibst, wird die Ergebnisseite geöffnet.",
+  "Buttons above the clue image now show keyboard shortcuts.": "Die Schaltflächen über dem Hinweisbild zeigen nun Tastaturkürzel an.",
+  "The game results page has a smaller title and a narrower rank column.": "Die Seite mit den Spielergebnissen hat eine kleinere Überschrift und eine schmalere Spalte für die Platzierungen."
 }

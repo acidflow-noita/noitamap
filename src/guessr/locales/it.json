@@ -639,5 +639,13 @@
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Mappa interattiva. I tasti freccia consentono di spostare la visuale, i tasti più e meno di ingrandire o rimpicciolire, mentre il tasto Home ripristina la visuale iniziale. Posiziona il cursore sulla mappa e premi la barra spaziatrice per inserire un segnaposto al centro.",
   "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Comandi di Clue: i tasti W, A, S e D spostano la visuale. Il tasto Q riduce lo zoom e il tasto E lo aumenta.",
   "Not ready": "Non sono pronto",
-  "vs": "vs"
+  "vs": "vs",
+  "What's new": "Novità",
+  "Use W, A, S and D to move the clue image. Q zooms out. E zooms in.": "Usa i tasti W, A, S e D per spostare l'immagine dell'indizio. Il tasto Q serve per allontanare l'immagine. Il tasto E serve per avvicinarla.",
+  "Move the guess map with the arrow keys. Zoom with + and -.": "Sposta la mappa di previsione con i tasti freccia. Ingrandisci e rimpicciolisci con i tasti + e -.",
+  "On phones, game panels use the full width, with more room for the clue and touch controls.": "Sui telefoni, le schermate di gioco occupano l'intera larghezza, lasciando più spazio all'indizio e ai comandi touch.",
+  "1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.": "La modalità 1v1 utilizza le tue credenziali di accesso Pro esistenti. Nella lobby vengono visualizzati entrambi i giocatori e il loro stato di disponibilità.",
+  "If you give up a 1v1 match, the results page opens.": "Se abbandoni una partita 1 contro 1, si apre la pagina dei risultati.",
+  "Buttons above the clue image now show keyboard shortcuts.": "I pulsanti sopra l'immagine dell'indizio ora mostrano le scorciatoie da tastiera.",
+  "The game results page has a smaller title and a narrower rank column.": "La pagina dei risultati delle partite presenta un titolo più piccolo e una colonna dedicata alla classifica più stretta."
 }
