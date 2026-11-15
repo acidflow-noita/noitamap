@@ -5,6 +5,7 @@ import { PIXEL_MAP_DRAW_OPTIONS } from "../osd-pixel-rendering";
 import { frameMap, frameMarkers } from "./map-framing";
 import { bindAttribute, bindText } from "./i18n";
 import { twitchColor } from './player-color';
+import { gameShortcut } from './game-keyboard';
 import { MAP_PIN_PATH, MAP_PIN_TIP, ANSWER_PIN_CENTER, GUESS_PIN_COLOR, ANSWER_PIN_COLOR,
   GUESS_PIN_HEIGHT, ANSWER_PIN_HEIGHT, PLAYER_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT } from './map-pin';
 
@@ -100,7 +101,7 @@ export class MapBoard {
     element.tabIndex = 0;
     bindAttribute(element,
       "aria-label",
-      "Guess map. Arrow keys move the pin, plus and minus zoom, Home resets the view.",
+      "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.",
     );
     this.updateView();
     element.addEventListener("wheel", this.wheel, { passive: false });
@@ -109,6 +110,7 @@ export class MapBoard {
     element.addEventListener("pointerup", this.end);
     element.addEventListener("pointercancel", this.cancel);
     element.addEventListener("keydown", this.key);
+    document.addEventListener('keydown', this.globalKey);
     this.resize = new ResizeObserver(() => this.updateView());
     this.resize.observe(element);
   }
@@ -124,6 +126,7 @@ export class MapBoard {
     this.element.removeEventListener("pointerup", this.end);
     this.element.removeEventListener("pointercancel", this.cancel);
     this.element.removeEventListener("keydown", this.key);
+    document.removeEventListener('keydown', this.globalKey);
   }
   private world(x: number, y: number): Point {
     const point = this.svg.createSVGPoint();
@@ -354,51 +357,31 @@ export class MapBoard {
     if (remaining)
       this.down = { ...remaining, view: { ...this.view }, moved: true };
   };
+  private globalKey = (event: KeyboardEvent) => {
+    if (!this.locked && this.element.isConnected && !this.element.closest('[hidden]')) this.key(event);
+  };
   private key = (event: KeyboardEvent) => {
+    if (!gameShortcut(event)) return;
     if (["+", "=", "-", "Home"].includes(event.key)) {
       event.preventDefault();
       if (event.key === "Home") this.home();
       else this.zoom(event.key === "-" ? 0.8 : 1.25);
       return;
     }
-    if (
-      this.locked ||
-      !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)
-    )
-      return;
+    if (event.key === ' ' && !this.locked && this.element.contains(event.target as Node)) {
+      event.preventDefault(); event.stopPropagation();
+      const point = { x: Math.max(this.bounds.x, Math.min(this.bounds.x + this.bounds.width, this.view.x + this.view.width / 2)),
+        y: Math.max(this.bounds.y, Math.min(this.bounds.y + this.bounds.height, this.view.y + this.view.height / 2)) };
+      this.setPoint(point); this.onGuess(point); return;
+    }
+    if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
     event.preventDefault();
     event.stopPropagation();
-    const step = this.view.width / (event.shiftKey ? 200 : 50),
-      p = this.point ?? {
-        x: this.view.x + this.view.width / 2,
-        y: this.view.y + this.view.height / 2,
-      };
-    const next = {
-      x:
-        p.x +
-        (event.key === "ArrowRight"
-          ? step
-          : event.key === "ArrowLeft"
-            ? -step
-            : 0),
-      y:
-        p.y +
-        (event.key === "ArrowDown"
-          ? step
-          : event.key === "ArrowUp"
-            ? -step
-            : 0),
-    };
-    next.x = Math.max(
-      this.bounds.x,
-      Math.min(this.bounds.x + this.bounds.width, next.x),
-    );
-    next.y = Math.max(
-      this.bounds.y,
-      Math.min(this.bounds.y + this.bounds.height, next.y),
-    );
-    this.setPoint(next);
-    this.onGuess(next);
+    const step = event.shiftKey ? .025 : .1;
+    this.fittedMarkers = null; this.atHome = false;
+    this.view.x += this.view.width * step * (event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0);
+    this.view.y += this.view.height * step * (event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0);
+    this.updateView();
   };
   setMarkers(guess: Point | null, answer?: Point, guessLabel = 'Your guess'): void {
     this.playerMarks.clear(); this.highlightedPlayer = undefined;

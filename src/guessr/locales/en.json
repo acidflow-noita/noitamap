@@ -626,5 +626,7 @@
   "1v1 is not available on this site yet.": "1v1 is not available on this site yet.",
   "Connect Twitch to your Pro account to create a 1v1 match.": "Connect Twitch to your Pro account to create a 1v1 match.",
   "Pro access was confirmed for this game.": "Pro access was confirmed for this game.",
-  "This timing option is not available on this site yet.": "This timing option is not available on this site yet."
+  "This timing option is not available on this site yet.": "This timing option is not available on this site yet.",
+  "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.",
+  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in."
 }

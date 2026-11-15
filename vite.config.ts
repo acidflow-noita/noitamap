@@ -225,7 +225,7 @@ export default defineConfig({
     outDir: "dist",
     assetsDir: "build",
     emptyOutDir: true, // Always start clean — no stale hashed files
-    sourcemap: true,
+    sourcemap: false,
     minify: "oxc",
     // IMPORTANT: Disable modulepreload injection. Vite injects <link rel="modulepreload">
     // for dynamically-imported chunks, which causes the browser to eagerly evaluate them.

@@ -204,7 +204,8 @@ function shell(game = false): HTMLElement {
   const actions = node("div", "header-actions");
   if (readGuessRoute(new URL(location.href)).pane !== 'stream-picker')
     identity.prepend(link(msg("Back to map"), mapReturnUrl(), 'btn btn-sm btn-outline theme-secondary map-return', 'arrow-left'));
-  actions.append(button(msg("How to play"), help, "small secondary", 'info-circle'));
+  const helpButton = button(msg("How to play"), help, "small secondary guessr-help", 'info-circle');
+  bindAttribute(helpButton, 'aria-label', 'How to play'); actions.append(helpButton);
   header.append(identity, actions);
   root.append(header);
   const live = node("div", "sr-only");
@@ -1588,6 +1589,8 @@ function help(): void {
       node('p', 'mb-0', msg('Place your pin on the world map, then submit your guess.')),
     ),
     node("p", "", msg("No time limit. Your progress saves automatically.")),
+    node('p', 'fine-print', msg('Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.')),
+    node('p', 'fine-print', msg('Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.')),
   );
   const footer = node("div", "dialog-footer");
   const close = node("button", "btn-solid theme-primary", msg("Close"));

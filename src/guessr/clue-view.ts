@@ -10,6 +10,7 @@ import { setControlIcon } from "./control-icons";
 import { bindAttribute, bindText, formatGuessrNumber, tr } from "./i18n";
 import type { AreaDifficulty } from './area-rules';
 import { updateRoundIndicators } from './round-status';
+import { gameShortcut } from './game-keyboard';
 
 let controlId = 0;
 
@@ -20,9 +21,11 @@ export function attachClueControls(
   progress: ClueProgress,
   travelStep: number,
   onChange: () => void,
-  options: { compact?: boolean; difficultyTier?: AreaDifficulty | null | (() => AreaDifficulty | null | undefined) } = {},
+  options: { compact?: boolean; difficultyTier?: AreaDifficulty | null | (() => AreaDifficulty | null | undefined); onExplore?: () => void } = {},
 ): () => void {
   const viewport = new ClueViewport(clue, place, travelStep);
+  clue.setAttribute('aria-keyshortcuts', 'W A S D Q E');
+  bindAttribute(clue, 'aria-description', 'Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.');
   const controls = document.createElement("div");
   controls.className = "clue-controls";
   controls.classList.toggle('clue-controls-compact', !!options.compact);
@@ -185,8 +188,10 @@ export function attachClueControls(
     error.replaceChildren();
     update();
     try {
+      const explored = level > progress.level || level === progress.level && (dx !== progress.dx || dy !== progress.dy);
       await viewport.show({ dx, dy, level }, () => {
         changeClue(place, progress, dx, dy, level);
+        if (explored) options.onExplore?.();
         onChange();
         update();
       });
@@ -216,9 +221,23 @@ export function attachClueControls(
       if (!stopped) update();
     }
   }
+  let lastKey = 0;
+  const keydown = (event: KeyboardEvent) => {
+    if (stopped || !clue.isConnected || clue.closest('[hidden]') || !gameShortcut(event)) return;
+    const labels: Record<string, string> = { KeyW: 'Travel north', KeyA: 'Travel west', KeyS: 'Travel south', KeyD: 'Travel east', KeyQ: 'Zoom out', KeyE: 'Zoom in' };
+    const label = labels[event.code] ?? ({ w: 'Travel north', a: 'Travel west', s: 'Travel south', d: 'Travel east', q: 'Zoom out', e: 'Zoom in' } as Record<string, string>)[event.key.toLowerCase()];
+    if (!label) return;
+    event.preventDefault();
+    if (event.repeat && performance.now() - lastKey < 180) return;
+    const control = buttons.find(item => item.label === label);
+    if (!control || control.button.disabled) return;
+    lastKey = performance.now(); control.button.click();
+  };
+  document.addEventListener('keydown', keydown);
   void load(progress.dx, progress.dy, progress.level);
   return () => {
     stopped = true;
+    document.removeEventListener('keydown', keydown);
     viewport.destroy();
     controls.remove();
   };

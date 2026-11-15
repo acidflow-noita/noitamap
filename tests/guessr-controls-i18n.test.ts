@@ -60,6 +60,25 @@ async function fixture(progress: ClueProgress = newClueProgress()) {
   return { clue, changed, progress, button };
 }
 
+it('routes WASD and Q/E through the same costed actions and ignores typing and browser shortcuts', async () => {
+  const f = await fixture();
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', code: 'KeyD', cancelable: true })); await flush();
+  expect(f.progress.dx).toBe(24); expect(maximumScore(f.progress)).toBe(4900);
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'q', code: 'KeyQ', cancelable: true })); await flush();
+  expect(f.progress.level).toBe(1); expect(maximumScore(f.progress)).toBe(4500);
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', code: 'KeyE', cancelable: true })); await flush();
+  expect(f.progress.level).toBe(0); expect(maximumScore(f.progress)).toBe(4500);
+  const before = structuredClone(f.progress), input = document.createElement('input'); document.body.append(input);
+  input.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', code: 'KeyD', bubbles: true, cancelable: true }));
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', code: 'KeyD', ctrlKey: true, cancelable: true }));
+  const dialog = document.createElement('dialog'); dialog.open = true; document.body.append(dialog);
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', code: 'KeyS', cancelable: true })); await flush();
+  expect(f.progress).toEqual(before); dialog.remove();
+  dispose?.(); dispose = undefined;
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', code: 'KeyA', cancelable: true })); await flush();
+  expect(f.progress).toEqual(before);
+});
+
 it('changes live labels and formatted costs without replacing icons, moving the camera, or charging points', async () => {
   const f = await fixture({ ...newClueProgress(), level: 5, widest: 5 });
   const out = f.button('Zoom out'), inside = f.button('Zoom in'), east = f.button('Travel east');

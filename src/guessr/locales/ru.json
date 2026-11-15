@@ -644,5 +644,7 @@
   "1v1 is not available on this site yet.": "На данном сайте пока недоступен режим 1 на 1.",
   "Connect Twitch to your Pro account to create a 1v1 match.": "Подключите Twitch к своей учетной записи Pro, чтобы создать матч 1 на 1.",
   "Pro access was confirmed for this game.": "Для этой игры был подтверждён доступ Pro.",
-  "This timing option is not available on this site yet.": "Данная опция настройки времени пока недоступна на этом сайте."
+  "This timing option is not available on this site yet.": "Данная опция настройки времени пока недоступна на этом сайте.",
+  "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Карта-загадка. Стрелки — панорамирование, «+» и «-» — масштабирование, клавиша «Home» — сброс вида. Наведите курсор на карту и нажмите пробел, чтобы поставить метку в центре.",
+  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Управление в игре «Clue»: клавиши W, A, S и D — перемещение камеры. Клавиша Q — уменьшение масштаба, клавиша E — увеличение масштаба."
 }

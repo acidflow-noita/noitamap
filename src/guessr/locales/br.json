@@ -644,5 +644,7 @@
   "1v1 is not available on this site yet.": "O modo 1v1 ainda não está disponível neste site.",
   "Connect Twitch to your Pro account to create a 1v1 match.": "Conecte o Twitch à sua conta Pro para criar uma partida 1x1.",
   "Pro access was confirmed for this game.": "Foi confirmado o acesso profissional para este jogo.",
-  "This timing option is not available on this site yet.": "Essa opção de horário ainda não está disponível neste site."
+  "This timing option is not available on this site yet.": "Essa opção de horário ainda não está disponível neste site.",
+  "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Mapa de adivinhação. As setas do teclado permitem deslocar a imagem; os botões “+” e “-” aumentam e diminuem o zoom; a tecla Home reinicia a exibição. Foque no mapa e pressione a barra de espaço para colocar um marcador no centro.",
+  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Controles do Clue: as teclas W, A, S e D movem a visão. A tecla Q diminui o zoom e a tecla E aumenta o zoom."
 }

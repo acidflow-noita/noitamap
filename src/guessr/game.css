@@ -1157,14 +1157,17 @@ textarea {
 
 /* Keep the clue, free map controls and submit action together on a phone. */
 @media (max-width: 900px) {
-  #guess-app:has(.game-grid) { block-size: 100dvh; min-block-size: 0; display: flex; flex-direction: column; }
+  #guess-app:has(.game-grid) { block-size: auto; min-block-size: 100dvh; display: flex; flex-direction: column; }
   #guess-app:has(.game-grid) > .site-header { flex: none; }
   #guess-app > .game-shell:has(.game-grid) { flex: 1; min-block-size: 0; display: flex; flex-direction: column; gap: .375rem; padding-block: .375rem; }
   .game-shell:has(.game-grid) > :is(.game-hud, .stream-banner, .stream-activity) { flex: none; margin-block: 0; }
-  .game-grid { flex: 1; min-block-size: 0; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: .375rem; }
+  .game-grid { flex: 1; min-block-size: 0; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(14rem, 1fr); gap: .375rem; }
   .game-grid > .game-panel { min-block-size: 0; }
   .game-grid .map-board { flex: 1; min-block-size: 0; block-size: auto; }
-  .game-grid .clue-stage { min-block-size: 0; }
+  .game-grid .clue-stage { flex: none; inline-size: 100%; block-size: auto; min-block-size: 0; aspect-ratio: 27 / 12; container-type: inline-size; }
+  .game-grid .clue-stage > .clue { inline-size: 100%; }
+  .game-grid > .game-panel:has(.map-board) { min-block-size: 14rem; }
+  .game-grid .clue-controls > .fine-print { display: none; }
   :is(.game-grid, .stream-viewer-layout) .panel-bar { min-block-size: 2.25rem; padding: .25rem .5rem; gap: .375rem; }
   :is(.game-grid, .stream-viewer-layout) .clue-controls { flex: none; padding: .25rem; }
   :is(.game-grid, .stream-viewer-layout) .camera-controls { gap: .25rem; }

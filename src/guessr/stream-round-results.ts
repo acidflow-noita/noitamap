@@ -67,7 +67,7 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
         const cell = document.createElement('td'); cell.textContent = text;
         if (column !== 1) cell.className = 'numeric';
         if (column === 2 && player.score === 5000) cell.classList.add('score-perfect');
-        else cell.style.color = playerColor(player, streamerId);
+        else if (column === 1) cell.style.color = playerColor(player, streamerId);
         if (column === 2 && !(player.recorded ?? !!player.guess)) cell.setAttribute('aria-label', tr(data.mode === 'pvp' ? 'No recorded guesses' : 'No guess recorded by the streamer'));
         row.append(cell);
       }

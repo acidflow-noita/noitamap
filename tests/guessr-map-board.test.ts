@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MapBoard } from "../src/guessr/map-board";
 import { mapControls } from '../src/guessr/map-controls';
+import translationsDe from '../src/guessr/locales/de.json';
 import { MAP_PIN_PATH, MAP_PIN_TIP, ANSWER_PIN_CENTER, GUESS_PIN_COLOR, ANSWER_PIN_COLOR, GUESS_PIN_HEIGHT, ANSWER_PIN_HEIGHT, PLAYER_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT } from '../src/guessr/map-pin';
 
 const harness = vi.hoisted(() => ({
@@ -132,6 +133,25 @@ function click(mount: HTMLElement, x: number, y: number) {
 }
 
 describe("guess-map camera", () => {
+  it('pans with global arrows without moving the guess and ignores typing, browser shortcuts and dialogs', async () => {
+    const { board, mount, guess, viewer } = await fixture();
+    board.setMarkers({ x: 1000, y: 2000 }); board.zoom(2);
+    const before = camera();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }));
+    expect(camera().x).toBeGreaterThan(before.x); expect(guess).not.toHaveBeenCalled(); aligned(viewer.viewport);
+    const panned = camera();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: '+', ctrlKey: true, cancelable: true }));
+    const input = document.createElement('input'); document.body.append(input);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }));
+    const dialog = document.createElement('dialog'); dialog.open = true; document.body.append(dialog);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', cancelable: true }));
+    expect(camera()).toEqual(panned); dialog.remove();
+    mount.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', cancelable: true, bubbles: true }));
+    expect(guess).toHaveBeenCalledOnce();
+    board.setLocked(true); const locked = camera();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }));
+    expect(camera()).toEqual(locked);
+  });
   it.each([[800, 400], [340, 550], [300, 1000]])('shows the entire world from a %i×%i panel, including after result framing and resize', async (w, h) => {
     width = w; height = h;
     const { board, viewer } = await fixture();
@@ -164,7 +184,7 @@ describe("guess-map camera", () => {
     expect(center.disabled).toBe(false);
     board.setMarkers(null);
     expect(center.disabled).toBe(true);
-    mount.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    mount.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
     expect(center.disabled).toBe(false);
     board.setMarkers(null, { x: 0, y: 0 });
     expect(center.disabled).toBe(true);
@@ -272,7 +292,7 @@ describe("guess-map camera", () => {
     i18next.addResourceBundle('de', 'translation', {}, true, true);
     i18next.addResourceBundle('de', 'guessr', {
       'World overview. Place your guess on this map.': 'Weltübersicht. Platziere deinen Tipp auf der Karte.',
-      'Guess map. Arrow keys move the pin, plus and minus zoom, Home resets the view.': 'Tippkarte. Pfeiltasten bewegen die Markierung, Plus und Minus zoomen, Pos1 setzt die Ansicht zurück.',
+      'Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.': translationsDe['Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.'],
       'Your guess': 'Dein Tipp', 'Actual location': 'Tatsächlicher Ort',
     }, true, true);
     const { mount, board, guess, viewer } = await fixture();
