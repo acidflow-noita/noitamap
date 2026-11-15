@@ -675,5 +675,15 @@
   "You have reached today’s limit of 20 games.": "Dosáhli jste dnešního limitu 20 her.",
   "Today’s limit of 100 new games has been reached.": "Hráči dnes vytvořili 100 her NoitaGuessr. To je denní limit.",
   "Result storage is full. A new game cannot be started.": "Úložiště výsledků je plné. Nelze zahájit novou hru.",
-  "The game creation limit resets at {{time}}.": "Limit pro vytváření her se vynuluje v {{time}}."
+  "The game creation limit resets at {{time}}.": "Limit pro vytváření her se vynuluje v {{time}}.",
+  "Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.": "Zahrajte si 1v1 s pozvaným soupeřem. Pořadatel musí mít předplatné Pro. Soupeř může hrát zdarma.",
+  "The \"{{streaming}}\" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.": "Možnost „{{streaming}}“ umožňuje, aby chat nebo váš soupeř hrál o jedno kolo napřed. Vypněte ji, chcete-li hrát každé kolo společně. Ve výchozím nastavení je zapnutá pro režim {{streamMode}} a vypnutá pro režim 1v1.",
+  "{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.": "{{streamMode}} využívá mapu {{dailyMode}} s novou sadou lokací pro každý zápas.",
+  "Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.": "Odeslané odpovědi se již nezobrazují v chatu na Twitchi. Moderátoři mohou i nadále zveřejňovat odkazy na pozvánky a výsledky na svém kanálu.",
+  "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.": "Byly opraveny opakované výzvy k přihlášení. Byly opraveny chyby, kvůli kterým se po opětovném připojení nebo obnovení stránky nezobrazovaly změny v odeslané odpovědi hráče.",
+  "Waiting and ready panels are centered.": "Panely „Čekání“ a „Připraveno“ jsou vycentrovány.",
+  "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "Ve výsledcích jednotlivých kol jsou barvy hráčů uvedeny pouze u jmen hráčů. Dokonalý výsledek 5 000 bodů je vyznačen zlatě.",
+  "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "Tlačítko „{{received}}“ se nyní po potvrzení vašeho tipu zobrazuje jako neaktivní.",
+  "If you reach a game-creation limit, setup shows when you can create another game.": "Pokud dosáhnete limitu pro vytváření her, v nastavení se zobrazí, kdy budete moci vytvořit další hru.",
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Otevřete „{{howToPlay}}“ a vyberte „{{whatsNew}}“, abyste si tyto poznámky přečetli znovu."
 }

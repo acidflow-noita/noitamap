@@ -93,9 +93,11 @@ it('allows a deliberate reopen and translates the open dialog without rebuilding
   controller.show(trigger); await flush(); const element = dialog()!;
   expect(element.open).toBe(true);
   expect(element.querySelector('h1')?.textContent).toBe("What's new");
+  expect(element.textContent).not.toContain('{{');
   await i18next.changeLanguage('de');
   expect(dialog()).toBe(element);
   expect(element.querySelector('h1')?.textContent).not.toBe("What's new");
   expect(element.querySelectorAll('li')).toHaveLength(GUESSR_CHANGELOG.notes.length);
   expect(element.querySelector('.dialog-footer button')?.textContent).toBe('Schließen');
+  expect(element.textContent).not.toContain('{{');
 });

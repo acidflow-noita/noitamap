@@ -675,5 +675,15 @@
   "You have reached today’s limit of 20 games.": "Você atingiu o limite de 20 jogos de hoje.",
   "Today’s limit of 100 new games has been reached.": "Os jogadores criaram 100 partidas do NoitaGuessr hoje. Esse é o limite diário.",
   "Result storage is full. A new game cannot be started.": "O espaço de armazenamento de resultados está cheio. Não é possível iniciar um novo jogo.",
-  "The game creation limit resets at {{time}}.": "O limite de criação de jogos é reiniciado às {{time}}."
+  "The game creation limit resets at {{time}}.": "O limite de criação de jogos é reiniciado às {{time}}.",
+  "Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.": "Jogue 1x1 com um adversário convidado. O anfitrião precisa ter a versão Pro. O adversário pode jogar de graça.",
+  "The \"{{streaming}}\" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.": "A opção “{{streaming}}” permite que o chat ou seu adversário jogue uma rodada à frente. Desative-a para jogarem cada rodada juntos. Ela vem ativada por padrão no modo {{streamMode}} e desativada no modo 1v1.",
+  "{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.": "O {{streamMode}} utiliza o mapa {{dailyMode}} com um novo conjunto de locais para cada jogo.",
+  "Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.": "As respostas enviadas não aparecem mais no chat do Twitch. Os apresentadores ainda podem publicar links de convite e de resultados em seus canais.",
+  "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.": "Corrigimos o problema das solicitações repetidas de login. Corrigimos o problema em que as alterações feitas na resposta enviada por um jogador não eram refletidas após uma reconexão ou atualização da página.",
+  "Waiting and ready panels are centered.": "Os painéis “Em espera” e “Pronto” estão centralizados.",
+  "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "Nos resultados de cada rodada, apenas os nomes dos jogadores aparecem nas cores correspondentes. Uma pontuação perfeita de 5.000 pontos é exibida em dourado.",
+  "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "O botão “{{received}}” agora aparece desativado depois que sua resposta for confirmada.",
+  "If you reach a game-creation limit, setup shows when you can create another game.": "Se você atingir o limite de criação de jogos, a tela de configuração indicará quando será possível criar outro jogo.",
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Abra “{{howToPlay}}” e selecione “{{whatsNew}}” para ler essas notas novamente."
 }

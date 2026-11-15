@@ -657,5 +657,15 @@
   "You have reached today’s limit of 20 games.": "Du har nått dagens gräns på 20 spel.",
   "Today’s limit of 100 new games has been reached.": "Spelarna har skapat 100 NoitaGuessr-matcher idag. Detta är den dagliga gränsen.",
   "Result storage is full. A new game cannot be started.": "Resultatlagringen är full. Det går inte att starta ett nytt spel.",
-  "The game creation limit resets at {{time}}.": "Gränsen för skapande av spel återställs kl. {{time}}."
+  "The game creation limit resets at {{time}}.": "Gränsen för skapande av spel återställs kl. {{time}}.",
+  "Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.": "Spela 1 mot 1 mot en inbjuden motståndare. Värden måste ha Pro-abonnemang. Motståndaren kan spela gratis.",
+  "The \"{{streaming}}\" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.": "Med alternativet ”{{streaming}}” kan chattdeltagarna eller din motståndare spela en runda i förväg. Stäng av det för att spela varje runda samtidigt. Det är aktiverat som standard för {{streamMode}} och avstängt för 1v1.",
+  "{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.": "{{streamMode}} använder kartan {{dailyMode}} med en ny uppsättning platser för varje match.",
+  "Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.": "Inskickade svar visas inte längre i Twitch-chatten. Programledare kan fortfarande lägga upp länkar till inbjudningar och resultat på sin kanal.",
+  "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.": "Åtgärdat problemet med upprepade inloggningsförfrågningar. Åtgärdat problemet med att ändringar i en spelares inlämnade svar inte togs med efter en återanslutning eller en uppdatering av sidan.",
+  "Waiting and ready panels are centered.": "Panelerna ”Väntar” och ”Klar” är centrerade.",
+  "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "I resultaten för varje omgång är det endast spelarnas namn som visas i deras respektive färger. Ett perfekt resultat på 5 000 poäng visas i guld.",
+  "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "Knappen ”{{received}}” ser nu ut att vara inaktiverad efter att ditt gissning har bekräftats.",
+  "If you reach a game-creation limit, setup shows when you can create another game.": "Om du når gränsen för antalet spel du kan skapa visas i inställningarna när du kan skapa ett nytt spel.",
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Öppna ”{{howToPlay}}” och välj ”{{whatsNew}}” för att läsa dessa anvisningar igen."
 }

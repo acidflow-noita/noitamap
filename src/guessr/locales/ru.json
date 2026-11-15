@@ -675,5 +675,15 @@
   "You have reached today’s limit of 20 games.": "Вы достигли сегодняшнего лимита в 20 игр.",
   "Today’s limit of 100 new games has been reached.": "Сегодня игроки создали 100 матчей в NoitaGuessr. Это суточный лимит.",
   "Result storage is full. A new game cannot be started.": "Память для результатов переполнена. Невозможно начать новую игру.",
-  "The game creation limit resets at {{time}}.": "Ограничение на создание игр сбрасывается в {{time}}."
+  "The game creation limit resets at {{time}}.": "Ограничение на создание игр сбрасывается в {{time}}.",
+  "Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.": "Сыграйте в режиме 1 на 1 с приглашённым соперником. Организатору требуется подписка Pro. Соперник может играть бесплатно.",
+  "The \"{{streaming}}\" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.": "Опция «{{streaming}}» позволяет участникам чата или вашему сопернику играть на один раунд впереди. Отключите её, чтобы играть каждый раунд одновременно. По умолчанию она включена в режиме {{streamMode}} и отключена в режиме 1 на 1.",
+  "{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.": "{{streamMode}} использует карту {{dailyMode}} с новым набором локаций для каждой игры.",
+  "Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.": "Отправленные ответы больше не отображаются в чате Twitch. Ведущие по-прежнему могут публиковать ссылки на приглашения и результаты на своих каналах.",
+  "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.": "Исправлена проблема с повторяющимися запросами на вход в систему. Исправлена проблема, из-за которой изменения, внесенные в отправленный ответ игрока, не отображались после повторного подключения или обновления страницы.",
+  "Waiting and ready panels are centered.": "Панели «В ожидании» и «Готово» выровнены по центру.",
+  "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "В результатах каждого раунда цвета игроков отображаются только рядом с именами игроков. Максимальный результат — 5 000 очков — выделен золотым цветом.",
+  "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "Кнопка «{{received}}» теперь выглядит как неактивная после подтверждения вашего ответа.",
+  "If you reach a game-creation limit, setup shows when you can create another game.": "Если вы достигнете лимита на создание игр, в настройках будет указано, когда вы сможете создать еще одну игру.",
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Откройте раздел «{{howToPlay}}» и выберите «{{whatsNew}}», чтобы ещё раз ознакомиться с этими примечаниями."
 }

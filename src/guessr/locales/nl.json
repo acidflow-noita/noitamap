@@ -657,5 +657,15 @@
   "You have reached today’s limit of 20 games.": "Je hebt de limiet van 20 spellen voor vandaag bereikt.",
   "Today’s limit of 100 new games has been reached.": "Spelers hebben vandaag 100 NoitaGuessr-wedstrijden aangemaakt. Dit is de dagelijkse limiet.",
   "Result storage is full. A new game cannot be started.": "De opslagruimte voor resultaten is vol. Er kan geen nieuw spel worden gestart.",
-  "The game creation limit resets at {{time}}.": "De limiet voor het maken van spellen wordt om {{time}} opnieuw ingesteld."
+  "The game creation limit resets at {{time}}.": "De limiet voor het maken van spellen wordt om {{time}} opnieuw ingesteld.",
+  "Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.": "Speel 1-tegen-1 tegen een uitgenodigde tegenstander. De gastheer moet een Pro-account hebben. De tegenstander kan gratis meespelen.",
+  "The \"{{streaming}}\" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.": "Met de optie \"{{streaming}}\" kun je de chat of je tegenstander een ronde voor laten spelen. Schakel deze optie uit om elke ronde samen te spelen. Deze optie staat standaard aan voor {{streamMode}} en uit voor 1v1.",
+  "{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.": "{{streamMode}} maakt gebruik van de {{dailyMode}}-kaart met voor elke wedstrijd een nieuwe reeks locaties.",
+  "Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.": "Ingezonden antwoorden verschijnen niet langer in de Twitch-chat. Hosts kunnen nog steeds uitnodigings- en resultatenlinks op hun kanaal plaatsen.",
+  "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.": "Het probleem waarbij herhaaldelijk om inloggen werd gevraagd, is opgelost. Het probleem waarbij wijzigingen in het ingediende antwoord van een speler niet werden doorgevoerd na het opnieuw verbinden of het verversen van de pagina, is opgelost.",
+  "Waiting and ready panels are centered.": "De panelen ‘Wachten’ en ‘Klaar’ zijn gecentreerd.",
+  "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "In de uitslagen van elke ronde worden de spelerskleuren alleen bij de namen van de spelers weergegeven. Een perfecte score van 5.000 punten wordt in goud weergegeven.",
+  "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "De knop \"{{received}}\" ziet er nu uit alsof hij is uitgeschakeld nadat je antwoord is bevestigd.",
+  "If you reach a game-creation limit, setup shows when you can create another game.": "Als je de limiet voor het aanmaken van spellen bereikt, wordt in de instellingen aangegeven wanneer je weer een spel kunt aanmaken.",
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Open \"{{howToPlay}}\" en kies \"{{whatsNew}}\" om deze opmerkingen nog eens door te lezen."
 }

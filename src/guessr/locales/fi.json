@@ -657,5 +657,15 @@
   "You have reached today’s limit of 20 games.": "Olet saavuttanut tämän päivän 20 pelin rajan.",
   "Today’s limit of 100 new games has been reached.": "Pelaajat ovat luoneet tänään 100 NoitaGuessr-ottelua. Tämä on päivittäinen enimmäismäärä.",
   "Result storage is full. A new game cannot be started.": "Tulostietokanta on täynnä. Uutta peliä ei voi aloittaa.",
-  "The game creation limit resets at {{time}}.": "Pelin luomisen aikaraja nollautuu klo {{time}}."
+  "The game creation limit resets at {{time}}.": "Pelin luomisen aikaraja nollautuu klo {{time}}.",
+  "Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.": "Pelaa 1v1-ottelua kutsutun vastustajan kanssa. Isännän on oltava Pro-jäsen. Vastustaja voi pelata ilmaiseksi.",
+  "The \"{{streaming}}\" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.": "”{{streaming}}”-asetuksen avulla chat-kaveri tai vastustajasi voi pelata yhden kierroksen edellä. Poista se käytöstä, jos haluat pelata jokaisen kierroksen yhdessä. Se on oletusarvoisesti päällä {{streamMode}}-tilassa ja pois päältä 1v1-tilassa.",
+  "{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.": "{{streamMode}} käyttää {{dailyMode}}-karttaa, jossa on jokaisessa pelissä uusi joukko sijainteja.",
+  "Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.": "Lähetetyt vastaukset eivät enää näy Twitchin chatissa. Kanavan isännät voivat edelleen julkaista kutsu- ja tuloslinkkejä kanavallaan.",
+  "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.": "Korjattu toistuvat kirjautumispyynnöt. Korjattu se, että pelaajan lähettämään vastaukseen tehdyt muutokset eivät näkyneet yhteyden palauttamisen tai sivun päivittämisen jälkeen.",
+  "Waiting and ready panels are centered.": "”Odotus” ja ”Valmis” -paneelit on keskitetty.",
+  "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "Kunkin kierroksen tuloksissa vain pelaajien nimet on merkitty pelaajien väreillä. Täydellinen pistemäärä, 5 000 pistettä, näkyy kultaisella.",
+  "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "”{{received}}”-painike näyttää nyt olevan pois käytöstä, kun arvauksesi on vahvistettu.",
+  "If you reach a game-creation limit, setup shows when you can create another game.": "Jos saavutat pelien luomisen rajan, asetuksissa näkyy, milloin voit luoda uuden pelin.",
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Avaa ”{{howToPlay}}” ja valitse ”{{whatsNew}}”, jotta voit lukea nämä ohjeet uudelleen."
 }

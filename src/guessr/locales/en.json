@@ -657,5 +657,15 @@
   "You have reached today’s limit of 20 games.": "You have reached today’s limit of 20 games.",
   "Today’s limit of 100 new games has been reached.": "Today’s limit of 100 new games has been reached.",
   "Result storage is full. A new game cannot be started.": "Result storage is full. A new game cannot be started.",
-  "The game creation limit resets at {{time}}.": "The game creation limit resets at {{time}}."
+  "The game creation limit resets at {{time}}.": "The game creation limit resets at {{time}}.",
+  "Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.": "Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.",
+  "The \"{{streaming}}\" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.": "The \"{{streaming}}\" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.",
+  "{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.": "{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.",
+  "Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.": "Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.",
+  "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.": "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.",
+  "Waiting and ready panels are centered.": "Waiting and ready panels are centered.",
+  "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.",
+  "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "The \"{{received}}\" button now looks disabled after your guess is confirmed.",
+  "If you reach a game-creation limit, setup shows when you can create another game.": "If you reach a game-creation limit, setup shows when you can create another game.",
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again."
 }

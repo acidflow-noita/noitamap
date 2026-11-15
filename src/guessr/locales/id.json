@@ -657,5 +657,15 @@
   "You have reached today’s limit of 20 games.": "Anda telah mencapai batas 20 pertandingan untuk hari ini.",
   "Today’s limit of 100 new games has been reached.": "Para pemain telah membuat 100 pertandingan NoitaGuessr hari ini. Ini adalah batas hariannya.",
   "Result storage is full. A new game cannot be started.": "Penyimpanan hasil sudah penuh. Permainan baru tidak dapat dimulai.",
-  "The game creation limit resets at {{time}}.": "Batas pembuatan game akan disetel ulang pada pukul {{time}}."
+  "The game creation limit resets at {{time}}.": "Batas pembuatan game akan disetel ulang pada pukul {{time}}.",
+  "Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.": "Mainkan mode 1v1 dengan lawan yang diundang. Penyelenggara harus memiliki langganan Pro. Lawan dapat bermain secara gratis.",
+  "The \"{{streaming}}\" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.": "Opsi \"{{streaming}}\" memungkinkan lawan bicara atau lawanmu bermain satu putaran lebih dulu. Nonaktifkan opsi ini untuk bermain setiap putaran secara bersamaan. Opsi ini aktif secara default untuk mode {{streamMode}} dan nonaktif untuk mode 1v1.",
+  "{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.": "{{streamMode}} menggunakan peta {{dailyMode}} dengan kumpulan lokasi baru untuk setiap pertandingan.",
+  "Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.": "Jawaban yang telah dikirimkan tidak lagi muncul di obrolan Twitch. Host masih dapat memposting tautan undangan dan hasil di saluran mereka.",
+  "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.": "Masalah permintaan masuk berulang telah diperbaiki. Masalah tidak teraplikasinya perubahan pada jawaban yang telah dikirimkan oleh pemain setelah koneksi terputus dan terhubung kembali atau halaman di-refresh telah diperbaiki.",
+  "Waiting and ready panels are centered.": "Panel \"Menunggu\" dan \"Siap\" ditempatkan di tengah.",
+  "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "Dalam hasil setiap babak, hanya nama pemain yang ditampilkan dengan warna masing-masing pemain. Skor sempurna sebesar 5.000 poin ditampilkan dalam warna emas.",
+  "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "Tombol \"{{received}}\" kini tampak dinonaktifkan setelah tebakan Anda dikonfirmasi.",
+  "If you reach a game-creation limit, setup shows when you can create another game.": "Jika Anda mencapai batas pembuatan game, sistem akan menampilkan kapan Anda dapat membuat game baru.",
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Buka \"{{howToPlay}}\" dan pilih \"{{whatsNew}}\" untuk membaca catatan ini lagi."
 }

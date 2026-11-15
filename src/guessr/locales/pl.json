@@ -675,5 +675,15 @@
   "You have reached today’s limit of 20 games.": "Osiągnąłeś dzisiejszy limit 20 gier.",
   "Today’s limit of 100 new games has been reached.": "Gracze utworzyli dzisiaj 100 rozgrywek w NoitaGuessr. To jest dzienny limit.",
   "Result storage is full. A new game cannot be started.": "Pamięć wyników jest pełna. Nie można rozpocząć nowej gry.",
-  "The game creation limit resets at {{time}}.": "Limit tworzenia gier zostanie zresetowany o {{time}}."
+  "The game creation limit resets at {{time}}.": "Limit tworzenia gier zostanie zresetowany o {{time}}.",
+  "Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.": "Zagraj w trybie 1 na 1 z zaproszonym przeciwnikiem. Gospodarz musi posiadać subskrypcję Pro. Przeciwnik może grać za darmo.",
+  "The \"{{streaming}}\" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.": "Opcja „{{streaming}}” pozwala użytkownikom na czacie lub przeciwnikowi rozegrać rundę z wyprzedzeniem. Wyłącz ją, aby rozgrywać każdą rundę razem. Domyślnie jest włączona w trybie {{streamMode}}, a wyłączona w trybie 1 na 1.",
+  "{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.": "{{streamMode}} korzysta z mapy {{dailyMode}}, wykorzystując nowy zestaw lokalizacji dla każdego meczu.",
+  "Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.": "Przesłane odpowiedzi nie pojawiają się już na czacie serwisu Twitch. Prowadzący nadal mogą publikować na swoich kanałach linki do zaproszeń i wyników.",
+  "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.": "Naprawiono problem z powtarzającymi się prośbami o logowanie. Naprawiono brak aktualizacji zmian w odpowiedzi przesłanej przez gracza po ponownym połączeniu lub odświeżeniu strony.",
+  "Waiting and ready panels are centered.": "Panele „Oczekiwanie” i „Gotowość” są wyśrodkowane.",
+  "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "W wynikach każdej rundy kolory graczy są przypisane wyłącznie do nazwisk graczy. Maksymalny wynik wynoszący 5 000 punktów jest wyświetlany w kolorze złotym.",
+  "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "Przycisk „{{received}}” wygląda teraz na nieaktywny po potwierdzeniu Twojej odpowiedzi.",
+  "If you reach a game-creation limit, setup shows when you can create another game.": "Jeśli osiągniesz limit tworzenia gier, w oknie konfiguracji pojawi się informacja, kiedy będziesz mógł utworzyć kolejną grę.",
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "Otwórz „{{howToPlay}}” i wybierz „{{whatsNew}}”, aby ponownie zapoznać się z tymi informacjami."
 }

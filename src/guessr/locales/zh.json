@@ -657,5 +657,15 @@
   "You have reached today’s limit of 20 games.": "您已达到今天20局的上限。",
   "Today’s limit of 100 new games has been reached.": "今天，玩家们共创建了100场NoitaGuessr比赛。这已达到每日上限。",
   "Result storage is full. A new game cannot be started.": "结果存储空间已满。无法开始新游戏。",
-  "The game creation limit resets at {{time}}.": "游戏创建限制将在 {{time}} 时重置。"
+  "The game creation limit resets at {{time}}.": "游戏创建限制将在 {{time}} 时重置。",
+  "Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.": "与受邀的对手进行1v1对战。房主需拥有Pro账号，对手可免费参与。",
+  "The \"{{streaming}}\" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.": "“{{streaming}}”选项允许聊天室成员或对手比你领先一轮。关闭该选项即可与他人同步进行每轮对局。在 {{streamMode}} 模式下，该选项默认开启；在 1v1 模式下，该选项默认关闭。",
+  "{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.": "{{streamMode}} 使用 {{dailyMode}} 地图，并在每场比赛中采用一组新的地点。",
+  "Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.": "提交的答案将不再显示在 Twitch 聊天中。主播仍可在自己的频道中发布邀请链接和结果链接。",
+  "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.": "修复了反复要求登录的问题。修复了重新连接或刷新页面后，玩家提交的答案中的修改内容未显示的问题。",
+  "Waiting and ready panels are centered.": "“等待”和“就绪”面板居中显示。",
+  "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "在每轮的成绩中，只有玩家姓名会显示玩家的代表色。满分5,000分以金色显示。",
+  "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "在您的猜测得到确认后，“{{received}}”按钮现在看起来处于禁用状态。",
+  "If you reach a game-creation limit, setup shows when you can create another game.": "如果您达到了创建游戏的上限，系统会提示您何时可以再次创建游戏。",
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "打开“{{howToPlay}}”，然后选择“{{whatsNew}}”以再次阅读这些说明。"
 }

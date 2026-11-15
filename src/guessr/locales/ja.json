@@ -657,5 +657,15 @@
   "You have reached today’s limit of 20 games.": "本日のプレイ上限である20試合に達しました。",
   "Today’s limit of 100 new games has been reached.": "本日、プレイヤーによって100件の「NoitaGuessr」マッチが作成されました。これは1日の上限です。",
   "Result storage is full. A new game cannot be started.": "結果の保存領域がいっぱいです。新しいゲームを開始できません。",
-  "The game creation limit resets at {{time}}.": "ゲーム作成の制限は{{time}}にリセットされます。"
+  "The game creation limit resets at {{time}}.": "ゲーム作成の制限は{{time}}にリセットされます。",
+  "Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.": "招待した相手と1対1で対戦します。ホストは「Pro」プランが必要です。対戦相手は無料でプレイできます。",
+  "The \"{{streaming}}\" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.": "「{{streaming}}」オプションを有効にすると、チャット参加者や対戦相手が1ラウンド先を進むことができます。各ラウンドを同時にプレイするには、このオプションを無効にしてください。{{streamMode}}ではデフォルトで有効になっており、1対1では無効になっています。",
+  "{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.": "{{streamMode}} は、各ゲームごとに新しいロケーションのセットを含む {{dailyMode}} マップを使用します。",
+  "Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.": "投稿された回答は、Twitchのチャットに表示されなくなりました。ホストは引き続き、チャンネル内で招待リンクや結果リンクを投稿することができます。",
+  "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.": "ログインの要求が繰り返し表示される問題を修正しました。再接続やページのリフレッシュ後に、プレイヤーが送信した回答への変更が反映されない問題を修正しました。",
+  "Waiting and ready panels are centered.": "「待機」と「準備完了」のパネルは中央に配置されています。",
+  "In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.": "各ラウンドの結果表示では、プレイヤー名のみプレイヤーカラーで表示されます。満点の5,000ポイントは金色で表示されます。",
+  "The \"{{received}}\" button now looks disabled after your guess is confirmed.": "推測が確認されると、「{{received}}」ボタンは使用不可の状態になります。",
+  "If you reach a game-creation limit, setup shows when you can create another game.": "ゲーム作成の上限に達した場合、セットアップ画面に、次にゲームを作成できる時期が表示されます。",
+  "Open \"{{howToPlay}}\" and choose \"{{whatsNew}}\" to read these notes again.": "「{{howToPlay}}」を開き、「{{whatsNew}}」を選択して、この注意事項をもう一度お読みください。"
 }

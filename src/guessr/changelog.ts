@@ -1,19 +1,29 @@
 import Dialog from 'bootstrap/js/dist/dialog.js';
-import { bindAttribute, bindText, guessrLocale } from './i18n';
+import { bindAttribute, bindText, guessrLocale, tr } from './i18n';
 
 // Change this ID only when the player-facing notes below change.
 export const GUESSR_CHANGELOG = {
-  id: '2026-11-15-history',
+  id: '2026-11-15-roundup',
   date: '2026-11-15',
   notes: [
-    "Game history shows each player's rank and score.",
+    'Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.',
+    'The "{{streaming}}" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.',
+    '{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.',
+    'Submitted answers no longer appear in Twitch chat. Hosts can still post invitation and result links in their channel.',
+    "Fixed repeated sign-in requests. Fixed missing changes to a player's submitted answer after a reconnect or page refresh.",
+    '1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.',
+    'Waiting and ready panels are centered.',
+    'If you give up a 1v1 match, the results page opens.',
+    'On phones, game panels use the full width, with more room for the clue and touch controls.',
     'Use W, A, S and D to move the clue image. Q zooms out. E zooms in.',
     'Move the guess map with the arrow keys. Zoom with + and -.',
     'Buttons above the clue image now show keyboard shortcuts.',
-    'On phones, game panels use the full width, with more room for the clue and touch controls.',
-    '1v1 uses your existing Pro sign-in. The lobby shows both players and whether they are ready.',
-    'If you give up a 1v1 match, the results page opens.',
+    'The "{{received}}" button now looks disabled after your guess is confirmed.',
+    'In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.',
+    "Game history shows each player's rank and score.",
     'The game results page has a smaller title and a narrower rank column.',
+    'If you reach a game-creation limit, setup shows when you can create another game.',
+    'Open "{{howToPlay}}" and choose "{{whatsNew}}" to read these notes again.',
   ],
 };
 const SEEN_KEY = 'noitamap-guessr-changelog-seen';
@@ -47,7 +57,9 @@ export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
       .toLocaleDateString(guessrLocale(), { dateStyle: 'long', timeZone: 'UTC' }));
     date.dateTime = release.date; date.className = 'muted';
     const notes = document.createElement('ul'); notes.className = 'guessr-changelog-notes';
-    for (const text of release.notes) notes.append(bindText(document.createElement('li'), text));
+    const labels = () => ({ streaming: tr('I’m streaming'), streamMode: tr('Chat vs Streamer'),
+      dailyMode: tr('Daily'), received: tr('Guess received'), howToPlay: tr('How to play'), whatsNew: tr("What's new") });
+    for (const text of release.notes) notes.append(bindText(document.createElement('li'), text, labels));
     body.append(date, notes);
     const footer = document.createElement('div'); footer.className = 'dialog-footer';
     const close = bindText(document.createElement('button'), 'Close'); close.type = 'button';
