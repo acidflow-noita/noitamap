@@ -1159,7 +1159,7 @@ textarea {
 @media (max-width: 900px) {
   #guess-app:has(.game-grid) { block-size: auto; min-block-size: 100dvh; display: flex; flex-direction: column; }
   #guess-app:has(.game-grid) > .site-header { flex: none; }
-  #guess-app > .game-shell:has(.game-grid) { flex: 1; min-block-size: 0; display: flex; flex-direction: column; gap: .375rem; padding-block: .375rem; }
+  #guess-app > .game-shell:has(.game-grid) { flex: 1; min-block-size: 0; display: flex; flex-direction: column; gap: .375rem; padding-block: .375rem; padding-inline: 0; }
   .game-shell:has(.game-grid) > :is(.game-hud, .stream-banner, .stream-activity) { flex: none; margin-block: 0; }
   .game-grid { flex: 1; min-block-size: 0; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(14rem, 1fr); gap: .375rem; }
   .game-grid > .game-panel { min-block-size: 0; }
@@ -1173,6 +1173,8 @@ textarea {
   :is(.game-grid, .stream-viewer-layout) .camera-controls { gap: .25rem; }
   .guess-map-controls { flex-wrap: nowrap; }
   .guess-map-controls .btn { flex: 1; }
+  .guess-map-toolbar { gap: .5rem; }
+  .guess-map-toolbar .guess-map-controls { gap: .5rem; }
   .guess-map-controls .btn > span { position: absolute; inline-size: 1px; block-size: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .stream-host-shell .stream-host-actions { padding: .25rem .5rem; }
 }

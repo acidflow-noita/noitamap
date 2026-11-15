@@ -196,10 +196,13 @@
   .stream-viewer-layout > .stream-picker,
   .stream-viewer-layout > .stream-viewer-clue { min-block-size: 0; block-size: auto; }
   .stream-viewer-clue { align-self: stretch; }
-  .stream-viewer-shell { padding-block: .375rem; }
+  .stream-viewer-shell { padding-block: .375rem; padding-inline: 0; }
   .stream-viewer-layout { gap: .375rem; }
   .stream-chat-header.stream-toolbar { padding: .375rem .5rem; }
-  .stream-guess-actions { padding: .25rem .5rem; }
+  .stream-guess-actions { padding: .375rem .5rem; gap: .5rem; }
+  .stream-guess-actions .guess-map-controls { gap: .5rem; flex: 0 0 auto; }
+  .stream-guess-actions .guess-map-controls .btn { min-inline-size: 2.75rem; min-block-size: 2.75rem; padding: .375rem; }
+  .stream-send-control { flex: 1 1 0; min-inline-size: 5.5rem; }
   .stream-viewer-page > .site-header { flex-wrap: nowrap; min-block-size: 3rem; padding: .25rem .5rem; gap: .375rem; }
   .stream-viewer-page .header-identity { flex: 1 1 auto; gap: .375rem; }
   .stream-viewer-page .brand { inline-size: clamp(6rem, 24vw, 9rem); }
@@ -214,8 +217,8 @@
   .stream-viewer-clue .round-maximum { font-size: .8125rem; min-block-size: 0; padding: .25rem .5rem; }
   .stream-viewer-clue .clue-stage { flex: none; inline-size: 100%; block-size: auto; min-block-size: 0; aspect-ratio: 27 / 12; container-type: inline-size; }
   .stream-viewer-clue .clue-stage > .clue { inline-size: 100%; }
-  .stream-viewer-clue .clue-controls-compact { padding: .25rem; }
-  .stream-viewer-clue .camera-controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; inline-size: 100%; }
+  .stream-viewer-clue .clue-controls-compact { padding: .375rem; }
+  .stream-viewer-clue .camera-controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: .375rem; inline-size: 100%; --camera-button-gap: .5rem; }
   .stream-viewer-clue .camera-zoom { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .stream-viewer-clue .travel-pad { display: grid; inline-size: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-areas: 'west north south east'; }
   .stream-viewer-clue .control-help { flex: 1; min-inline-size: 0; }
