@@ -72,6 +72,7 @@ function modeCard(options: {
   name: string;
   image: string;
   description: string;
+  descriptionValues?: () => Record<string, string>;
   badge: string;
   pro?: boolean;
   twitch?: boolean;
@@ -96,7 +97,7 @@ function modeCard(options: {
   actions.append(...options.actions);
   body.append(
     heading,
-    element("p", "lobby-mode-description", msg(options.description)),
+    element("p", "lobby-mode-description", msg(options.description, options.descriptionValues)),
     actions,
   );
   card.append(image, body);
@@ -205,7 +206,8 @@ export function createLobby(options: LobbyOptions): HTMLElement {
       name: "Chat vs Streamer",
       twitch: true,
       image: "fungal-caverns",
-      description: "Challenge your chat to find the location.",
+      description: "Uses {{mode}} map",
+      descriptionValues: () => ({ mode: tr('Daily') }),
       badge: "Streamer with Pro",
       pro: true,
       actions: streamActions,
