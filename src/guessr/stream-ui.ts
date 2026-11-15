@@ -225,6 +225,7 @@ export class StreamUI {
   private roomHealthy = true;
   private proStatus?: ReturnType<typeof streamerProStatus>;
   private statusHelp?: ReturnType<typeof hoverHelp>;
+  private startPermissionHelp?: ReturnType<typeof hoverHelp>;
   private shareNotice?: ReturnType<typeof buttonNotice>;
   private sharePending = false;
   private sharedUntil = 0;
@@ -251,6 +252,7 @@ export class StreamUI {
   private disposeHeader(): void {
     this.proStatus?.dispose(); this.proStatus = undefined;
     this.statusHelp?.dispose(); this.statusHelp = undefined;
+    this.startPermissionHelp?.dispose(); this.startPermissionHelp = undefined;
     this.shareNotice?.dispose(); this.shareNotice = undefined;
     clearTimeout(this.guessNoticeTimer); this.guessNoticeTimer = undefined;
     clearTimeout(this.lobbyTimer); this.lobbyTimer = undefined;
@@ -440,18 +442,24 @@ export class StreamUI {
     switchBox.append(announcements); sharingRow.append(switchBox, label);
     const sharingHelp = el('p', 'The link is posted three times as normal messages, or once as an announcement.', 'form-text');
     sharingHelp.id = 'stream-sharing-help'; announcements.setAttribute('aria-describedby', sharingHelp.id);
-    const permissionNote = el('p', 'Sharing permission is optional. Without it, you can copy the link.', 'form-text');
+    const permissionNote = el('p', 'First, allow NoitaGuessr to post messages in your Twitch chat.', 'form-text');
+    permissionNote.id = 'stream-sharing-permission';
     let sharingReady = false;
-    const hasSharingPermission = () => this.api.local ? !!this.viewer?.canShare(this.shareAnnouncements)
-      : canShareGameLink(this.setupCredentials, this.shareAnnouncements);
+    let startButton: HTMLButtonElement | undefined;
+    const hasSharingPermission = () => this.canPostGameLink(this.shareAnnouncements);
     const refreshSharing = () => {
       const granted = hasSharingPermission();
       enableSharing.hidden = !sharingReady || granted;
       permissionNote.hidden = !sharingReady || granted;
+      if (startButton) {
+        startButton.disabled = this.busy || !sharingReady || !granted;
+        this.updateStartPermissionHelp(startButton, sharingReady && !granted);
+      }
     };
     const enableSharing = action('Enable sharing in chat', async () => {
       if (this.busy) return;
       this.busy = true; enableSharing.disabled = true; announcements.disabled = true;
+      refreshSharing();
       try {
         if (this.api.local) await this.viewer!.connect({ posting: true, announcements: this.shareAnnouncements });
         else await this.connectAuth();
@@ -460,7 +468,7 @@ export class StreamUI {
         this.busy = false; enableSharing.disabled = false; announcements.disabled = false;
         if (main.isConnected) refreshSharing();
       }
-    }, 'btn btn-sm btn-outline theme-secondary');
+    }, 'btn btn-solid theme-primary');
     enableSharing.id = 'stream-enable-sharing'; enableSharing.hidden = true; permissionNote.hidden = true;
     announcements.onchange = () => {
       this.shareAnnouncements = announcements.checked;
@@ -557,13 +565,22 @@ export class StreamUI {
           ),
         );
       const startActions = this.api.local && !this.viewer?.getState().connected ? accountStep : setupActions;
-      startActions.append(
-        action(
-          this.api.local && !this.viewer?.getState().connected ? 'Connect Twitch' : 'Start new game',
-          () => this.api.local && !this.viewer?.getState().connected ? this.connectLocalTwitch() : this.start(),
-          this.game && this.game.stage !== 'complete' ? "secondary" : "primary",
-        ),
-      );
+      const needsConnection = this.api.local && !this.viewer?.getState().connected;
+      const create = action(needsConnection ? 'Connect Twitch' : 'Start new game', async () => {
+        if (needsConnection) return this.connectLocalTwitch();
+        refreshSharing();
+        if (create.disabled) return;
+        const pending = this.start(); refreshSharing();
+        await pending;
+        if (main.isConnected) refreshSharing();
+      }, this.game && this.game.stage !== 'complete' ? 'secondary' : 'primary');
+      if (needsConnection) startActions.append(create);
+      else {
+        startButton = create; create.id = 'stream-create-game'; create.disabled = true;
+        create.setAttribute('aria-describedby', permissionNote.id);
+        const wrapper = el('span', '', 'control-help'); wrapper.append(create); startActions.append(wrapper);
+        refreshSharing();
+      }
       if (this.api.local) {
         const offline = el('details', '', 'stream-local-input');
         offline.append(el('summary', 'Offline testing'), action('Start simulated game', () => this.start(false)));
@@ -594,6 +611,9 @@ export class StreamUI {
   }
   private async start(useTwitch = true): Promise<void> {
     if (this.busy) return;
+    if (useTwitch && !this.canPostGameLink(this.shareAnnouncements)) {
+      this.hooks.toast(tr('First, allow NoitaGuessr to post messages in your Twitch chat.')); return;
+    }
     this.busy = true;
     try {
       if (useTwitch && this.timedRounds) {
@@ -701,7 +721,13 @@ export class StreamUI {
     const first = document.getElementById('stream-first-round') as HTMLButtonElement | null;
     if (first) first.disabled = game.paused || !!starting;
     const start = document.getElementById('stream-start-game') as HTMLButtonElement | null;
-    if (start) start.disabled = game.paused || !this.roomHealthy || this.sharePending;
+    if (start) {
+      const missing = this.needsSharingApproval();
+      start.disabled = game.paused || !this.roomHealthy || this.sharePending || this.busy || missing;
+      this.updateStartPermissionHelp(start, missing);
+      const approval = document.getElementById('stream-start-approval');
+      if (approval) approval.hidden = !missing;
+    }
     const activity = document.getElementById('stream-activity-message');
     if (activity) activity.style.visibility = Date.now() < this.activityUntil ? 'visible' : 'hidden';
     const shared = document.getElementById('stream-share-status');
@@ -738,11 +764,27 @@ export class StreamUI {
         : 'Everyone plays the same location at the same time.'));
       const start = action('Start game', () => {
         const game = this.game!;
-        if (game.paused || !this.roomHealthy || this.sharePending) return;
+        if (game.paused || !this.roomHealthy || this.sharePending || this.busy || this.needsSharingApproval()) return;
         if (this.durable) { void this.durableCommand('start').catch(e => this.hooks.toast(tr(e.message))); return; }
         beginStreamTiming(game, streamTime(game)); this.save();  this.render();
       }, 'primary');
-      start.id = 'stream-start-game'; section.append(count, names, start); main.append(section); this.updateLobby(); return;
+      start.id = 'stream-start-game';
+      const wrapper = el('span', '', 'control-help'); wrapper.append(start);
+      const approval = el('div'); approval.id = 'stream-start-approval';
+      const consent = action('Enable sharing in chat', async () => {
+        if (this.busy) return;
+        this.busy = true; consent.disabled = true; this.updateTimer();
+        try {
+          if (this.api.local) {
+            await this.viewer!.connect({ posting: true, announcements: this.game?.shareAnnouncements === true });
+            if (this.viewer!.canShare(this.game?.shareAnnouncements === true)) this.sharingPermissionFailed = false;
+          }
+          else await this.connectAuth();
+        } catch (error) { this.hooks.toast(localizedError(error)); }
+        finally { this.busy = false; consent.disabled = false; this.updateTimer(); this.updateShareButton(); }
+      }, 'btn btn-solid theme-primary');
+      approval.append(el('p', 'First, allow NoitaGuessr to post messages in your Twitch chat.', 'form-text'), consent);
+      section.append(count, names, wrapper, approval); main.append(section); this.updateLobby(); this.updateTimer(); return;
     }
     section.classList.add('stream-warmup');
     section.append(el('h2', 'Chat is playing round 1.'));
@@ -826,8 +868,20 @@ export class StreamUI {
       confirmation.hidden = this.game?.timing?.phase !== 'lobby' && !this.sharePending && Date.now() >= this.shareFeedbackUntil;
     }
   }
-  private canPostGameLink(): boolean {
-    const announcements = this.game?.shareAnnouncements === true;
+  private updateStartPermissionHelp(button: HTMLButtonElement, missing: boolean): void {
+    const wrapper = button.parentElement!;
+    if (missing) {
+      wrapper.tabIndex = 0;
+      this.startPermissionHelp ??= hoverHelp(wrapper, () => tr('First, allow NoitaGuessr to post messages in your Twitch chat.'), button);
+    } else {
+      this.startPermissionHelp?.dispose(); this.startPermissionHelp = undefined;
+      wrapper.removeAttribute('tabindex'); wrapper.removeAttribute('aria-description'); button.removeAttribute('aria-description');
+    }
+  }
+  private needsSharingApproval(): boolean {
+    return (!this.api.local || this.game?.session.localChat === true) && !this.canPostGameLink();
+  }
+  private canPostGameLink(announcements = this.game?.shareAnnouncements === true): boolean {
     return !this.sharingPermissionFailed && (this.api.local ? !!this.viewer?.canShare(announcements)
       : canShareGameLink(this.setupCredentials, announcements));
   }

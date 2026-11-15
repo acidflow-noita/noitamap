@@ -6,14 +6,15 @@ import { StreamService } from '../src/guessr/stream-server';
 import { newStreamGame, closeStreamRound, revealStreamRound, advanceStreamRound, streamResult } from '../src/guessr/stream-state';
 import { streamSource, streamHost, streamSecret, streamNow, streamAnswer } from './helpers/guessr-stream';
 import { formatGuessCommand } from '../src/guessr/guess-command';
-import type { TwitchChatOptions } from '../src/guessr/twitch-chat';
+import type { TwitchChatOptions, TwitchChatCredentials } from '../src/guessr/twitch-chat';
 import { startStreamTiming, startHostWindow, STREAM_SUBMISSION_GRACE_MS } from '../src/guessr/stream-timing';
 import { TwitchAnnouncementError } from '../src/guessr/twitch-announcement';
 import type { StreamBroadcastHost } from '../src/guessr/stream-broadcast-host';
 
 const mocks = vi.hoisted(() => ({ pause: vi.fn(async () => ({})), quit: vi.fn(async () => ({ phase: 'waiting' })), picker: vi.fn(), notice: vi.fn(), channel: vi.fn(), watchChat: vi.fn((_channel: string, _handlers: Pick<TwitchChatOptions, 'message' | 'status' | 'remove'>) => vi.fn()), start: vi.fn(), reveal: vi.fn(), post: vi.fn(async (_channel: string, _message: string, _announcements: boolean) => {}),
   broadcasters: [] as { failed: ConstructorParameters<typeof StreamBroadcastHost>[3]; dispose: ReturnType<typeof vi.fn> }[],
-  shareAccess: true, announcementAccess: true, connect: vi.fn(async (_options: { announcements?: boolean }) => {}),
+  shareAccess: true, announcementAccess: true, remote: false, connect: vi.fn(async (_options: { announcements?: boolean }) => {}),
+  authSession: vi.fn(async (): Promise<TwitchChatCredentials | undefined> => undefined), authConnect: vi.fn(async () => {}),
   publish: vi.fn(), result: vi.fn(), stateBroadcast: vi.fn(), revealBroadcast: vi.fn(), receipt: vi.fn(async () => {}), reject: vi.fn(async () => {}), roundView: vi.fn((main: HTMLElement, _game: unknown, _index: number, actions: HTMLElement) => { main.append(actions); return () => {}; }) }));
 vi.mock('../src/guessr/stream-broadcast-host', () => ({ StreamBroadcastHost: class {
   dispose = vi.fn();
@@ -25,10 +26,14 @@ vi.mock('../src/guessr/stream-round-results', () => ({ streamRoundResults: mocks
   const view = document.createElement('div'); view.className = 'stream-review-grid'; main.append(view); return () => {};
 } }));
 vi.mock('../src/guessr/stream-api', () => ({ StreamApi: class {
-  local = true; available = true; pause = mocks.pause; quit = mocks.quit; setLocalChannel = mocks.channel; start = mocks.start; reveal = mocks.reveal;
+  local = !mocks.remote; available = true; pause = mocks.pause; quit = mocks.quit; setLocalChannel = mocks.channel; start = mocks.start; reveal = mocks.reveal;
   publish = mocks.publish; result = mocks.result;
   clock = async () => ({ now: Date.now() });
 } }));
+vi.mock('../src/guessr/api', async original => ({ ...await original<object>(), gameAuth: async () => ({
+  getState: () => ({ isSubscriber: true, provider: 'twitch', username: 'streamer' }),
+  registerLoginPreparation() {}, getTwitchChatSession: mocks.authSession, connectTwitchChat: mocks.authConnect,
+}) }));
 vi.mock('../src/guessr/stream-picker', () => ({ mountStreamPicker: () => { mocks.picker(); return () => {}; } }));
 vi.mock('../src/guessr/twitch-viewer', () => ({ savedTwitchViewerId: () => undefined, TwitchViewer: class {
   ready = Promise.resolve(); getState() { return { connected: true, userId: '123', login: 'streamer' }; }
@@ -47,6 +52,7 @@ beforeEach(() => {
   mocks.quit.mockReset().mockResolvedValue({ phase: 'waiting' });
   mocks.post.mockReset().mockResolvedValue(undefined);
   mocks.shareAccess = true; mocks.announcementAccess = true;
+  mocks.remote = false; mocks.authSession.mockReset().mockResolvedValue(undefined); mocks.authConnect.mockReset().mockResolvedValue(undefined);
   mocks.connect.mockReset().mockImplementation(async options => {
     mocks.shareAccess = true;
     if (options.announcements) mocks.announcementAccess = true;
@@ -186,19 +192,21 @@ it('offers consent during setup before starting, only for the selected sharing m
   const toggle = document.getElementById('stream-share-announcements') as HTMLInputElement;
   toggle.checked = true; toggle.dispatchEvent(new Event('change'));
   expect(consent.hidden).toBe(false);
+  expect((document.getElementById('stream-create-game') as HTMLButtonElement).disabled).toBe(true);
   expect(mocks.connect).not.toHaveBeenCalled();
   consent.click(); await flush();
   expect(mocks.connect).toHaveBeenCalledExactlyOnceWith({ posting: true, announcements: true });
   expect(consent.hidden).toBe(true);
+  expect((document.getElementById('stream-create-game') as HTMLButtonElement).disabled).toBe(false);
   expect(mocks.start).not.toHaveBeenCalled();
   expect(mocks.post).not.toHaveBeenCalled();
 });
 
-it('keeps hosting available with copy fallback and never redirects for sharing permission mid-game', async () => {
-  mocks.shareAccess = false;
+it('keeps an active game available with copy fallback after posting permission is lost', async () => {
   const writeText = vi.fn(async (_text: string) => {});
   vi.stubGlobal('navigator', { clipboard: { writeText } });
   await liveFixture();
+  mocks.shareAccess = false; ui!.render();
   const share = document.getElementById('stream-share') as HTMLButtonElement;
   expect(share.textContent).toBe('Copy game link');
   share.click(); await flush();
@@ -231,12 +239,58 @@ it('requests normal posting access in setup without requesting announcements', a
   history.replaceState(null, '', '/guess/stream/');
   ui = new StreamUI(hooks); await ui.open();
   const consent = document.getElementById('stream-enable-sharing') as HTMLButtonElement;
+  const create = document.getElementById('stream-create-game') as HTMLButtonElement;
   expect(consent.hidden).toBe(false);
+  expect(create.disabled).toBe(true);
+  expect(create.getAttribute('aria-description')).toBe('First, allow NoitaGuessr to post messages in your Twitch chat.');
+  expect(create.parentElement!.tabIndex).toBe(0);
+  create.click(); await flush(); expect(mocks.start).not.toHaveBeenCalled();
   consent.click(); await flush();
   expect(mocks.connect).toHaveBeenCalledExactlyOnceWith({ posting: true, announcements: false });
   expect(consent.hidden).toBe(true);
+  expect(create.disabled).toBe(false);
+  expect(create.hasAttribute('aria-description')).toBe(false);
+  expect(create.parentElement!.hasAttribute('tabindex')).toBe(false);
   expect(mocks.start).not.toHaveBeenCalled();
   expect(mocks.post).not.toHaveBeenCalled();
+});
+
+it('waits for verified production posting scopes, including after a canceled approval and mode changes', async () => {
+  const { hooks } = await fixture(); mocks.remote = true;
+  history.replaceState(null, '', '/guess/stream/');
+  ui = new StreamUI(hooks); await ui.open();
+  const create = () => document.getElementById('stream-create-game') as HTMLButtonElement;
+  expect(create().disabled).toBe(true);
+  (document.getElementById('stream-enable-sharing') as HTMLButtonElement).click(); await flush();
+  expect(mocks.authConnect).toHaveBeenCalledExactlyOnceWith({ announcements: false });
+  expect(create().disabled).toBe(true);
+  await (ui as unknown as { start(): Promise<void> }).start();
+  expect(mocks.start).not.toHaveBeenCalled();
+  const credentials = { accessToken: 'test-only-posting-token', clientId: 'client', userId: '123', login: 'streamer',
+    scopes: ['user:write:chat'], expiresAt: Date.now() + 600000 };
+  mocks.authSession.mockResolvedValue(credentials); await ui.open();
+  expect(create().disabled).toBe(false);
+  const toggle = document.getElementById('stream-share-announcements') as HTMLInputElement;
+  toggle.checked = true; toggle.dispatchEvent(new Event('change'));
+  expect(create().disabled).toBe(true);
+  mocks.authSession.mockResolvedValue({ ...credentials, scopes: ['user:write:chat', 'moderator:manage:announcements'] });
+  await ui.open(); expect(create().disabled).toBe(false);
+  mocks.authSession.mockResolvedValue({ ...credentials, expiresAt: Date.now() - 1 });
+  await ui.open(); expect(create().disabled).toBe(true);
+  expect(mocks.start).not.toHaveBeenCalled(); expect(mocks.post).not.toHaveBeenCalled();
+});
+
+it('disables a restored lobby start until posting access is approved', async () => {
+  const { game, hooks } = await fixture(); game.session.localChat = true;
+  startStreamTiming(game, 90, Date.now(), true);
+  ui = new StreamUI(hooks); ui.game = game; await ui.open();
+  mocks.shareAccess = false; Object.assign(ui, { sharingPermissionFailed: true }); ui.render();
+  const start = document.getElementById('stream-start-game') as HTMLButtonElement;
+  expect(start.disabled).toBe(true); expect(start.getAttribute('aria-description')).toBe('First, allow NoitaGuessr to post messages in your Twitch chat.');
+  start.click(); expect(game.timing!.phase).toBe('lobby');
+  (document.querySelector('#stream-start-approval button') as HTMLButtonElement).click(); await flush();
+  expect(mocks.connect).toHaveBeenCalledExactlyOnceWith({ posting: true, announcements: false });
+  expect(start.disabled).toBe(false); expect(document.getElementById('stream-start-approval')!.hidden).toBe(true);
 });
 
 it('does not claim an unconfirmed announcement was posted or retry it automatically', async () => {
