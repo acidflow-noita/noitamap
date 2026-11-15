@@ -637,5 +637,7 @@
   "Pro access was confirmed for this game.": "Se ha confirmado el acceso de los profesionales a este partido.",
   "This timing option is not available on this site yet.": "Esta opción de horario aún no está disponible en esta página web.",
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Mapa de adivinanzas. Las teclas de flecha permiten desplazar la imagen; las teclas «+» y «-» permiten ampliar y reducir; la tecla «Inicio» restablece la vista. Centra el mapa y pulsa la barra espaciadora para colocar un marcador en el centro.",
-  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Controles de Clue: las teclas W, A, S y D mueven la vista. La tecla Q aleja la imagen y la tecla E la acerca."
+  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Controles de Clue: las teclas W, A, S y D mueven la vista. La tecla Q aleja la imagen y la tecla E la acerca.",
+  "Not ready": "No estoy preparado",
+  "vs": "vs"
 }

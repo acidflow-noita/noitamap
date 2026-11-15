@@ -628,5 +628,7 @@
   "Pro access was confirmed for this game.": "Pro-åtkomst bekräftades för den här matchen.",
   "This timing option is not available on this site yet.": "Denna tidsinställning finns ännu inte tillgänglig på den här webbplatsen.",
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Gissa kartan. Piltangenterna används för att panorera, plus och minus för att zooma, och Home återställer vyn. Fokusera på kartan och tryck på mellanslagstangenten för att placera en markör i mitten.",
-  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Kontroller i Clue: W, A, S och D för att flytta kameran. Q för att zooma ut och E för att zooma in."
+  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Kontroller i Clue: W, A, S och D för att flytta kameran. Q för att zooma ut och E för att zooma in.",
+  "Not ready": "Inte redo",
+  "vs": "vs"
 }

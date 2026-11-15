@@ -17,6 +17,8 @@ import { Blob as NodeBlob } from 'node:buffer';
 import { streamArea, streamAnswer } from './helpers/guessr-stream';
 
 const parallel = vi.hoisted(() => ({ events: undefined as Parameters<typeof import('../src/guessr/parallel-game-client')['watchParallelGame']>[3] | undefined, submit: vi.fn(), command: vi.fn(async (_message: unknown) => {}) }));
+const confirmation = vi.hoisted(() => ({ quit: undefined as (() => Promise<unknown>) | undefined }));
+vi.mock('../src/guessr/quit-game', () => ({ confirmQuitGame: (quit: () => Promise<unknown>) => { confirmation.quit = quit; } }));
 vi.mock('../src/guessr/parallel-game-client', () => ({ watchParallelGame: (_viewer: unknown, _channel: string, _id: string, events: NonNullable<typeof parallel.events>) => {
   parallel.events = events;
   return { hasJoined: () => true, join() {}, now: () => Date.now(), submit: parallel.submit, command: parallel.command, receive() {}, transport() { events.status('connected', ''); }, retry() {}, requestRecovery() {}, dispose() {} };
@@ -114,7 +116,11 @@ describe('shared channel guess picker', () => {
       ] } };
     parallel.events!.state(state);
     expect(f.button('Start game').disabled).toBe(true);
+    expect(f.main.querySelector('.pvp-lobby-players')!.textContent).toContain('WUOTE');
+    expect(f.main.querySelector('.pvp-lobby-players')!.textContent).toContain('Opponent');
+    expect(f.main.querySelector('.pvp-lobby-players')!.textContent).toContain('Not ready');
     parallel.events!.state({ ...state, revision: 2, pvp: { ...state.pvp!, ready: ['123'] } });
+    expect(f.main.querySelector('.pvp-lobby-players')!.textContent).toContain('Ready');
     f.button('Start game').click(); await flush();
     expect(parallel.command).toHaveBeenCalledWith(expect.objectContaining({ type: 'start', opponentId: '123' }));
     parallel.events!.state({ ...state, revision: 3, timing: { ...state.timing!, phase: 'warmup', deadline: Date.now() + 30000 } });
@@ -122,6 +128,27 @@ describe('shared channel guess picker', () => {
     expect(f.main.querySelector('.pvp-lobby')!.textContent).toContain('You will play this location after your opponent.');
     expect(f.main.querySelector('.stream-viewer-clue .clue')).toBeNull();
     expect(f.viewer.watchChat).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('keeps a conceded PvP match on results, then uses its published result URL instead of returning home', async () => {
+    const id = '11111111-1111-4111-8111-111111111111';
+    const f = mount(`/guess/pvp/${gameCode(id, 'pvp')}/`, { connected: true, login: 'wuote', userId: '456' });
+    const host = { id: '456', login: 'wuote', name: 'WUOTE' }, opponent = { id: '123', login: 'opponent', name: 'Opponent' };
+    const state: LiveRoomView = { schema: 1, mode: 'pvp', streaming: false, channel: 'wuote', gameId: id, hostId: '456',
+      revision: 1, phase: 'guess', online: true, paused: false, round: 1, totalRounds: 5, roundId: id, clue: null, expiresAt: Date.now() + 999999,
+      timing: { phase: 'play', startsAt: Date.now() - 1000, deadline: Date.now() + 30000, seconds: 30, hostRound: 1, chatRound: 1 },
+      pvp: { creator: true, active: true, locked: false, opponentLocked: false, ready: [], players: [host, opponent] } };
+    parallel.events!.state(state); f.button('Exit game').click();
+    await confirmation.quit!(); expect(parallel.command).toHaveBeenCalledWith(expect.objectContaining({ type: 'quit' }));
+    expect(f.leave).not.toHaveBeenCalled();
+    const result: StreamResult = { schema: 1, mode: 'pvp', id, version: config.version, config, host,
+      concededBy: host.id, scheduledRounds: 5, createdAt: Date.now() - 60000, finishedAt: Date.now(), rounds: [],
+      players: [{ ...host, rank: 2, score: 0, rounds: [] }, { ...opponent, rank: 1, score: 0, rounds: [] }] };
+    parallel.events!.state({ ...state, phase: 'complete', revision: 2, result });
+    expect(f.main.querySelector('.stream-viewer-results')!.textContent).toContain('WUOTE conceded the match.');
+    expect(f.main.querySelector('.stream-viewer-results .stream-rank-column')).not.toBeNull();
+    parallel.events!.published(result); expect(location.pathname).toBe(`/guess/results/${id}/`);
+    expect(f.leave).not.toHaveBeenCalled();
   });
 
   it('uses the full published result on the chatter game URL, with shared menus, previews and inline reviews', async () => {

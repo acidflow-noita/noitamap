@@ -637,5 +637,7 @@
   "Pro access was confirmed for this game.": "Per questa partita è stato confermato l'accesso Pro.",
   "This timing option is not available on this site yet.": "Questa opzione di tempistica non è ancora disponibile su questo sito.",
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Mappa interattiva. I tasti freccia consentono di spostare la visuale, i tasti più e meno di ingrandire o rimpicciolire, mentre il tasto Home ripristina la visuale iniziale. Posiziona il cursore sulla mappa e premi la barra spaziatrice per inserire un segnaposto al centro.",
-  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Comandi di Clue: i tasti W, A, S e D spostano la visuale. Il tasto Q riduce lo zoom e il tasto E lo aumenta."
+  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Comandi di Clue: i tasti W, A, S e D spostano la visuale. Il tasto Q riduce lo zoom e il tasto E lo aumenta.",
+  "Not ready": "Non sono pronto",
+  "vs": "vs"
 }

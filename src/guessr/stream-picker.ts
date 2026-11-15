@@ -80,7 +80,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const exitMatch = () => {
     if (!pvp || !live || live.phase === 'complete' || live.ended || connectionDetail === 'This invitation is not available.'
       || connectionDetail === 'This game is open in another tab. Continue there.') { leave(); return; }
-    confirmQuitGame(async () => { await pvpCommand({ type: 'quit' }); if (!actionError) leave(); },
+    const leavingLobby = live.timing?.phase === 'lobby';
+    confirmQuitGame(async () => { await pvpCommand({ type: 'quit' }); if (!actionError && leavingLobby) leave(); },
       live.timing?.phase === 'lobby' ? live.pvp?.creator ? 'This cancels the match invitation.' : 'This declines the match invitation.' : 'Leaving now concedes the match to your opponent.');
   };
   if (!channel && !legacyPayload) {
@@ -251,6 +252,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   layout.prepend(chat.panel); main.append(layout);
   const pvpLobby = node('section', 'game-panel stream-start-panel pvp-lobby'); pvpLobby.hidden = true;
   const pvpTitle = node('h2'), pvpDetail = node('p'), pvpRule = node('p', 'form-text'), pvpClock = node('output', 'stream-waiting-timer');
+  const pvpNames = node('div', 'pvp-lobby-players');
+  const creatorName = node('strong'), versus = node('span', '', 'vs'), opponentName = node('strong');
+  const opponentSlot = node('div', 'pvp-lobby-player'), opponentReady = node('small');
+  opponentSlot.append(opponentName, opponentReady); pvpNames.append(creatorName, versus, opponentSlot);
   const pvpReady = button('Ready', () => pvpCommand({ type: 'ready', ready: true, round: (live?.timing?.hostRound ?? 1) - 1, phase: 'lobby' }), 'primary');
   const pvpStart = button('Start game', () => pvpCommand({ type: 'start', opponentId: live?.pvp?.players[1]?.id }), 'primary');
   const pvpReject = button('Choose another opponent', () => pvpCommand({ type: 'reject-opponent', playerId: live?.pvp?.players[1]?.id }));
@@ -260,7 +265,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   });
   const inviteNotice = buttonNotice(pvpInvite);
   const pvpActions = node('div', 'action-row'); pvpActions.append(pvpInvite, pvpReady, pvpStart, pvpReject);
-  pvpLobby.append(pvpTitle, pvpClock, pvpDetail, pvpRule, pvpActions); layout.append(pvpLobby);
+  pvpLobby.append(pvpTitle, pvpNames, pvpClock, pvpDetail, pvpRule, pvpActions); layout.append(pvpLobby);
   const board = new MapBoard(map, config.bounds, config.overview, next => {
     if (within(next, config.bounds)) { point = next; board.setMarkers(next); saveProgress(); refresh(); }
   }, config.map);
@@ -332,7 +337,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     }
   };
   const showPublishedResult = (completed: StreamResult, published = true) => {
-    if (pvp && published) forgetPvp(completed.id);
+    if (pvp && published) {
+      forgetPvp(completed.id);
+      history.replaceState(null, '', guessRouteUrl('stream-result', location.href, { result: completed.id }));
+    }
     const playerId = viewer.getState().userId ?? viewer.getState().savedUserId;
     const key = `completed/${completed.id}/${playerId ?? ''}/${published}`;
     if (published) rememberPublishedStream(completed.id, channel);
@@ -656,6 +664,14 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       if (waiting) {
         const lobby = !live!.ended && live!.timing?.phase === 'lobby', players = live!.pvp!.players, creator = live!.pvp!.creator;
         const ready = live!.pvp!.ready.includes(state.userId ?? '');
+        creatorName.textContent = players[0]?.name ?? '';
+        opponentName.textContent = players[1]?.name ?? tr('Waiting for an opponent');
+        creatorName.style.color = players[0]?.color && /^#[a-f0-9]{6}$/i.test(players[0].color) ? players[0].color : '';
+        opponentName.style.color = players[1]?.color && /^#[a-f0-9]{6}$/i.test(players[1].color) ? players[1].color : '';
+        versus.hidden = players.length < 2;
+        opponentSlot.hidden = players.length < 2;
+        opponentReady.hidden = !lobby || players.length < 2;
+        bindText(opponentReady, live!.pvp!.ready.includes(players[1]?.id ?? '') ? 'Ready' : 'Not ready');
         bindText(pvpTitle, lobby ? players.length < 2 ? 'Waiting for an opponent' : 'Ready to start' : 'Your opponent is playing');
         bindText(pvpDetail, () => actionError ? tr(actionError) : lobby ? tr(creator ? 'Share the invitation, then start when both players are ready.' : 'Waiting for both players to be ready.')
           : tr('You will play this location after your opponent.'));

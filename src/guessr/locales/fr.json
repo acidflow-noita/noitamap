@@ -637,5 +637,7 @@
   "Pro access was confirmed for this game.": "L'accès « Pro » a été confirmé pour ce match.",
   "This timing option is not available on this site yet.": "Cette option de synchronisation n'est pas encore disponible sur ce site.",
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Carte interactive. Les touches fléchées permettent de se déplacer, les touches « + » et « - » de zoomer, et la touche « Home » de réinitialiser l'affichage. Centrez la carte et appuyez sur la barre d'espace pour placer un repère au centre.",
-  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Commandes de Clue : les touches W, A, S et D permettent de déplacer la vue. La touche Q permet de zoomer en arrière et la touche E de zoomer en avant."
+  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Commandes de Clue : les touches W, A, S et D permettent de déplacer la vue. La touche Q permet de zoomer en arrière et la touche E de zoomer en avant.",
+  "Not ready": "Pas prêt",
+  "vs": "contre"
 }

@@ -646,5 +646,7 @@
   "Pro access was confirmed for this game.": "Для цієї гри було підтверджено доступ до Pro.",
   "This timing option is not available on this site yet.": "Ця опція налаштування часу на цьому сайті поки що недоступна.",
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Карта-загадка. Клавіші зі стрілками — переміщення, «плюс» і «мінус» — масштабування, клавіша «Home» — скидання зображення. Наведіть курсор на карту та натисніть пробіл, щоб розмістити маркер у центрі.",
-  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Керування в грі «Clue»: клавіші W, A, S і D — переміщення камери. Клавіша Q — зменшення масштабу, клавіша E — збільшення масштабу."
+  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Керування в грі «Clue»: клавіші W, A, S і D — переміщення камери. Клавіша Q — зменшення масштабу, клавіша E — збільшення масштабу.",
+  "Not ready": "Ще не готовий",
+  "vs": "проти"
 }

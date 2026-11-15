@@ -628,5 +628,7 @@
   "Pro access was confirmed for this game.": "Tälle ottelulle vahvistettiin Pro-käyttöoikeus.",
   "This timing option is not available on this site yet.": "Tätä ajoitusvaihtoehtoa ei ole vielä saatavilla tällä sivustolla.",
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "Arvaa kartta. Nuolinäppäimillä voit siirtää näkymää, plus- ja miinus-näppäimillä zoomata, ja Home-näppäimellä palauttaa näkymän alkuasetuksiin. Kohdista kartta ja paina välilyöntinäppäintä, niin merkki sijoittuu keskelle.",
-  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Clue-ohjaus: W, A, S ja D liikuttavat näkymää. Q loitontaa ja E lähentää."
+  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "Clue-ohjaus: W, A, S ja D liikuttavat näkymää. Q loitontaa ja E lähentää.",
+  "Not ready": "Ei valmis",
+  "vs": "vs"
 }

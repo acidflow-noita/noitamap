@@ -21,8 +21,8 @@ function el<K extends keyof HTMLElementTagNameMap>(
 }
 export function streamResultsView(result: StreamResult, viewerId?: string, onBack?: () => void, config?: ImageGameConfig): HTMLElement & { destroy: () => void } {
   result = streamResultNames(result);
-  const section = el("section"),
-    hero = el("div", "", "finish-hero");
+  const section = el("section", '', 'stream-results'),
+    hero = el("div", "", "finish-hero stream-results-heading");
   const host = result.players.find((p) => p.id === result.host.id)!;
   const own = viewerId ? result.players.find(p => p.id === viewerId) : undefined;
   const featured = own ?? host;
@@ -96,6 +96,7 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
     const th = el("th", "", index === 1 ? "" : "numeric"),
       button = el("button", label, "stream-table-sort");
     th.scope = 'col';
+    if (index === 0) th.classList.add('stream-rank-column');
     button.type = "button";
     const key =
       index === 0
@@ -145,7 +146,7 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
       if (!pvp && player.id === result.host.id) row.className = "stream-host-row";
       if (player.id === viewerId) row.classList.add('stream-viewer-row');
       row.append(
-        el("td", () => formatGuessrNumber(player.rank), "numeric"),
+        el("td", () => formatGuessrNumber(player.rank), "numeric stream-rank-column"),
         el(
           "td",
           () => player.name + (!pvp && player.id === result.host.id ? tr(', Streamer') : '') + (player.id === viewerId ? tr(', You') : ''),
@@ -214,7 +215,7 @@ export function streamResultHtml(result: StreamResult): string {
   th:nth-child(2),td:nth-child(2){min-width:10rem;max-width:18rem;white-space:normal;overflow-wrap:anywhere}
   th:not(:nth-child(2)),td:not(:nth-child(2)){text-align:right;font-variant-numeric:tabular-nums slashed-zero;font-feature-settings:"zero" 1}
   .host{background:rgb(145 70 255 / .12)}tbody tr:last-child td{border-bottom:0}.score-perfect{color:#fcd34d;font-weight:700;text-shadow:0 0 .45rem rgb(251 191 36 / .6),0 0 1rem rgb(251 191 36 / .3)}
-  #rank{font-variant-numeric:tabular-nums slashed-zero;font-size:2rem;font-weight:700}th[aria-sort="ascending"] button::after{content:" ↑"}th[aria-sort="descending"] button::after{content:" ↓"}
+  #rank{font-variant-numeric:tabular-nums slashed-zero;font-size:1rem;font-weight:600}h1{font-size:1.125rem}th:first-child,td:first-child{width:1%;white-space:nowrap;padding-inline:.5rem}th[aria-sort="ascending"] button::after{content:" ↑"}th[aria-sort="descending"] button::after{content:" ↓"}
   </style>
   <h1 id="heading"></h1><div id="rank"></div><p id="summary"></p><input id="filter" type="search"><div class="wrap" tabindex="0"><table><thead><tr id="head"></tr></thead><tbody id="rows"></tbody></table></div><p id="count"></p><small id="note"></small>
   <script>const result=${json(result)},labels=${json(labels)};document.documentElement.lang=labels.locale;document.title=labels.title;for(const key of ['heading','rank','summary','note'])document.getElementById(key).textContent=labels[key];const filter=document.getElementById('filter');filter.placeholder=labels.filter;filter.setAttribute('aria-label',labels.filter);const host=result.players.find(p=>p.id===result.host.id),number=n=>n.toLocaleString(labels.locale);let key=0,dir=1;const cols=labels.columns;cols.forEach((label,i)=>{const th=document.createElement('th'),b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>{dir=key===i?-dir:i<2?1:-1;key=i;draw()};th.append(b);document.querySelector('#head').append(th)});const value=(p,i)=>i===0?p.rank:i===1?p.name:i===cols.length-1?p.score:p.rounds[i-2].score;function draw(){const q=filter.value.toLocaleLowerCase(labels.locale);const list=result.players.filter(p=>(p.name+' '+p.login).toLocaleLowerCase(labels.locale).includes(q));list.sort((a,b)=>dir*(key===1?a.name.localeCompare(b.name,labels.locale):value(a,key)-value(b,key))||a.name.localeCompare(b.name,labels.locale));const rows=document.createDocumentFragment();for(const p of list){const row=document.createElement('tr');if(result.mode!=='pvp'&&p.id===host.id)row.className='host';cols.forEach((_,i)=>{const td=document.createElement('td');if(i===1)td.style.color=result.mode!=='pvp'&&p.id===result.host.id?'#9146FF':/^#[a-f0-9]{6}$/i.test(p.color||'')?p.color:'#E2E8F0';td.textContent=typeof value(p,i)==='number'?number(value(p,i)):String(value(p,i))+(i===1&&p.id===host.id?labels.streamer:'');if(i>1&&i<cols.length-1&&value(p,i)===5000)td.classList.add('score-perfect');if(i>1&&i<cols.length-1)td.title=labels.scores.replaceAll('{{area}}',number(p.rounds[i-2].areaScore)).replaceAll('{{proximity}}',number(p.rounds[i-2].positionScore));row.append(td)});rows.append(row)}document.querySelector('#rows').replaceChildren(rows);document.querySelector('#count').textContent=labels.count.replaceAll('{{shown}}',number(list.length));[...document.querySelector('#head').children].forEach((th,i)=>th.setAttribute('aria-sort',i===key?(dir===1?'ascending':'descending'):'none'))}filter.oninput=draw;draw();</script></html>`;

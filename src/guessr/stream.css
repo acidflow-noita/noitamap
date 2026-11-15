@@ -61,7 +61,7 @@
 .stream-timer-settings { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-block: .5rem; }
 .stream-timer-settings input { inline-size: 6rem; }
 .stream-round-timer { font-size: 1.125rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.game-panel.stream-start-panel { display: flex; flex-direction: column; flex: none; align-items: center; align-self: center; inline-size: min(100%, 44rem); margin-block: auto; padding: clamp(1.5rem, 4vw, 3rem); gap: 1rem; text-align: center; border: 1px solid var(--border-strong); border-radius: var(--radius-panel); color: var(--text); background: var(--surface-1); box-shadow: 0 1rem 3rem #0003; }
+.game-panel.stream-start-panel { display: flex; flex-direction: column; flex: none; align-items: center; align-self: center; inline-size: min(100%, 44rem); margin: auto; justify-self: center; padding: clamp(1.5rem, 4vw, 3rem); gap: 1rem; text-align: center; border: 1px solid var(--border-strong); border-radius: var(--radius-panel); color: var(--text); background: var(--surface-1); box-shadow: 0 1rem 3rem #0003; }
 .stream-start-panel > :is(p, h2) { margin: 0; }
 .stream-start-panel > h2 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 650; }
 .stream-start-panel > p { max-inline-size: 40ch; color: var(--text-muted); }
@@ -327,3 +327,16 @@
   .stream-result-reviews .accordion-body { padding: .5rem; }
   .stream-result-reviews .accordion-header { padding: .5rem; }
 }
+
+.pvp-lobby-players { display: flex; justify-content: center; align-items: baseline; flex-wrap: wrap; gap: .5rem 1rem; max-inline-size: 100%; font-size: clamp(1rem, 3vw, 1.5rem); }
+.pvp-lobby-players > strong { overflow-wrap: anywhere; }
+.stream-score-table .stream-rank-column { inline-size: 1%; white-space: nowrap; padding-inline: .5rem; }
+.stream-results .stream-score-table .stream-rank-column > button { padding-inline: 0; }
+.finish-hero.stream-results-heading { display: flex; align-items: baseline; justify-content: flex-start; flex-wrap: wrap; gap: .375rem .75rem; padding: .5rem .75rem; margin-block: .5rem; min-block-size: 0; max-inline-size: none; text-align: start; }
+.finish-hero.stream-results-heading h1 { margin: 0; font-size: 1.125rem; }
+.stream-results-heading p, .finish-hero.stream-results-heading .stream-placement { margin: 0; font-size: .875rem; font-weight: 400; }
+.pvp-lobby-player { display: grid; gap: .25rem; min-inline-size: 0; }
+.pvp-lobby-player > strong { overflow-wrap: anywhere; }
+.pvp-lobby-player > small { font-size: .8125rem; color: var(--text-muted); }
+#guess-app:has(> .stream-host-shell) { display: flex; flex-direction: column; min-block-size: 100dvh; }
+#guess-app > .stream-host-shell { flex: 1; display: flex; flex-direction: column; }

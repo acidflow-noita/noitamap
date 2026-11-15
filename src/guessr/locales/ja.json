@@ -628,5 +628,7 @@
   "Pro access was confirmed for this game.": "この試合については、プロ向けアクセスが確認されました。",
   "This timing option is not available on this site yet.": "このサイトでは、このタイミング設定はまだ利用できません。",
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "地図を推測してください。矢印キーで地図を移動し、プラスとマイナスのキーでズームします。Homeキーを押すと表示がリセットされます。地図にカーソルを合わせ、スペースキーを押すと、その中心にピンを配置できます。",
-  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "『Clue』の操作方法：W、A、S、Dキーで視点を移動します。Qキーでズームアウト、Eキーでズームインします。"
+  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "『Clue』の操作方法：W、A、S、Dキーで視点を移動します。Qキーでズームアウト、Eキーでズームインします。",
+  "Not ready": "まだ準備ができていない",
+  "vs": "vs"
 }
