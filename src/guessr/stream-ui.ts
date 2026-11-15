@@ -451,7 +451,7 @@ export class StreamUI {
       if (this.busy) return;
       this.busy = true; enableSharing.disabled = true; announcements.disabled = true;
       try {
-        if (this.api.local) await this.viewer!.connect({ announcements: this.shareAnnouncements });
+        if (this.api.local) await this.viewer!.connect({ posting: true, announcements: this.shareAnnouncements });
         else await this.connectAuth();
       } catch (error) { this.hooks.toast(tr((error as Error).message)); }
       finally {

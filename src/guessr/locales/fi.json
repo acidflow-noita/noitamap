@@ -648,5 +648,7 @@
   "Group {{number}}": "Ryhmä {{number}}",
   "Reload this page to use the updated game connection.": "Päivitä tämä sivu, jotta voit käyttää päivitettyä peliyhteyttä.",
   "Twitch identity verification is temporarily unavailable. Retrying…": "Twitchin henkilöllisyyden vahvistus ei ole tilapäisesti käytettävissä. Yritetään uudelleen…",
-  "Authorize Twitch posting access.": "Myönnä Twitchille oikeus julkaista sisältöä."
+  "Authorize Twitch posting access.": "Myönnä Twitchille oikeus julkaista sisältöä.",
+  "This player did not join the game.": "Tämä pelaaja ei liittynyt peliin.",
+  "Game history shows each player's rank and score.": "Pelitilastot näyttävät kunkin pelaajan sijoituksen ja pistemäärän."
 }

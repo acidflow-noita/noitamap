@@ -3,9 +3,10 @@ import { bindAttribute, bindText, guessrLocale } from './i18n';
 
 // Change this ID only when the player-facing notes below change.
 export const GUESSR_CHANGELOG = {
-  id: '2026-11-15-controls-and-lobbies',
+  id: '2026-11-15-history',
   date: '2026-11-15',
   notes: [
+    "Game history shows each player's rank and score.",
     'Use W, A, S and D to move the clue image. Q zooms out. E zooms in.',
     'Move the guess map with the arrow keys. Zoom with + and -.',
     'Buttons above the clue image now show keyboard shortcuts.',

@@ -666,5 +666,7 @@
   "Group {{number}}": "Grupo {{number}}",
   "Reload this page to use the updated game connection.": "Atualize esta página para usar a conexão atualizada do jogo.",
   "Twitch identity verification is temporarily unavailable. Retrying…": "A verificação de identidade do Twitch está temporariamente indisponível. Tentando novamente…",
-  "Authorize Twitch posting access.": "Autorize o acesso para postar no Twitch."
+  "Authorize Twitch posting access.": "Autorize o acesso para postar no Twitch.",
+  "This player did not join the game.": "Esse jogador não entrou no jogo.",
+  "Game history shows each player's rank and score.": "O histórico do jogo mostra a classificação e a pontuação de cada jogador."
 }

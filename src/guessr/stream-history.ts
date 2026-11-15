@@ -1,35 +1,43 @@
 import { StreamApi } from './stream-api';
 import { StreamResultArchive, type ArchivedStreamResult } from './stream-result-archive';
 import { streamHostName } from './stream-display-name';
-import { bindText, formatGuessrNumber, guessrLocale } from './i18n';
+import { bindAttribute, bindText, formatGuessrNumber, guessrLocale, tr } from './i18n';
 import { localizedError } from './messages';
 import { guessRouteUrl } from './routes';
 import { readPublishedStreamVisits } from './stream-history-records';
+import Combobox from '../bootstrap-combobox';
+import { savedTwitchViewerId } from './twitch-viewer';
+import { streamHistorySummary, type StreamHistorySummary } from './stream-history-summary';
 
 interface HistoryRow {
   id: string; finishedAt: number; hostName: string; channel: string;
   players: number | null; published: boolean; pending: boolean;
+  summary?: StreamHistorySummary;
 }
 
 /** One indexed request per requested page. Local unpublished games remain
  * discoverable; neither pagination nor rendering fetches individual results. */
-export async function streamHistorySection(main: HTMLElement, channel?: string): Promise<void> {
+let historyPickerId = 0;
+export async function streamHistorySection(main: HTMLElement, channel?: string): Promise<() => void> {
   const section = document.createElement('section'); section.className = 'stream-history';
   if (!channel) {
     const heading = document.createElement('h2'); bindText(heading, 'Multiplayer results'); section.append(heading);
   }
   const status = document.createElement('p'); status.className = 'fine-print'; status.setAttribute('role', 'status');
   bindText(status, 'Loading results…'); section.append(status); main.append(section);
+  const picker = document.createElement('div'); picker.className = 'stream-history-player'; section.append(picker);
+  let selected = savedTwitchViewerId() ?? ':host', optionsKey = '', disposePicker = () => {};
   const wrap = document.createElement('div'); wrap.className = 'table-wrap';
   const table = document.createElement('table'); table.className = 'table stream-score-table';
   const head = document.createElement('tr'), thead = document.createElement('thead'), body = document.createElement('tbody');
-  for (const label of channel ? ['Date', 'Players', 'Results'] : ['Date', 'Created by', 'Players', 'Results']) {
+  for (const label of channel ? ['Date', 'Rank', 'Score', 'Results'] : ['Date', 'Created by', 'Rank', 'Score', 'Results']) {
     const cell = document.createElement('th'); cell.scope = 'col';
-    if (label === 'Players') cell.className = 'numeric';
+    if (label === 'Rank') cell.className = 'numeric stream-rank-column';
+    if (label === 'Score') cell.className = 'numeric';
     bindText(cell, label); head.append(cell);
   }
   thead.append(head); table.append(thead, body); wrap.append(table); section.append(wrap);
-  const more = document.createElement('button'); more.className = 'btn btn-outline theme-secondary'; more.type = 'button'; more.hidden = true;
+  const more = document.createElement('button'); more.className = 'btn btn-outline theme-secondary stream-history-more'; more.type = 'button'; more.hidden = true;
   bindText(more, 'Load more'); section.append(more);
   const remote = new Map<string, HistoryRow>();
   const archive = new StreamResultArchive();
@@ -57,8 +65,16 @@ export async function streamHistorySection(main: HTMLElement, channel?: string):
       const host = document.createElement('td'), link = document.createElement('a'); link.textContent = game.hostName;
       link.href = guessRouteUrl('history', location.origin, { channel: game.channel }).href; host.append(link); line.append(host);
     }
-    const count = document.createElement('td'); count.className = 'numeric';
-    bindText(count, () => game.players === null ? '—' : formatGuessrNumber(game.players));
+    const person = game.summary?.standings.find(([id]) => id === (selected === ':host' ? game.summary?.hostId : selected));
+    const rank = document.createElement('td'), score = document.createElement('td');
+    rank.className = 'numeric stream-rank-column'; score.className = 'numeric';
+    if (person && game.summary) {
+      bindText(rank, () => `${formatGuessrNumber(person[2])} / ${formatGuessrNumber(game.players ?? game.summary!.standings.length)}`);
+      bindAttribute(rank, 'aria-label', 'Rank {{rank}} of {{players}}', () => ({ rank: formatGuessrNumber(person[2]), players: formatGuessrNumber(game.players ?? game.summary!.standings.length) }));
+      bindText(score, () => `${formatGuessrNumber(person[3])} / ${formatGuessrNumber(game.summary!.maximum)}`);
+    } else if (game.summary) {
+      rank.colSpan = 2; rank.className = 'muted'; bindText(rank, 'This player did not join the game.');
+    } else { rank.textContent = '—'; score.textContent = '—'; }
     const result = document.createElement('td'), open = document.createElement('a'); open.className = 'btn btn-sm btn-outline theme-secondary';
     open.href = guessRouteUrl('stream-result', location.origin, { result: game.id }).href;
     bindText(open, game.pending ? 'Retry publishing' : 'View results'); result.append(open);
@@ -66,7 +82,44 @@ export async function streamHistorySection(main: HTMLElement, channel?: string):
       const note = document.createElement('div'); note.className = 'fine-print';
       bindText(note, 'Saved on this device. Not published yet.'); result.append(note);
     }
-    line.append(count, result); return line;
+    line.append(rank); if (rank.colSpan !== 2) line.append(score); line.append(result); return line;
+  };
+  const renderPicker = (entries: Iterable<HistoryRow>) => {
+    const players = new Map<string, string>();
+    for (const game of [...entries].sort((a, b) => b.finishedAt - a.finishedAt))
+      for (const [id, name] of game.summary?.standings ?? []) if (!players.has(id)) players.set(id, name);
+    if (selected !== ':host' && !players.has(selected)) players.set(selected, tr('You'));
+    const names = [...players].sort((a, b) => a[1].localeCompare(b[1]));
+    const key = JSON.stringify(names);
+    if (key === optionsKey) return;
+    optionsKey = key; disposePicker(); picker.replaceChildren();
+    const label = bindText(document.createElement('span'), 'Player'); label.id = `history-player-${++historyPickerId}`;
+    const container = document.createElement('div'); container.className = 'combobox';
+    const toggle = document.createElement('button'); toggle.type = 'button';
+    toggle.className = 'btn btn-outline theme-secondary combobox-toggle'; toggle.dataset.bsToggle = 'combobox';
+    toggle.setAttribute('role', 'combobox'); toggle.setAttribute('aria-haspopup', 'listbox');
+    toggle.setAttribute('aria-expanded', 'false'); toggle.setAttribute('aria-labelledby', label.id);
+    const value = document.createElement('span'); value.className = 'combobox-value'; toggle.append(value);
+    const menu = document.createElement('div'); menu.className = 'menu'; menu.id = label.id + '-options';
+    menu.setAttribute('role', 'listbox'); toggle.setAttribute('aria-controls', menu.id);
+    const search = document.createElement('input'); search.type = 'search'; search.className = 'form-control combobox-search-input';
+    bindAttribute(search, 'placeholder', 'Find a player'); bindAttribute(search, 'aria-label', 'Find a player'); menu.append(search);
+    for (const [id, name] of [[':host', tr('Streamer')], ...names]) {
+      const option = document.createElement('button'); option.type = 'button'; option.className = 'menu-item';
+      option.dataset.bsValue = id; option.tabIndex = -1; option.setAttribute('role', 'option');
+      if (id === ':host') bindText(option, 'Streamer'); else option.textContent = name;
+      option.setAttribute('aria-selected', String(selected === id)); option.classList.toggle('selected', selected === id);
+      menu.append(option);
+    }
+    container.append(toggle, menu); picker.append(label, container);
+    const combo = new Combobox(toggle, { search: true, placement: 'bottom-start' });
+    bindText(value, () => selected === ':host' ? tr('Streamer') : players.get(selected) ?? tr('You'));
+    const choose = (event: Event) => {
+      const id = (event as Event & { value?: string }).value;
+      if (id && (id === ':host' || players.has(id)) && id !== selected) { selected = id; render(); }
+    };
+    toggle.addEventListener('change.bs.combobox', choose);
+    disposePicker = () => { combo.dispose(); toggle.removeEventListener('change.bs.combobox', choose); };
   };
   const render = () => {
     if (!main.isConnected) return;
@@ -74,6 +127,7 @@ export async function streamHistorySection(main: HTMLElement, channel?: string):
     const localRows = visibleLocal();
     for (const game of localRows.slice(0, localLimit)) entries.set(game.id, game);
     for (const [id, game] of remote) entries.set(id, game);
+    renderPicker(entries.values());
     const fragment = document.createDocumentFragment();
     for (const game of entries.values()) fragment.append(row(game));
     body.replaceChildren(fragment);
@@ -109,6 +163,7 @@ export async function streamHistorySection(main: HTMLElement, channel?: string):
         id: entry.result.id, finishedAt: entry.result.finishedAt,
         hostName: streamHostName(entry.result.host, entry.result.players.find(player => player.id === entry.result.host.id)),
         channel: entry.result.host.login, players: entry.result.players.length,
+        summary: streamHistorySummary(entry.result),
         published: entry.published, pending: !entry.published && !!entry.pendingToken,
       }));
       if (!channel) for (const game of readPublishedStreamVisits()) if (!local.some(entry => entry.id === game.id))
@@ -139,4 +194,5 @@ export async function streamHistorySection(main: HTMLElement, channel?: string):
   };
   render();
   await Promise.all([loadLocal(), channel ? load() : Promise.resolve()]);
+  return () => { disposePicker(); };
 }

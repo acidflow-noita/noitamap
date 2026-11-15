@@ -24,6 +24,8 @@ An unsent last marker is submitted automatically at zero. The existing bounded s
 
 ## Results and history
 
+History returns numeric placement and score totals for any selected player in the existing page request. New results include compact totals in their metadata. Apply `0008_result_history_summaries.sql` before deploying this feature. For older compressed results, the Worker prepares at most one missing summary per history request and stores it separately. Later reads reuse it. The original result and scores remain immutable. Full historical payloads stay in Cloudflare during this preparation. The separate summary and its row overhead count against the existing storage budget.
+
 Completed games publish one immutable compressed result to D1. Public result reads and channel history do not require login. Publication retries are idempotent and continue after a browser disconnect. Local result copies and HTML/image exports remain available if publication is delayed.
 
 Result storage has an application byte budget below the Free D1 limit. Existing daily and per-host publication caps also apply. These safeguards do not make Worker or Durable Object usage unlimited. Keep both Cloudflare accounts on the intended Free plans.

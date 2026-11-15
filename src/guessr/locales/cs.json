@@ -666,5 +666,7 @@
   "Group {{number}}": "Skupina {{number}}",
   "Reload this page to use the updated game connection.": "Obnovte tuto stránku, abyste mohli využít aktualizované připojení ke hře.",
   "Twitch identity verification is temporarily unavailable. Retrying…": "Ověření identity na Twitchi je dočasně nedostupné. Pokouším se o to znovu…",
-  "Authorize Twitch posting access.": "Povolit přístup k publikování na Twitchi."
+  "Authorize Twitch posting access.": "Povolit přístup k publikování na Twitchi.",
+  "This player did not join the game.": "Tento hráč se do hry nepřipojil.",
+  "Game history shows each player's rank and score.": "Historie hry zobrazuje pozici a skóre každého hráče."
 }

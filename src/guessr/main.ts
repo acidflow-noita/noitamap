@@ -1037,13 +1037,13 @@ function history(): void {
     historyReplace(guessRouteUrl('history', location.href, { channel }));
     main.append(pageHeading(node('h1', '', msg('{{player}}’s results', { player: channel }), 'clock-history'),
       button(msg('Back'), () => { historyReplace(guessRouteUrl('history', location.href, { channel: '' })); history(); })));
-    void streamHistorySection(main, channel); return;
+    void streamHistorySection(main, channel).then(dispose => { if (main.isConnected) clearClue = dispose; else dispose(); }); return;
   }
   const entries = readHistory(storage);
   main.append(
     pageHeading(node("h1", "", msg("History"), 'clock-history'), button(msg('Back'), home)),
   );
-  void streamHistorySection(main);
+  void streamHistorySection(main).then(dispose => { if (main.isConnected) clearClue = dispose; else dispose(); });
   main.append(node("h2", "", msg("Demo")), node("p", "muted", msg("Your last 30 games in Demo mode on this device.")));
   const stats = node("div", "stats-grid");
   for (const [n, label] of [

@@ -648,5 +648,7 @@
   "Group {{number}}": "Groep {{number}}",
   "Reload this page to use the updated game connection.": "Laad deze pagina opnieuw om de bijgewerkte spelverbinding te gebruiken.",
   "Twitch identity verification is temporarily unavailable. Retrying…": "Identiteitsverificatie op Twitch is tijdelijk niet beschikbaar. Ik probeer het opnieuw…",
-  "Authorize Twitch posting access.": "Geef toestemming voor het plaatsen van berichten op Twitch."
+  "Authorize Twitch posting access.": "Geef toestemming voor het plaatsen van berichten op Twitch.",
+  "This player did not join the game.": "Deze speler heeft niet aan het spel deelgenomen.",
+  "Game history shows each player's rank and score.": "In de spelgeschiedenis worden de rang en de score van elke speler weergegeven."
 }

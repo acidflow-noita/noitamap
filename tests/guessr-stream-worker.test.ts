@@ -45,6 +45,7 @@ async function fixture() {
   db.sqlite.exec(readFileSync("workers/noitamap-guessr/migrations/0005_stream_history.sql", "utf8"));
   db.sqlite.exec(readFileSync("workers/noitamap-guessr/migrations/0006_stream_storage.sql", "utf8"));
   db.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/0007_result_ownership.sql', 'utf8'));
+  db.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/0008_result_history_summaries.sql', 'utf8'));
   const ticket = await signGameTicket(
     streamHost.sub,
     streamHost.name,
@@ -216,7 +217,7 @@ describe("single-document stream publication", () => {
     const second = await (await f.call('/history/' + original.host.login + '?before=' + page.next, undefined, null)).json() as any;
     expect(second.games).toHaveLength(4); expect(second.next).toBeUndefined();
     expect(new Set([...page.games, ...second.games].map(game => game.id)).size).toBe(24);
-    expect(Object.keys(page.games[0]).sort()).toEqual(['finishedAt', 'hostName', 'id', 'players']);
+    expect(Object.keys(page.games[0]).sort()).toEqual(['finishedAt', 'hostName', 'id', 'players', 'summary']);
     const plan = f.sqlite.prepare("EXPLAIN QUERY PLAN SELECT id FROM stream_results WHERE host_id=? AND (created_at, id) < (?, ?) ORDER BY created_at DESC, id DESC LIMIT 21").all(original.host.id, Number.MAX_SAFE_INTEGER, 'z');
     expect(JSON.stringify(plan)).toContain('stream_results_host_history');
     expect(f.sqlite.prepare('SELECT total_changes() AS n').get()).toEqual(changes);
@@ -249,6 +250,41 @@ describe("single-document stream publication", () => {
         )
       ).status,
     ).toBe(404);
+  });
+  it('bounds large history pages while preserving the cursor and one indexed request', async () => {
+    const f = await fixture(), input = await f.completed();
+    await f.publish(input);
+    const stored = f.sqlite.prepare('SELECT * FROM stream_results').get()!;
+    const header = JSON.parse(stored.result_json as string);
+    const metadata = JSON.stringify({ ...header, padding: 'x'.repeat(1100000) });
+    const insert = f.sqlite.prepare('INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json,host_id,host_verified_at) VALUES(?,?,?,?,?,?,?,?,?)');
+    for (let i = 0; i < 3; i++) insert.run(crypto.randomUUID(), stored.owner, stored.day, Number(stored.created_at) + i + 1,
+      Buffer.byteLength(metadata), stored.digest, metadata, stored.host_id, stored.host_verified_at);
+    const calls = f.calls();
+    const page = await (await f.call('/history/' + header.host.login, undefined, null)).json() as any;
+    expect(f.calls() - calls).toBe(1); expect(page.games).toHaveLength(1); expect(page.next).toBeTruthy();
+    expect(JSON.stringify(page)).not.toContain('padding');
+    const next = await (await f.call('/history/' + header.host.login + '?before=' + page.next, undefined, null)).json() as any;
+    expect(next.games).toHaveLength(1); expect(next.games[0].id).not.toBe(page.games[0].id);
+  });
+  it('fills at most one old compressed summary per request without returning the full result', async () => {
+    const f = await fixture(), input = await f.completed(); await f.publish(input);
+    const stored = f.sqlite.prepare('SELECT * FROM stream_results').get()!;
+    const header = JSON.parse(stored.result_json as string); delete header.summary;
+    f.sqlite.prepare('DELETE FROM stream_results').run();
+    const metadata = JSON.stringify(header);
+    const insert = f.sqlite.prepare('INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json,result_gzip,host_id,host_verified_at) VALUES(?,?,?,?,?,?,?,?,?,?)');
+    insert.run(stored.id, stored.owner, stored.day, stored.created_at, Buffer.byteLength(metadata) + (stored.result_gzip as Uint8Array).length,
+      stored.digest, metadata, stored.result_gzip, stored.host_id, stored.host_verified_at);
+    const before = f.sqlite.prepare('SELECT * FROM stream_results').get();
+    const first = await (await f.call('/history/' + header.host.login, undefined, null)).json() as any;
+    expect(first.games[0].summary.standings).toHaveLength(1);
+    expect(JSON.stringify(first)).not.toMatch(/oldPayload|private|answer|positions|result_gzip/);
+    expect(f.sqlite.prepare('SELECT * FROM stream_results').get()).toEqual(before);
+    expect(f.sqlite.prepare('SELECT COUNT(*) AS count FROM stream_result_history').get()!.count).toBe(1);
+    const changes = f.sqlite.prepare('SELECT total_changes() AS count').get();
+    const second = await (await f.call('/history/' + header.host.login, undefined, null)).json();
+    expect(second).toEqual(first); expect(f.sqlite.prepare('SELECT total_changes() AS count').get()).toEqual(changes);
   });
   it('publishes beyond 200 games and accounts actual stored bytes without deleting old results', async () => {
     const f = await fixture(), input = await f.completed();

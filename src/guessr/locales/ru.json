@@ -666,5 +666,7 @@
   "Group {{number}}": "Группа {{number}}",
   "Reload this page to use the updated game connection.": "Обновите эту страницу, чтобы воспользоваться обновленным подключением к игре.",
   "Twitch identity verification is temporarily unavailable. Retrying…": "Проверка личности на Twitch временно недоступна. Повторяю попытку…",
-  "Authorize Twitch posting access.": "Разрешить доступ к публикации в Twitch."
+  "Authorize Twitch posting access.": "Разрешить доступ к публикации в Twitch.",
+  "This player did not join the game.": "Этот игрок не присоединился к игре.",
+  "Game history shows each player's rank and score.": "В истории игры отображаются рейтинг и количество очков каждого игрока."
 }

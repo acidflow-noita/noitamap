@@ -202,7 +202,7 @@ export class TwitchViewer {
   }
 
   /** Call directly from the Connect button so the browser permits the popup. */
-  connect(options: { announcements?: boolean } = {}): Promise<TwitchViewerState> {
+  connect(options: { announcements?: boolean; posting?: boolean } = {}): Promise<TwitchViewerState> {
     if (this.disposed) return Promise.reject(new TwitchViewerError('disconnected', 'This Twitch connection is closed.'));
     if (this.options.siteIdentity && this.options.siteAuthorization) return this.options.siteAuthorization().then(() => {
       this.update({ ...this.options.siteIdentity, connected: true, error: null }); return this.getState();
@@ -214,14 +214,16 @@ export class TwitchViewer {
       if (this.state.connected) return this.getState();
       throw new TwitchViewerError('unavailable', 'Twitch identity verification is temporarily unavailable. Retrying…');
     });
+    const requestedScopes = [...new Set([...this.requiredScopes,
+      ...(options.posting || options.announcements ? SCOPES : []), ...(options.announcements ? [ANNOUNCEMENT_SCOPE] : [])])];
     if (this.#credentials && this.#credentials.expiresAt > Date.now() + 5000
-      && (!options.announcements || this.#credentials.scopes.includes(ANNOUNCEMENT_SCOPE))) return Promise.resolve(this.getState());
+      && requestedScopes.every(scope => this.#credentials!.scopes.includes(scope))) return Promise.resolve(this.getState());
     this.clearCredentials();
     const generation = ++this.generation;
     const state = Array.from(crypto.getRandomValues(new Uint8Array(32)), n => n.toString(16).padStart(2, '0')).join('');
     const authorize = new URL('https://id.twitch.tv/oauth2/authorize');
     authorize.search = new URLSearchParams({ response_type: 'token', client_id: this.clientId,
-      redirect_uri: this.redirectUri, scope: [...this.requiredScopes, ...(options.announcements ? [ANNOUNCEMENT_SCOPE] : [])].join(' '), state, force_verify: 'true' }).toString();
+      redirect_uri: this.redirectUri, scope: requestedScopes.join(' '), state, force_verify: 'true' }).toString();
     let popup: TwitchViewerPopup | null;
     try { popup = (this.options.popup ?? ((url, name, features) => window.open(url, name, features)))(
       authorize.href, 'noitamap-twitch-' + state, 'popup,width=520,height=720'); }
@@ -247,6 +249,8 @@ export class TwitchViewer {
           if (typeof data.accessToken !== 'string' || !/^[a-zA-Z0-9]{1,2048}$/.test(data.accessToken))
             throw new TwitchViewerError('validation', 'Twitch returned an invalid sign-in response.');
           const credentials = await this.validateToken(data.accessToken);
+          if (!requestedScopes.every(scope => credentials.scopes.includes(scope)))
+            throw new TwitchViewerError('validation', 'Authorize Twitch posting access.');
           if (this.disposed || generation !== this.generation || this.pending !== pending) return;
           this.#credentials = credentials;
           this.remember(credentials);

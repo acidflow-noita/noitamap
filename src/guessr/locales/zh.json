@@ -648,5 +648,7 @@
   "Group {{number}}": "第 {{number}} 组",
   "Reload this page to use the updated game connection.": "请刷新此页面以使用更新的游戏连接。",
   "Twitch identity verification is temporarily unavailable. Retrying…": "Twitch 身份验证服务暂时不可用。正在重试……",
-  "Authorize Twitch posting access.": "授权 Twitch 发布权限。"
+  "Authorize Twitch posting access.": "授权 Twitch 发布权限。",
+  "This player did not join the game.": "该玩家未加入游戏。",
+  "Game history shows each player's rank and score.": "游戏历史记录中显示了每位玩家的排名和得分。"
 }

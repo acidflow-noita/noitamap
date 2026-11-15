@@ -648,5 +648,7 @@
   "Group {{number}}": "Kelompok {{number}}",
   "Reload this page to use the updated game connection.": "Muat ulang halaman ini untuk menggunakan koneksi game yang telah diperbarui.",
   "Twitch identity verification is temporarily unavailable. Retrying…": "Verifikasi identitas Twitch untuk sementara tidak tersedia. Mencoba lagi…",
-  "Authorize Twitch posting access.": "Izinkan akses untuk memposting di Twitch."
+  "Authorize Twitch posting access.": "Izinkan akses untuk memposting di Twitch.",
+  "This player did not join the game.": "Pemain ini tidak ikut bermain.",
+  "Game history shows each player's rank and score.": "Riwayat permainan menampilkan peringkat dan skor masing-masing pemain."
 }

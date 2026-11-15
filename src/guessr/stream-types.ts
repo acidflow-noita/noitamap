@@ -163,7 +163,8 @@ export interface StreamPublishInput {
   positions?: StreamResult['positions'];
 }
 export interface StreamHistoryPage {
-  games: { id: string; finishedAt: number; players: number; hostName: string }[];
+  games: { id: string; finishedAt: number; players: number; hostName: string;
+    summary?: import('./stream-history-summary').StreamHistorySummary }[];
   next?: string;
 }
 export interface StreamPublishedResult extends Omit<StreamResult, "players"> {

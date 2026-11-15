@@ -21,6 +21,10 @@ describe('immutable result storage', () => {
     expect(encoded.bytes).toBeLessThan(new TextEncoder().encode(serialized).byteLength / 2);
     const stored = { result_json: encoded.json, result_gzip: [...new Uint8Array(encoded.gzip!)] };
     expect(JSON.parse(encoded.json)).toMatchObject({ host: { login: value.host.login }, playerCount: 1000, finishedAt: value.finishedAt });
+    const summary = JSON.parse(encoded.json).summary;
+    expect(summary.maximum).toBe(50000); expect(summary.standings).toHaveLength(1000);
+    expect(summary.standings[999]).toEqual(['1000', '視聴者 999', 1, 50000]);
+    expect(JSON.stringify(summary)).not.toMatch(/answer|rounds|positions|token/);
     const compressed = storedResultResponse(stored, new Request('https://result.test', { headers: { 'Accept-Encoding': 'gzip' } }));
     expect(compressed.headers.get('Content-Encoding')).toBe('gzip');
     expect(JSON.parse(await new Response(compressed.body!.pipeThrough(new DecompressionStream('gzip'))).text())).toEqual(value);

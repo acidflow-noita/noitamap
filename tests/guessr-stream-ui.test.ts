@@ -174,7 +174,7 @@ it('offers consent during setup before starting, only for the selected sharing m
   expect(consent.hidden).toBe(false);
   expect(mocks.connect).not.toHaveBeenCalled();
   consent.click(); await flush();
-  expect(mocks.connect).toHaveBeenCalledExactlyOnceWith({ announcements: true });
+  expect(mocks.connect).toHaveBeenCalledExactlyOnceWith({ posting: true, announcements: true });
   expect(consent.hidden).toBe(true);
   expect(mocks.start).not.toHaveBeenCalled();
   expect(mocks.post).not.toHaveBeenCalled();
@@ -219,7 +219,7 @@ it('requests normal posting access in setup without requesting announcements', a
   const consent = document.getElementById('stream-enable-sharing') as HTMLButtonElement;
   expect(consent.hidden).toBe(false);
   consent.click(); await flush();
-  expect(mocks.connect).toHaveBeenCalledExactlyOnceWith({ announcements: false });
+  expect(mocks.connect).toHaveBeenCalledExactlyOnceWith({ posting: true, announcements: false });
   expect(consent.hidden).toBe(true);
   expect(mocks.start).not.toHaveBeenCalled();
   expect(mocks.post).not.toHaveBeenCalled();

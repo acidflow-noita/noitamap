@@ -50,7 +50,7 @@ function fixture(chat = true) {
   const client = new TwitchViewer({ clientId: 'client123', popup: open, fetch: request, chat });
   clients.push(client);
   const reply = (change: Record<string, unknown> = {}, origin = location.origin, source = popup) => {
-    const authorization = new URL(open.mock.calls[0][0] as unknown as string);
+    const authorization = new URL(open.mock.calls.at(-1)![0] as unknown as string);
     window.dispatchEvent(new MessageEvent('message', { origin, source: source as unknown as Window,
       data: { type: TWITCH_VIEWER_MESSAGE, state: authorization.searchParams.get('state'), accessToken: token, ...change } }));
   };
@@ -266,4 +266,17 @@ it('restores after a temporary verification outage without another popup or disc
   await vi.advanceTimersByTimeAsync(30000);
   expect(next.getState()).toMatchObject({ connected: true, restoring: false, userId: '123' });
   expect(popup).not.toHaveBeenCalled(); expect(f.sends()).toHaveLength(0);
+});
+
+it('requests posting access only for an explicit host-sharing action, not later ordinary sign-ins', async () => {
+  const f = fixture(false); f.identity.scopes = []; await f.connect();
+  expect(new URL(f.open.mock.calls.at(-1)![0]).searchParams.get('scope')).toBe('');
+  const posting = f.client.connect({ posting: true });
+  expect(new URL(f.open.mock.calls.at(-1)![0]).searchParams.get('scope')).toBe('user:write:chat');
+  f.identity.scopes = ['user:write:chat']; f.reply(); await posting;
+  expect(f.client.canShare(false)).toBe(true);
+  f.client.disconnect(); const ordinary = f.client.connect();
+  expect(new URL(f.open.mock.calls.at(-1)![0]).searchParams.get('scope')).toBe('');
+  f.identity.scopes = []; f.reply(); await ordinary;
+  expect(f.client.getState().connected).toBe(true); expect(f.client.canShare(false)).toBe(false);
 });

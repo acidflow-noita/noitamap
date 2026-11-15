@@ -13,6 +13,7 @@ import { verifyGameTicket, verifyResultManagementTicket } from "./tickets";
 import type { Env } from "./index";
 import { storedResultResponse, type StoredResultBody } from './result-storage';
 import { GAME_PROTOCOL, GAME_RELOAD_MESSAGE } from '../../../src/guessr/game-protocol';
+import { storedHistorySummary } from './history-summary';
 export { STREAM_DAILY_PUBLISH_CAP, STREAM_HOST_DAILY_CAP } from './result-publication';
 
 const idPattern =
@@ -139,18 +140,31 @@ export async function streamRoute(
       const match = cursor?.match(/^(\d{1,16})_([a-f0-9-]{36})$/);
       if (cursor && (!match || !Number.isSafeInteger(Number(match[1])) || !idPattern.test(match[2])))
         throw new ImageGameError(400, 'Invalid history page.');
-      const query = env.DB.prepare(`SELECT id, created_at,
+      const query = env.DB.prepare(`WITH candidates AS MATERIALIZED (SELECT id, created_at,
         json_extract(result_json, '$.finishedAt') AS finishedAt,
         COALESCE(json_extract(result_json, '$.playerCount'), json_array_length(result_json, '$.players')) AS players,
-        json_extract(result_json, '$.host.name') AS hostName
-        FROM stream_results WHERE host_id=(SELECT twitch_id FROM stream_channels WHERE login=?)
+        json_extract(result_json, '$.host.name') AS hostName, result_json AS metadata, h.summary_json AS historySummary,
+        CASE WHEN json_extract(result_json,'$.storage')='gzip-json-v1' AND json_type(result_json,'$.summary') IS NULL AND h.result_id IS NULL
+          THEN result_gzip END AS oldPayload
+        FROM stream_results LEFT JOIN stream_result_history h ON h.result_id=stream_results.id
+        WHERE host_id=(SELECT twitch_id FROM stream_channels WHERE login=?)
         ${match ? 'AND (created_at, id) < (?, ?)' : ''}
-        ORDER BY created_at DESC, id DESC LIMIT 21`);
+        ORDER BY created_at DESC, id DESC LIMIT 21)
+        SELECT * FROM (SELECT *, COUNT(*) OVER() AS available,
+          ROW_NUMBER() OVER(ORDER BY created_at DESC,id DESC) AS ordinal,
+          SUM(length(CAST(metadata AS BLOB))+COALESCE(length(CAST(historySummary AS BLOB)),0)+COALESCE(length(oldPayload),0))
+            OVER(ORDER BY created_at DESC,id DESC) AS payloadBytes,
+          SUM(CASE WHEN oldPayload IS NULL THEN 0 ELSE 1 END) OVER(ORDER BY created_at DESC,id DESC) AS missingCount FROM candidates)
+        WHERE ordinal=1 OR (payloadBytes<=2097152 AND missingCount<=1) ORDER BY created_at DESC,id DESC`);
       const { results } = await query.bind(historyMatch[1], ...(match ? [Number(match[1]), match[2]] : []))
-        .all<{ id: string; created_at: number; finishedAt: number; players: number; hostName: string }>();
+        .all<{ id: string; created_at: number; finishedAt: number; players: number; hostName: string; metadata: string; historySummary: string | null;
+          available: number; ordinal: number; payloadBytes: number; missingCount: number; oldPayload: unknown }>();
       const rows = results.slice(0, 20), last = rows.at(-1);
-      return new Response(JSON.stringify({ games: rows.map(({ created_at, ...result }) => result),
-        ...(results.length > 20 && last ? { next: `${last.created_at}_${last.id}` } : {}) }), {
+      const games = await Promise.all(rows.map(async ({ created_at, metadata, historySummary, available, ordinal, payloadBytes, missingCount, oldPayload, ...result }) => ({
+        ...result, summary: await storedHistorySummary(env.DB, result.id, { result_json: metadata, result_gzip: oldPayload }, historySummary),
+      })));
+      return new Response(JSON.stringify({ games,
+        ...(last && (results.length > 20 || rows.length < (results[0]?.available ?? 0)) ? { next: `${last.created_at}_${last.id}` } : {}) }), {
         headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=30' },
       });
     }

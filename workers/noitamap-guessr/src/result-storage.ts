@@ -1,4 +1,5 @@
 import { STREAM_MAX_DOCUMENT_BYTES, type StreamPublishedResult } from '../../../src/guessr/stream-types';
+import { streamHistorySummary } from '../../../src/guessr/stream-history-summary';
 
 /** Application payload/overhead budget, below the 500 MB Free database limit.
  * Other game tables and further database overhead retain substantial headroom. */
@@ -11,7 +12,7 @@ export async function encodeStoredResult(result: StreamPublishedResult, serializ
   if (!original.byteLength || original.byteLength > STREAM_MAX_DOCUMENT_BYTES) throw new Error('Invalid result size.');
   const gzip = await new Response(new Response(original).body!.pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
   const header = JSON.stringify({ storage: 'gzip-json-v1', host: { id: result.host.id, login: result.host.login, name: result.host.name },
-    finishedAt: result.finishedAt, playerCount: result.players.length, rawBytes: original.byteLength });
+    finishedAt: result.finishedAt, playerCount: result.players.length, rawBytes: original.byteLength, summary: streamHistorySummary(result) });
   const bytes = encoder.encode(header).byteLength + gzip.byteLength;
   // Tiny/incompressible documents keep the original representation.
   return bytes + 128 < original.byteLength
@@ -57,4 +58,21 @@ export function storedResultResponse(stored: StoredResultBody, request: Request)
     return new Response(compressed, init);
   }
   return new Response(new Response(compressed).body!.pipeThrough(new DecompressionStream('gzip')), { headers });
+}
+
+/** Decode only within the Worker, with the same document bound as publication. */
+export async function readStoredResult(stored: StoredResultBody): Promise<StreamPublishedResult> {
+  const response = storedResultResponse(stored, new Request('https://stored-result.invalid'));
+  const reader = response.body!.getReader(), decoder = new TextDecoder();
+  let size = 0, text = '';
+  try {
+    while (true) {
+      const part = await reader.read(); if (part.done) break;
+      size += part.value.byteLength;
+      if (size > STREAM_MAX_DOCUMENT_BYTES) throw Error('Stored result exceeds its size bound.');
+      text += decoder.decode(part.value, { stream: true });
+    }
+  } finally { await reader.cancel().catch(() => {}); }
+  if (stored.result_gzip != null && size !== JSON.parse(stored.result_json).rawBytes) throw Error('Stored result size does not match its metadata.');
+  return JSON.parse(text + decoder.decode()) as StreamPublishedResult;
 }
