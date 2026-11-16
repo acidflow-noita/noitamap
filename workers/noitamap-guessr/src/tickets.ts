@@ -6,10 +6,11 @@ export interface GameIdentity {
   iat: number;
   exp: number;
   aud: "noitamap-guessr";
-  typ: "game" | "result-management";
+  typ: "game" | "result-management" | "player";
   v: 2;
   twitchUserId?: string;
   twitchLogin?: string;
+  twitchColor?: string;
 }
 const encoder = new TextEncoder();
 function decode(value: string): Uint8Array {
@@ -67,6 +68,7 @@ async function verifyTicket(
         (typeof p.twitchLogin !== "string" ||
           !/^[a-z0-9_]{1,25}$/.test(p.twitchLogin))) ||
       (p.twitchUserId === undefined) !== (p.twitchLogin === undefined) ||
+      (p.twitchColor !== undefined && (typeof p.twitchColor !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(p.twitchColor))) ||
       typeof p.name !== "string" ||
       !p.name.trim() || p.name !== p.name.trim() || p.name.length > 48 || /[\p{Cc}\p{Cf}\p{Cs}<>]/u.test(p.name) ||
       !Number.isInteger(p.iat) ||
@@ -84,4 +86,5 @@ async function verifyTicket(
 }
 
 export const verifyGameTicket = (token: string, publicKey: string, now = Date.now()) => verifyTicket(token, publicKey, now, 'game');
+export const verifyPlayerTicket = (token: string, publicKey: string, now = Date.now()) => verifyTicket(token, publicKey, now, 'player');
 export const verifyResultManagementTicket = (token: string, publicKey: string, now = Date.now()) => verifyTicket(token, publicKey, now, 'result-management');

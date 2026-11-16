@@ -236,6 +236,9 @@ export default {
         case "/auth/check":
           if (request.method !== "GET") return methodNotAllowed("GET", allowedOrigin);
           return await handleAuthCheck(request, await resolveSessionSecrets(env), allowedOrigin, env);
+        case "/auth/membership/refresh":
+          if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
+          return await handleMembershipRefresh(request, env, await resolveSessionSecrets(env), allowedOrigin);
         case "/auth/link/start":
         case "/auth/link/review":
         case "/auth/link/complete":
@@ -250,8 +253,9 @@ export default {
           return await handleTwitchChatSession(request, env, await resolveSessionSecrets(env), allowedOrigin);
         case "/auth/result-ticket":
         case "/auth/game-ticket":
+        case "/auth/player-ticket":
           if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
-          return await handleGameTicket(request, env, (await resolveSessionSecrets(env)).jwtSecret, allowedOrigin);
+          return await handleGameTicket(request, env, await resolveSessionSecrets(env), allowedOrigin);
         case "/auth/logout":
           if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
           return await handleLogout(request, env, await resolveSessionSecrets(env), allowedOrigin);
@@ -475,23 +479,57 @@ async function handleAuthCheck(request: Request, secrets: SessionSecrets, origin
   return jsonResponse(data, origin);
 }
 
-async function handleGameTicket(request: Request, env: Env, jwtSecret: string, allowedOrigin: string | null): Promise<Response> {
+/** Explicit account action. Provider checks share the identity lease and a
+ * short cooldown across sessions/tabs; gameplay never calls this per guess. */
+async function handleMembershipRefresh(request: Request, env: Env, secrets: SessionSecrets, origin: string | null): Promise<Response> {
+  const token = getBearerToken(request), payload = token ? await verifyJWT(token, secrets.jwtSecret) : null;
+  const account = payload ? await sessionAccount(env, payload) : null;
+  if (!origin || !payload || !account) return jsonResponse({ authenticated: false }, origin, 401);
+  if (!await sessionRateAllowed(env, 'membership:' + account.id)) return rateLimited(origin);
+  const due = account.identities.filter(identity => identity.status === 'active' && Date.now() - identity.checked_at >= 30000);
+  for (const identity of due) await refreshLinkedIdentity(env, identity, secrets, false, 30000);
+  const current = await sessionAccount(env, payload);
+  if (!current) return jsonResponse({ authenticated: false }, origin, 401);
+  if (due.some(old => current.identities.some(row => row.provider === old.provider && row.status === 'active' && row.checked_at <= old.checked_at)))
+    return jsonResponse({ error: 'Could not refresh Pro status. Try again shortly.' }, origin, 503);
+  const updated = await issueAccessSession(current, secrets, current.session, payload.provider);
+  return jsonResponse({ ...updated.data, token: updated.token }, origin);
+}
+
+async function handleGameTicket(request: Request, env: Env, secrets: SessionSecrets, allowedOrigin: string | null): Promise<Response> {
   const token = getBearerToken(request);
-  const user = token ? await verifyJWT(token, jwtSecret) : null;
+  const user = token ? await verifyJWT(token, secrets.jwtSecret) : null;
   if (!user) return jsonResponse({ error: 'Sign in to continue.' }, allowedOrigin, 401);
   if (!await sessionRateAllowed(env, user.sid)) return rateLimited(allowedOrigin);
   const account = await sessionAccount(env, user);
   if (!account) return jsonResponse({ error: 'Sign in again.' }, allowedOrigin, 401);
-  const management = new URL(request.url).pathname === '/auth/result-ticket';
-  if (!management && !accountData(account).isSubscriber) return jsonResponse({ error: 'Ranked games require Pro.' }, allowedOrigin, 403);
+  const path = new URL(request.url).pathname;
+  const management = path === '/auth/result-ticket', participant = path === '/auth/player-ticket';
+  if (!management && !participant && !accountData(account).isSubscriber) return jsonResponse({ error: 'Ranked games require Pro.' }, allowedOrigin, 403);
   const key = await getSecret(env.GAME_TICKET_PRIVATE_KEY);
   if (!key || key.length > 2048) return jsonResponse({ error: 'Ranked games are not available yet.' }, allowedOrigin, 503);
   const twitch = account?.identities.find(row => row.provider === 'twitch' && row.status === 'active');
+  if (participant && !twitch?.login) return jsonResponse({ error: 'Connect Twitch to this account first.' }, allowedOrigin, 409);
   // Pro may come from Patreon, but a linked Twitch identity supplies the public
   // game name. These fields are already loaded from the verified provider record.
   const name = twitch?.login ? twitch.nickname || twitch.username || twitch.login : user.nickname || user.username;
-  return jsonResponse(await signGameTicket(`account:${account.id}`,
-    name, key, twitch?.login ? { twitchUserId: twitch.provider_user_id, twitchLogin: twitch.login } : undefined, Date.now(), management ? 'result-management' : 'game'), allowedOrigin);
+  let color: string | undefined;
+  if (participant && twitch) {
+    const credentials = await readCredentials(twitch, secrets), clientId = await getSecret(env.TWITCH_CLIENT_ID);
+    if (credentials && credentials.expiresAt > Date.now() && clientId) try {
+      const response = await fetch('https://api.twitch.tv/helix/chat/color?user_id=' + twitch.provider_user_id, {
+        headers: { Authorization: 'Bearer ' + credentials.accessToken, 'Client-Id': clientId }, signal: AbortSignal.timeout(3000),
+      });
+      if (response.ok) {
+        const data = await response.json() as { data?: { user_id: string; color: string }[] };
+        const value = data.data?.find(row => row.user_id === twitch.provider_user_id)?.color;
+        if (value && /^#[0-9a-fA-F]{6}$/.test(value)) color = value;
+      }
+    } catch { /* A missing chat color must not prevent playing. */ }
+  }
+  const issued = await signGameTicket(`account:${account.id}`,
+    name, key, twitch?.login ? { twitchUserId: twitch.provider_user_id, twitchLogin: twitch.login, ...(color ? { twitchColor: color } : {}) } : undefined, Date.now(), management ? 'result-management' : participant ? 'player' : 'game');
+  return jsonResponse({ ...issued, ...(participant ? { player: { userId: twitch!.provider_user_id, login: twitch!.login, displayName: name, ...(color ? { color } : {}) } } : {}) }, allowedOrigin);
 }
 
 /** Refresh a registered session exactly once; old stateless tokens never migrate. */
@@ -710,7 +748,7 @@ async function readCredentials(identity: Identity, secrets: SessionSecrets): Pro
   try { return JSON.parse(value) as ProviderCredentials; } catch { return null; }
 }
 
-async function refreshLinkedIdentity(env: Env, identity: Identity, secrets: SessionSecrets, forceToken = false): Promise<void> {
+async function refreshLinkedIdentity(env: Env, identity: Identity, secrets: SessionSecrets, forceToken = false, minimumAge = 0): Promise<void> {
   if (identity.status !== 'active' || !env.ACCOUNT_DB) return;
   const lease = crypto.randomUUID();
   const acquired = await env.ACCOUNT_DB.prepare(`UPDATE auth_identities SET refresh_lock = ?, refresh_lock_until = ?
@@ -723,6 +761,7 @@ async function refreshLinkedIdentity(env: Env, identity: Identity, secrets: Sess
       .bind(...values, identity.account_id, identity.provider, lease).run();
   };
   try {
+    if (minimumAge && Date.now() - identity.checked_at < minimumAge) return;
     let credentials = await readCredentials(identity, secrets);
     if (!credentials) return;
     const twitch = identity.provider === 'twitch' ? await resolveTwitchSecrets(env) : null;
@@ -755,7 +794,7 @@ async function refreshLinkedIdentity(env: Env, identity: Identity, secrets: Sess
       await update("UPDATE auth_identities SET status = 'reconnect', is_subscriber = 0, credentials = ''", []);
       return;
     }
-    const pro = viewer ? await checkTwitchProAccess(env, twitch!, viewer, secrets) : patron!.isSubscriber;
+    const pro = viewer ? await checkTwitchProAccess(env, twitch!, viewer, secrets, true) : patron!.isSubscriber;
     await update(`UPDATE auth_identities SET username = ?, nickname = ?, login = ?, is_follower = ?, is_subscriber = ?, checked_at = ?`,
       [viewer?.display_name || viewer?.login || patron!.username, viewer?.display_name || patron?.nickname || null,
         viewer?.login || null, Number(patron?.isFollower || false), Number(pro), Date.now()]);
@@ -1281,7 +1320,7 @@ async function fetchTwitchUser(accessToken: string, clientId: string): Promise<T
  * without broadcaster setup; other viewers need the subscription check or the
  * existing broadcaster-ID grant.
  */
-async function checkTwitchProAccess(env: Env, twitch: TwitchSecrets, viewer: TwitchUser, secrets: SessionSecrets): Promise<boolean> {
+async function checkTwitchProAccess(env: Env, twitch: TwitchSecrets, viewer: TwitchUser, secrets: SessionSecrets, preserveOnFailure = false): Promise<boolean> {
   if ((env.TWITCH_PRO_USER_IDS ?? '564553302,241636').split(',').some(id => /^\d{1,30}$/.test(id.trim()) && id.trim() === viewer.id)) return true;
   const viewerId = viewer.id;
   const broadcasterId = await getSecret(env.TWITCH_BROADCASTER_ID);
@@ -1292,7 +1331,7 @@ async function checkTwitchProAccess(env: Env, twitch: TwitchSecrets, viewer: Twi
   if (viewerId === broadcasterId) return true;
 
   const broadcasterToken = await getBroadcasterAccessToken(env, twitch, secrets);
-  if (!broadcasterToken) return false;
+  if (!broadcasterToken) { if (preserveOnFailure) throw Error('Twitch membership check unavailable'); return false; }
 
   const url = new URL(TWITCH_SUBS_URL);
   url.searchParams.set("broadcaster_id", broadcasterId);
@@ -1306,6 +1345,7 @@ async function checkTwitchProAccess(env: Env, twitch: TwitchSecrets, viewer: Twi
   if (res.status === 404) return false;
   if (!res.ok) {
     console.error("Twitch subscriptions check failed:", res.status);
+    if (preserveOnFailure) throw Error('Twitch membership check unavailable');
     return false;
   }
   const data = (await res.json()) as { data: unknown[] };

@@ -3,9 +3,17 @@ import { bindAttribute, bindText, guessrLocale, tr } from './i18n';
 
 // Change this ID only when the player-facing notes below change.
 export const GUESSR_CHANGELOG = {
-  id: '2026-11-15-start-permission',
-  date: '2026-11-15',
+  id: '2026-11-16-ui',
+  date: '2026-11-16',
   notes: [
+    "Updated the game layout with a centered timer and clearer controls.",
+    "Map zoom and reset controls are now visible on desktop and mobile.",
+    "Pan buttons use a directional layout. Keyboard shortcuts use the same blue labels as the drawing tools.",
+    "The Send button shows a spinner while sending and a checkmark after confirmation.",
+    "The account menu now keeps sign-in, Pro status and sign-out together.",
+    "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.",
+    "Connection status appears in the logo pin. Hover or focus the pin for details.",
+
     'Play 1v1 with an invited opponent. The host needs Pro. The opponent can play for free.',
     'The "{{streaming}}" option lets chat or your opponent play one round ahead. Turn it off to play each round together. It is on by default for {{streamMode}} and off for 1v1.',
     '{{streamMode}} uses the {{dailyMode}} map with a new set of locations for each game.',
@@ -63,11 +71,7 @@ export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
       dailyMode: tr('Daily'), received: tr('Guess received'), howToPlay: tr('How to play'), whatsNew: tr("What's new") });
     for (const text of release.notes) notes.append(bindText(document.createElement('li'), text, labels));
     body.append(date, notes);
-    const footer = document.createElement('div'); footer.className = 'dialog-footer';
-    const close = bindText(document.createElement('button'), 'Close'); close.type = 'button';
-    close.className = 'btn btn-solid theme-primary'; close.autofocus = true;
-    close.setAttribute('data-bs-dismiss', 'dialog'); footer.append(close);
-    dialog.append(header, body, footer); document.body.append(dialog);
+    dialog.append(header, body); document.body.append(dialog);
     const instance = new Dialog(dialog);
     opened = { element: dialog, instance };
     dialog.addEventListener('shown.bs.dialog', () => {

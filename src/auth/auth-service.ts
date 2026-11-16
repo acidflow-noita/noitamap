@@ -38,6 +38,10 @@ export interface TwitchChatSession {
   expiresAt: number;
   scopes?: string[];
 }
+export interface PlayerTicket {
+  token: string; expiresAt: number;
+  player: { userId: string; login: string; displayName: string; color?: string };
+}
 
 // Auth worker URL (configure based on environment).
 // Default: localhost + dev.* -> deployed dev worker; prod -> prod worker.
@@ -81,6 +85,11 @@ class AuthService {
   private loginReturn = new LoginReturn();
   private loginPending = false;
   private refreshPending?: Promise<boolean>;
+  private membershipPending?: Promise<AuthState>;
+  private membershipCheckedAt = 0;
+  private playerTicket?: PlayerTicket;
+  private playerTicketPending?: Promise<PlayerTicket>;
+  private sessionGeneration = 0;
 
   registerLoginPreparation = this.loginReturn.register.bind(this.loginReturn);
   getLoginReturnState = this.loginReturn.get.bind(this.loginReturn);
@@ -99,6 +108,13 @@ class AuthService {
     this.ready = new Promise<AuthState>((resolve) => { this.resolveReady = resolve; });
     window.addEventListener('pageshow', event => {
       if (event.persisted) { this.loginReturn.discardUnreturned(); sessionStorage.removeItem(PENDING_LINK_KEY); }
+    });
+    let storageRefresh: ReturnType<typeof setTimeout> | undefined;
+    window.addEventListener('storage', event => {
+      if (event.key !== JWT_KEY && event.key !== REFRESH_KEY) return;
+      this.playerTicket = undefined;
+      clearTimeout(storageRefresh);
+      storageRefresh = setTimeout(() => { void this.checkAuth(); }, 50);
     });
   }
 
@@ -150,18 +166,22 @@ class AuthService {
    * JWT before giving up — this is what keeps sessions alive past 24h without a
    * re-login. Sub status is re-evaluated server-side on each refresh.
    */
-  async checkAuth(): Promise<AuthState> {
+  async checkAuth(retryChangedSession = true): Promise<AuthState> {
+    const generation = this.sessionGeneration;
     try {
       const storedToken = localStorage.getItem(JWT_KEY);
       if (!storedToken) {
         // No access token — try to mint one from the refresh token.
         if (await this.tryRefresh()) return this.state;
+        if (this.sessionGeneration !== generation) return this.getState();
         return this.setUnauthenticated();
       }
 
       const response = await fetch(`${AUTH_WORKER_URL}/auth/check`, {
         headers: { Authorization: `Bearer ${storedToken}` },
       });
+      if (this.sessionGeneration !== generation) return this.getState();
+      if (localStorage.getItem(JWT_KEY) !== storedToken) return retryChangedSession ? this.checkAuth(false) : this.getState();
 
       if (response.ok) {
         const data = await response.json();
@@ -182,14 +202,47 @@ class AuthService {
       return this.setUnauthenticated();
     } catch (error) {
       console.error("Auth check failed:", error);
+      if (this.sessionGeneration !== generation) return this.getState();
       return this.setUnauthenticated();
     }
   }
 
-  /**
-   * Exchange the stored refresh JWT for a fresh access+refresh pair. Returns
-   * true and updates state on success; false (and clears tokens) on failure.
-   */
+  /** Explicit or pre-access membership refresh, bounded in this tab and by the
+   * server's per-account rate limit and shared provider-check cooldown. */
+  refreshMembership(): Promise<AuthState> {
+    if (!this.state.authenticated) return Promise.resolve(this.getState());
+    if (this.membershipPending) return this.membershipPending;
+    if (Date.now() - this.membershipCheckedAt < 30000) return Promise.resolve(this.getState());
+    const owner = this.state.accountId, generation = this.sessionGeneration;
+    this.membershipPending = (async () => {
+      const response = await this.accountRequest('/auth/membership/refresh', {});
+      if (!response.ok) throw new Error('Could not refresh Pro status. Try again shortly.');
+      const data = await response.json();
+      if (!this.state.authenticated || this.state.accountId !== owner || this.sessionGeneration !== generation) throw new Error('Sign in to continue.');
+      if (!data.authenticated || typeof data.token !== 'string') throw new Error('Could not refresh Pro status. Try again shortly.');
+      this.storeSession(data); this.membershipCheckedAt = Date.now(); return this.getState();
+    })().finally(() => { this.membershipPending = undefined; });
+    return this.membershipPending;
+  }
+
+  /** Participant tickets stay in memory and never authorize Pro/host actions. */
+  async getPlayerTicket(): Promise<PlayerTicket> {
+    const owner = this.state.accountId;
+    const generation = this.sessionGeneration;
+    if (!this.state.authenticated || !owner) throw new Error('Sign in to continue.');
+    if (this.playerTicket && this.playerTicket.expiresAt > Date.now() + 90000) return this.playerTicket;
+    return this.playerTicketPending ??= (async () => {
+      const response = await this.accountRequest('/auth/player-ticket', {});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Sign in to continue.');
+      if (!this.state.authenticated || this.state.accountId !== owner || this.sessionGeneration !== generation) throw new Error('Sign in to continue.');
+      if (typeof data.token !== 'string' || !Number.isFinite(data.expiresAt) || !/^\d{1,30}$/.test(data.player?.userId ?? '')
+        || !/^[a-z0-9_]{1,25}$/.test(data.player?.login ?? '') || typeof data.player?.displayName !== 'string') throw new Error('Sign in to continue.');
+      this.playerTicket = data; return data as PlayerTicket;
+    })().finally(() => { this.playerTicketPending = undefined; });
+  }
+
+  /** Exchange the stored refresh reference for a fresh registered session. */
   private tryRefresh(): Promise<boolean> {
     const refresh = async () => navigator.locks
       ? await navigator.locks.request('noitamap-session-refresh', () => this.refreshSession())
@@ -198,6 +251,7 @@ class AuthService {
   }
 
   private async refreshSession(retry = true): Promise<boolean> {
+    const generation = this.sessionGeneration;
     const refreshToken = localStorage.getItem(REFRESH_KEY);
     if (!refreshToken) return false;
     try {
@@ -205,6 +259,9 @@ class AuthService {
         method: "POST",
         headers: { Authorization: `Bearer ${refreshToken}` },
       });
+      if (this.sessionGeneration !== generation) return this.state.authenticated;
+      if (localStorage.getItem(REFRESH_KEY) !== refreshToken)
+        return retry && localStorage.getItem(REFRESH_KEY) ? this.refreshSession(false) : this.state.authenticated;
       if (res.status === 409 && retry && localStorage.getItem(REFRESH_KEY) !== refreshToken) return this.refreshSession(false);
       if (!res.ok) {
         if (res.status === 401 && localStorage.getItem(REFRESH_KEY) === refreshToken) {
@@ -254,6 +311,8 @@ class AuthService {
   }
 
   private setUnauthenticated(): AuthState {
+    this.sessionGeneration++;
+    this.playerTicket = undefined; this.membershipCheckedAt = 0;
     this.state = {
       authenticated: false,
       username: null,

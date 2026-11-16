@@ -41,6 +41,7 @@ export const emptyParallelMetrics = (): ParallelMetrics => ({ schemaVersion: 2, 
 
 export type ParallelAuthorization =
   | { role: 'host'; ticket: string }
+  | { role: 'account'; ticket: string }
   | { role: 'player'; accessToken: string }
   | { role: 'resume'; ticket: string };
 export type ParallelClientMessage =

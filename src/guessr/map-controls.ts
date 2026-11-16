@@ -9,12 +9,13 @@ export function mapControls(board: MapBoard, options: { readOnly?: boolean } = {
   for (const [label, action, icon] of [
     ['Zoom in', () => board.zoom(1.6), 'zoom-in'],
     ['Zoom out', () => board.zoom(1 / 1.6), 'zoom-out'],
-    ['Show entire map', () => board.showEntireMap(), 'arrow-counterclockwise'],
+    ['Show entire map', () => board.showEntireMap(), 'map'],
     ['Center map on marker', () => board.centerOnPin(), null],
   ] as const) {
     if (!icon && options.readOnly) continue;
     const button = document.createElement('button'); button.type = 'button';
     button.className = 'btn btn-sm btn-outline theme-secondary'; bindAttribute(button, 'aria-label', label);
+    bindAttribute(button, 'title', label);
     if (icon) { button.append(iconLabel(icon, label)); if (icon.startsWith('zoom')) button.querySelector('span')!.classList.add('sr-only'); }
     else {
       const icon = document.createElement('img'); icon.src = '/assets/noitaguessr-pin.svg'; icon.alt = ''; icon.width = 18; icon.height = 22;

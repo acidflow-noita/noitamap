@@ -51,6 +51,7 @@ export function mountPvpSetup(main: HTMLElement, open: (id: string) => void, bac
       if (closed) return;
       auth.registerLoginPreparation('guessr', () => ({ pane: 'pvp' }));
       placeholders.remove();
+      if (auth.getState().authenticated && !auth.getState().isSubscriber) await auth.refreshMembership();
       if (!auth.getState().isSubscriber) {
         const { createProControls } = await import('../auth/pro-controls');
         if (closed) return;

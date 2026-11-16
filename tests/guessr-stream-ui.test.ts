@@ -1,3 +1,4 @@
+import { gameLogo } from '../src/guessr/game-chrome';
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { StreamUI, type StreamUIHooks } from '../src/guessr/stream-ui';
@@ -466,17 +467,18 @@ it('keeps the between-round countdown and table visible while the coordinator re
   ui = new StreamUI(hooks); ui.game = game;
   Object.assign(ui, { parallel: { connected: () => connected, state: () => connected ? 'connected' : 'retrying', now: () => Date.now(), dispose() {} } });
   ui.render(); const main = document.querySelector('main'), deadline = game.timing!.resultsUntil;
+  const logo = gameLogo(() => {}); document.body.prepend(logo.element);
   expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:30');
   connected = false; vi.setSystemTime(streamNow + 7000);
   (ui as unknown as { updateStatus(): void }).updateStatus();
   (ui as unknown as { updateTimer(): void }).updateTimer();
   expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:23');
-  expect(document.getElementById('stream-connection-label')!.textContent).toBe('Reconnecting…');
+  expect(document.querySelector('.logo-status-trigger')!.getAttribute('aria-label')).toBe('Reconnecting…');
   expect(document.querySelector('main')).toBe(main);
   expect(game.timing!.resultsUntil).toBe(deadline);
   connected = true;
   (ui as unknown as { updateStatus(): void }).updateStatus();
-  expect(document.getElementById('stream-connection-label')!.hidden).toBe(true);
+  expect(document.querySelector('.logo-status-trigger')!.getAttribute('aria-label')).toBe('Connected'); logo.dispose();
 });
 
 

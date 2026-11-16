@@ -123,7 +123,8 @@ export class GameApi {
   }
   private async issueTicket(): Promise<string> {
     const auth = await gameAuth();
-    if (!auth.getState().isSubscriber)
+    if (auth.getState().authenticated && !auth.getState().isSubscriber) await auth.refreshMembership();
+      if (!auth.getState().isSubscriber)
       throw new ApiError(
         403,
         "Ranked games and leaderboards are available with Pro.",

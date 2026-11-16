@@ -1,4 +1,8 @@
 import { mapControls } from './map-controls';
+import { fitGameFrame } from './game-frame';
+import { gameLogo, moveGameExit } from './game-chrome';
+import { mountAccountMenu } from './account-menu';
+import { updateSubmit, submitHelp } from './submit-control';
 import { readPvpResume, leaveSavedPvp, forgetPvp } from './pvp-resume';
 import "./game.css";
 import Dialog from "bootstrap/js/dist/dialog.js";
@@ -55,6 +59,7 @@ import { loadingPlaceholders, clueLoadingPlaceholder } from './loading-placehold
 import { iconLabel, type ControlIcon } from './control-icons';
 import { ACTIVE_MODE_KEY, readDailyResume, rememberDailyResume, forgetDailyResume } from './resume-progress';
 import { StreamUI } from "./stream-ui";
+import './design.css';
 import { streamHistorySection } from './stream-history';
 import {
   GameApi,
@@ -90,6 +95,9 @@ let generation = 0;
 let imageUrl: string | undefined;
 let imageAbort: AbortController | undefined;
 let clearClue: (() => void) | undefined;
+let clearFrame: (() => void) | undefined;
+let clearHeader: (() => void) | undefined;
+let clearSubmit: (() => void) | undefined;
 const storage = {
   getItem(key: string): string | null {
     try {
@@ -130,6 +138,8 @@ function button(
   icon?: ControlIcon,
 ): HTMLButtonElement {
   const b = node("button", className, text, icon);
+  const source = typeof text === 'string' ? text : text.source;
+  if (source === 'Submit guess' || source === 'Send guess') updateSubmit(b, source);
   b.type = "button";
   if ((typeof text === 'string' ? text : text.source) === 'Skip round') bindAttribute(b, 'title', 'Skip this round without scoring');
   b.addEventListener("click", () => void action());
@@ -187,27 +197,19 @@ function cleanup(): void {
 function shell(game = false): HTMLElement {
   allowGuessrChangelog(false);
   cleanup();
+  clearFrame?.(); clearFrame = undefined; clearHeader?.(); clearSubmit?.(); clearSubmit = undefined;
   disposeGuessrLanguagePickers(root);
   root.replaceChildren();
-  const header = node("header", "site-header"),
-    brand = link("", "/guess/", "brand");
-  const logo = node("img");
-  logo.src = "/assets/noitaguessr-logo.svg";
-  logo.alt = "NoitaGuessr";
-  logo.width = 602;
-  logo.height = 93;
-  brand.append(logo);
-  brand.addEventListener("click", (e) => {
-    e.preventDefault();
-    home();
-  });
+  const header = node("header", "site-header"), logo = gameLogo(home);
   const identity = node('div', 'header-identity');
-  identity.append(brand, createGuessrLanguagePicker());
+  identity.append(logo.element, createGuessrLanguagePicker());
   const actions = node("div", "header-actions");
   if (readGuessRoute(new URL(location.href)).pane !== 'stream-picker')
     identity.prepend(link(msg("Back to map"), mapReturnUrl(), 'btn btn-sm btn-outline theme-secondary map-return', 'arrow-left'));
   const helpButton = button(msg("How to play"), help, "small secondary guessr-help", 'info-circle');
   bindAttribute(helpButton, 'aria-label', 'How to play'); actions.append(helpButton);
+  const clearAccount = mountAccountMenu(actions);
+  clearHeader = () => { logo.dispose(); clearAccount(); };
   header.append(identity, actions);
   root.append(header);
   const live = node("div", "sr-only");
@@ -397,7 +399,7 @@ function makePlayPanels(
     right = node("section", "game-panel game-panel--map");
   const bar = node("div", "panel-bar");
   const clueHeading = node('div', 'clue-heading');
-  clueHeading.append(node("span", "panel-title", msg('Where are you?')), difficultyIndicator());
+  clueHeading.append(node("span", "panel-title", msg('Where is this spot?')), difficultyIndicator());
   bar.append(clueHeading, maximumIndicator());
   left.append(bar);
   const clue = node("div", "clue loading");
@@ -456,6 +458,7 @@ function makePlayPanels(
   mapBar.append(mapControls(board, { readOnly }));
   board.setMarkers(guess);
   board.setLocked(locked);
+  clearFrame = fitGameFrame(grid);
   return { clue, bar, mapActions };
 }
 function putClue(clue: HTMLElement, url: string, crop: number): void {
@@ -478,6 +481,18 @@ function putClue(clue: HTMLElement, url: string, crop: number): void {
   };
   img.src = url;
   clue.replaceChildren(img, clueLoadingPlaceholder());
+}
+function promoteSubmit(main: HTMLElement): void {
+  const confirm = main.querySelector<HTMLButtonElement>('#confirm-guess');
+  const toolbar = main.querySelector<HTMLElement>('.game-panel--map .map-bar');
+  if (!confirm || !toolbar) return;
+  toolbar.classList.add('guess-map-toolbar'); toolbar.append(confirm);
+  clearSubmit?.();
+  clearSubmit = submitHelp(confirm, () => busy ? 'Sending…' : confirm.disabled ? 'Place a pin first' : 'Submit guess');
+}
+function showSubmitting(): void {
+  const button = document.getElementById('confirm-guess') as HTMLButtonElement | null;
+  if (button) { button.disabled = true; updateSubmit(button, 'Sending…', 'waiting'); }
 }
 function gameHud(options: {
   label: string;
@@ -510,7 +525,9 @@ function gameHud(options: {
       ),
     );
   group.append(progress);
-  const hud = pageHeading(group, button(msg("Exit game"), options.exit));
+  const exit = button(msg("Exit game"), options.exit, 'btn btn-outline theme-secondary');
+  const hud = pageHeading(group, exit);
+  moveGameExit(root.querySelector('main')!, exit);
   hud.classList.add('game-hud');
   return hud;
 }
@@ -654,7 +671,7 @@ function renderPractice(): void {
       confirm,
     );
   }
-  main.append(actions);
+  main.append(actions); promoteSubmit(main);
   if (session.pausedAt !== null) {
     for (const action of actions.querySelectorAll("button"))
       action.disabled = true;
@@ -710,7 +727,7 @@ function finish(): void {
   actions.append(
     button(msg("Replay demo"), startPractice, "primary"),
   );
-  main.append(actions);
+  main.append(actions); promoteSubmit(main);
   const wrap = node("div", "table-wrap"),
     table = node("table"),
     thead = node("thead"),
@@ -857,7 +874,7 @@ function renderImageGame(review?: {
     if (imagePaused)
       for (const b of actions.querySelectorAll("button")) b.disabled = true;
   }
-  main.append(actions);
+  main.append(actions); promoteSubmit(main);
 }
 
 async function submitImageGame(skip: boolean): Promise<void> {
@@ -869,7 +886,7 @@ async function submitImageGame(skip: boolean): Promise<void> {
   )
     return;
   if (!skip && !imageGuess) return;
-  busy = true;
+  busy = true; showSubmitting();
   for (const b of document.querySelectorAll<HTMLButtonElement>(
     ".game-actions button",
   ))
@@ -969,7 +986,7 @@ function finishImageGame(): void {
   actions.append(
     button(msg("Play again"), startPractice, "primary"),
   );
-  main.append(actions);
+  main.append(actions); promoteSubmit(main);
   const wrap = node("div", "table-wrap"),
     table = node("table"),
     head = node("tr");
@@ -1127,6 +1144,7 @@ async function rankedAccess(main: HTMLElement): Promise<GameApi | null> {
     const auth = await gameAuth();
     if (version !== generation) return null;
     loading.remove();
+    if (auth.getState().authenticated && !auth.getState().isSubscriber) await auth.refreshMembership();
     const state = auth.getState();
     if (!state.isSubscriber) {
       const { createProControls } = await import("../auth/pro-controls");
@@ -1455,7 +1473,7 @@ function renderRanked(): void {
     guessHint(rankedGuess),
     submit,
   );
-  main.append(actions);
+  main.append(actions); promoteSubmit(main);
 }
 async function submitRanked(skip: boolean): Promise<void> {
   if (ranked?.status === 'active' && hasViewedDailyAnswers(ranked.day, storage)) { showDailyAnswersBlock(ranked.day); return; }
@@ -1467,7 +1485,7 @@ async function submitRanked(skip: boolean): Promise<void> {
     (!skip && !rankedGuess)
   )
     return;
-  busy = true;
+  busy = true; showSubmitting();
   document.getElementById("ranked-save-error")?.remove();
   const version = generation;
   board?.setLocked(true);
@@ -1570,7 +1588,7 @@ function reviewRanked(ordinal: number, continueGame = false): void {
       "primary",
     ),
   );
-  main.append(actions);
+  main.append(actions); promoteSubmit(main);
 }
 function help(): void {
   const existing = document.getElementById("guessr-help-dialog");
@@ -1609,10 +1627,7 @@ function help(): void {
     dialog.addEventListener('hidden.bs.dialog', () => showGuessrChangelog(trigger ?? undefined), { once: true });
     void Dialog.getOrCreateInstance(dialog).hide();
   }, 'btn btn-outline theme-secondary');
-  const close = node("button", "btn-solid theme-primary", msg("Close"));
-  close.type = "button";
-  close.setAttribute("data-bs-dismiss", "dialog");
-  footer.append(updates, close);
+  footer.append(updates);
   dialog.append(header, body, footer);
   document.body.append(dialog);
   const instance = new Dialog(dialog);

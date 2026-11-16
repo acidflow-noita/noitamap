@@ -134,6 +134,8 @@ export function guessrGameTerm(englishName: string, canonicalKey?: string): stri
 
 interface NodeBindings { text?: () => string; attributes: Map<string, () => string> }
 const bindings = new WeakMap<Node, NodeBindings>();
+/** A component replacing its label with structured markup owns the child text. */
+export function clearTextBinding(node: Node): void { const entry = bindings.get(node); if (entry) entry.text = undefined; }
 const boundNodes = new Set<WeakRef<Node>>();
 function nodeBindings(node: Node): NodeBindings {
   let entry = bindings.get(node);

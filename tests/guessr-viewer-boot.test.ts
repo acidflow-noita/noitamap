@@ -11,6 +11,8 @@ vi.mock('../src/guessr/stream-ui', () => ({ StreamUI: class {
 } }));
 vi.mock('../src/guessr/stream-result-archive', () => ({ StreamResultArchive: class { get = app.saved; } }));
 vi.mock('../src/guessr/api', () => ({ GameApi: class {}, gameApiOrigin: () => null, gameAuth: app.auth }));
+// Header account restoration has its own tests and never gates route loading.
+vi.mock('../src/guessr/account-menu', () => ({ mountAccountMenu: () => () => {} }));
 vi.mock('../src/guessr/map-board', () => ({ MapBoard: class {} }));
 vi.mock('../src/guessr/lobby', () => ({ createLobby: vi.fn() }));
 vi.mock('../src/guessr/clue-view', () => ({ attachClueControls: vi.fn() }));

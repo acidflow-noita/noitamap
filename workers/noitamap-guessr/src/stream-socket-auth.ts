@@ -1,4 +1,4 @@
-import { verifyGameTicket } from './tickets';
+import { verifyGameTicket, verifyPlayerTicket } from './tickets';
 import type { Env } from './index';
 import type { ParallelAuthorization, ParallelIdentity } from '../../../src/guessr/parallel-types';
 import type { ParallelRecord } from '../../../src/guessr/parallel-core';
@@ -32,6 +32,15 @@ export async function authorizeSocket(env: Env, record: ParallelRecord, input: P
       if (p.role === 'host' && (p.owner !== record.owner || p.id !== record.game.session.host.id)) return null;
       return p;
     } catch { return null; }
+  }
+  if (input.role === 'account') {
+    if (typeof input.ticket !== 'string') return null;
+    const user = await verifyPlayerTicket(input.ticket, env.GAME_TICKET_PUBLIC_KEY ?? '', now);
+    if (!user?.twitchUserId || !user.twitchLogin) return null;
+    // No Pro grant is carried here. The coordinator can still recognize the
+    // creator of an existing PvP match, as it does for a verified Twitch login.
+    return { id: user.twitchUserId, login: user.twitchLogin, name: streamPlayerName(user.name, user.twitchLogin),
+      ...(user.twitchColor ? { color: user.twitchColor } : {}), role: 'player', expiresAt: user.exp * 1000 };
   }
   if (input.role === 'host') {
     if (typeof input.ticket !== 'string') return null;

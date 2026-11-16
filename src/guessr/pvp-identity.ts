@@ -13,19 +13,30 @@ function identity(token: string) {
   return { userId: claims.twitchUserId as string, login: claims.twitchLogin as string,
     displayName: typeof claims.name === 'string' ? claims.name : claims.twitchLogin };
 }
-export async function pvpViewer(): Promise<TwitchViewer> {
+export async function pvpViewer(role: 'auto' | 'player' = 'auto'): Promise<TwitchViewer> {
   const auth = await gameAuth();
   const state = auth.getState();
-  if (!state.authenticated || !state.isSubscriber) return new TwitchViewer({ chat: false });
+  const login = () => auth.loginTwitch();
+  if (!state.authenticated) return new TwitchViewer({ chat: false, siteLogin: login });
+  if (!state.linkedAccounts?.some(row => row.provider === 'twitch' && row.membershipStatus !== 'reconnect'))
+    return new TwitchViewer({ chat: false, siteLogin: login });
   const api = new StreamApi();
-  const player = identity(await api.hostSocketTicket());
-  return new TwitchViewer({ chat: false, siteIdentity: player,
+  const host = role === 'auto' && state.isSubscriber;
+  const player = host ? identity(await api.hostSocketTicket()) : (await auth.getPlayerTicket()).player;
+  let unsubscribe = () => {};
+  const viewer = new TwitchViewer({ chat: false, siteIdentity: player, siteRole: host ? 'host' : 'account', siteLogin: login,
     siteAuthorization: async () => {
       if (!auth.getState().authenticated) throw Error('Sign in to continue.');
-      const token = await api.hostSocketTicket();
-      if (identity(token).userId !== player.userId) throw Error('The Twitch connection changed. Click Send after connecting again.');
+      const ticket = host ? { token: await api.hostSocketTicket(), player: undefined } : await auth.getPlayerTicket();
+      const token = ticket.token;
+      if ((ticket.player ?? identity(token)).userId !== player.userId) throw Error('The Twitch connection changed. Click Send after connecting again.');
       return token;
     },
     siteSignOut: () => { void auth.logout(); },
+    onDispose: () => unsubscribe(),
   });
+  unsubscribe = auth.subscribe(next => {
+    if (!next.authenticated || next.accountId !== state.accountId || !next.linkedAccounts?.some(row => row.provider === 'twitch' && row.userId === player.userId)) viewer.disconnect(false);
+  });
+  return viewer;
 }

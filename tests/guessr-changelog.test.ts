@@ -98,6 +98,7 @@ it('allows a deliberate reopen and translates the open dialog without rebuilding
   expect(dialog()).toBe(element);
   expect(element.querySelector('h1')?.textContent).not.toBe("What's new");
   expect(element.querySelectorAll('li')).toHaveLength(GUESSR_CHANGELOG.notes.length);
-  expect(element.querySelector('.dialog-footer button')?.textContent).toBe('Schließen');
+  expect(element.querySelector('.btn-close')?.getAttribute('aria-label')).toBe('Schließen');
+  expect(element.querySelector('.dialog-footer')).toBeNull();
   expect(element.textContent).not.toContain('{{');
 });

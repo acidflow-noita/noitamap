@@ -56,8 +56,11 @@ export class TwitchViewerError extends Error {
 export interface TwitchViewerPopup { readonly closed: boolean; close(): void }
 export interface TwitchViewerOptions {
   /** A verified site identity uses game tickets, never a second provider popup. */
-  siteIdentity?: { userId: string; login: string; displayName: string };
+  siteIdentity?: { userId: string; login: string; displayName: string; color?: string };
   siteAuthorization?: () => Promise<string>;
+  siteRole?: 'host' | 'account';
+  siteLogin?: () => void;
+  onDispose?: () => void;
   siteSignOut?: () => void;
   /** Local host sharing may request posting permission. Gameplay needs identity only. */
   chat?: boolean;
@@ -111,6 +114,7 @@ export class TwitchViewer {
       this.ready = Promise.resolve(); return;
     }
     this.state.savedUserId = savedTwitchViewerId(this.clientId) ?? null;
+    if (options.siteLogin) { this.ready = Promise.resolve(); return; }
     this.ready = this.restoreSaved();
   }
 
@@ -204,9 +208,15 @@ export class TwitchViewer {
   /** Call directly from the Connect button so the browser permits the popup. */
   connect(options: { announcements?: boolean; posting?: boolean } = {}): Promise<TwitchViewerState> {
     if (this.disposed) return Promise.reject(new TwitchViewerError('disconnected', 'This Twitch connection is closed.'));
+    if (this.options.siteLogin && !this.state.connected && !options.posting && !options.announcements) {
+      this.options.siteLogin(); return Promise.resolve(this.getState());
+    }
     if (this.options.siteIdentity && this.options.siteAuthorization) return this.options.siteAuthorization().then(() => {
       this.update({ ...this.options.siteIdentity, connected: true, error: null }); return this.getState();
     });
+    if (this.options.siteLogin && !options.posting && !options.announcements) {
+      this.options.siteLogin(); return Promise.resolve(this.getState());
+    }
     if (!this.configured) return Promise.reject(new TwitchViewerError('configuration', 'Twitch chat sending is not configured on this site.'));
     if (this.state.sending) return Promise.reject(new TwitchViewerError('busy', 'Wait for the current guess to finish sending.'));
     if (this.pending) return this.pending.promise;
@@ -369,7 +379,7 @@ export class TwitchViewer {
   /** Ephemeral first-frame authentication for the parallel game connection.
    * The coordinator validates it with Twitch and never stores the provider token. */
   async transportAuthorization(): Promise<ParallelAuthorization> {
-    if (this.options.siteAuthorization) return { role: 'host', ticket: await this.options.siteAuthorization() };
+    if (this.options.siteAuthorization) return { role: this.options.siteRole ?? 'host', ticket: await this.options.siteAuthorization() };
     const credentials = await this.currentCredentials();
     return { role: 'player', accessToken: credentials.token };
   }
@@ -405,5 +415,5 @@ export class TwitchViewer {
     }
     this.update({ connecting: false, restoring: false, sending: false, error: null });
   }
-  dispose(): void { this.disposed = true; this.disconnect(false); this.listeners.clear(); }
+  dispose(): void { this.disposed = true; this.disconnect(false); this.listeners.clear(); this.options.onDispose?.(); }
 }

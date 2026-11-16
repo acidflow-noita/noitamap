@@ -1,4 +1,8 @@
 import { sharedRoundResults } from './stream-round-results';
+import { updateSubmit } from './submit-control';
+import { bindViewerAccount } from './account-menu';
+import { fitGameFrame } from './game-frame';
+import { moveGameExit } from './game-chrome';
 import { allowGuessrChangelog } from './changelog';
 import { StreamRoundCache } from './stream-round-cache';
 import { mapControls } from './map-controls';
@@ -134,10 +138,13 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   }, 'btn-twitch small');
   const disconnect = button('Sign out', () => viewer.disconnect(), 'small secondary');
   connection.append(account, connect, disconnect);
-  (page?.querySelector('.site-header .header-actions') ?? main).append(connection);
+  // Account identity and sign-out live in the shared header menu. The sign-in
+  // prompt remains beside the guess map when participation needs authorization.
+  const clearAccount = bindViewerAccount(viewer);
   const round = node('strong', 'stream-round');
 
   const layout = node('div', 'stream-viewer-layout has-clue');
+  const clearFrame = fitGameFrame(layout);
   const cluePanel = node('section', 'game-panel stream-viewer-clue');
   const emptyClue = (detail = 'The next clue appears here automatically.', title = 'Waiting for a round') => {
     bindAttribute(cluePanel, 'aria-label', 'Waiting for a round');
@@ -230,6 +237,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const chat = viewerChatPanel(viewer, channel, exitMatch, requestedGame, { pvp });
   const toolbar = chat.panel.querySelector<HTMLElement>('.stream-chat-header')!;
   toolbar.classList.add('stream-toolbar');
+  const exit = toolbar.querySelector<HTMLButtonElement>('.stream-change-channel');
+  if (exit) moveGameExit(main, exit);
   toolbar.querySelector('.stream-chat-heading')?.classList.add('stream-toolbar-navigation');
   toolbar.querySelector('.stream-chat-actions')?.classList.add('stream-toolbar-actions');
   const phase = node('div', 'stream-toolbar-round'); phase.append(round, timer); toolbar.insertBefore(phase, toolbar.lastElementChild);
@@ -277,7 +286,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       restoreProgress();
       bindAttribute(cluePanel, 'aria-label', () => tr('Round {{round}} clue', { round: formatGuessrNumber(snapshot!.round) }));
       const clueBar = node('div', 'panel-bar'), heading = node('div', 'clue-heading');
-      heading.append(node('span', 'panel-title', 'Where are you?'), difficultyIndicator()); clueBar.append(heading, budget);
+      heading.append(node('span', 'panel-title', 'Where is this spot?'), difficultyIndicator()); clueBar.append(heading, budget);
       const clue = node('div', 'clue loading'); cluePanel.replaceChildren(clueBar, clue);
       if (progress) clearControls = attachClueControls(clue, snapshot.source, progress, 256, () => { saveProgress(); refresh(); },
         { compact: true, difficultyTier: () => live?.difficultyTier,
@@ -538,9 +547,9 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       : sameGuess && own?.pending ? own.automatic ? 'Auto-sending…' : 'Waiting for confirmation'
       : sameGuess && own?.received ? own.automatic ? 'Auto-submitted' : 'Guess received'
       : own?.submitted && !sameGuess ? 'Update guess' : 'Send guess';
-    bindText(send, pvp ? live?.pvp?.locked || !!own?.received ? own?.automatic ? 'Auto-submitted' : 'Guess locked'
-      : sendLabel === 'Send guess' || sendLabel === 'Update guess' ? 'Lock guess' : sendLabel : sendLabel);
-    send.dataset.state = sameGuess && own?.received && !own.pending ? 'received' : currentSending || sameGuess && own?.pending ? 'waiting' : 'ready';
+    const label = pvp ? live?.pvp?.locked || !!own?.received ? own?.automatic ? 'Auto-submitted' : 'Guess locked'
+      : sendLabel === 'Send guess' || sendLabel === 'Update guess' ? 'Lock guess' : sendLabel : sendLabel;
+    updateSubmit(send, label, sameGuess && own?.received && !own.pending || pvp && !!live?.pvp?.locked ? 'received' : currentSending || sameGuess && own?.pending ? 'waiting' : 'ready');
     send.setAttribute('aria-busy', String(currentSending || sameGuess && !!own?.pending));
     const receiptStatus = live?.ended ? 'The streamer ended this game.' : sending ? deliveryOwn?.automatic ? 'Auto-sending…' : 'Sending…' : deliveryOwn?.pending ? deliveryOwn.received ? 'Update awaiting confirmation. Previous guess counts.'
       : deliveryOwn.automatic ? 'Auto-sending…' : 'Waiting for confirmation'
@@ -652,6 +661,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   };
   const ticks = setInterval(() => { checkAutomatic(); refresh(); }, 250);
   return () => {
+    clearAccount(); clearFrame();
     closed = true; clearShared?.(); room?.dispose(); unsubscribe(); unsubscribeLanguage(); chat.dispose(); board.destroy(); viewport?.destroy(); clearControls?.(); clearResults?.();
     clearInterval(ticks);
     window.removeEventListener('offline', refresh); window.removeEventListener('online', refresh);

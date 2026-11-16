@@ -7,7 +7,7 @@ export type ControlIcon = keyof typeof icons;
 /** Keep the translated label in its own node so language changes retain the SVG. */
 export function iconLabel(icon: ControlIcon, label: LocalizedText): DocumentFragment {
   const content = document.createElement('template');
-  content.innerHTML = icons[icon];
+  content.innerHTML = icons[icon].replace(/>\s+</g, '><');
   const svg = content.content.querySelector('svg')!;
   svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('focusable', 'false');

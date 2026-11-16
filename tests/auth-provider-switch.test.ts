@@ -34,6 +34,37 @@ beforeEach(async () => {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('authenticated provider connections', () => {
+  it('caches and coalesces participant tickets without putting them into browser storage', async () => {
+    const ticket = { token: 'participant-ticket', expiresAt: Date.now() + 1200000,
+      player: { userId: '12345', login: 'viewer', displayName: 'Viewer' } };
+    fetcher.mockResolvedValue(Response.json(ticket));
+    const results = await Promise.all([auth.getPlayerTicket(), auth.getPlayerTicket(), auth.getPlayerTicket()]);
+    expect(results).toEqual([ticket, ticket, ticket]);
+    expect(await auth.getPlayerTicket()).toEqual(ticket);
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect([...Array(localStorage.length)].map((_, i) => localStorage.getItem(localStorage.key(i)!)).join('')).not.toContain('participant-ticket');
+  });
+
+  it.each(['ticket', 'membership'] as const)('does not revive a logged-out session with a late %s response', async kind => {
+    let finish!: (response: Response) => void;
+    fetcher.mockImplementation((url: string) => url.endsWith('/auth/logout') ? Promise.resolve(new Response(null, { status: 204 }))
+      : new Promise<Response>(resolve => { finish = resolve; }));
+    const pending = kind === 'ticket' ? auth.getPlayerTicket() : auth.refreshMembership();
+    await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
+    await auth.logout();
+    const rejected = expect(pending).rejects.toThrow('Sign in');
+    finish(Response.json(kind === 'ticket' ? { token: 'late-ticket', expiresAt: Date.now() + 1200000, player: { userId: '12345', login: 'viewer', displayName: 'Viewer' } }
+      : { authenticated: true, accountId: 'account-1', token: 'late-auth', isSubscriber: true }));
+    await rejected; expect(auth.getState().authenticated).toBe(false); expect(auth.getToken()).toBeNull();
+  });
+
+  it('coalesces membership refreshes and keeps the existing refresh reference', async () => {
+    const original = localStorage.getItem('noitamap_refresh_jwt');
+    fetcher.mockResolvedValue(Response.json({ authenticated: true, accountId: 'account-1', token: 'new-access', provider: 'patreon', isSubscriber: true }));
+    await Promise.all([auth.refreshMembership(), auth.refreshMembership()]); await auth.refreshMembership();
+    expect(fetcher).toHaveBeenCalledOnce(); expect(auth.isSubscriber()).toBe(true);
+    expect(localStorage.getItem('noitamap_refresh_jwt')).toBe(original);
+  });
   it('saves the workspace and starts an authenticated link without replacing the existing Pro session', async () => {
     auth.loginTwitch();
     await vi.waitFor(() => expect(fetcher).toHaveBeenCalledOnce());

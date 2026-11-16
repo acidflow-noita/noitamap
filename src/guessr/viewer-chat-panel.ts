@@ -6,6 +6,7 @@ import { twitchMessageText } from './twitch-viewer';
 import { gameApiOrigin } from './api';
 import { hoverHelp } from './hover-help';
 import type { RoomConnection } from './live-room-types';
+import { updateGameConnection } from './game-chrome';
 
 /** Account identity and the durable game's connection state. */
 export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, onChangeStreamer?: () => void,
@@ -20,11 +21,9 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
   const changeStreamer = bindText(document.createElement('button'), 'Exit game');
   changeStreamer.type = 'button'; changeStreamer.className = 'btn btn-sm btn-outline theme-secondary stream-change-channel';
   changeStreamer.onclick = () => onChangeStreamer?.();
-  const light = document.createElement('span'); light.className = 'stream-chat-state';
-  light.tabIndex = 0; light.setAttribute('role', 'status'); light.setAttribute('aria-live', 'polite');
-  const connectionLabel = document.createElement('span'); connectionLabel.className = 'stream-connection-label'; connectionLabel.hidden = true;
   const name = document.createElement('span'); name.className = 'stream-name';
-  name.append(title, pro.badge); identity.append(light, connectionLabel, name);
+  name.append(title, pro.badge); identity.append(name);
+  const mode = bindText(document.createElement('span'), options.pvp ? '1v1' : 'Chat vs Streamer'); mode.className = 'stream-mode-label'; identity.append(mode);
   const gift = document.createElement('button'); gift.type = 'button'; gift.className = 'btn btn-patron stream-gift-pro';
   gift.dataset.proGift = 'choose';
   gift.onclick = () => { void import('./pro-gift-dialog').then(({ showStreamerGift }) => showStreamerGift(channel)); };
@@ -51,7 +50,6 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
     if (!state.connected) return twitchMessageText(state.error || 'Sign in with Twitch');
     return gameStatus === 'connected' ? tr('Connected to the game.') : gameDetail ? tr(gameDetail) : '';
   };
-  const statusHelp = hoverHelp(light, explanation);
   const paint = () => {
     const state = viewer.getState();
     const health = navigator.onLine === false ? 'network-issues'
@@ -64,14 +62,8 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
     const label = tr(health === 'network-issues' ? 'Network issues' : health === 'connecting' ? 'Connecting…'
       : health === 'reconnecting' ? 'Reconnecting…' : health === 'connected' ? 'Connected'
       : !state.connected ? 'Twitch sign-in required' : 'Disconnected');
-    light.hidden = !channel;
-    light.dataset.connection = health;
-    light.classList.toggle('stream-chat-state-online', health === 'connected');
-    light.setAttribute('aria-label', label);
-    const reconnecting = health === 'reconnecting' || health === 'connecting';
-    light.classList.toggle('spinner-border', reconnecting); light.classList.toggle('spinner-border-sm', reconnecting);
-    connectionLabel.hidden = !reconnecting; connectionLabel.textContent = label;
-    statusHelp.update();
+    if (panel.isConnected) updateGameConnection(health === 'network-issues' ? 'offline' : health, explanation());
+
   };
   const refresh = () => {
     const state = viewer.getState();
@@ -97,7 +89,7 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
     setGameConnection(status: RoomConnection | null, detail = '') { gameStatus = status; gameDetail = detail; paint(); },
     setChannel(value: string) { channel = value; hasGame = false; pro.update({}); refresh(); },
     dispose() {
-      unsubscribe(); unsubscribeLanguage(); statusHelp.dispose(); giftHelp.dispose(); pro.dispose();
+      unsubscribe(); unsubscribeLanguage(); giftHelp.dispose(); pro.dispose();
       window.removeEventListener('offline', refresh); window.removeEventListener('online', refresh);
     } };
 }

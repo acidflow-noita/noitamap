@@ -1,0 +1,144 @@
+/* Approved Guessr UI. Scoped to the game, including its shared account dialog. */
+:root {
+  --text: #f1f5f9; --text-muted: #cbd5e1; --text-faint: #94a3b8;
+  --game-gutter: 1rem; --game-action: #047857; --game-action-hover: #065f46;
+  --control-radius: .5rem; --radius-control: .5rem; --radius-panel: .75rem;
+}
+#guess-app { min-block-size: 100dvh; block-size: auto; font-size: 1rem; font-variant-numeric: lining-nums tabular-nums; }
+#guess-app :is(button, input, select, output, .numeric, .score, .stream-round-timer, .stream-waiting-timer) {
+  font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "tnum" 1, "lnum" 1;
+}
+#guess-app h1 { font-size: 1.5rem; line-height: 1.2; font-weight: 650; }
+#guess-app h2 { font-size: 1.25rem; line-height: 1.3; font-weight: 650; }
+#guess-app .fine-print, #guess-app .form-text { font-size: .875rem; line-height: 1.5; }
+#guess-app :is(button, .btn) { min-block-size: 2.5rem; border-radius: .5rem; font-size: .875rem; font-weight: 600; }
+#guess-app button:disabled { cursor: not-allowed; opacity: var(--bs-btn-disabled-opacity,.65); }
+#guess-app :is(.control-help, .stream-send-control):has(> button:disabled) { cursor: not-allowed; }
+#guess-app :is(.control-help, .stream-send-control) > button:disabled { pointer-events: none; }
+#guess-app button.primary { background: var(--game-action); border-color: var(--game-action); color: #fff; box-shadow: none; }
+#guess-app button.primary:disabled { opacity: var(--bs-btn-disabled-opacity,.65); background: var(--game-action); color: #fff; }
+#guess-app button.primary:active:not(:disabled) { transform: none; }
+@media (hover: hover) and (pointer: fine) {
+  #guess-app button.primary:hover:not(:disabled) { background: var(--game-action-hover); border-color: var(--game-action-hover); }
+}
+#guess-app .site-header { padding: .75rem 1rem; min-block-size: 3.5rem; gap: .75rem; border: 0; }
+#guess-app .header-identity, #guess-app .header-actions { gap: .5rem; }
+#guess-app .guessr-logo { position: relative; flex: none; inline-size: 11.5rem; }
+#guess-app .guessr-logo .brand { display: block; inline-size: 100%; }
+.guessr-logo svg { display: block; inline-size: 100%; block-size: auto; }
+#guess-app .logo-status-trigger { position: absolute; inset-inline-start: 17.1419%; top: 43.8774%; transform: translate(-50%,-50%); inline-size: max(24px,9.8%); block-size: 44px; padding: 0; border: 0; background: transparent; cursor: help; }
+.logo-state { color: #6ee7b7; }
+.logo-state[data-state='idle'], .logo-state[data-state='disconnected'] { color: #94a3b8; }
+.logo-state[data-state='offline'] { color: #fb7185; }
+.logo-state[data-state='connecting'], .logo-state[data-state='reconnecting'] { color: #fbbf24; }
+.logo-state .state-dot { fill: currentColor; filter: drop-shadow(0 0 3px currentColor) drop-shadow(0 0 6px currentColor); }
+.logo-state[data-state='idle'] .state-dot { fill: none; stroke: currentColor; stroke-width: 2; filter: none; }
+.logo-state .state-orbit { display: none; fill: none; stroke: currentColor; stroke-width: 2.8; stroke-dasharray: 27 18; transform-origin: 103.194px 40.806px; }
+.logo-state:is([data-state='connecting'],[data-state='reconnecting']) .state-dot { display: none; }
+.logo-state:is([data-state='connecting'],[data-state='reconnecting']) .state-orbit { display: block; filter: drop-shadow(0 0 3px currentColor); animation: game-connection-spin .9s linear infinite; }
+@keyframes game-connection-spin { to { transform: rotate(360deg); } }
+#guess-app .guessr-account { display: inline-flex; gap: .5rem; align-items: center; font-size: 1rem; max-inline-size: 24rem; min-inline-size: 0; }
+#guess-app .guessr-account > svg { width: 1.25rem; height: 1.25rem; flex: none; }
+#guess-app .account-label { min-inline-size: 0; max-inline-size: 20ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#guess-app .badge.pro, .guessr-account-dialog .badge.pro { padding: 2px 6px; font-size: .75rem; font-weight: 600; line-height: 1.25; white-space: nowrap; flex: none; }
+.guessr-account-dialog { --bs-dialog-width: 28rem; --bs-dialog-bg: var(--surface-1); --bs-dialog-color: var(--text); --bs-dialog-border-radius: .75rem; }
+.guessr-account-dialog .dialog-body { display: grid; gap: 1rem; }
+.guessr-account-dialog .dialog-body > button { text-align: start; justify-content: start; white-space: normal; }
+.guessr-account-dialog .account-identity { display: flex; align-items: baseline; gap: .375rem; }
+.guessr-account-dialog .account-name { font-size: 1.25rem; overflow-wrap: anywhere; min-width: 0; }
+.guessr-account-dialog .badge.pro { position: relative; top: -2px; color: var(--pro-fg); border: 1.5px solid transparent; border-radius: 999px; background: linear-gradient(var(--pro-surface),var(--pro-surface)) padding-box,var(--pro-gradient) border-box; background-size: 200% 100%; animation: pro-border-pan 6s linear infinite; }
+#guess-app > .shell { padding: 1rem; }
+#guess-app :is(.game-shell, .stream-viewer-shell) { block-size: auto; min-block-size: 0; padding-block-end: 4rem; }
+#guess-app .game-panel { border: 0; border-radius: .75rem; background: #0f172a; }
+#guess-app .panel-bar { padding: .75rem 1rem; min-height: 0; border: 0; gap: .75rem; }
+#guess-app .panel-title { font-size: 1rem; font-weight: 650; }
+#guess-app .clue-controls { padding: 0 .75rem .75rem; flex: none; }
+#guess-app .clue-controls > .fine-print { display: none; }
+#guess-app .camera-controls { gap: .5rem; --camera-button-gap: .5rem; }
+#guess-app .camera-controls .clue-control { padding: .5rem; min-inline-size: 3.875rem; gap: .25rem; border-radius: .5rem; }
+#guess-app .clue-control > .hotkey-letter { font-size: .75rem; margin-inline-start: 2px; }
+#guess-app .travel-pad { display: grid; grid-template-areas: ". north ." "west south east"; grid-template-columns: repeat(3,max-content); gap: .5rem; }
+#guess-app .clue-difficulty[data-difficulty='normal'] { color: #cbd5e1; background: #1e293b; border: 1px solid #475569; }
+#guess-app .round-maximum { display: inline; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--text-muted); font-size: .875rem; font-weight: 600; flex: none; inline-size: auto; max-inline-size: 100%; }
+#guess-app .guess-map-controls { display: flex; flex-wrap: nowrap; gap: .5rem; padding: 0; }
+#guess-app .guess-map-controls .btn { min-inline-size: 2.5rem; inline-size: 2.5rem; min-block-size: 2.5rem; padding: 0; flex: none; }
+#guess-app .guess-map-controls .btn > span { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#guess-app .guess-map-toolbar { display: flex; flex: none; padding: .75rem; gap: .75rem; align-items: center; }
+#guess-app .stream-send-control { display: inline-flex; flex: 1; min-width: 0; max-inline-size: 17rem; margin-inline-start: auto; }
+#guess-app .guess-submit { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; inline-size: 100%; font-size: 1rem; min-height: 2.5rem; white-space: normal; }
+.submit-label { display: inline-grid; min-width: 0; }
+.submit-label > span { grid-area: 1/1; }
+.submit-label .label-sizer { visibility: hidden; pointer-events: none; }
+.submit-label .label-sizer::after { content: attr(data-label); }
+.submit-feedback { inline-size: 1.25rem; block-size: 1.25rem; display: inline-grid; place-items: center; flex: none; }
+.submit-feedback svg { inline-size: 1.25rem; block-size: 1.25rem; }
+.submit-feedback .spinner-border { inline-size: 1.125rem; block-size: 1.125rem; border-width: 2px; }
+.submit-feedback .animation-pop { animation: game-receipt .16s cubic-bezier(.23,1,.32,1); }
+@keyframes game-receipt { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+#guess-app [data-round-frame='split'] { grid-template-columns: var(--round-clue-width) minmax(0,1fr); gap: 1rem; flex: none; align-items: stretch; }
+#guess-app [data-round-frame='split'] :is(.clue-stage, .game-panel > .clue) { flex: none; height: var(--round-canvas-height); min-height: 0; margin-top: var(--clue-head-gap); width: 100%; aspect-ratio: 27/12; container-type: normal; }
+#guess-app [data-round-frame='split'] .clue-stage > .clue { width: 100%; height: 100%; margin: 0; }
+#guess-app [data-round-frame='split'] :is(.game-panel--map,.stream-picker) > .map-board { flex: none; block-size: var(--round-canvas-height); min-block-size: 0; margin-top: var(--map-head-gap); }
+#guess-app .stream-toolbar { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); gap: .5rem 1rem; padding: .75rem 1rem; background: var(--surface-1); border: 0; border-radius: .75rem; }
+#guess-app .stream-toolbar-navigation { grid-column: 1; grid-row: 1 / span 2; min-width: 0; }
+#guess-app .stream-toolbar-round { display: contents; }
+#guess-app .stream-toolbar-round > strong { grid-column: 3; grid-row: 1; text-align: end; font-size: 1rem; }
+#guess-app .stream-toolbar-round > .stream-round-timer { grid-column: 2; grid-row: 1 / span 2; justify-self: center; }
+#guess-app .stream-round-timer { font-size: 3rem; line-height: 1.05; letter-spacing: 0; font-weight: 650; min-inline-size: 5ch; text-align: center; }
+#guess-app .stream-round-timer[data-clock='false'] { font-size: 1rem; min-inline-size: 0; }
+#guess-app .stream-toolbar-actions { grid-column: 3; grid-row: 2; justify-content: end; gap: .5rem; }
+#guess-app .stream-share-button { inline-size: auto; min-block-size: 2.5rem; block-size: auto; font-size: .875rem; }
+#guess-app .stream-host-identity, #guess-app .stream-chat-identity { display: grid; justify-items: start; gap: .25rem; min-width: 0; }
+#guess-app .stream-name { display: inline-flex; align-items: baseline; gap: .25rem; min-width: 0; max-width: 100%; }
+#guess-app .stream-name > strong { min-width: 0; font-size: 1.125rem; }
+#guess-app .stream-name .stream-channel-link { color: #a970ff; overflow-wrap: anywhere; }
+#guess-app .stream-name .stream-pro-status { position: relative; inset: auto; top: -2px; transform: none; }
+#guess-app .stream-mode-label { font-size: .875rem; color: var(--text-muted); }
+#guess-app .stream-host-shell > .stream-activity { position: fixed; inset: auto 0 0; z-index: 50; display: flex; align-items: center; gap: 1rem; min-height: 2.5rem; padding: .5rem 1rem calc(.5rem + env(safe-area-inset-bottom,0px)); border-top: 1px solid var(--border); background: var(--surface-1); font-size: .875rem; color: var(--text-muted); margin: 0; }
+#guess-app .stream-activity-message { min-width: 0; flex: 1; font-size: .875rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#guess-app .stream-guess-count { font-size: .875rem; color: var(--text-muted); }
+#guess-app .stream-start-panel { width: min(100%,48rem); margin: auto; padding: 2rem; display: grid; justify-items: center; gap: 1.5rem; text-align: center; border-radius: 1rem; background: var(--surface-1); }
+#guess-app .stream-start-panel > :is(h2,p) { margin: 0; }
+#guess-app .stream-start-panel > p { font-size: 1rem; max-width: 46ch; color: var(--text-muted); }
+#guess-app .stream-waiting-timer { font-size: 4.5rem; line-height: 1.05; font-weight: 650; letter-spacing: 0; text-align: center; }
+#guess-app .stream-host-shell:has(.stream-start-panel) { min-block-size: calc(100dvh - 8rem); }
+#guess-app .stream-host-shell:has(.stream-warmup) .stream-toolbar-round > * { display: none; }
+#guess-app .stream-start-panel .stream-joined-count { font-size: 1.125rem; }
+#guess-app .stream-start-panel .progress { width: min(100%,24rem); height: 6px; }
+#guess-app .stream-rank { font-size: 1.5rem; }
+#guess-app :is(.stream-score-table,.daily-results-table) { font-size: 1rem; }
+#guess-app :is(.stream-score-table,.daily-results-table) th { font-size: .875rem; }
+#guess-app :is(.stream-score-table,.daily-results-table) :is(th,td) { padding: .75rem; }
+#guess-app .stream-round-review { border-radius: .75rem; }
+@media (max-width: 1023px) {
+  #guess-app .site-header { padding-inline: .5rem; flex-wrap: wrap; }
+  #guess-app .header-identity { flex: 1; }
+  #guess-app .header-actions { justify-content: end; flex: 1; }
+  #guess-app .map-return { min-inline-size: 2.5rem; padding: .5rem; }
+  #guess-app .map-return > span { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+  #guess-app .account-label { max-inline-size: 11ch; }
+  #guess-app .guessr-logo { inline-size: 9.625rem; }
+  #guess-app :is(.game-shell,.stream-viewer-shell) { padding-inline: .5rem; }
+  #guess-app :is(.game-grid,.stream-viewer-layout.has-clue) { grid-template-columns: minmax(0,1fr); grid-template-rows: auto; gap: .5rem; flex: none; }
+  #guess-app .stream-viewer-layout > .stream-connection-bar { grid-column: 1; }
+  #guess-app :is(.clue-stage,.stream-viewer-clue .clue-stage) { aspect-ratio: 27/12; height: auto; inline-size: 100%; flex: none; container-type: inline-size; }
+  #guess-app .clue-stage > .clue { inline-size: 100%; }
+  #guess-app :is(.game-grid,.stream-viewer-layout) .map-board { height: clamp(15rem,40svh,24rem); min-height: 15rem; flex: none; }
+  #guess-app .camera-controls { justify-content: center; }
+  #guess-app .clue-controls { padding-inline: .5rem; }
+  #guess-app .guess-map-toolbar { padding: .5rem; gap: .5rem; }
+  #guess-app .guess-map-controls .btn { min-width: 2.75rem; width: 2.75rem; min-height: 2.75rem; }
+  #guess-app .stream-toolbar { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: .5rem; }
+  #guess-app .stream-toolbar-navigation { grid-row: 2; grid-column: 1; }
+  #guess-app .stream-toolbar-round > .stream-round-timer { grid-row: 1; grid-column: 1/-1; }
+  #guess-app .stream-toolbar-round > strong { grid-row: 2; grid-column: 2; font-size: .875rem; }
+  #guess-app .stream-toolbar-actions { grid-row: 3; grid-column: 1/-1; }
+  #guess-app .stream-start-panel { padding: 1.5rem 1rem; gap: 1.25rem; }
+  #guess-app .stream-waiting-timer { font-size: 4rem; }
+  #guess-app .stream-name > strong { font-size: 1rem; }
+  #guess-app .clue-control > .hotkey-letter { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .submit-feedback .animation-pop { animation: none; }
+  .guessr-account-dialog .badge.pro { animation: none; }
+}

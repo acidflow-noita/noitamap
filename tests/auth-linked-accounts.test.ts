@@ -40,11 +40,17 @@ beforeEach(async () => {
     const auth = new Headers(init?.headers).get('Authorization') || '';
     if (url.pathname.endsWith('/token')) {
       const body = new URLSearchParams(String(init?.body));
+      if (body.get('refresh_token') === 'broadcaster-refresh') return Response.json({ access_token: 'broadcaster-access', refresh_token: 'broadcaster-refresh', expires_in: 3600 });
       const key = body.get('code') || body.get('refresh_token')?.replace('refresh-', '') || '';
       const person = people[key];
       if (!person) return Response.json({ error: 'invalid_grant' }, { status: 400 });
       return Response.json({ access_token: `access-${key}`, refresh_token: `refresh-${key}`, expires_in: 3600,
         scope: url.hostname.includes('patreon') ? 'identity identity.memberships' : person.scope });
+    }
+    if (url.pathname === '/helix/subscriptions') {
+      expect(auth).toBe('Bearer broadcaster-access');
+      expect(url.searchParams.get('user_id')).toBe(people.twitch.id);
+      return Response.json({ data: people.twitch.subscriber ? [{ user_id: people.twitch.id }] : [] });
     }
     const key = auth.replace(/^(Bearer|OAuth) access-/, '');
     const person = people[key];
@@ -103,6 +109,56 @@ async function link(token: string, provider: string, person: string, chat = fals
   return request('/auth/link/complete', token, { linkToken: result.fragment.get('link_token'), confirmed: true });
 }
 const check = async (token: string) => (await request('/auth/check', token)).json() as Promise<any>;
+
+it('refreshes a new Twitch subscription on the same free account, with a shared cooldown', async () => {
+  env.TWITCH_BROADCASTER_ID = secret('broadcaster'); env.TWITCH_BROADCASTER_REFRESH_TOKEN = secret('broadcaster-refresh');
+  const session = await login('twitch'), before = await check(session.token);
+  expect(before.isSubscriber).toBe(false);
+  people.twitch.subscriber = true;
+  db.sqlite.prepare('UPDATE auth_identities SET checked_at=?').run(Date.now() - 60000);
+  const refreshed = await request('/auth/membership/refresh', session.token, {});
+  expect(refreshed.status).toBe(200);
+  const data = await refreshed.json() as any;
+  expect(data).toMatchObject({ authenticated: true, isSubscriber: true, accountId: before.accountId });
+  expect(data.refresh_token).toBeUndefined();
+  const calls = providerFetch.mock.calls.length;
+  expect((await request('/auth/membership/refresh', data.token, {})).status).toBe(200);
+  expect(providerFetch).toHaveBeenCalledTimes(calls);
+  expect((await request('/auth/game-ticket', data.token, {})).status).toBe(200);
+});
+
+it('recognizes a linked Patreon upgrade and a later downgrade without a new sign-in', async () => {
+  const patron = await login('patreon', 'patron2');
+  const linked = await (await link(patron.token, 'twitch', 'twitch')).json() as any;
+  expect(linked.isSubscriber).toBe(false);
+  people.patron2.subscriber = true;
+  db.sqlite.prepare("UPDATE auth_identities SET checked_at=? WHERE provider='patreon'").run(Date.now() - 60000);
+  const upgraded = await (await request('/auth/membership/refresh', linked.token, {})).json() as any;
+  expect(upgraded).toMatchObject({ isSubscriber: true, accountId: linked.accountId });
+  people.patron2.subscriber = false;
+  db.sqlite.prepare("UPDATE auth_identities SET checked_at=? WHERE provider='patreon'").run(Date.now() - 60000);
+  const downgraded = await (await request('/auth/membership/refresh', upgraded.token, {})).json() as any;
+  expect(downgraded).toMatchObject({ isSubscriber: false, accountId: linked.accountId });
+  expect((await request('/auth/game-ticket', downgraded.token, {})).status).toBe(403);
+});
+
+it('reports a membership provider outage without converting cached Pro into a negative result', async () => {
+  const session = await login('patreon');
+  db.sqlite.prepare('UPDATE auth_identities SET checked_at=?').run(Date.now() - 60000);
+  providerFetch.mockRejectedValueOnce(Error('Provider unavailable'));
+  const failed = await request('/auth/membership/refresh', session.token, {});
+  expect(failed.status).toBe(503);
+  expect(await check(session.token)).toMatchObject({ isSubscriber: true, authenticated: true });
+});
+
+it('rate-limits membership refresh and rejects missing authentication', async () => {
+  expect((await request('/auth/membership/refresh', undefined, {})).status).toBe(401);
+  const session = await login('patreon');
+  env.SESSION_RATE_LIMIT = { limit: async () => ({ success: false }) };
+  providerFetch.mockClear();
+  expect((await request('/auth/membership/refresh', session.token, {})).status).toBe(429);
+  expect(providerFetch).not.toHaveBeenCalled();
+});
 
 describe('durable linked Pro accounts', () => {
   it('preserves Patreon Pro when connecting an unsubscribed Twitch and uses verified Twitch ticket claims', async () => {

@@ -6,7 +6,7 @@ import { build } from "esbuild";
 import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { verifyGameTicket, verifyResultManagementTicket } from "../workers/noitamap-guessr/src/tickets";
+import { verifyGameTicket, verifyPlayerTicket, verifyResultManagementTicket } from "../workers/noitamap-guessr/src/tickets";
 import { signGameTicket as authSigner } from '../workers/noitamap-auth/src/game-ticket';
 let worker: { fetch(request: Request, env: unknown): Promise<Response> };
 let standalone: string;
@@ -148,6 +148,22 @@ it('issues a separate management ticket without Pro and cannot use it for gamepl
   expect(await verifyResultManagementTicket(data.token, keys.publicKey)).toMatchObject({ sub: `account:${accountId}`, pro: false, typ: 'result-management' });
   expect(await verifyGameTicket(data.token, keys.publicKey)).toBeNull();
   expect(await verifyResultManagementTicket(data.token, keys.privateKey)).toBeNull();
+});
+it('issues a participant-only ticket for a free remembered account', async () => {
+  const response = await call(await access(false), gameKey, 'POST', '/auth/player-ticket');
+  expect(response.status).toBe(200);
+  const data = await response.json() as { token: string; player: unknown }, keys = await testGameKeys(gameKey);
+  expect(data.player).toEqual({ userId: '42', login: 'explorer', displayName: 'Explorer' });
+  expect(await verifyPlayerTicket(data.token, keys.publicKey)).toMatchObject({ typ: 'player', pro: false, twitchUserId: '42' });
+  expect(await verifyGameTicket(data.token, keys.publicKey)).toBeNull();
+  expect(await verifyResultManagementTicket(data.token, keys.publicKey)).toBeNull();
+  expect(response.headers.get('Cache-Control')).toContain('no-store');
+});
+it('rejects a remembered participant without a linked Twitch identity or a valid session', async () => {
+  const token = await access(false);
+  db.sqlite.prepare("UPDATE auth_identities SET status='reconnect'").run();
+  expect((await call(token, gameKey, 'POST', '/auth/player-ticket')).status).toBe(409);
+  expect((await call(null, gameKey, 'POST', '/auth/player-ticket')).status).toBe(401);
 });
 it('does not let the public verification key sign tickets', async () => {
   const keys = await testGameKeys(gameKey);

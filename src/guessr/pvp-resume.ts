@@ -24,8 +24,8 @@ export function forgetPvp(id: string): void {
 }
 export async function leaveSavedPvp(saved: PvpResume): Promise<void> {
   const origin = gameApiOrigin(); if (!origin) throw Error('1v1 is not available on this site yet.');
-  const [{ TwitchViewer }, { ParallelConnection }] = await Promise.all([import('./twitch-viewer'), import('./parallel-connection')]);
-  const viewer = new TwitchViewer({ chat: false }); let connection: ParallelConnection | undefined;
+  const [{ pvpViewer }, { ParallelConnection }] = await Promise.all([import('./pvp-identity'), import('./parallel-connection')]);
+  const viewer = await pvpViewer(); let connection: ParallelConnection | undefined;
   try {
     await viewer.ready;
     if (!viewer.getState().connected) await viewer.connect();

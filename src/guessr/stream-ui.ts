@@ -1,4 +1,8 @@
 import "./stream.css";
+import { updateGameConnection, moveGameExit } from './game-chrome';
+import { updateSubmit, submitHelp } from './submit-control';
+import { pvpViewer } from './pvp-identity';
+import { showActivity, clearActivity } from './activity-ticker';
 import { ParallelConnection } from './parallel-connection';
 import type { ParallelServerMessage } from './parallel-types';
 import { maximumScore } from './rules';
@@ -200,7 +204,7 @@ export class StreamUI {
       if (message.submitted) {
         this.recentGuesser = message.participant.name; this.activityUntil = Date.now() + 6000;
         const notice = document.getElementById('stream-activity-message');
-        if (notice) { bindText(notice, '{{player}} submitted a guess', { player: this.recentGuesser }); notice.style.visibility = 'visible'; }
+        if (notice) showActivity(notice, this.recentGuesser, playerColor(message.participant, game.session.host.id));
       }
       this.saveTimer ??= setTimeout(this.save, 250); this.updateLobby(true); this.updateStatus();
     } else if (message.type === 'published') {
@@ -217,6 +221,7 @@ export class StreamUI {
   private status: TwitchChatStatus = "offline";
   private statusDetail = "Chat disconnected.";
   private busy = false;
+  private clearSubmit?: () => void;
   private quitting = false;
   private mounted = false;
   private saveTimer?: ReturnType<typeof setTimeout>;
@@ -250,6 +255,8 @@ export class StreamUI {
   private archive = new StreamResultArchive();
   private publications = new Map<string, Promise<void>>();
   private disposeHeader(): void {
+    clearActivity(document.getElementById('stream-activity-message'));
+    this.clearSubmit?.(); this.clearSubmit = undefined;
     this.proStatus?.dispose(); this.proStatus = undefined;
     this.statusHelp?.dispose(); this.statusHelp = undefined;
     this.startPermissionHelp?.dispose(); this.startPermissionHelp = undefined;
@@ -514,7 +521,8 @@ export class StreamUI {
           return { pane: "stream" };
         });
         if (!main.isConnected) return;
-        if (!auth.getState().isSubscriber) {
+        if (auth.getState().authenticated && !auth.getState().isSubscriber) await auth.refreshMembership();
+      if (!auth.getState().isSubscriber) {
           const { createProControls } = await import("../auth/pro-controls");
           if (!main.isConnected) return;
           bindText(loading, "The streamer needs Pro. Everyone in chat can use the free guess picker.");
@@ -787,13 +795,14 @@ export class StreamUI {
       section.append(count, names, wrapper, approval); main.append(section); this.updateLobby(); this.updateTimer(); return;
     }
     section.classList.add('stream-warmup');
-    section.append(el('h2', 'Chat is playing round 1.'));
+    section.append(el('h2', () => tr('Chat is playing round {{round}}', { round: formatGuessrNumber(1) })));
     const time = el('output', '', 'stream-waiting-timer'); time.id = 'stream-waiting-timer';
     const progress = el('div', '', 'progress theme-primary'); progress.setAttribute('role', 'progressbar');
     bindAttribute(progress, 'aria-label', 'Your first round starts when chat finishes this round.');
     progress.setAttribute('aria-valuemin', '0'); progress.setAttribute('aria-valuemax', '100');
     const bar = el('div', '', 'progress-bar'); bar.id = 'stream-waiting-progress'; progress.append(bar);
-    section.append(time, progress, el('p', 'Your first round starts when chat finishes this round.'), count, names);
+    section.append(time, progress, el('p', 'Your first round starts when chat finishes this round.'), count, names,
+      el('p', 'Chat submits their guesses before the streamer sees the location.'));
     if (!this.game!.timing!.seconds) {
       const start = action('Start first round', () => {
         const game = this.game!;
@@ -825,15 +834,10 @@ export class StreamUI {
       : state === 'retrying' ? 'Reconnecting…' : 'Disconnected';
   }
   private updateStatus(): void {
-    const status = document.getElementById("stream-chat-status");
-    if (status) {
-      const state = this.connectionState(), connected = state === 'connected';
-      status.dataset.connection = connected ? 'connected' : state === 'connecting' ? 'connecting' : state === 'retrying' ? 'reconnecting' : 'disconnected';
-      bindAttribute(status, 'aria-label', this.connectionLabel());
-      const label = document.getElementById('stream-connection-label');
-      if (label) { label.hidden = connected; bindText(label, this.connectionLabel()); }
-      status.classList.toggle('spinner-border', !connected); status.classList.toggle('spinner-border-sm', !connected);
-      this.statusHelp?.update();
+    if (this.mounted) {
+      const state = this.connectionState();
+      updateGameConnection(state === 'retrying' ? 'reconnecting' : state === 'stopped' ? 'disconnected' : state,
+        this.parallelDetail || this.connectionLabel());
     }
     const reconnect = document.getElementById('stream-reconnect') as HTMLButtonElement | null;
     if (reconnect) {
@@ -1022,7 +1026,7 @@ export class StreamUI {
     main.classList.add('stream-host-shell');
     const banner = el("div", "", "stream-banner stream-toolbar");
     const navigation = el('div', '', 'stream-toolbar-navigation');
-    navigation.append(action('Exit game', this.exit, 'btn btn-sm btn-outline theme-secondary'));
+    moveGameExit(main, action('Exit game', this.exit, 'btn btn-sm btn-outline theme-secondary'));
     const phase = el('div', '', 'stream-toolbar-round');
     phase.append(el('strong', () => game.timing?.phase === 'lobby' ? tr('Ready to start') : game.timing?.phase === 'warmup'
       ? tr('Chat goes first')
@@ -1032,12 +1036,6 @@ export class StreamUI {
     banner.append(navigation, phase, commands);
     const count = el("span", '', 'stream-guess-count');
     count.id = "stream-guess-count";
-    const status = el("span", "", "stream-chat-state");
-    status.id = "stream-chat-status";
-    status.tabIndex = 0; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
-    this.statusHelp = hoverHelp(status, () => tr(this.api.local && !game.session.localChat ? 'Local simulated chat'
-      : this.durable ? this.parallel?.connected() ? 'Connected to the game.' : this.parallelDetail || this.connectionLabel()
-      : this.status === 'live' && this.roomHealthy ? 'Receiving guesses from Twitch.' : this.statusDetail));
     const identity = el('span', '', 'stream-host-identity');
     const name = el('span', '', 'stream-name');
     const historyLink = el('a', () => game.session.host.login, 'stream-channel-link');
@@ -1046,8 +1044,8 @@ export class StreamUI {
     bindAttribute(historyLink, 'aria-label', '{{player}}’s results', { player: game.session.host.login });
     const hostName = el('strong'); hostName.append(historyLink);
     name.append(hostName, this.proStatus.badge); identity.append(name);
-    const connectionLabel = el('span', '', 'stream-connection-label'); connectionLabel.id = 'stream-connection-label';
-    navigation.append(status, connectionLabel, identity);
+    identity.append(el('span', 'Chat vs Streamer', 'stream-mode-label'));
+    navigation.append(identity);
     if (!this.api.local || game.session.localChat) {
       const share = action('Share game link in chat', () => this.shareGameLink(), 'btn btn-sm btn-outline theme-secondary stream-share-button');
       share.id = 'stream-share'; share.setAttribute('aria-live', 'polite');
@@ -1149,6 +1147,7 @@ export class StreamUI {
         next.id = 'stream-auto-next'; next.disabled = true;
       }
     } else if (game.stage === "closing") {
+      const accepted = action('Guess received', () => {}, 'primary'); accepted.id = 'confirm-guess'; accepted.disabled = true; actions.append(accepted);
       const waiting = streamRevealAt(game, streamTime(game)) > streamTime(game);
       actions.append(el("p", waiting && !streamsAhead(game.session) ? 'Your guess is locked. Waiting for the other players.'
         : this.durable ? "Waiting for confirmation" : "Round closed. Chat guesses and your submission are saved."));
@@ -1175,7 +1174,11 @@ export class StreamUI {
     const mapPanel = main.querySelector('.game-panel--map');
     if (mapPanel) {
       const toolbar = mapPanel.querySelector('.map-bar'), submit = actions.querySelector('#confirm-guess');
-      if (toolbar && submit) { toolbar.classList.add('guess-map-toolbar'); toolbar.append(submit); }
+      if (toolbar && submit) {
+        toolbar.classList.add('guess-map-toolbar'); toolbar.append(submit);
+        updateSubmit(submit as HTMLButtonElement, game.stage === 'closing' ? 'Guess received' : 'Submit guess', game.stage === 'closing' ? 'received' : 'ready');
+        this.clearSubmit = submitHelp(submit as HTMLButtonElement, () => game.stage === 'closing' ? 'Guess received' : this.busy ? 'Sending…' : !this.roomHealthy ? 'Reconnecting…' : !game.guess ? 'Place a pin first' : 'Submit guess');
+      }
       mapPanel.insertBefore(actions, mapPanel.querySelector('.map-board'));
     } else main.append(actions);
     this.updateTimer();
@@ -1228,6 +1231,8 @@ export class StreamUI {
     )
       return;
     this.busy = true;
+    const send = document.getElementById('confirm-guess') as HTMLButtonElement | null;
+    if (send) { send.disabled = true; updateSubmit(send, 'Sending…', 'waiting'); }
     try {
       if (this.durable) {
         const game = this.game, nonce = crypto.getRandomValues(new Uint8Array(8));
@@ -1260,6 +1265,10 @@ export class StreamUI {
       this.hooks.toast(tr((error as Error).message));
     } finally {
       this.busy = false;
+      if (send?.isConnected && this.game?.stage === 'guess') {
+        send.disabled = !this.game.guess || !hostMayGuess(this.game, streamTime(this.game)) || !this.roomHealthy;
+        updateSubmit(send, 'Submit guess');
+      }
     }
   }
   private finish(): void {
@@ -1427,7 +1436,13 @@ export class StreamUI {
     const url = guessRouteUrl('stream-picker', location.href);
     window.history.replaceState(null, "", url);
     const main = this.hooks.shell(true);
-    this.viewer ??= new TwitchViewer();
-    this.hooks.cleanupClue(mountStreamPicker(main, this.hooks.config, this.viewer, this.viewerImageRoot(), this.hooks.home));
+    void (async () => {
+      try {
+        const viewer = this.api.local ? this.viewer ?? new TwitchViewer() : await pvpViewer('player');
+        if (!main.isConnected) { if (viewer !== this.viewer) viewer.dispose(); return; }
+        if (this.viewer !== viewer) this.viewer?.dispose(); this.viewer = viewer;
+        this.hooks.cleanupClue(mountStreamPicker(main, this.hooks.config, viewer, this.viewerImageRoot(), this.hooks.home));
+      } catch (error) { if (main.isConnected) main.append(el('p', (error as Error).message, 'error')); }
+    })();
   }
 }
