@@ -243,8 +243,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const exit = toolbar.querySelector<HTMLButtonElement>('.stream-change-channel');
   if (exit) moveGameExit(main, exit);
   toolbar.querySelector('.stream-chat-heading')?.classList.add('stream-toolbar-navigation');
-  toolbar.querySelector('.stream-chat-actions')?.classList.add('stream-toolbar-actions');
-  const phase = node('div', 'stream-toolbar-round'); phase.append(round, timer); toolbar.insertBefore(phase, toolbar.lastElementChild);
+  const commands = toolbar.querySelector<HTMLElement>('.stream-chat-actions')!; commands.classList.add('stream-toolbar-actions');
+  const phase = node('div', 'stream-toolbar-round'); phase.append(round, commands); toolbar.append(timer, phase);
   const activity = node('div', 'stream-activity stream-viewer-activity');
   activity.hidden = true; activity.append(roomStatus, delivery);
   layout.prepend(chat.panel); main.append(layout, activity);

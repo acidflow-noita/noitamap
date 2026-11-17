@@ -708,5 +708,8 @@
   "The update notice no longer opens again for each small fix.": "Uppdateringsmeddelandet visas inte längre vid varje mindre korrigering.",
   "The join confirmation appears at the top center in green.": "Bekräftelsen på anslutningen visas högst upp i mitten i grönt.",
   "Game headers use the same round indicator as the main page.": "Spelrubrikerna använder samma runda indikator som huvudsidan.",
-  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Statusmeddelanden visas längst ner utan att kartorna flyttas. Streamerns namn och spelläget visas på samma rad."
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Statusmeddelanden visas längst ner utan att kartorna flyttas. Streamerns namn och spelläget visas på samma rad.",
+  "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Välj ”{{whatsNew}}” i sidhuvudet för att läsa dessa anmärkningar igen.",
+  "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Anslutningspunkten lyser och blinkar långsamt så länge anslutningen är aktiv. Om man rör sig mindre lyser den med jämn ljusstyrka.",
+  "Round progress and sharing controls are aligned with the timer.": "Kontrollerna för framsteg och delning i varje omgång är synkroniserade med timern."
 }

@@ -708,5 +708,8 @@
   "The update notice no longer opens again for each small fix.": "De updatemelding verschijnt niet meer bij elke kleine aanpassing.",
   "The join confirmation appears at the top center in green.": "De bevestiging van de deelname verschijnt bovenaan in het midden in het groen.",
   "Game headers use the same round indicator as the main page.": "De kopteksten van de spellen maken gebruik van dezelfde ronde indicator als de hoofdpagina.",
-  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Statusberichten blijven onderaan staan zonder dat de kaarten verschuiven. De naam van de streamer en de spelmodus staan op één regel."
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Statusberichten blijven onderaan staan zonder dat de kaarten verschuiven. De naam van de streamer en de spelmodus staan op één regel.",
+  "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Kies \"{{whatsNew}}\" in de koptekst om deze opmerkingen nog eens te lezen.",
+  "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Het verbindingspunt licht op en knippert langzaam zolang er verbinding is. Door zo min mogelijk te bewegen blijft het licht stabiel.",
+  "Round progress and sharing controls are aligned with the timer.": "De bedieningselementen voor de voortgang van de ronde en het delen zijn afgestemd op de timer."
 }

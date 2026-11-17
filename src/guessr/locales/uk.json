@@ -726,5 +726,8 @@
   "The update notice no longer opens again for each small fix.": "Повідомлення про оновлення більше не з’являється щоразу після кожного незначного виправлення.",
   "The join confirmation appears at the top center in green.": "Підтвердження приєднання відображається у верхній центральній частині екрана зеленим кольором.",
   "Game headers use the same round indicator as the main page.": "У заголовках ігор використовується той самий круглий індикатор, що й на головній сторінці.",
-  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Повідомлення про стан залишаються внизу, не зміщуючи карти. Ім’я стрімера та режим гри розміщуються в одному рядку."
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Повідомлення про стан залишаються внизу, не зміщуючи карти. Ім’я стрімера та режим гри розміщуються в одному рядку.",
+  "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Виберіть «{{whatsNew}}» у верхній частині сторінки, щоб ще раз ознайомитися з цими примітками.",
+  "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Під час з'єднання індикатор з'єднання світиться і повільно пульсує. Якщо рухатися якомога менше, він залишається стабільним.",
+  "Round progress and sharing controls are aligned with the timer.": "Елементи керування ходом раунду та обміном даними синхронізовані з таймером."
 }

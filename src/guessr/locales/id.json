@@ -708,5 +708,8 @@
   "The update notice no longer opens again for each small fix.": "Pemberitahuan pembaruan tidak lagi muncul setiap kali ada perbaikan kecil.",
   "The join confirmation appears at the top center in green.": "Konfirmasi bergabung muncul di bagian tengah atas dengan warna hijau.",
   "Game headers use the same round indicator as the main page.": "Header game menggunakan indikator lingkaran yang sama seperti yang ada di halaman utama.",
-  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Pesan status tetap berada di bagian bawah tanpa menggeser tampilan peta. Nama streamer dan mode permainan ditampilkan dalam satu baris."
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Pesan status tetap berada di bagian bawah tanpa menggeser tampilan peta. Nama streamer dan mode permainan ditampilkan dalam satu baris.",
+  "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Pilih \"{{whatsNew}}\" di bagian header untuk membaca catatan ini kembali.",
+  "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Titik koneksi bersinar dan berkedip perlahan saat terhubung. Gerakan yang minim membuatnya tetap stabil.",
+  "Round progress and sharing controls are aligned with the timer.": "Kontrol kemajuan putaran dan berbagi disesuaikan dengan timer."
 }

@@ -9,6 +9,9 @@ export const GUESSR_CHANGELOG = {
   id: '2026-11-17-layout-stability',
   date: '2026-11-17',
   notes: [
+    "Choose \"{{whatsNew}}\" in the header to read these notes again.",
+    "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.",
+    "Round progress and sharing controls are aligned with the timer.",
     "The join confirmation appears at the top center in green.",
     "Game headers use the same round indicator as the main page.",
     "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.",
@@ -55,7 +58,6 @@ export const GUESSR_CHANGELOG = {
     "Game history shows each player's rank and score.",
     'The game results page has a smaller title and a narrower rank column.',
     'If you reach a game-creation limit, setup shows when you can create another game.',
-    'Open "{{howToPlay}}" and choose "{{whatsNew}}" to read these notes again.',
   ],
 };
 const SEEN_KEY = 'noitamap-guessr-changelog-seen';

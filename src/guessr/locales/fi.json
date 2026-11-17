@@ -708,5 +708,8 @@
   "The update notice no longer opens again for each small fix.": "Päivitysilmoitus ei enää avaudu uudelleen jokaisen pienen korjauksen yhteydessä.",
   "The join confirmation appears at the top center in green.": "Liittymisvahvistus näkyy yläreunassa keskellä vihreänä.",
   "Game headers use the same round indicator as the main page.": "Pelien otsikoissa käytetään samaa pyöreää merkkiä kuin pääsivulla.",
-  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Tilanilmoitukset pysyvät alareunassa ilman, että kartat liikkuvat. Streamerin nimi ja pelitila näkyvät samalla rivillä."
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Tilanilmoitukset pysyvät alareunassa ilman, että kartat liikkuvat. Streamerin nimi ja pelitila näkyvät samalla rivillä.",
+  "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Valitse otsikosta ”{{whatsNew}}”, jos haluat lukea nämä huomautukset uudelleen.",
+  "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Yhteyspiste hehkuu ja vilkkuu hitaasti, kun yhteys on päällä. Liikkeen vähentäminen pitää sen vakaana.",
+  "Round progress and sharing controls are aligned with the timer.": "Kierroksen etenemistä ja jakamista koskevat hallintalaitteet on sovitettu ajastimen kanssa."
 }

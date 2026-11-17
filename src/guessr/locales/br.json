@@ -726,5 +726,8 @@
   "The update notice no longer opens again for each small fix.": "O aviso de atualização não aparece mais a cada pequena correção.",
   "The join confirmation appears at the top center in green.": "A confirmação da adesão aparece na parte superior central, em verde.",
   "Game headers use the same round indicator as the main page.": "Os cabeçalhos dos jogos usam o mesmo indicador circular da página principal.",
-  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "As mensagens de status permanecem na parte inferior sem deslocar os mapas. O nome do streamer e o modo de jogo ocupam a mesma linha."
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "As mensagens de status permanecem na parte inferior sem deslocar os mapas. O nome do streamer e o modo de jogo ocupam a mesma linha.",
+  "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Selecione “{{whatsNew}}” no cabeçalho para ler essas notas novamente.",
+  "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "O ponto de conexão brilha e pisca lentamente enquanto a conexão estiver ativa. A redução do movimento mantém a luz estável.",
+  "Round progress and sharing controls are aligned with the timer.": "Os controles de progresso e compartilhamento da rodada estão sincronizados com o cronômetro."
 }

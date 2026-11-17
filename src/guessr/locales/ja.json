@@ -708,5 +708,8 @@
   "The update notice no longer opens again for each small fix.": "小さな修正が行われるたびに、更新通知が再度表示されることはなくなりました。",
   "The join confirmation appears at the top center in green.": "参加確認メッセージが画面上部の中央に緑色で表示されます。",
   "Game headers use the same round indicator as the main page.": "ゲームのヘッダーには、メインページと同じラウンドインジケーターが使用されています。",
-  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "ステータスメッセージは、マップを動かさずに画面下部に表示されたままになります。ストリーマーの名前とゲームモードは1行にまとめて表示されます。"
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "ステータスメッセージは、マップを動かさずに画面下部に表示されたままになります。ストリーマーの名前とゲームモードは1行にまとめて表示されます。",
+  "Choose \"{{whatsNew}}\" in the header to read these notes again.": "ヘッダーの「{{whatsNew}}」を選択すると、このお知らせを再度確認できます。",
+  "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "接続中は、接続ドットが光り、ゆっくりと点滅します。動きを抑えると、光り方が安定します。",
+  "Round progress and sharing controls are aligned with the timer.": "ラウンドの進行状況と共有用のコントロールは、タイマーに合わせて表示されます。"
 }

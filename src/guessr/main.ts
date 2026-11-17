@@ -209,6 +209,8 @@ function shell(game = false): HTMLElement {
     identity.prepend(link(msg("Back to map"), mapReturnUrl(), 'btn btn-sm btn-outline theme-secondary map-return', 'arrow-left'));
   const helpButton = button(msg("How to play"), help, "small secondary guessr-help", 'info-circle');
   bindAttribute(helpButton, 'aria-label', 'How to play'); actions.append(helpButton);
+  const updatesButton = button(msg("What's new"), () => showGuessrChangelog(updatesButton), 'small secondary guessr-updates', 'clock-history');
+  bindAttribute(updatesButton, 'aria-label', "What's new"); actions.append(updatesButton);
   const clearAccount = mountAccountMenu(actions);
   clearHeader = () => { logo.dispose(); clearAccount(); };
   header.append(identity, actions);
@@ -1610,13 +1612,7 @@ function help(): void {
     node('p', 'fine-print', msg('Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.')),
     node('p', 'fine-print', msg('Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.')),
   );
-  const footer = node("div", "dialog-footer");
-  const updates = button(msg("What's new"), () => {
-    dialog.addEventListener('hidden.bs.dialog', () => showGuessrChangelog(trigger ?? undefined), { once: true });
-    void Dialog.getOrCreateInstance(dialog).hide();
-  }, 'btn btn-outline theme-secondary');
-  footer.append(updates);
-  dialog.append(header, body, footer);
+  dialog.append(header, body);
   document.body.append(dialog);
   const instance = new Dialog(dialog);
   dialog.addEventListener(

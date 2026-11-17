@@ -726,5 +726,8 @@
   "The update notice no longer opens again for each small fix.": "Powiadomienie o aktualizacji nie pojawia się już za każdym razem, gdy wprowadzana jest drobna poprawka.",
   "The join confirmation appears at the top center in green.": "Potwierdzenie dołączenia pojawia się w górnej środkowej części ekranu na zielono.",
   "Game headers use the same round indicator as the main page.": "Nagłówki gier wykorzystują ten sam okrągły wskaźnik, co strona główna.",
-  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Komunikaty o stanie pozostają na dole ekranu, nie przesuwając map. Nazwa streamera i tryb gry zajmują ten sam wiersz."
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Komunikaty o stanie pozostają na dole ekranu, nie przesuwając map. Nazwa streamera i tryb gry zajmują ten sam wiersz.",
+  "Choose \"{{whatsNew}}\" in the header to read these notes again.": "W nagłówku wybierz opcję „{{whatsNew}}”, aby ponownie zapoznać się z tymi informacjami.",
+  "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Podczas połączenia kropka połączenia świeci się i powoli pulsuje. Ograniczenie ruchu sprawia, że świeci się ona równomiernie.",
+  "Round progress and sharing controls are aligned with the timer.": "Elementy sterujące postępem rundy i udostępnianiem są zsynchronizowane z licznikiem czasu."
 }

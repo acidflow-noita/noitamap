@@ -726,5 +726,8 @@
   "The update notice no longer opens again for each small fix.": "Oznámení o aktualizaci se již nebude znovu otevírat při každé drobné opravě.",
   "The join confirmation appears at the top center in green.": "Potvrzení připojení se zobrazí nahoře uprostřed zeleně.",
   "Game headers use the same round indicator as the main page.": "Záhlaví her používají stejný kruhový indikátor jako hlavní stránka.",
-  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Stavové zprávy zůstávají v dolní části obrazovky, aniž by se posunuly mapy. Název streamera a herní režim jsou uvedeny na jednom řádku."
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Stavové zprávy zůstávají v dolní části obrazovky, aniž by se posunuly mapy. Název streamera a herní režim jsou uvedeny na jednom řádku.",
+  "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Chcete-li si tyto poznámky přečíst znovu, vyberte v záhlaví položku „{{whatsNew}}“.",
+  "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Během připojení svítí a pomalu bliká spojovací tečka. Omezením pohybu se zajistí její stabilní svícení.",
+  "Round progress and sharing controls are aligned with the timer.": "Ovládací prvky pro průběh kola a sdílení jsou synchronizovány s časomírou."
 }

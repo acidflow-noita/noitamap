@@ -708,5 +708,8 @@
   "The update notice no longer opens again for each small fix.": "The update notice no longer opens again for each small fix.",
   "The join confirmation appears at the top center in green.": "The join confirmation appears at the top center in green.",
   "Game headers use the same round indicator as the main page.": "Game headers use the same round indicator as the main page.",
-  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line."
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.",
+  "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Choose \"{{whatsNew}}\" in the header to read these notes again.",
+  "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.",
+  "Round progress and sharing controls are aligned with the timer.": "Round progress and sharing controls are aligned with the timer."
 }

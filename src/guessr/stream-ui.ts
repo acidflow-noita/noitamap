@@ -1098,9 +1098,9 @@ export class StreamUI {
     else if (game.timing?.phase === 'warmup') bindText(roundIndicator, 'Chat goes first');
     else showRoundProgress(roundIndicator, game.session.rounds.length, index + 1, game.reveals.length);
     phase.append(roundIndicator);
-    if (game.timing) { const timer = el('span', '', 'stream-round-timer'); timer.id = 'stream-round-timer'; phase.append(timer); }
+    const timer = el('span', '', 'stream-round-timer'); timer.id = 'stream-round-timer'; timer.hidden = !game.timing;
     const commands = el('div', '', 'stream-toolbar-actions');
-    banner.append(navigation, phase, commands);
+    phase.append(commands); banner.append(navigation, timer, phase);
     const count = el("span", '', 'stream-guess-count');
     count.id = "stream-guess-count";
     const identity = el('span', '', 'stream-host-identity');
