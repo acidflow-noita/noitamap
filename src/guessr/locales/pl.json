@@ -729,5 +729,20 @@
   "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Komunikaty o stanie pozostają na dole ekranu, nie przesuwając map. Nazwa streamera i tryb gry zajmują ten sam wiersz.",
   "Choose \"{{whatsNew}}\" in the header to read these notes again.": "W nagłówku wybierz opcję „{{whatsNew}}”, aby ponownie zapoznać się z tymi informacjami.",
   "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Podczas połączenia kropka połączenia świeci się i powoli pulsuje. Ograniczenie ruchu sprawia, że świeci się ona równomiernie.",
-  "Round progress and sharing controls are aligned with the timer.": "Elementy sterujące postępem rundy i udostępnianiem są zsynchronizowane z licznikiem czasu."
+  "Round progress and sharing controls are aligned with the timer.": "Elementy sterujące postępem rundy i udostępnianiem są zsynchronizowane z licznikiem czasu.",
+  "Game settings": "Ustawienia gry",
+  "Standings": "Tabela wyników",
+  "Equal scores share a rank.": "W przypadku równej liczby punktów zajmuje się tę samą pozycję w rankingu.",
+  "Share": "Udostępnij",
+  "Copy link": "Skopiuj link",
+  "Posted": "Opublikowano",
+  "Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.": "Poruszaj się za pomocą przycisków wskazówek. Każdy przycisk pokazuje liczbę punktów, jaką kosztuje. Cofanie się i powiększanie są bezpłatne.",
+  "The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.": "W menu obok pozostałych trybów gry wyświetla się {{dailyMode}}. Na telefonach każdy tryb ma swoją zwięzłą kartę.",
+  "The clue appears above its controls. On small screens, a cost of 0 means the move is free.": "Wskazówka pojawia się nad przyciskami sterowania. Na małych ekranach koszt 0 oznacza, że ruch jest darmowy.",
+  "Round count and duration are together in game setup.": "Liczba rund i czas trwania gry są ustalane podczas przygotowywania gry.",
+  "Round previews open below their row. Share, Save and the standings are closer together.": "Podsumowania rundy wyświetlają się poniżej odpowiedniego wiersza. Przyciski „Udostępnij” i „Zapisz” oraz tabela wyników znajdują się bliżej siebie.",
+  "Clue navigation buttons show their keyboard shortcuts.": "Przyciski nawigacyjne w grze „Clue” wyświetlają swoje skróty klawiaturowe.",
+  "More changes": "Kolejne zmiany",
+  "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "W przypadku udostępnionych wyników {{dailyMode}} powyżej wyników wyświetlane są {{share}} i {{answers}}.",
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Gdy streamer ponownie łączy się podczas trwającej rundy, jego zapisany pin jest gotowy do przesłania."
 }

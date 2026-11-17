@@ -50,7 +50,7 @@ export function attachClueControls(
   error.className = "error";
   error.setAttribute("role", "status");
   controls.append(toolbar, description, error);
-  clue.before(controls);
+  (clue.closest('.clue-stage') ?? clue).after(controls);
   let stopped = false,
     pending = false;
   const buttons: {
@@ -165,6 +165,10 @@ export function attachClueControls(
       bindText(costLabel, () => {
         const next = preview(target);
         return !next.available || next.same ? '—' : costText(next.cost);
+      });
+      bindAttribute(costLabel.parentElement!, 'data-compact-cost', () => {
+        const next = preview(target);
+        return next.available && !next.same ? formatGuessrNumber(-next.cost || 0) : '—';
       });
       const hint = () => {
         const { available, same, cost } = preview(target);

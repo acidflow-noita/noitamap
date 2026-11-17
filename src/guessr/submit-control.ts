@@ -9,13 +9,15 @@ export function updateSubmit(button: HTMLButtonElement, label: string, state: 'r
   if (!parts) {
     clearTextBinding(button);
     button.classList.add('guess-submit'); button.setAttribute('aria-live', 'polite'); button.setAttribute('aria-atomic', 'true');
+    const reserve = document.createElement('span'); reserve.className = 'submit-reserve'; reserve.setAttribute('aria-hidden', 'true');
     const wrap = document.createElement('span'); wrap.className = 'submit-label';
     const text = document.createElement('span'); wrap.append(text);
     for (const key of ['Send guess', 'Submit guess', 'Update guess', 'Sending…', 'Auto-sending…', 'Resend guess', 'Waiting for confirmation', 'Guess received', 'Auto-submitted', 'Lock guess', 'Guess locked']) {
-      const size = document.createElement('span'); size.className = 'label-sizer'; size.setAttribute('aria-hidden', 'true'); bindAttribute(size, 'data-label', key); wrap.append(size);
+      const size = document.createElement('span'); size.className = 'label-sizer'; bindAttribute(size, 'data-label', key); reserve.append(size);
     }
     const feedback = document.createElement('span'); feedback.className = 'submit-feedback'; feedback.setAttribute('aria-hidden', 'true');
-    button.replaceChildren(wrap, feedback); parts = { label: text, feedback, state: '', source: '' }; controls.set(button, parts);
+    const content = document.createElement('span'); content.className = 'submit-content'; content.append(wrap, feedback);
+    button.replaceChildren(reserve, content); parts = { label: text, feedback, state: '', source: '' }; controls.set(button, parts);
   }
   if (parts.source !== label) { parts.source = label; bindText(parts.label, label); }
   if (button.dataset.state !== state) button.dataset.state = state;

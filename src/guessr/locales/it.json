@@ -720,5 +720,20 @@
   "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "I messaggi di stato rimangono nella parte inferiore dello schermo senza spostare le mappe. Il nome dello streamer e la modalità di gioco occupano la stessa riga.",
   "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Seleziona \"{{whatsNew}}\" nell'intestazione per rileggere queste note.",
   "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Il puntino di connessione si illumina e lampeggia lentamente mentre la connessione è attiva. Riducendo i movimenti, la luce rimane fissa.",
-  "Round progress and sharing controls are aligned with the timer.": "I controlli relativi all'avanzamento del round e alla condivisione sono sincronizzati con il timer."
+  "Round progress and sharing controls are aligned with the timer.": "I controlli relativi all'avanzamento del round e alla condivisione sono sincronizzati con il timer.",
+  "Game settings": "Impostazioni di gioco",
+  "Standings": "Classifica",
+  "Equal scores share a rank.": "A parità di punteggio, i classificati occupano la stessa posizione.",
+  "Share": "Condividi",
+  "Copy link": "Copia il link",
+  "Posted": "Pubblicato",
+  "Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.": "Esplora utilizzando i comandi indicati. Ogni pulsante mostra il relativo costo in punti. Tornare indietro e ingrandire l'immagine non comportano alcun costo.",
+  "The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.": "Il menu mostra {{dailyMode}} accanto alle altre modalità di gioco. Sui telefoni, ogni modalità è rappresentata da una scheda compatta.",
+  "The clue appears above its controls. On small screens, a cost of 0 means the move is free.": "L'indizio compare sopra i comandi. Sugli schermi di piccole dimensioni, un costo pari a 0 indica che la mossa è gratuita.",
+  "Round count and duration are together in game setup.": "Il numero di turni e la durata vengono impostati insieme durante la preparazione del gioco.",
+  "Round previews open below their row. Share, Save and the standings are closer together.": "Le anteprime dei turni si aprono sotto la riga corrispondente. I pulsanti “Condividi” e “Salva” e la classifica sono più vicini tra loro.",
+  "Clue navigation buttons show their keyboard shortcuts.": "I pulsanti di navigazione di Clue mostrano le relative scorciatoie da tastiera.",
+  "More changes": "Altre modifiche",
+  "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "Nei risultati condivisi di {{dailyMode}}, {{share}} e {{answers}} compaiono sopra i punteggi.",
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Quando uno streamer si riconnette durante un round aperto, il suo pin salvato è pronto per essere inviato."
 }

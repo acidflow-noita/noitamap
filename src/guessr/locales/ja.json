@@ -711,5 +711,20 @@
   "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "ステータスメッセージは、マップを動かさずに画面下部に表示されたままになります。ストリーマーの名前とゲームモードは1行にまとめて表示されます。",
   "Choose \"{{whatsNew}}\" in the header to read these notes again.": "ヘッダーの「{{whatsNew}}」を選択すると、このお知らせを再度確認できます。",
   "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "接続中は、接続ドットが光り、ゆっくりと点滅します。動きを抑えると、光り方が安定します。",
-  "Round progress and sharing controls are aligned with the timer.": "ラウンドの進行状況と共有用のコントロールは、タイマーに合わせて表示されます。"
+  "Round progress and sharing controls are aligned with the timer.": "ラウンドの進行状況と共有用のコントロールは、タイマーに合わせて表示されます。",
+  "Game settings": "ゲーム設定",
+  "Standings": "順位表",
+  "Equal scores share a rank.": "同点の場合は順位を分け合う。",
+  "Share": "シェア",
+  "Copy link": "リンクをコピー",
+  "Posted": "投稿日",
+  "Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.": "ヒント操作を使って探索しましょう。各ボタンにはポイントコストが表示されています。戻る操作やズームインは無料です。",
+  "The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.": "メニューでは、他のゲームモードの横に{{dailyMode}}が表示されます。スマートフォンでは、各モードごとにコンパクトなカードが表示されます。",
+  "The clue appears above its controls. On small screens, a cost of 0 means the move is free.": "ヒントは操作ボタンの上に表示されます。画面が小さい場合、コストが「0」と表示されていれば、その操作は無料です。",
+  "Round count and duration are together in game setup.": "ラウンド数と試合時間は、ゲーム設定でまとめて設定します。",
+  "Round previews open below their row. Share, Save and the standings are closer together.": "各ラウンドのプレビューは、その行の下に表示されます。「シェア」や「保存」のボタン、そして順位表がより近くに配置されています。",
+  "Clue navigation buttons show their keyboard shortcuts.": "手がかりのナビゲーションボタンには、それぞれのキーボードショートカットが表示されています。",
+  "More changes": "その他の変更点",
+  "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "共有された{{dailyMode}}の結果では、スコアの上に{{share}}と{{answers}}が表示されます。",
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "オープンラウンド中にストリーマーが再接続すると、保存されていたピンは送信可能な状態になります。"
 }

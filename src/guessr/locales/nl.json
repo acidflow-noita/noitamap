@@ -711,5 +711,20 @@
   "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Statusberichten blijven onderaan staan zonder dat de kaarten verschuiven. De naam van de streamer en de spelmodus staan op één regel.",
   "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Kies \"{{whatsNew}}\" in de koptekst om deze opmerkingen nog eens te lezen.",
   "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Het verbindingspunt licht op en knippert langzaam zolang er verbinding is. Door zo min mogelijk te bewegen blijft het licht stabiel.",
-  "Round progress and sharing controls are aligned with the timer.": "De bedieningselementen voor de voortgang van de ronde en het delen zijn afgestemd op de timer."
+  "Round progress and sharing controls are aligned with the timer.": "De bedieningselementen voor de voortgang van de ronde en het delen zijn afgestemd op de timer.",
+  "Game settings": "Spelinstellingen",
+  "Standings": "Stand",
+  "Equal scores share a rank.": "Bij gelijke scores delen de deelnemers dezelfde plaats.",
+  "Share": "Delen",
+  "Copy link": "Link kopiëren",
+  "Posted": "Geplaatst",
+  "Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.": "Verken de omgeving met de aanwijzingsknoppen. Op elke knop staat de kostenwaarde aangegeven. Teruggaan en inzoomen kost niets.",
+  "The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.": "In het menu staat {{dailyMode}} naast de andere spelmodi. Op telefoons wordt elke modus weergegeven als een compacte kaart.",
+  "The clue appears above its controls. On small screens, a cost of 0 means the move is free.": "De hint verschijnt boven de bedieningsknoppen. Op kleine schermen betekent een prijs van 0 dat de zet gratis is.",
+  "Round count and duration are together in game setup.": "Het aantal rondes en de speelduur worden samen bij de spelvoorbereiding vastgesteld.",
+  "Round previews open below their row. Share, Save and the standings are closer together.": "De voorbeschouwingen van de wedstrijden worden onder hun rij weergegeven. De knoppen ‘Delen’ en ‘Opslaan’ en het klassement staan nu dichter bij elkaar.",
+  "Clue navigation buttons show their keyboard shortcuts.": "Bij de navigatieknoppen van Clue worden de bijbehorende sneltoetsen weergegeven.",
+  "More changes": "Nog meer wijzigingen",
+  "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "Bij gedeelde {{dailyMode}}-resultaten worden {{share}} en {{answers}} boven de scores weergegeven.",
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Wanneer een streamer tijdens een open ronde opnieuw verbinding maakt, is zijn opgeslagen pin klaar om te worden ingediend."
 }

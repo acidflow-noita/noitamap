@@ -711,5 +711,20 @@
   "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Statusmeddelanden visas längst ner utan att kartorna flyttas. Streamerns namn och spelläget visas på samma rad.",
   "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Välj ”{{whatsNew}}” i sidhuvudet för att läsa dessa anmärkningar igen.",
   "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Anslutningspunkten lyser och blinkar långsamt så länge anslutningen är aktiv. Om man rör sig mindre lyser den med jämn ljusstyrka.",
-  "Round progress and sharing controls are aligned with the timer.": "Kontrollerna för framsteg och delning i varje omgång är synkroniserade med timern."
+  "Round progress and sharing controls are aligned with the timer.": "Kontrollerna för framsteg och delning i varje omgång är synkroniserade med timern.",
+  "Game settings": "Spelinställningar",
+  "Standings": "Tabell",
+  "Equal scores share a rank.": "Vid lika poäng delas placeringen.",
+  "Share": "Dela",
+  "Copy link": "Kopiera länken",
+  "Posted": "Publicerat",
+  "Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.": "Utforska med hjälp av ledtrådsreglagen. Varje knapp visar hur många poäng den kostar. Att gå tillbaka och zooma in kostar ingenting.",
+  "The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.": "I menyn visas {{dailyMode}} bredvid de andra spellägena. På mobiltelefoner visas varje läge som ett kompakt kort.",
+  "The clue appears above its controls. On small screens, a cost of 0 means the move is free.": "Ledtråden visas ovanför kontrollerna. På små skärmar innebär kostnaden 0 att draget är gratis.",
+  "Round count and duration are together in game setup.": "Antalet omgångar och speltiden anges tillsammans i spelinställningarna.",
+  "Round previews open below their row. Share, Save and the standings are closer together.": "Förhandsvisningarna av omgångarna visas nedanför respektive rad. Knapparna ”Dela” och ”Spara” samt tabellen ligger nu närmare varandra.",
+  "Clue navigation buttons show their keyboard shortcuts.": "Navigeringsknapparna i Clue visar sina kortkommandon.",
+  "More changes": "Fler ändringar",
+  "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "I delade {{dailyMode}}-resultat visas {{share}} och {{answers}} ovanför poängen.",
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "När en streamare återansluter sig under en pågående omgång är den sparade placeringen redo att skickas in."
 }

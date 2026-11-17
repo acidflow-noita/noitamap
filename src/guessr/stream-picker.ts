@@ -526,6 +526,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (live?.phase === 'complete' && !state.connected) connection.insertBefore(connect, disconnect);
     else if (connect.parentElement !== signIn) signIn.prepend(connect);
     const joined = !!feed?.hasJoined();
+    const inLobby = !pvp && joined && !unavailableGame && !live?.ended
+      && live?.timing?.phase === 'lobby' && !snapshot;
+    layout.classList.toggle('show-stream-lobby', inLobby);
+    round.hidden = inLobby;
     const needsAuthorization = connectionState === 'stopped' && connectionDetail === 'Sign in with Twitch to play.';
     signIn.hidden = state.connected && !needsAuthorization || reviewedRound !== null;
     map.hidden = (!state.connected || needsAuthorization) && reviewedRound === null;

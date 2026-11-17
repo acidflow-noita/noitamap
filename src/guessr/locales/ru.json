@@ -729,5 +729,20 @@
   "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Сообщения о статусе отображаются внизу экрана, не смещая карты. Имя стримера и режим игры занимают одну строку.",
   "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Выберите «{{whatsNew}}» в верхней части страницы, чтобы ещё раз прочитать эти примечания.",
   "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Пока устройство подключено, точка подключения светится и медленно мигает. Если не двигать устройство, она горит ровным светом.",
-  "Round progress and sharing controls are aligned with the timer.": "Элементы управления ходом раунда и обменом данными синхронизированы с таймером."
+  "Round progress and sharing controls are aligned with the timer.": "Элементы управления ходом раунда и обменом данными синхронизированы с таймером.",
+  "Game settings": "Настройки игры",
+  "Standings": "Турнирная таблица",
+  "Equal scores share a rank.": "При равных результатах участники занимают одно и то же место.",
+  "Share": "Поделиться",
+  "Copy link": "Скопировать ссылку",
+  "Posted": "Опубликовано",
+  "Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.": "Исследуйте локацию с помощью элементов управления подсказками. На каждой кнопке указана стоимость в очках. Переход назад и увеличение масштаба бесплатны.",
+  "The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.": "В меню {{dailyMode}} отображается рядом с другими режимами игры. На мобильных устройствах для каждого режима отображается компактная карточка.",
+  "The clue appears above its controls. On small screens, a cost of 0 means the move is free.": "Подсказка отображается над элементами управления. На небольших экранах стоимость 0 означает, что ход бесплатный.",
+  "Round count and duration are together in game setup.": "Количество раундов и продолжительность указываются вместе в настройках игры.",
+  "Round previews open below their row. Share, Save and the standings are closer together.": "Предварительный обзор раундов открывается ниже соответствующей строки. Кнопки «Поделиться» и «Сохранить», а также таблица результатов расположены ближе друг к другу.",
+  "Clue navigation buttons show their keyboard shortcuts.": "На кнопках навигации по подсказкам отображаются соответствующие сочетания клавиш.",
+  "More changes": "Еще изменения",
+  "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "В результатах, опубликованных в режиме {{dailyMode}}, над оценками отображаются {{share}} и {{answers}}.",
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Если стример восстанавливает соединение во время открытого раунда, его сохраненная отметка готова к отправке."
 }

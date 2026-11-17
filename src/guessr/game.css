@@ -84,7 +84,8 @@ body::before {
   content: "";
   position: absolute;
   inset: auto 0 0;
-  height: min(70vh, 600px);
+  height: min(36svh, 24rem);
+  opacity: .55;
   background: url('/guessr/topography.svg') repeat-x center bottom;
   mask-image: linear-gradient(to bottom, transparent, #000 40%);
   pointer-events: none;
@@ -103,6 +104,8 @@ body:has(.game-shell, .stream-viewer-shell)::before { height: 20dvh; }
   padding-inline-start: 1.25rem;
 }
 .guessr-changelog .dialog-footer { flex-shrink: 0; }
+.changelog-more { margin-block-start: 1.25rem; border-block-start: 1px solid var(--border); padding-block-start: .75rem; }
+.changelog-more summary { cursor: pointer; color: var(--text); font-weight: 600; }
 .with-icon {
   display: inline-flex;
   align-items: center;
@@ -892,9 +895,11 @@ header.page-heading {
 .result-share-preview { aspect-ratio: 5 / 3; position: relative; background: var(--bg); border-radius: var(--radius-panel); overflow: hidden; }
 .result-share-preview > img, .result-share-preview > .placeholder { inline-size: 100%; block-size: 100%; object-fit: contain; }
 .result-share-preview > [hidden] { display: none; }
-.result-share-feedback { min-block-size: 2.8em; margin: .75rem 0 0; color: var(--text-muted); font-size: .875rem; }
-.result-share-dialog .dialog-footer { flex-wrap: wrap; }
-.result-share-dialog .dialog-footer > .btn { white-space: normal; }
+.result-share-feedback { margin: .75rem 0 0; color: var(--text-muted); font-size: .875rem; }
+.result-share-feedback:empty { display: none; }
+.result-share-dialog .dialog-footer { display: flex; flex-flow: row wrap; justify-content: end; gap: .5rem; }
+.result-share-dialog .dialog-footer > .btn { min-inline-size: 0; justify-content: center; white-space: normal; }
+.result-share-dialog .dialog-footer > [hidden] { display: none; }
 .result-share-player { display: flex; align-items: center; gap: var(--game-gutter); margin-block-end: var(--game-gutter); }
 .result-share-player > .combobox { position: relative; min-inline-size: 0; }
 .result-share-player .combobox-toggle { max-inline-size: min(24rem, 65vw); }
@@ -902,6 +907,7 @@ header.page-heading {
 .result-share-player .menu { max-block-size: min(20rem, 50dvh); overflow-y: auto; min-inline-size: min(20rem, 80vw); }
 .result-share-player .combobox-search-input { position: sticky; top: 0; z-index: 1; }
 @media (max-width: 40rem) {
+  .result-share-dialog .dialog-footer > .btn { flex: 1 1 7rem; min-block-size: 2.75rem; margin: 0; }
   .finish-hero:has(> .result-share-open) { padding-inline-end: clamp(1.5rem, 3vw, 3rem); }
   .finish-hero > .result-share-open { position: static; transform: none; max-inline-size: 100%; }
 }

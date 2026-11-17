@@ -55,3 +55,16 @@ it('clears fitting for a hidden review and restores it without rebuilding the gr
   clue.hidden = true; await tick(); expect(grid.dataset.roundFrame).toBeUndefined();
   clue.hidden = false; await tick(); expect(grid.dataset.roundFrame).toBe('split');
 });
+
+it('keeps a usable map on a short phone and does not grow it when the page scrolls', async () => {
+  width = 360; vi.stubGlobal('innerWidth', 360); vi.stubGlobal('innerHeight', 690);
+  const grid = document.querySelector<HTMLElement>('.stream-viewer-layout')!;
+  const map = grid.querySelector<HTMLElement>('.map-board')!;
+  map.getBoundingClientRect = () => new DOMRect(0, 420 - scroll, 360, 240);
+  await tick();
+  expect(grid.style.getPropertyValue('--round-map-height')).toBe('254px');
+  scroll = 120; vi.stubGlobal('scrollY', scroll); window.dispatchEvent(new Event('resize')); await tick();
+  expect(grid.style.getPropertyValue('--round-map-height')).toBe('254px');
+  vi.stubGlobal('innerHeight', 520); window.dispatchEvent(new Event('resize')); await tick();
+  expect(grid.style.getPropertyValue('--round-map-height')).toBe('192px');
+});

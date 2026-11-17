@@ -82,6 +82,23 @@ async function fixture() {
 }
 async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
 
+it('unlocks a restored pin when the host connection becomes ready without rebuilding the maps', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(streamNow);
+  const { game, hooks } = await fixture(); game.session.transport = 'parallel'; game.guess = streamAnswer;
+  startStreamTiming(game, 90, streamNow - 10000); startHostWindow(game, streamNow - 10000);
+  ui = new StreamUI(hooks); ui.game = game;
+  Object.assign(ui, { roomHealthy: false }); ui.render();
+  const submit = document.querySelector<HTMLButtonElement>('#confirm-guess')!;
+  expect(submit.disabled).toBe(true);
+  Object.assign(ui, { roomHealthy: true });
+  (ui as unknown as { updateTimer(): void }).updateTimer();
+  expect(submit.disabled).toBe(false); expect(hooks.lockGuess).toHaveBeenLastCalledWith(false);
+  vi.setSystemTime(game.timing!.deadline! + 1);
+  (ui as unknown as { updateTimer(): void }).updateTimer();
+  expect(submit.disabled).toBe(true); expect(hooks.lockGuess).toHaveBeenLastCalledWith(true);
+  expect(hooks.panels).toHaveBeenCalledOnce();
+});
+
 it('keeps both panels, clue canvas, controls and header mounted when a submitted host guess is accepted', async () => {
   vi.useFakeTimers(); vi.setSystemTime(streamNow);
   const { game, hooks } = await fixture(); game.session.transport = 'parallel';
@@ -491,7 +508,7 @@ it('groups result navigation and shows green punctuation-free copy feedback besi
   Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
   ui = new StreamUI(hooks); ui.render();
   const button = (label: string) => [...document.querySelectorAll('button')].find(b => b.textContent === label)!;
-  expect(button('Back').closest('.page-heading')).not.toBeNull();
+  expect(button('Back').closest('.stream-results-heading')).not.toBeNull();
   expect(button('Back').parentElement!.firstElementChild).toBe(button('Back'));
   expect(button('Start another game').parentElement!.classList.contains('action-row')).toBe(true);
   expect(document.querySelector('.stream-publication a')!.textContent).toBe('streamer’s results');

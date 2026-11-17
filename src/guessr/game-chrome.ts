@@ -1,5 +1,5 @@
 import logo from '../../public/assets/noitaguessr-logo.svg?raw';
-import { bindAttribute, bindText, tr } from './i18n';
+import { bindAttribute, bindText, clearTextBinding, tr } from './i18n';
 import { hoverHelp } from './hover-help';
 
 type Connection = 'idle' | 'connected' | 'connecting' | 'reconnecting' | 'offline' | 'disconnected';
@@ -43,5 +43,10 @@ export function updateGameConnection(state: Connection, detail = '') {
 
 export function moveGameExit(main: HTMLElement, exit: HTMLButtonElement) {
   const actions = main.parentElement?.querySelector('.header-actions');
-  if (actions) { exit.classList.add('guessr-exit'); actions.insertBefore(exit, actions.querySelector('.guessr-account')); }
+  if (!actions) return;
+  clearTextBinding(exit);
+  const icon = document.createElement('i'); icon.className = 'bi bi-box-arrow-right'; icon.setAttribute('aria-hidden', 'true');
+  exit.replaceChildren(icon, bindText(document.createElement('span'), 'Exit game'));
+  bindAttribute(exit, 'aria-label', 'Exit game'); bindAttribute(exit, 'title', 'Exit game');
+  exit.classList.add('guessr-exit', 'with-icon'); actions.insertBefore(exit, actions.querySelector('.guessr-account'));
 }

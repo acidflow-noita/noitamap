@@ -711,5 +711,20 @@
   "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.",
   "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Choose \"{{whatsNew}}\" in the header to read these notes again.",
   "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.",
-  "Round progress and sharing controls are aligned with the timer.": "Round progress and sharing controls are aligned with the timer."
+  "Round progress and sharing controls are aligned with the timer.": "Round progress and sharing controls are aligned with the timer.",
+  "Game settings": "Game settings",
+  "Standings": "Standings",
+  "Equal scores share a rank.": "Equal scores share a rank.",
+  "Share": "Share",
+  "Copy link": "Copy link",
+  "Posted": "Posted",
+  "Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.": "Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.",
+  "The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.": "The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.",
+  "The clue appears above its controls. On small screens, a cost of 0 means the move is free.": "The clue appears above its controls. On small screens, a cost of 0 means the move is free.",
+  "Round count and duration are together in game setup.": "Round count and duration are together in game setup.",
+  "Round previews open below their row. Share, Save and the standings are closer together.": "Round previews open below their row. Share, Save and the standings are closer together.",
+  "Clue navigation buttons show their keyboard shortcuts.": "Clue navigation buttons show their keyboard shortcuts.",
+  "More changes": "More changes",
+  "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.",
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "When a streamer reconnects during an open round, their saved pin is ready to submit."
 }

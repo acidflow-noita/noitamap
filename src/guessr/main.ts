@@ -196,6 +196,7 @@ function cleanup(): void {
   imageUrl = undefined;
 }
 function shell(game = false): HTMLElement {
+  const enteringPlay = game && !root.querySelector('main.game-shell');
   allowGuessrChangelog(false);
   cleanup();
   clearFrame?.(); clearFrame = undefined; clearHeader?.(); clearSubmit?.(); clearSubmit = undefined;
@@ -205,12 +206,14 @@ function shell(game = false): HTMLElement {
   const identity = node('div', 'header-identity');
   identity.append(logo.element, createGuessrLanguagePicker());
   const actions = node("div", "header-actions");
-  if (readGuessRoute(new URL(location.href)).pane !== 'stream-picker')
-    identity.prepend(link(msg("Back to map"), mapReturnUrl(), 'btn btn-sm btn-outline theme-secondary map-return', 'arrow-left'));
+  if (readGuessRoute(new URL(location.href)).pane !== 'stream-picker') {
+    const back = link(msg("Back to map"), mapReturnUrl(), 'btn btn-sm btn-outline theme-secondary map-return', 'arrow-left');
+    bindAttribute(back, 'title', 'Back to map'); identity.append(back);
+  }
   const helpButton = button(msg("How to play"), help, "small secondary guessr-help", 'info-circle');
-  bindAttribute(helpButton, 'aria-label', 'How to play'); actions.append(helpButton);
+  bindAttribute(helpButton, 'aria-label', 'How to play'); bindAttribute(helpButton, 'title', 'How to play'); actions.append(helpButton);
   const updatesButton = button(msg("What's new"), () => showGuessrChangelog(updatesButton), 'small secondary guessr-updates', 'clock-history');
-  bindAttribute(updatesButton, 'aria-label', "What's new"); actions.append(updatesButton);
+  bindAttribute(updatesButton, 'aria-label', "What's new"); bindAttribute(updatesButton, 'title', "What's new"); actions.append(updatesButton);
   const clearAccount = mountAccountMenu(actions);
   clearHeader = () => { logo.dispose(); clearAccount(); };
   header.append(identity, actions);
@@ -221,6 +224,7 @@ function shell(game = false): HTMLElement {
   root.append(live);
   const main = node("main", game ? "shell game-shell" : "shell");
   root.append(main);
+  if (enteringPlay && window.scrollY) window.scrollTo({ top: 0, behavior: 'instant' });
   return main;
 }
 function mapReturnUrl(): string {
@@ -1337,14 +1341,10 @@ function renderPublicDaily(summary: DailyResultSummary): void {
   const main = shell(), version = generation;
   allowGuessrChangelog(false);
   main.append(pageHeading(node('h1', '', msg('Daily result')), button(msg('Back to daily'), rankedLobby)));
-  const hero = node('section', 'finish-hero');
-  const date = node('time', '', msg(() => new Date(summary.day + 'T00:00:00Z').toLocaleDateString(guessrLocale(), { dateStyle: 'long', timeZone: 'UTC' })));
-  date.dateTime = summary.day;
-  hero.append(date, node('div', 'total', msg(() => formatGuessrNumber(summary.score))),
-    node('p', '', msg('out of {{value1}}', () => ({ value1: formatGuessrNumber(summary.totalRounds * 5000) }))));
+  const hero = dailyScoreSummary(summary.day, summary.score, summary.totalRounds);
   const share = dailyResultShare(summary);
-  if (share) hero.append(share.element);
   const actions = node('div', 'finish-actions daily-result-actions'), feedback = node('p', 'error');
+  if (share) actions.append(share.element);
   feedback.setAttribute('role', 'status'); feedback.hidden = true;
   const reveal = button(msg('View answers'), async () => {
     if (reveal.disabled) return;
@@ -1369,8 +1369,19 @@ function renderPublicDaily(summary: DailyResultSummary): void {
   reveal.classList.add('daily-view-answers');
   const warning = hoverHelp(reveal, () => tr(VIEW_ANSWERS_WARNING));
   actions.append(reveal);
-  main.append(hero, dailyScoreTable(summary), actions, feedback);
+  hero.append(actions);
+  if (summary.day === utcDay() && !hasViewedDailyAnswers(summary.day, storage)) hero.append(node('p', 'daily-answer-warning', msg(VIEW_ANSWERS_WARNING)));
+  main.append(hero, feedback, dailyScoreTable(summary));
   clearClue = () => { warning.dispose(); share?.destroy(); };
+}
+function dailyScoreSummary(day: string, score: number, roundCount: number): HTMLElement {
+  const hero = node('section', 'finish-hero daily-score-summary');
+  const date = node('time', '', msg(() => new Date(day + 'T00:00:00Z').toLocaleDateString(guessrLocale(), { dateStyle: 'long', timeZone: 'UTC' })));
+  date.dateTime = day;
+  const total = node('div', 'daily-score-line');
+  total.append(node('strong', 'total', msg(() => formatGuessrNumber(score))),
+    node('span', 'muted', msg('out of {{value1}}', () => ({ value1: formatGuessrNumber(roundCount * 5000) }))));
+  hero.append(date, total); return hero;
 }
 function openRanked(state: RankedState, reviewRound?: number, readOnly = false): void {
   if (state.status === 'active' && hasViewedDailyAnswers(state.day, storage)) { showDailyAnswersBlock(state.day); return; }
@@ -1422,14 +1433,9 @@ function renderRanked(): void {
   const main = shell(true);
   if (ranked.status !== "active") {
     allowGuessrChangelog(false);
-    const hero = node("section", "finish-hero");
-    hero.append(
-      node("span", "badge pro animation-pop", msg("Daily result")),
-      node("div", "total", msg(() => (ranked?.score || 0).toLocaleString(guessrLocale()))),
-      node("p", "", msg("out of {{value1}}", () => ({ value1: (ranked!.totalRounds * 5000).toLocaleString(guessrLocale()) }))),
-    );
+    const hero = dailyScoreSummary(ranked.day, ranked.score ?? 0, ranked.totalRounds);
     const share = dailyResultShare(ranked);
-    if (share) hero.append(share.element);
+    if (share) { const actions = node('div', 'finish-actions daily-result-actions'); actions.append(share.element); hero.append(actions); }
     main.append(pageHeading(node("h1", "", msg('Daily result')), rankedReadOnly && publicDaily
       ? button(msg('Back to results'), () => renderPublicDaily(publicDaily!)) : button(msg("Back to daily"), rankedLobby)), hero);
     const results = dailyResultsTable(ranked, reviewRanked);
@@ -1605,7 +1611,7 @@ function help(): void {
   body.append(
     instructionSteps(
       node('p', 'mb-0', msg('Find the starting point marked on the clue map.')),
-      node('p', 'mb-0', msg('Explore with the buttons above the clue map. Each button shows its point cost. Moving back and zooming in are free.')),
+      node('p', 'mb-0', msg('Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.')),
       node('p', 'mb-0', msg('Place your pin on the world map, then submit your guess.')),
     ),
     node("p", "", msg("No time limit. Your progress saves automatically.")),

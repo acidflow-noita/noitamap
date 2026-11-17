@@ -43,7 +43,10 @@ export function mountPvpSetup(main: HTMLElement, open: (id: string) => void, bac
     } catch (reason) { if (!closed) bindText(error, () => localizedError(reason)); }
     finally { busy = false; if (!closed) settings.disabled = false; }
   };
-  settings.append(lengthLabel, timeLabel, streamingSetting('pvp', value => { streaming = value; }).element, create, error); card.append(settings);
+  const fields = document.createElement('div'); fields.className = 'round-settings-fields';
+  fields.append(lengthLabel, timeLabel);
+  const controls = document.createElement('div'); controls.className = 'setup-actions'; controls.append(create);
+  settings.append(fields, streamingSetting('pvp', value => { streaming = value; }).element, controls, error); card.append(settings);
   void (async () => {
     try {
       if (!api.origin) throw Error('1v1 is not available on this site yet.');
@@ -66,8 +69,7 @@ export function mountPvpSetup(main: HTMLElement, open: (id: string) => void, bac
         access.append(bindText(document.createElement('p'), 'Connect Twitch to your Pro account to create a 1v1 match.'), connect);
         return;
       }
-      const player = state.linkedAccounts?.find(account => account.provider === 'twitch')?.username ?? state.username;
-      if (player) access.append(bindText(document.createElement('p'), 'Playing as {{player}}', { player }));
+      access.hidden = true;
       settings.disabled = false;
     } catch (reason) { placeholders.remove(); if (!closed) bindText(access, (reason as Error).message); }
   })();

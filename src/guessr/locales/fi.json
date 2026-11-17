@@ -711,5 +711,20 @@
   "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Tilanilmoitukset pysyvät alareunassa ilman, että kartat liikkuvat. Streamerin nimi ja pelitila näkyvät samalla rivillä.",
   "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Valitse otsikosta ”{{whatsNew}}”, jos haluat lukea nämä huomautukset uudelleen.",
   "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Yhteyspiste hehkuu ja vilkkuu hitaasti, kun yhteys on päällä. Liikkeen vähentäminen pitää sen vakaana.",
-  "Round progress and sharing controls are aligned with the timer.": "Kierroksen etenemistä ja jakamista koskevat hallintalaitteet on sovitettu ajastimen kanssa."
+  "Round progress and sharing controls are aligned with the timer.": "Kierroksen etenemistä ja jakamista koskevat hallintalaitteet on sovitettu ajastimen kanssa.",
+  "Game settings": "Pelin asetukset",
+  "Standings": "Sarjataulukko",
+  "Equal scores share a rank.": "Saman pisteet saaneet sijoittuvat samalle sijalle.",
+  "Share": "Jaa",
+  "Copy link": "Kopioi linkki",
+  "Posted": "Julkaistu",
+  "Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.": "Tutki aluetta vihjeiden avulla. Jokaisessa painikkeessa näkyy sen pistearvo. Takaisin liikkuminen ja lähentäminen ovat ilmaisia.",
+  "The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.": "Valikossa {{dailyMode}} näkyy muiden pelitilojen vieressä. Puhelimissa jokaisella tilalla on oma tiivis korttinsa.",
+  "The clue appears above its controls. On small screens, a cost of 0 means the move is free.": "Vihje näkyy ohjauspainikkeiden yläpuolella. Pienillä näytöillä hinta 0 tarkoittaa, että siirto on ilmainen.",
+  "Round count and duration are together in game setup.": "Kierrosten lukumäärä ja kesto määritetään yhdessä pelin valmisteluvaiheessa.",
+  "Round previews open below their row. Share, Save and the standings are closer together.": "Kierrosten esikatselut avautuvat niiden rivin alapuolelle. Jaa- ja Tallenna-painikkeet sekä sarjataulukko ovat lähempänä toisiaan.",
+  "Clue navigation buttons show their keyboard shortcuts.": "Vihjeiden navigointipainikkeiden vieressä näkyy niiden pikanäppäimet.",
+  "More changes": "Lisää muutoksia",
+  "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "Jaetuissa {{dailyMode}}-tuloksissa {{share}} ja {{answers}} näkyvät pisteiden yläpuolella.",
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Kun striimaaja muodostaa yhteyden uudelleen avoimen kierroksen aikana, hänen tallennettu vastauksensa on valmis lähetettäväksi."
 }

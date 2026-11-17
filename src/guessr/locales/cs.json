@@ -729,5 +729,20 @@
   "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Stavové zprávy zůstávají v dolní části obrazovky, aniž by se posunuly mapy. Název streamera a herní režim jsou uvedeny na jednom řádku.",
   "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Chcete-li si tyto poznámky přečíst znovu, vyberte v záhlaví položku „{{whatsNew}}“.",
   "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Během připojení svítí a pomalu bliká spojovací tečka. Omezením pohybu se zajistí její stabilní svícení.",
-  "Round progress and sharing controls are aligned with the timer.": "Ovládací prvky pro průběh kola a sdílení jsou synchronizovány s časomírou."
+  "Round progress and sharing controls are aligned with the timer.": "Ovládací prvky pro průběh kola a sdílení jsou synchronizovány s časomírou.",
+  "Game settings": "Nastavení hry",
+  "Standings": "Tabulka",
+  "Equal scores share a rank.": "Při shodném počtu bodů se hráči dělí o stejné umístění.",
+  "Share": "Sdílet",
+  "Copy link": "Zkopírovat odkaz",
+  "Posted": "Zveřejněno",
+  "Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.": "Prozkoumejte mapu pomocí ovládacích prvků s nápovědou. U každého tlačítka je uvedena jeho bodová hodnota. Vracení zpět a přiblížení jsou zdarma.",
+  "The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.": "V nabídce se vedle ostatních herních režimů zobrazuje {{dailyMode}}. Na mobilních telefonech má každý režim vlastní kompaktní kartu.",
+  "The clue appears above its controls. On small screens, a cost of 0 means the move is free.": "Nápověda se zobrazuje nad ovládacími prvky. Na malých obrazovkách znamená cena 0, že tah je zdarma.",
+  "Round count and duration are together in game setup.": "Počet kol a délka trvání se nastavují společně při přípravě hry.",
+  "Round previews open below their row. Share, Save and the standings are closer together.": "Náhledy kol se otevírají pod příslušným řádkem. Tlačítka „Sdílet“ a „Uložit“ jsou nyní blíže k tabulce.",
+  "Clue navigation buttons show their keyboard shortcuts.": "U navigačních tlačítek Clue se zobrazují jejich klávesové zkratky.",
+  "More changes": "Další změny",
+  "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "U sdílených výsledků {{dailyMode}} se nad skóre zobrazují položky {{share}} a {{answers}}.",
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Pokud se streamer během probíhajícího kola znovu připojí, jeho uložený tip je připraven k odeslání."
 }

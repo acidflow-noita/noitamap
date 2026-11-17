@@ -1,3 +1,11 @@
+function heightAfter(viewport: HTMLElement): number {
+  let height = 0;
+  for (let item = viewport.nextElementSibling; item; item = item.nextElementSibling) {
+    if (getComputedStyle(item).display !== 'none') height += item.getBoundingClientRect().height;
+  }
+  return height;
+}
+
 /** Fit the fixed clue crop and guess map without changing either camera.
  * Width comes from the parent, never from the grid being resized. */
 export function fitGameFrame(grid: HTMLElement): () => void {
@@ -35,16 +43,35 @@ export function fitGameFrame(grid: HTMLElement): () => void {
     watch(inputs);
     const style = getComputedStyle(parent);
     const width = parent.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
+    const shortLandscape = innerHeight < 650 && innerWidth >= 720 && innerWidth > innerHeight;
     if (!clue || !map || !left || !right || left.hidden || right.hidden || map.hidden || grid.hidden
-      || getComputedStyle(left).display === 'none' || getComputedStyle(right).display === 'none'
-      || width < 960 || innerWidth < 1024) { clear(); return; }
+      || getComputedStyle(left).display === 'none' || getComputedStyle(right).display === 'none') {
+      clear();
+      grid.style.removeProperty('--round-map-height');
+      return;
+    }
+    const useSplit = shortLandscape ? width >= 690 : width >= 960 && innerWidth >= 1024;
+    if (!useSplit) {
+      clear();
+      // The clue and touch controls keep their natural sizes. Give the map
+      // the space below them and reserve the footer even before a receipt.
+      const bottom = parseFloat(style.paddingBottom) || 0;
+      const room = innerHeight - (map.getBoundingClientRect().top + scrollY) - bottom - heightAfter(map);
+      const height = Math.max(192, Math.min(448, Math.floor(room))) + 'px';
+      if (grid.style.getPropertyValue('--round-map-height') !== height) grid.style.setProperty('--round-map-height', height);
+      return;
+    }
+    grid.style.removeProperty('--round-map-height');
     if (grid.dataset.roundFrame !== 'split') grid.dataset.roundFrame = 'split';
     const head = (viewport: HTMLElement, panel: HTMLElement) =>
       viewport.getBoundingClientRect().top - panel.getBoundingClientRect().top - (parseFloat(getComputedStyle(viewport).marginTop) || 0);
     const clueHead = head(clue, left), mapHead = head(map, right), top = Math.max(clueHead, mapHead);
-    const available = innerHeight - (left.getBoundingClientRect().top + scrollY) - top - 64;
-    const mapMinimum = Math.max(384, Math.min(512, width * .36));
-    const clueWidth = Math.floor(Math.min(width - 16 - mapMinimum, Math.max(400, available * 2.25)));
+    // Controls below the maps need room too. Measure their own boxes, never
+    // a stretched panel or canvas whose height is an output of this fit.
+    const footer = Math.max(heightAfter(clue), heightAfter(map));
+    const available = innerHeight - (left.getBoundingClientRect().top + scrollY) - top - footer - 64;
+    const mapMinimum = Math.max(shortLandscape ? 308 : 384, Math.min(512, width * .36));
+    const clueWidth = Math.floor(Math.min(width - 16 - mapMinimum, Math.max(shortLandscape ? 320 : 400, available * 2.25)));
     const px = (value: number) => Math.round(value * 100) / 100 + 'px';
     for (const [key, value] of Object.entries({
       '--round-clue-width': px(clueWidth), '--round-canvas-height': px(clueWidth / 2.25),

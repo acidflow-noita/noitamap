@@ -9,6 +9,12 @@ export const GUESSR_CHANGELOG = {
   id: '2026-11-17-layout-stability',
   date: '2026-11-17',
   notes: [
+    'The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.',
+    'The clue appears above its controls. On small screens, a cost of 0 means the move is free.',
+    'Round count and duration are together in game setup.',
+    'Round previews open below their row. Share, Save and the standings are closer together.',
+    'On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.',
+    'When a streamer reconnects during an open round, their saved pin is ready to submit.',
     "Choose \"{{whatsNew}}\" in the header to read these notes again.",
     "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.",
     "Round progress and sharing controls are aligned with the timer.",
@@ -52,7 +58,7 @@ export const GUESSR_CHANGELOG = {
     'On phones, game panels use the full width, with more room for the clue and touch controls.',
     'Use W, A, S and D to move the clue image. Q zooms out. E zooms in.',
     'Move the guess map with the arrow keys. Zoom with + and -.',
-    'Buttons above the clue image now show keyboard shortcuts.',
+    'Clue navigation buttons show their keyboard shortcuts.',
     'The "{{received}}" button now looks disabled after your guess is confirmed.',
     'In the results for each round, only player names use player colors. A perfect score of 5,000 points appears in gold.',
     "Game history shows each player's rank and score.",
@@ -97,9 +103,15 @@ export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
     date.dateTime = release.date; date.className = 'muted';
     const notes = document.createElement('ul'); notes.className = 'guessr-changelog-notes';
     const labels = () => ({ streaming: tr('I’m streaming'), streamMode: tr('Chat vs Streamer'),
-      dailyMode: tr('Daily'), received: tr('Guess received'), startGame: tr('Start game'), howToPlay: tr('How to play'), whatsNew: tr("What's new") });
-    for (const text of release.notes) notes.append(bindText(document.createElement('li'), text, labels));
+      dailyMode: tr('Daily'), received: tr('Guess received'), startGame: tr('Start game'), howToPlay: tr('How to play'), whatsNew: tr("What's new"),
+      share: tr('Share result'), answers: tr('View answers') });
+    const earlier = document.createElement('ul'); earlier.className = 'guessr-changelog-notes';
+    release.notes.forEach((text, index) => (index < 4 ? notes : earlier).append(bindText(document.createElement('li'), text, labels)));
     body.append(date, notes);
+    if (earlier.childElementCount) {
+      const more = document.createElement('details'); more.className = 'changelog-more';
+      more.append(bindText(document.createElement('summary'), 'More changes'), earlier); body.append(more);
+    }
     dialog.append(header, body); document.body.append(dialog);
     const instance = new Dialog(dialog);
     // Claim the notice before an asynchronous show. Navigation or a reload
@@ -114,7 +126,7 @@ export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
     }, { once: true });
     dialog.addEventListener('hidden.bs.dialog', () => {
       instance.dispose(); dialog.remove(); opened = undefined;
-      if (safe && trigger?.isConnected) trigger.focus({ preventScroll: true });
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     }, { once: true });
     void instance.show(trigger).catch(() => {
       instance.dispose(); dialog.remove(); opened = undefined;

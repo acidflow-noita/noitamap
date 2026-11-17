@@ -77,9 +77,11 @@ function modeCard(options: {
   badge: string;
   pro?: boolean;
   twitch?: boolean;
+  featured?: boolean;
   actions: HTMLButtonElement[];
 }): HTMLElement {
   const card = element("section", "card lobby-mode rounded-9");
+  if (options.featured) card.classList.add('lobby-feature');
   const image = element("img", "card-img-top lobby-mode-image");
   image.src = `/guessr/lobby/${options.image}.webp`;
   image.alt = "";
@@ -159,28 +161,19 @@ function historySummary(
 /** Creates only the lobby content; the app owns navigation, sessions and auth. */
 export function createLobby(options: LobbyOptions): HTMLElement {
   const lobby = element("div", "guessr-lobby");
-  lobby.append(element("h1", "visually-hidden", msg("Choose a game")));
+  lobby.append(element("h1", "lobby-title", msg("Choose a game")));
   if (options.resume) lobby.append(continueGame(options.resume));
 
   // Fixed scenery from the archived seed 78633191 capture, never today's clues.
   const modes = element("div", "lobby-modes");
-  const streamActions = [actionButton(msg("Play as streamer"), options.streamHost, true)];
+  const streamActions = [actionButton(msg("Play as streamer"), options.streamHost)];
   if (options.streamJoin) {
-    const chatterAction = actionButton(msg("Play as chatter"), options.streamJoin);
-    chatterAction.classList.replace('btn-outline', 'btn-solid');
-    chatterAction.classList.add('theme-secondary');
-    streamActions.push(chatterAction);
+    streamActions.push(actionButton(msg("Play as chatter"), options.streamJoin));
   }
   modes.append(
     modeCard({
-      name: "Demo",
-      image: "mountain",
-      description: "Three rounds from the main world.",
-      badge: "Free",
-      actions: [actionButton(msg("Start demo"), options.startDemo, true)],
-    }),
-    modeCard({
       name: "Daily",
+      featured: true,
       image: "snowy-depths",
       description: "The same daily challenge for everyone.",
       badge: "Pro",
@@ -189,6 +182,13 @@ export function createLobby(options: LobbyOptions): HTMLElement {
         actionButton(msg("Today"), options.dailyToday, true),
         actionButton(msg("Yesterday"), options.dailyYesterday),
       ],
+    }),
+    modeCard({
+      name: "Demo",
+      image: "mountain",
+      description: "Three rounds from the main world.",
+      badge: "Free",
+      actions: [actionButton(msg("Start demo"), options.startDemo)],
     }),
     modeCard({
       name: "Chat vs Streamer",
@@ -202,9 +202,9 @@ export function createLobby(options: LobbyOptions): HTMLElement {
     }),
   );
   lobby.append(modes);
-  if (options.pvp) modes.append(modeCard({ name: '1v1', image: 'fungal-caverns',
+  if (options.pvp) modes.append(modeCard({ name: '1v1', image: 'pyramid',
     description: 'Challenge another player. Only one of you needs Pro.', badge: 'Pro', pro: true,
-    actions: [actionButton(msg('Play 1v1'), options.pvp, true)] }));
+    actions: [actionButton(msg('Play 1v1'), options.pvp)] }));
   if (options.history) lobby.append(historySummary(options.history));
   return lobby;
 }

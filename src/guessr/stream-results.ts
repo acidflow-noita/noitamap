@@ -1,7 +1,6 @@
 import topographySvg from '../../public/guessr/topography.svg?raw';
 import { bindAttribute, bindText, formatGuessrNumber, guessrLocale, tr } from "./i18n";
 import type { StreamResult } from "./stream-types";
-import { pageHeading } from './page-heading';
 import { playerColor } from './player-color';
 import { streamResultNames } from './stream-display-name';
 import { streamResultShare } from './stream-share';
@@ -36,23 +35,26 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   };
   const title = el("h1", () => own ? tr('Your result') : viewerId ? tr('Game results') : tr('{{player}}’s results', { player: result.host.name }));
   if (onBack) {
-    const back = el('button', 'Back'); back.type = 'button'; back.onclick = onBack;
-    section.append(pageHeading(title, back));
+    const back = el('button', '', 'btn btn-outline theme-secondary result-back'); back.type = 'button'; back.onclick = onBack;
+    const icon = el('i', '', 'bi bi-arrow-left'); icon.setAttribute('aria-hidden', 'true');
+    back.append(icon, el('span', 'Back', 'visually-hidden')); bindAttribute(back, 'title', 'Back');
+    hero.append(back);
   }
-  hero.append(
-    el("span", pvp ? '1v1' : "Chat vs Streamer", "badge pro animation-pop" + (pvp ? '' : ' twitch-mode-label')),
-    ...(!onBack ? [title] : []),
+  const outcome = el('div', '', 'result-outcome');
+  outcome.append(
+    el("span", pvp ? '1v1' : "Chat vs Streamer", 'result-mode' + (pvp ? '' : ' twitch-mode-label')),
+    title,
     ...(pvp ? [el('p', () => pvpResultHeadline(result), 'stream-placement')] : []),
     ...(!pvp && own && own.id !== host.id ? [el('p', () => tr('You finished in position {{rank}} out of {{players}} players.',
       { rank: placement(own.rank), players: formatGuessrNumber(result.players.length) }), 'stream-placement')] : []),
     ...(!pvp ? [el('p', () => tr('Streamer {{player}} finished in position {{rank}} out of {{players}} players.',
       { player: result.host.name, rank: placement(host.rank), players: formatGuessrNumber(result.players.length) }), 'stream-placement')] : []),
-    el(
-      "p",
-      () => pvp ? `${tr('{{points}} points', { points: formatGuessrNumber(featured.score), count: featured.score })}, ${tr('{{completed}} of {{total}} rounds completed', { completed: formatGuessrNumber(result.rounds.length), total: formatGuessrNumber(result.scheduledRounds ?? result.rounds.length) })}`
-        : viewerId && !own ? tr('The streamer did not record a guess from this account.') : tr('{{score}}, {{rounds}}, Equal scores share a rank.', { score: tr('{{points}} points', { points: formatGuessrNumber(featured.score), count: featured.score }), rounds: tr('{{rounds}} rounds', { rounds: formatGuessrNumber(result.rounds.length), count: result.rounds.length }) }),
-    ),
   );
+  const score = el('div', '', 'result-score');
+  if (viewerId && !own) score.append(el('p', 'The streamer did not record a guess from this account.'));
+  else score.append(el('strong', () => tr('{{points}} points', { points: formatGuessrNumber(featured.score), count: featured.score })),
+    el('span', () => tr('{{completed}} of {{total}} rounds completed', { completed: formatGuessrNumber(result.rounds.length), total: formatGuessrNumber(result.scheduledRounds ?? result.rounds.length) })));
+  hero.append(outcome, score);
   const share = streamResultShare(result, viewerId);
   const menu = el('div', '', 'stream-results-menu');
   if (share) menu.append(share.element);
@@ -61,26 +63,22 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   const more = el('details', '', 'stream-export-options');
   const json = el('button', 'Export scores (JSON)', 'btn btn-outline theme-secondary'); json.type = 'button';
   json.onclick = () => downloadStreamResult(result, 'json');
-  more.append(el('summary', 'More download options'), json,
+  const moreToggle = el('summary', '', 'btn btn-outline theme-secondary result-more-toggle');
+  const moreIcon = el('i', '', 'bi bi-three-dots'); moreIcon.setAttribute('aria-hidden', 'true');
+  bindAttribute(moreToggle, 'aria-label', 'More download options'); bindAttribute(moreToggle, 'title', 'More download options');
+  moreToggle.append(moreIcon);
+  more.append(moreToggle, json,
     el('p', 'Open the saved web page in a browser to search and sort every player’s scores offline.', 'fine-print'));
-  menu.append(download, more); section.append(menu);
-  section.append(hero);
+  menu.append(download, more); section.append(hero, menu);
   const networkReview = networkReviewSummary(result.reviewFlags, result.players); if (networkReview) section.append(networkReview);
   const reviews = streamResultReviews(result, config); section.append(reviews.element);
-  section.append(
-    el(
-      "p",
-      pvp ? 'Both players use the same puzzles and scoring rules.' : "Casual game with results reported by the streamer. Area and proximity scores use the same rules for the streamer and chat.",
-      "fine-print",
-    ),
-  );
   const controls = el("div", "", "stream-table-controls"),
     filter = el("input"),
     count = el("span", "", "muted");
   filter.type = "search";
   bindAttribute(filter, "placeholder", "Find a player");
   bindAttribute(filter, "aria-label", "Filter players by name or login");
-  controls.append(filter, count);
+  controls.append(el('h2', 'Standings'), count, filter);
   section.append(controls);
   const wrap = el("div", "", "table-wrap"),
     table = el("table", '', 'table stream-score-table'),
@@ -98,7 +96,10 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
     const th = el("th", "", index === 1 ? "" : "numeric"),
       button = el("button", label, "stream-table-sort");
     th.scope = 'col';
-    if (index === 0) th.classList.add('stream-rank-column');
+    if (index === 0) {
+      th.classList.add('stream-rank-column');
+      bindAttribute(button, 'title', 'Equal scores share a rank.');
+    }
     button.type = "button";
     const key =
       index === 0
@@ -206,7 +207,7 @@ export function streamResultHtml(result: StreamResult): string {
     streamer: result.mode === 'pvp' ? '' : tr(', Streamer'),
     count: tr('{{shown}} of {{players}} players', { shown: '{{shown}}', players: formatGuessrNumber(result.players.length), count: result.players.length }),
     scores: tr('Area: {{area}}, Proximity: {{proximity}}', { area: '{{area}}', proximity: '{{proximity}}' }),
-    note: result.mode === 'pvp' ? tr('Both players use the same puzzles and scoring rules.') : tr('Latest valid chat guess received before the streamer closes each round counts. Equal scores share ranks. These casual game results are reported by the streamer.'),
+    note: result.mode === 'pvp' ? tr('Both players use the same puzzles and scoring rules.') : tr('Equal scores share a rank.'),
   };
   return `<!doctype html><html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title><style>
   :root{color-scheme:dark;font:16px Inter,system-ui,sans-serif;background:#020618;color:#e2e8f0}

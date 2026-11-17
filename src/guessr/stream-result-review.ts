@@ -21,19 +21,26 @@ export function roundResultReviews(rounds: StreamRoundView[], config?: ImageGame
     for (const entry of entries) if (entry.isIntersecting) { observer!.unobserve(entry.target); loads.get(entry.target)?.(); }
   }, { rootMargin: '100px' });
   const loads = new Map<Element, () => void>();
-  rounds.forEach(data => {
+  let group: HTMLElement;
+  rounds.forEach((data, index) => {
+    if (index % 5 === 0) {
+      group = document.createElement('div'); group.className = 'round-review-group'; element.append(group);
+    }
     const item = document.createElement('details'); item.className = 'accordion-item'; item.dataset.round = String(data.round);
     const toggle = document.createElement('summary'); toggle.className = 'accordion-header';
     const panel = document.createElement('div'); panel.className = 'accordion-body';
     const thumb = document.createElement('div'); thumb.className = 'stream-round-thumbnail'; thumb.setAttribute('aria-hidden', 'true');
     const label = document.createElement('span');
-    bindText(label, () => `${tr('Round {{round}}', { round: formatGuessrNumber(data.round) })}: ${guessrGameTerm(data.label)}`);
+    label.className = 'round-review-label';
+    const number = document.createElement('small'), location = document.createElement('strong');
+    bindText(number, () => `${tr('Round {{round}}', { round: formatGuessrNumber(data.round) })}: `);
+    bindText(location, () => guessrGameTerm(data.label)); label.append(number, location);
     const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     icon.setAttribute('viewBox', '0 0 16 16'); icon.setAttribute('class', 'accordion-icon'); icon.setAttribute('aria-hidden', 'true');
     const path = document.createElementNS(icon.namespaceURI, 'path');
     path.setAttribute('d', 'm3 6 5 5 5-5'); path.setAttribute('fill', 'none'); path.setAttribute('stroke', 'currentColor'); path.setAttribute('stroke-width', '1.5');
     icon.append(path);
-    toggle.append(thumb, label, icon); item.append(toggle, panel); element.append(item);
+    toggle.append(thumb, label, icon); item.append(toggle, panel); group.append(item);
     const clue = config && resultClue(config, data.answer);
     const unavailable = (target: HTMLElement) => {
       const text = bindText(document.createElement('span'), 'Preview unavailable'); text.className = 'stream-preview-unavailable'; target.replaceChildren(text);

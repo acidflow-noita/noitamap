@@ -711,5 +711,20 @@
   "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Pesan status tetap berada di bagian bawah tanpa menggeser tampilan peta. Nama streamer dan mode permainan ditampilkan dalam satu baris.",
   "Choose \"{{whatsNew}}\" in the header to read these notes again.": "Pilih \"{{whatsNew}}\" di bagian header untuk membaca catatan ini kembali.",
   "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "Titik koneksi bersinar dan berkedip perlahan saat terhubung. Gerakan yang minim membuatnya tetap stabil.",
-  "Round progress and sharing controls are aligned with the timer.": "Kontrol kemajuan putaran dan berbagi disesuaikan dengan timer."
+  "Round progress and sharing controls are aligned with the timer.": "Kontrol kemajuan putaran dan berbagi disesuaikan dengan timer.",
+  "Game settings": "Pengaturan game",
+  "Standings": "Klasemen",
+  "Equal scores share a rank.": "Skor yang sama menempati peringkat yang sama.",
+  "Share": "Bagikan",
+  "Copy link": "Salin tautan",
+  "Posted": "Diposting",
+  "Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.": "Jelajahi menggunakan tombol petunjuk. Setiap tombol menunjukkan nilai poinnya. Kembali ke belakang dan memperbesar tampilan tidak dikenakan biaya.",
+  "The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.": "Menu tersebut menampilkan {{dailyMode}} di samping mode permainan lainnya. Di ponsel, setiap mode ditampilkan dalam bentuk kartu ringkas.",
+  "The clue appears above its controls. On small screens, a cost of 0 means the move is free.": "Petunjuknya muncul di atas tombol-tombolnya. Pada layar kecil, biaya 0 berarti gerakan tersebut gratis.",
+  "Round count and duration are together in game setup.": "Jumlah putaran dan durasi diatur bersamaan saat menyiapkan permainan.",
+  "Round previews open below their row. Share, Save and the standings are closer together.": "Pratinjau babak ditampilkan di bawah barisnya masing-masing. Tombol \"Bagikan\", \"Simpan\", dan klasemen ditempatkan lebih berdekatan.",
+  "Clue navigation buttons show their keyboard shortcuts.": "Tombol navigasi Clue menampilkan pintasan keyboardnya.",
+  "More changes": "Perubahan lainnya",
+  "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "Pada hasil {{dailyMode}} yang dibagikan, {{share}} dan {{answers}} muncul di atas skor.",
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Ketika seorang streamer terhubung kembali saat babak terbuka sedang berlangsung, pin yang telah disimpannya siap untuk dikirimkan."
 }

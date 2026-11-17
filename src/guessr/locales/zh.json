@@ -711,5 +711,20 @@
   "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "状态消息会始终显示在底部，且不会移动地图。主播名称和游戏模式共用一行。",
   "Choose \"{{whatsNew}}\" in the header to read these notes again.": "请在页眉中选择“{{whatsNew}}”，以再次阅读这些说明。",
   "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.": "连接时，连接点会发光并缓慢闪烁。减少动作可使其保持稳定。",
-  "Round progress and sharing controls are aligned with the timer.": "回合进度和分享控件与计时器对齐。"
+  "Round progress and sharing controls are aligned with the timer.": "回合进度和分享控件与计时器对齐。",
+  "Game settings": "游戏设置",
+  "Standings": "积分榜",
+  "Equal scores share a rank.": "分数相同者并列同一名次。",
+  "Share": "分享",
+  "Copy link": "复制链接",
+  "Posted": "已发布",
+  "Explore with the clue controls. Each button shows its point cost. Moving back and zooming in are free.": "使用线索控制键进行探索。每个按钮上都标有相应的积分。返回和放大操作无需消耗积分。",
+  "The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.": "菜单中，{{dailyMode}}与其他游戏模式并列显示。在手机上，每种模式都有一个紧凑的卡片。",
+  "The clue appears above its controls. On small screens, a cost of 0 means the move is free.": "提示会显示在操作按钮上方。在小屏幕上，费用为0表示该操作是免费的。",
+  "Round count and duration are together in game setup.": "回合数和游戏时长在游戏设置中一并设定。",
+  "Round previews open below their row. Share, Save and the standings are closer together.": "各轮赛事预览显示在所在行下方。分享、收藏和积分榜的布局更加紧凑。",
+  "Clue navigation buttons show their keyboard shortcuts.": "提示导航按钮会显示其键盘快捷键。",
+  "More changes": "更多更改",
+  "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "在共享的 {{dailyMode}} 结果中，{{share}} 和 {{answers}} 会显示在分数上方。",
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "当主播在开放回合期间重新连接时，其保存的定位点已准备好提交。"
 }
