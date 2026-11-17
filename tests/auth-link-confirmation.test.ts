@@ -17,12 +17,22 @@ import { confirmAccountLink } from '../src/auth/confirm-link';
 const review = { current: [{ provider: 'patreon' as const, userId: '123', name: 'Current' }],
   target: { provider: 'twitch' as const, userId: '456', name: '<img src=x onerror=alert(1)>' } };
 afterEach(() => { document.body.replaceChildren(); mocks.listeners.clear(); mocks.prefix = ''; });
-it('defaults focus to Cancel, renders identities as text and does not link on dismiss', async () => {
+it('hides account details from the rendered page until explicitly revealed and does not link on dismiss', async () => {
   const decision = confirmAccountLink(review);
   await vi.waitFor(() => expect(document.querySelector('dialog[open]')).not.toBeNull());
   expect(document.activeElement?.textContent).toBe('Cancel');
   expect(document.querySelector('img')).toBeNull();
+  expect(document.body.textContent).not.toContain(review.target.name);
+  expect(document.body.textContent).not.toContain(review.current[0].name);
+  expect(document.body.innerHTML).not.toContain(review.current[0].userId);
+  expect(document.body.innerHTML).not.toContain(review.target.userId);
+  const visibility = document.querySelector<HTMLButtonElement>('.account-detail-visibility')!;
+  expect(visibility.getAttribute('aria-pressed')).toBe('false'); visibility.click();
   expect(document.querySelector('strong')?.textContent).toContain(review.target.name);
+  expect(document.querySelector('img')).toBeNull();
+  expect(visibility.getAttribute('aria-pressed')).toBe('true'); visibility.click();
+  expect(document.body.textContent).not.toContain(review.target.name);
+  expect(document.body.innerHTML).not.toContain(review.current[0].userId);
   (document.activeElement as HTMLButtonElement).click();
   expect(await decision).toBe(false); expect(document.querySelector('dialog')).toBeNull();
   expect(mocks.listeners.size).toBe(0);
@@ -31,6 +41,8 @@ it('updates the confirmation labels on language change and requires a single exp
   const decision = confirmAccountLink(review);
   await vi.waitFor(() => expect(document.querySelector('dialog[open]')).not.toBeNull());
   mocks.prefix = 'Translated: '; mocks.listeners.forEach(fn => fn());
+  expect(document.body.textContent).not.toContain(review.target.name);
+  expect(document.querySelector('.account-detail-visibility')?.textContent).toBe('Translated: Show account details');
   const button = document.querySelector('button.theme-primary') as HTMLButtonElement;
   expect(button.textContent).toBe('Translated: Link this account');
   button.dispatchEvent(new MouseEvent('click', { detail: 2 }));

@@ -18,5 +18,8 @@
   "Start this connection from the map.": "Toto spojení spusťte z mapy.",
   "Return to the site that started this connection.": "Vraťte se na stránku, kde toto spojení vzniklo.",
   "Could not disconnect this account.": "Tento účet se nepodařilo odpojit.",
-  "Twitch chat connection is temporarily unavailable.": "Připojení k chatu na Twitchi je dočasně nedostupné."
+  "Twitch chat connection is temporarily unavailable.": "Připojení k chatu na Twitchi je dočasně nedostupné.",
+  "Show account details": "Zobrazit podrobnosti účtu",
+  "Hide account details": "Skrýt údaje o účtu",
+  "Account details hidden": "Údaje o účtu jsou skryté"
 }

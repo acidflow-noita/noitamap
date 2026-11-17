@@ -708,5 +708,9 @@
   "The Send button shows a spinner while sending and a checkmark after confirmation.": "Під час надсилання на кнопці «Надіслати» відображається індикатор завантаження, а після підтвердження — галочка.",
   "The account menu now keeps sign-in, Pro status and sign-out together.": "У меню облікового запису тепер в одному розділі об’єднано функції входу, статусу «Pro» та виходу.",
   "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.": "Залишайтеся у системі після закриття та повторного відкриття браузера. Статус Pro можна оновити у своєму обліковому записі.",
-  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Статус з'єднання відображається на значку з логотипом. Наведіть курсор або виберіть цей значок, щоб переглянути детальну інформацію."
+  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Статус з'єднання відображається на значку з логотипом. Наведіть курсор або виберіть цей значок, щоб переглянути детальну інформацію.",
+  "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Лобі, термін дії яких закінчився, більше не відкриваються як «готові». Якщо вийти з недоступної гри, ви повернетеся до меню.",
+  "Account-link confirmation hides account names and IDs until you choose to show them.": "Функція підтвердження прив’язки облікових записів приховує імена та ідентифікатори облікових записів, доки ви не вирішите їх відобразити.",
+  "Account-link buttons now match the rest of the interface.": "Кнопки прив’язки облікових записів тепер гармонійно поєднуються з рештою інтерфейсу.",
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Кнопка «Поділитися» тепер розташована поруч із {{startGame}} у лобі. Її стан відображається нижче."
 }

@@ -690,5 +690,9 @@
   "The Send button shows a spinner while sending and a checkmark after confirmation.": "The Send button shows a spinner while sending and a checkmark after confirmation.",
   "The account menu now keeps sign-in, Pro status and sign-out together.": "The account menu now keeps sign-in, Pro status and sign-out together.",
   "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.": "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.",
-  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Connection status appears in the logo pin. Hover or focus the pin for details."
+  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Connection status appears in the logo pin. Hover or focus the pin for details.",
+  "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.",
+  "Account-link confirmation hides account names and IDs until you choose to show them.": "Account-link confirmation hides account names and IDs until you choose to show them.",
+  "Account-link buttons now match the rest of the interface.": "Account-link buttons now match the rest of the interface.",
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath."
 }

@@ -128,6 +128,11 @@ describe('shared channel guess picker', () => {
     expect(f.main.querySelector('.pvp-lobby')!.textContent).toContain('You will play this location after your opponent.');
     expect(f.main.querySelector('.stream-viewer-clue .clue')).toBeNull();
     expect(f.viewer.watchChat).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+    parallel.events!.status('stopped', 'This game is no longer active.');
+    expect(f.main.querySelector<HTMLElement>('.pvp-lobby')!.hidden).toBe(true);
+    expect(f.main.querySelector('.stream-clue-empty')!.textContent).toContain('This game is no longer active.');
+    f.button('Exit game').click(); expect(f.leave).toHaveBeenCalledOnce();
+    expect(parallel.command).toHaveBeenCalledTimes(1);
   });
 
   it('keeps a conceded PvP match on results, then uses its published result URL instead of returning home', async () => {

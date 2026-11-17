@@ -690,5 +690,9 @@
   "The Send button shows a spinner while sending and a checkmark after confirmation.": "「送信」ボタンは、送信中はローディングアイコンが表示され、確認後はチェックマークが表示されます。",
   "The account menu now keeps sign-in, Pro status and sign-out together.": "アカウントメニューでは、ログイン、Proステータス、ログアウトがまとめて表示されるようになりました。",
   "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.": "ブラウザを閉じてから再度開いても、ログイン状態は維持されます。アカウントから「Pro」ステータスを更新することができます。",
-  "Connection status appears in the logo pin. Hover or focus the pin for details.": "接続状況はロゴのピンに表示されます。詳細を確認するには、ピンにカーソルを合わせたり、ピンをアクティブにしたりしてください。"
+  "Connection status appears in the logo pin. Hover or focus the pin for details.": "接続状況はロゴのピンに表示されます。詳細を確認するには、ピンにカーソルを合わせたり、ピンをアクティブにしたりしてください。",
+  "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "有効期限が切れたロビーは、準備完了状態として再開されなくなりました。参加不可のゲームを離脱すると、メニュー画面に戻ります。",
+  "Account-link confirmation hides account names and IDs until you choose to show them.": "アカウント連携の確認画面では、表示を選択するまでアカウント名とIDは非表示になります。",
+  "Account-link buttons now match the rest of the interface.": "アカウント連携ボタンが、インターフェースの他の部分と統一されたデザインになりました。",
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "ロビー内の{{startGame}}の横に、共有ボタンが表示されるようになりました。そのステータスはボタンの下に表示されます。"
 }

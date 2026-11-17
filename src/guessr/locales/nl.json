@@ -690,5 +690,9 @@
   "The Send button shows a spinner while sending and a checkmark after confirmation.": "De knop ‘Verzenden’ toont een draaiend pictogram tijdens het verzenden en een vinkje na bevestiging.",
   "The account menu now keeps sign-in, Pro status and sign-out together.": "In het accountmenu staan nu ‘Inloggen’, ‘Pro-status’ en ‘Uitloggen’ bij elkaar.",
   "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.": "Blijf ingelogd wanneer je de browser sluit en weer opent. Je kunt je Pro-status vernieuwen via je account.",
-  "Connection status appears in the logo pin. Hover or focus the pin for details.": "De verbindingsstatus wordt weergegeven in de logo-pin. Beweeg de muis over de pin of selecteer deze voor meer informatie."
+  "Connection status appears in the logo pin. Hover or focus the pin for details.": "De verbindingsstatus wordt weergegeven in de logo-pin. Beweeg de muis over de pin of selecteer deze voor meer informatie.",
+  "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Lobby’s waarvan de geldigheidsduur is verstreken, worden niet meer heropend als ‘klaar’. Als je een spel verlaat dat niet beschikbaar is, ga je terug naar het menu.",
+  "Account-link confirmation hides account names and IDs until you choose to show them.": "Bij de bevestiging van een accountkoppeling worden accountnamen en ID’s verborgen totdat je ervoor kiest om ze weer te geven.",
+  "Account-link buttons now match the rest of the interface.": "De knoppen voor het koppelen van accounts passen nu bij de rest van de interface.",
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "De knop ‘Delen’ staat nu naast {{startGame}} in de lobby. De status ervan wordt eronder weergegeven."
 }

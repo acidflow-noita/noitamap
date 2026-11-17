@@ -25,6 +25,7 @@ function memoryStorage() {
 beforeEach(() => {
   vi.useFakeTimers(); Socket.all = [];
   vi.stubGlobal('localStorage', memoryStorage()); vi.stubGlobal('sessionStorage', memoryStorage()); vi.stubGlobal('WebSocket', Socket);
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('WebSocket required', { status: 426 })));
 });
 afterEach(() => { connection?.dispose(); connection = undefined; vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 async function authorized(socket: Socket) {
@@ -32,6 +33,38 @@ async function authorized(socket: Socket) {
   socket.receive({ type: 'authorized', ticket: 'safe-resume-ticket', expiresAt: Date.now() + 600000,
     player: { id: '200', name: 'Player', login: 'player' }, now: Date.now() });
 }
+it('stops retrying a confirmed missing game and releases a pending End game immediately', async () => {
+  vi.mocked(fetch).mockResolvedValue(new Response('Game unavailable', { status: 404 }));
+  const events = { message: vi.fn(), status: vi.fn() };
+  connection = new ParallelConnection('https://guessr-api.sage-data.xyz', game, 'host:100', async () => ({ role: 'host', ticket: 'test-ticket' }), events);
+  const ended = expect(connection.command({ type: 'quit', id: 'quit-old-game' })).rejects.toThrow('This game is no longer active.');
+  Socket.all[0].close(1006);
+  await vi.advanceTimersByTimeAsync(10); await ended;
+  expect(events.status).toHaveBeenLastCalledWith('stopped', 'This game is no longer active.');
+  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(vi.mocked(fetch).mock.calls[0][1]).toMatchObject({ credentials: 'omit', cache: 'no-store' });
+  connection.retry(); await vi.advanceTimersByTimeAsync(120000);
+  expect(Socket.all).toHaveLength(1);
+  await expect(connection.command({ type: 'quit', id: 'quit-again' })).rejects.toThrow('This game is no longer active.');
+});
+it.each([403, 429, 503])('does not mark a game expired after an HTTP %s and limits failure probes', async status => {
+  vi.mocked(fetch).mockImplementation(async () => new Response('Game unavailable', { status }));
+  const events = { message: vi.fn(), status: vi.fn() };
+  connection = new ParallelConnection('https://guessr-api.sage-data.xyz', game, '200', async () => ({ role: 'player', accessToken: 'test-token' }), events);
+  Socket.all[0].close(1006); await vi.advanceTimersByTimeAsync(1500);
+  expect(connection.state()).not.toBe('stopped'); expect(Socket.all.length).toBeGreaterThan(1);
+  Socket.all.at(-1)!.close(1006); await vi.advanceTimersByTimeAsync(1500);
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+it('ignores a stale availability response after a successful reconnect', async () => {
+  let resolve!: (response: Response) => void;
+  vi.mocked(fetch).mockImplementation(() => new Promise<Response>(done => { resolve = done; }));
+  connection = new ParallelConnection('https://guessr-api.sage-data.xyz', game, '200', async () => ({ role: 'player', accessToken: 'test-token' }), { message() {}, status() {} });
+  Socket.all[0].close(1006); await vi.advanceTimersByTimeAsync(1500);
+  await authorized(Socket.all.at(-1)!);
+  resolve(new Response('Game unavailable', { status: 404 })); await vi.advanceTimersByTimeAsync(10);
+  expect(connection.connected()).toBe(true); expect(connection.state()).toBe('connected');
+});
 it('automatically reconnects and replays exactly the same unacknowledged submission without persisting provider credentials', async () => {
   const auth = vi.fn(async () => ({ role: 'player' as const, accessToken: 'test-provider-token-not-real' }));
   const events = { message: vi.fn(), status: vi.fn() };

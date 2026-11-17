@@ -18,5 +18,8 @@
   "Start this connection from the map.": "Commencez cette connexion à partir de la carte.",
   "Return to the site that started this connection.": "Retournez sur le site à l'origine de cette connexion.",
   "Could not disconnect this account.": "Impossible de déconnecter ce compte.",
-  "Twitch chat connection is temporarily unavailable.": "La connexion au chat Twitch est temporairement indisponible."
+  "Twitch chat connection is temporarily unavailable.": "La connexion au chat Twitch est temporairement indisponible.",
+  "Show account details": "Afficher les détails du compte",
+  "Hide account details": "Masquer les informations du compte",
+  "Account details hidden": "Détails du compte masqués"
 }

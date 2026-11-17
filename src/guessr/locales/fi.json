@@ -690,5 +690,9 @@
   "The Send button shows a spinner while sending and a checkmark after confirmation.": "”Lähetä”-painikkeessa näkyy pyörivä kuvake lähetyksen aikana ja valintamerkki vahvistuksen jälkeen.",
   "The account menu now keeps sign-in, Pro status and sign-out together.": "Tili-valikossa on nyt koottu yhteen kirjautuminen, Pro-tila ja uloskirjautuminen.",
   "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.": "Pysy kirjautuneena sisään, kun suljet selaimen ja avaat sen uudelleen. Voit päivittää Pro-tilan tilisi kautta.",
-  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Yhteyden tila näkyy logon merkissä. Vie hiiri merkin päälle tai valitse se saadaksesi lisätietoja."
+  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Yhteyden tila näkyy logon merkissä. Vie hiiri merkin päälle tai valitse se saadaksesi lisätietoja.",
+  "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Aikansa täyttäneet odotushuoneet eivät enää avaudu uudelleen valmiina. Kun poistut pelistä, johon ei ole pääsyä, palaat valikkoon.",
+  "Account-link confirmation hides account names and IDs until you choose to show them.": "Tilin linkityksen vahvistus piilottaa tilien nimet ja tunnukset, kunnes päätät näyttää ne.",
+  "Account-link buttons now match the rest of the interface.": "Tilin linkityspainikkeet ovat nyt yhdenmukaiset muun käyttöliittymän kanssa.",
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Jakamispainike sijaitsee nyt aulassa {{startGame}}-painikkeen vieressä. Sen tila näkyy sen alla."
 }

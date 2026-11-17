@@ -690,5 +690,9 @@
   "The Send button shows a spinner while sending and a checkmark after confirmation.": "Tombol \"Kirim\" menampilkan ikon putar saat proses pengiriman berlangsung dan tanda centang setelah konfirmasi.",
   "The account menu now keeps sign-in, Pro status and sign-out together.": "Menu akun kini menampilkan opsi masuk, status Pro, dan keluar dalam satu tempat.",
   "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.": "Tetap masuk saat Anda menutup dan membuka kembali browser. Anda dapat memperbarui status Pro dari akun Anda.",
-  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Status koneksi ditampilkan pada pin logo. Arahkan kursor atau sorot pin tersebut untuk melihat detailnya."
+  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Status koneksi ditampilkan pada pin logo. Arahkan kursor atau sorot pin tersebut untuk melihat detailnya.",
+  "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Lobi yang sudah kedaluwarsa tidak akan dibuka kembali sebagai \"siap\". Jika Anda keluar dari permainan yang tidak tersedia, Anda akan kembali ke menu.",
+  "Account-link confirmation hides account names and IDs until you choose to show them.": "Konfirmasi pengaitan akun menyembunyikan nama dan ID akun sampai Anda memilih untuk menampilkannya.",
+  "Account-link buttons now match the rest of the interface.": "Tombol penghubungan akun kini tampil serasi dengan antarmuka lainnya.",
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Tombol berbagi kini terletak di sebelah {{startGame}} di lobi. Statusnya ditampilkan di bawahnya."
 }

@@ -18,5 +18,8 @@
   "Start this connection from the map.": "Почніть це з'єднання з карти.",
   "Return to the site that started this connection.": "Поверніться на сайт, з якого почалося це з’єднання.",
   "Could not disconnect this account.": "Не вдалося від'єднати цей обліковий запис.",
-  "Twitch chat connection is temporarily unavailable.": "Зв'язок із чатом Twitch тимчасово недоступний."
+  "Twitch chat connection is temporarily unavailable.": "Зв'язок із чатом Twitch тимчасово недоступний.",
+  "Show account details": "Показати відомості про обліковий запис користувача",
+  "Hide account details": "Приховати дані облікового запису користувача",
+  "Account details hidden": "Дані облікового запису користувача приховані"
 }

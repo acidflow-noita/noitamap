@@ -3,9 +3,14 @@ import { bindAttribute, bindText, guessrLocale, tr } from './i18n';
 
 // Change this ID only when the player-facing notes below change.
 export const GUESSR_CHANGELOG = {
-  id: '2026-11-16-ui',
-  date: '2026-11-16',
+  id: '2026-11-17-lobby-recovery',
+  date: '2026-11-17',
   notes: [
+    "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.",
+    "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.",
+    "Account-link confirmation hides account names and IDs until you choose to show them.",
+    "Account-link buttons now match the rest of the interface.",
+
     "Updated the game layout with a centered timer and clearer controls.",
     "Map zoom and reset controls are now visible on desktop and mobile.",
     "Pan buttons use a directional layout. Keyboard shortcuts use the same blue labels as the drawing tools.",
@@ -68,7 +73,7 @@ export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
     date.dateTime = release.date; date.className = 'muted';
     const notes = document.createElement('ul'); notes.className = 'guessr-changelog-notes';
     const labels = () => ({ streaming: tr('I’m streaming'), streamMode: tr('Chat vs Streamer'),
-      dailyMode: tr('Daily'), received: tr('Guess received'), howToPlay: tr('How to play'), whatsNew: tr("What's new") });
+      dailyMode: tr('Daily'), received: tr('Guess received'), startGame: tr('Start game'), howToPlay: tr('How to play'), whatsNew: tr("What's new") });
     for (const text of release.notes) notes.append(bindText(document.createElement('li'), text, labels));
     body.append(date, notes);
     dialog.append(header, body); document.body.append(dialog);

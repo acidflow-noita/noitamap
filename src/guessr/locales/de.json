@@ -690,5 +690,9 @@
   "The Send button shows a spinner while sending and a checkmark after confirmation.": "Die Schaltfläche „Senden“ zeigt während des Sendevorgangs einen Ladekreis und nach der Bestätigung ein Häkchen an.",
   "The account menu now keeps sign-in, Pro status and sign-out together.": "Im Konto-Menü sind nun die Funktionen „Anmelden“, „Pro-Status“ und „Abmelden“ zusammengefasst.",
   "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.": "Bleiben Sie angemeldet, wenn Sie den Browser schließen und erneut öffnen. Sie können Ihren Pro-Status über Ihr Konto aktualisieren.",
-  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Der Verbindungsstatus wird in der Logo-Pins angezeigt. Bewegen Sie den Mauszeiger über die Pins oder wählen Sie sie aus, um weitere Informationen anzuzeigen."
+  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Der Verbindungsstatus wird in der Logo-Pins angezeigt. Bewegen Sie den Mauszeiger über die Pins oder wählen Sie sie aus, um weitere Informationen anzuzeigen.",
+  "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Abgelaufene Lobbys werden nicht mehr als „bereit“ wiedereröffnet. Wenn du ein nicht verfügbares Spiel verlässt, gelangst du zurück zum Menü.",
+  "Account-link confirmation hides account names and IDs until you choose to show them.": "Bei der Bestätigung der Kontenverknüpfung werden die Kontonamen und -IDs ausgeblendet, bis Sie sie anzeigen lassen.",
+  "Account-link buttons now match the rest of the interface.": "Die Schaltflächen zum Verknüpfen von Konten passen nun zum Rest der Benutzeroberfläche.",
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Die Schaltfläche „Teilen“ befindet sich nun neben {{startGame}} in der Lobby. Der Status wird darunter angezeigt."
 }

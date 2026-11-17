@@ -708,5 +708,9 @@
   "The Send button shows a spinner while sending and a checkmark after confirmation.": "Tlačítko „Odeslat“ zobrazuje během odesílání ikonu načítání a po potvrzení zaškrtnutí.",
   "The account menu now keeps sign-in, Pro status and sign-out together.": "V nabídce účtu jsou nyní funkce přihlášení, stav Pro a odhlášení seskupeny dohromady.",
   "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.": "Zůstaňte přihlášeni i po zavření a opětovném otevření prohlížeče. Status „Pro“ si můžete obnovit ve svém účtu.",
-  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Stav připojení se zobrazuje v ikoně loga. Pro zobrazení podrobností najeďte kurzorem na ikonu nebo ji označte."
+  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Stav připojení se zobrazuje v ikoně loga. Pro zobrazení podrobností najeďte kurzorem na ikonu nebo ji označte.",
+  "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Lobby, jejichž platnost vypršela, se již znovu neotevřou jako připravené. Pokud opustíte nedostupnou hru, vrátíte se do nabídky.",
+  "Account-link confirmation hides account names and IDs until you choose to show them.": "Při potvrzení propojení účtů se názvy a ID účtů skryjí, dokud se nerozhodnete je zobrazit.",
+  "Account-link buttons now match the rest of the interface.": "Tlačítka pro propojení účtů nyní ladí se zbytkem uživatelského rozhraní.",
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Tlačítko pro sdílení se nyní nachází vedle {{startGame}} v lobby. Jeho stav se zobrazuje pod ním."
 }

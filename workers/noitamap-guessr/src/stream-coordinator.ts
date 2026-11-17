@@ -1,4 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
+import { STREAM_LIVE_RETENTION_MS } from '../../../src/guessr/stream-lifetime';
 import type { Env } from './index';
 import { authorizeSocket, socketTicket } from './stream-socket-auth';
 import { persistStreamResult } from './result-publication';
@@ -96,8 +97,8 @@ export class StreamCoordinator extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
     const origin = request.headers.get('Origin');
     if (!origin || !(this.env.ALLOWED_ORIGINS ?? '').split(',').map(v => v.trim()).includes(origin)) return new Response('Forbidden', { status: 403 });
-    if (request.method !== 'GET' || request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') return new Response('WebSocket required', { status: 426 });
-    if (!this.record || Date.now() > this.retentionDeadline()) return new Response('Game unavailable', { status: 404 });
+    if (!this.record || Date.now() >= this.retentionDeadline()) return new Response('Game unavailable', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+    if (request.method !== 'GET' || request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') return new Response('WebSocket required', { status: 426, headers: { 'Cache-Control': 'no-store' } });
     this.record.networkKey ??= newNetworkKey();
     const sockets = this.ctx.getWebSockets();
     if (sockets.length >= (this.record.game.pvp ? 8 : STREAM_MAX_PLAYERS * 2 + 32)
@@ -418,9 +419,9 @@ export class StreamCoordinator extends DurableObject<Env> {
   private retentionDeadline(): number {
     const record = this.record!;
     // Never erase completed scores merely because publication is unavailable.
-    return record.publishedAt ? record.publishedAt + 86400000
+    return record.publishedAt ? record.publishedAt + STREAM_LIVE_RETENTION_MS
       : record.game.stage === 'complete' ? Infinity : record.game.pvp && record.game.timing!.phase === 'lobby'
-        ? record.game.session.expiresAt : record.game.session.createdAt + 86400000;
+        ? record.game.session.expiresAt : record.game.session.createdAt + STREAM_LIVE_RETENTION_MS;
   }
   async alarm(): Promise<void> {
     await this.exclusive(async () => {

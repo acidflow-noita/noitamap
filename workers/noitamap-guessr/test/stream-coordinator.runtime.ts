@@ -16,6 +16,27 @@ import ownershipSchema from '../migrations/0007_result_ownership.sql?raw';
 const sockets: WebSocket[] = [];
 afterEach(async () => { sockets.splice(0).forEach(s => { try { s.close(); } catch {} }); await reset(); });
 const secret = 'runtime-test-socket-key-never-used-in-production';
+it('reports missing and expired games without an upgrade, but keeps live games available', async () => {
+  const bindings = { ...env, STREAM_ENABLED: 'true', GAME_SIGNING_SECRET: '' } as Env;
+  const probe = (id: string) => handle(new Request(`https://api.test/api/streams/live/${id}/socket`, {
+    headers: { Origin: 'https://dynamic-map.noitamap.com' },
+  }), bindings);
+  const missing = await probe(crypto.randomUUID());
+  expect(missing.status).toBe(404); expect(await missing.text()).toBe('Game unavailable');
+  expect(missing.headers.get('Access-Control-Allow-Origin')).toBe('https://dynamic-map.noitamap.com');
+  const { stub, session } = await fixture();
+  const available = await probe(session.id); expect(available.status).toBe(426);
+  expect(available.headers.get('Cache-Control')).toBe('no-store');
+  expect(await available.text()).toBe('WebSocket required');
+  await runInDurableObject(stub, (_, state) => {
+    const row = state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one();
+    const record = JSON.parse(row.data); record.game.session.createdAt = Date.now() - 86400001;
+    state.storage.sql.exec('UPDATE game SET data=? WHERE id=1', JSON.stringify(record));
+  });
+  await evictDurableObject(stub, { webSockets: 'hibernate' });
+  const expired = await probe(session.id); expect(expired.status).toBe(404);
+  expect(await expired.text()).toBe('Game unavailable');
+});
 async function fixture(mode: 'stream' | 'pvp' = 'stream') {
   const now = Date.now(), service = new StreamService(streamSource(), streamSecret);
   const session = { ...await service.start(streamHost, now, 'parallel', 3, { mode }), live: true as const };

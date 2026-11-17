@@ -18,5 +18,8 @@
   "Start this connection from the map.": "Aloita tämä reitti kartalta.",
   "Return to the site that started this connection.": "Palaa sivustolle, josta tämä yhteys alkoi.",
   "Could not disconnect this account.": "Tätä tiliä ei voitu irrottaa.",
-  "Twitch chat connection is temporarily unavailable.": "Twitch-chatin yhteys ei ole hetkellisesti käytettävissä."
+  "Twitch chat connection is temporarily unavailable.": "Twitch-chatin yhteys ei ole hetkellisesti käytettävissä.",
+  "Show account details": "Näytä tilitiedot",
+  "Hide account details": "Piilota tilitiedot",
+  "Account details hidden": "Tilitiedot piilotettu"
 }

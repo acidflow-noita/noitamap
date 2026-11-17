@@ -690,5 +690,9 @@
   "The Send button shows a spinner while sending and a checkmark after confirmation.": "Knappen ”Skicka” visar en laddningsindikator under överföringen och en bock efter bekräftelse.",
   "The account menu now keeps sign-in, Pro status and sign-out together.": "I kontomenyn finns nu inloggning, Pro-status och utloggning samlade på ett ställe.",
   "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.": "Förbli inloggad när du stänger och öppnar webbläsaren igen. Du kan uppdatera Pro-statusen från ditt konto.",
-  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Anslutningsstatus visas i logotypens ikon. Håll muspekaren över ikonen eller markera den för att se mer information."
+  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Anslutningsstatus visas i logotypens ikon. Håll muspekaren över ikonen eller markera den för att se mer information.",
+  "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Lobbyer som har löpt ut öppnas inte längre som ”redo”. Om du lämnar ett spel som inte är tillgängligt återgår du till menyn.",
+  "Account-link confirmation hides account names and IDs until you choose to show them.": "Bekräftelsen av kontokopplingen döljer kontonamn och ID:n tills du väljer att visa dem.",
+  "Account-link buttons now match the rest of the interface.": "Knapparna för att koppla samman konton har nu samma utseende som resten av gränssnittet.",
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Delningsknappen finns nu bredvid {{startGame}} i lobbyn. Dess status visas nedanför."
 }

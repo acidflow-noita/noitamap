@@ -699,5 +699,9 @@
   "The Send button shows a spinner while sending and a checkmark after confirmation.": "El botón «Enviar» muestra un icono giratorio mientras se realiza el envío y una marca de verificación tras la confirmación.",
   "The account menu now keeps sign-in, Pro status and sign-out together.": "El menú de la cuenta ahora agrupa en un mismo lugar el inicio de sesión, el estado «Pro» y el cierre de sesión.",
   "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.": "Mantén la sesión abierta cuando cierres y vuelvas a abrir el navegador. Puedes actualizar el estado de Pro desde tu cuenta.",
-  "Connection status appears in the logo pin. Hover or focus the pin for details.": "El estado de la conexión aparece en el icono del logotipo. Pasa el cursor por encima del icono o selecciona el icono para ver más detalles."
+  "Connection status appears in the logo pin. Hover or focus the pin for details.": "El estado de la conexión aparece en el icono del logotipo. Pasa el cursor por encima del icono o selecciona el icono para ver más detalles.",
+  "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Las salas caducadas ya no se reabren como «listas». Al salir de una partida no disponible, volverás al menú.",
+  "Account-link confirmation hides account names and IDs until you choose to show them.": "La confirmación de la vinculación de cuentas oculta los nombres y los ID de las cuentas hasta que decidas mostrarlos.",
+  "Account-link buttons now match the rest of the interface.": "Los botones para vincular cuentas ahora tienen el mismo aspecto que el resto de la interfaz.",
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "El botón para compartir se encuentra ahora junto a {{startGame}} en la sala de espera. Su estado aparece justo debajo."
 }

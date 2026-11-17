@@ -18,5 +18,8 @@
   "Start this connection from the map.": "Starta denna anslutning från kartan.",
   "Return to the site that started this connection.": "Gå tillbaka till den webbplats där denna anslutning inleddes.",
   "Could not disconnect this account.": "Det gick inte att koppla bort det här kontot.",
-  "Twitch chat connection is temporarily unavailable.": "Anslutningen till Twitch-chatten är tillfälligt otillgänglig."
+  "Twitch chat connection is temporarily unavailable.": "Anslutningen till Twitch-chatten är tillfälligt otillgänglig.",
+  "Show account details": "Visa kontouppgifter",
+  "Hide account details": "Dölj kontouppgifter",
+  "Account details hidden": "Kontouppgifter dolda"
 }

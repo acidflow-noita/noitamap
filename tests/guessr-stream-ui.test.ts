@@ -94,6 +94,36 @@ it.each(['lobby', 'warmup'] as const)('restores the coordinator-owned %s without
   expect(ui.game?.session.id).toBe(f.game.session.id);
   expect(ui.game?.timing?.phase).toBe(phase); expect(ui.game?.timing?.deadline).toBe(f.game.timing!.deadline);
 });
+it('does not present an expired saved lobby as a ready game, and leaves its local data intact', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(streamNow + 86400001); mocks.remote = true;
+  const f = await fixture(); history.replaceState(null, '', '/guess/stream/');
+  f.game.session.transport = 'parallel'; f.game.session.protocol = 2;
+  startStreamTiming(f.game, 90, streamNow, true);
+  const saved = JSON.stringify(f.game); localStorage.setItem(STREAM_SESSION_KEY, saved);
+  ui = new StreamUI(f.hooks);
+  expect(ui.game).toBeNull(); expect(localStorage.getItem(STREAM_SESSION_KEY)).toBe(saved);
+});
+it('still restores a fresh remote lobby and keeps completed results beyond the live-game deadline', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(streamNow + 10000); mocks.remote = true;
+  const f = await fixture(); history.replaceState(null, '', '/guess/stream/');
+  f.game.session.transport = 'parallel'; f.game.session.protocol = 2;
+  startStreamTiming(f.game, 90, streamNow, true);
+  localStorage.setItem(STREAM_SESSION_KEY, JSON.stringify(f.game));
+  ui = new StreamUI(f.hooks); expect(ui.game?.session.id).toBe(f.game.session.id); ui.suspend();
+  f.game.stage = 'complete'; vi.setSystemTime(streamNow + 172800000);
+  localStorage.setItem(STREAM_SESSION_KEY, JSON.stringify(f.game));
+  ui = new StreamUI(f.hooks); expect(ui.game?.stage).toBe('complete');
+});
+it('ends a confirmed unavailable game locally without waiting for a nonexistent socket acknowledgement', async () => {
+  const f = await fixture(); f.game.session.transport = 'parallel';
+  ui = new StreamUI(f.hooks); ui.game = f.game;
+  const socket = { command: vi.fn(), dispose: vi.fn() };
+  Object.assign(ui, { coordinatorUnavailable: true, parallel: socket });
+  localStorage.setItem(STREAM_SESSION_KEY, JSON.stringify(f.game));
+  await ui.quit();
+  expect(socket.command).not.toHaveBeenCalled(); expect(socket.dispose).toHaveBeenCalledOnce();
+  expect(ui.game).toBeNull(); expect(localStorage.getItem(STREAM_SESSION_KEY)).toBeNull();
+});
 
 async function liveFixture(announcements = false) {
   const f = await fixture();
@@ -108,6 +138,34 @@ async function liveFixture(announcements = false) {
   await flush();
   return f;
 }
+
+it.each([[false, 3], [true, 1]] as const)('keeps sharing beside Start and posts automatically and manually through the production API (announcement: %s)', async (announcements, count) => {
+  vi.useFakeTimers(); vi.setSystemTime(streamNow); mocks.remote = true;
+  const f = await fixture(); f.game.session.transport = 'parallel';
+  startStreamTiming(f.game, 90, streamNow, true); f.game.shareAnnouncements = announcements;
+  const request = vi.fn(async () => announcements ? new Response(null, { status: 204 })
+    : Response.json({ data: [{ is_sent: true, message_id: 'test-message' }] }));
+  vi.stubGlobal('fetch', request);
+  ui = new StreamUI(f.hooks); ui.game = f.game;
+  Object.assign(ui, { autoShareOnConnect: true, parallel: { connected: () => true, state: () => 'connected', now: () => Date.now(), dispose() {} },
+    setupCredentials: { accessToken: 'test-only-posting-token', clientId: 'client', userId: f.game.session.host.id,
+      scopes: ['user:write:chat', 'moderator:manage:announcements'], expiresAt: streamNow + 600000 } });
+  ui.render();
+  const share = document.querySelector<HTMLButtonElement>('.stream-lobby-actions #stream-share')!;
+  expect(share).not.toBeNull(); expect(share.nextElementSibling?.querySelector('#stream-start-game')).not.toBeNull();
+  (ui as unknown as { connectGame(): void }).connectGame(); await vi.advanceTimersByTimeAsync(2400);
+  expect(request).toHaveBeenCalledTimes(count);
+  expect(document.querySelector('.stream-start-panel #stream-share-status')!.textContent).toBe('Game link shared in chat.');
+  await vi.advanceTimersByTimeAsync(2200); expect(share.disabled).toBe(false);
+  share.click(); await vi.advanceTimersByTimeAsync(2400); expect(request).toHaveBeenCalledTimes(count * 2);
+  for (const [url, init] of request.mock.calls as unknown as [string, RequestInit][]) {
+    const body = JSON.parse(init.body as string);
+    expect(body.message).toContain('/guess/' + f.game.session.host.login + '/');
+    if (announcements) expect(new URL(url).searchParams.get('broadcaster_id')).toBe(f.game.session.host.id);
+    else expect(body).toMatchObject({ broadcaster_id: f.game.session.host.id, sender_id: f.game.session.host.id });
+  }
+  expect(f.game.timing!.phase).toBe('lobby');
+});
 
 it.each([[false, 3], [true, 1]] as const)('automatically posts invitations on game creation, then waits for an explicit start (announcement: %s)', async (announcements, posts) => {
   vi.useFakeTimers(); vi.setSystemTime(streamNow);

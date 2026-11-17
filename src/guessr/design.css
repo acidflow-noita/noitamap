@@ -18,8 +18,14 @@
 #guess-app button.primary { background: var(--game-action); border-color: var(--game-action); color: #fff; box-shadow: none; }
 #guess-app button.primary:disabled { opacity: var(--bs-btn-disabled-opacity,.65); background: var(--game-action); color: #fff; }
 #guess-app button.primary:active:not(:disabled) { transform: none; }
+#guess-app :is(button.secondary, .btn-outline.theme-secondary, .guessr-help, .guessr-exit),
+body:has(#guess-app) dialog .btn-outline.theme-secondary {
+  color: #f1f5f9; background: #1e293b; border: 1px solid #475569; box-shadow: none;
+}
 @media (hover: hover) and (pointer: fine) {
   #guess-app button.primary:hover:not(:disabled) { background: var(--game-action-hover); border-color: var(--game-action-hover); }
+  #guess-app :is(button.secondary, .btn-outline.theme-secondary, .guessr-help, .guessr-exit):hover:not(:disabled),
+  body:has(#guess-app) dialog .btn-outline.theme-secondary:hover:not(:disabled) { background: #334155; border-color: #64748b; }
 }
 #guess-app .site-header { padding: .75rem 1rem; min-block-size: 3.5rem; gap: .75rem; border: 0; }
 #guess-app .header-identity, #guess-app .header-actions { gap: .5rem; }
@@ -44,6 +50,7 @@
 .guessr-account-dialog { --bs-dialog-width: 28rem; --bs-dialog-bg: var(--surface-1); --bs-dialog-color: var(--text); --bs-dialog-border-radius: .75rem; }
 .guessr-account-dialog .dialog-body { display: grid; gap: 1rem; }
 .guessr-account-dialog .dialog-body > button { text-align: start; justify-content: start; white-space: normal; }
+body:has(#guess-app) dialog :is(.btn, .btn-solid, .btn-outline) { --bs-btn-border-radius: .5rem; border-radius: .5rem; min-block-size: 2.5rem; }
 .guessr-account-dialog .account-identity { display: flex; align-items: baseline; gap: .375rem; }
 .guessr-account-dialog .account-name { font-size: 1.25rem; overflow-wrap: anywhere; min-width: 0; }
 .guessr-account-dialog .badge.pro { position: relative; top: -2px; color: var(--pro-fg); border: 1.5px solid transparent; border-radius: 999px; background: linear-gradient(var(--pro-surface),var(--pro-surface)) padding-box,var(--pro-gradient) border-box; background-size: 200% 100%; animation: pro-border-pan 6s linear infinite; }
@@ -66,10 +73,10 @@
 #guess-app .guess-map-toolbar { display: flex; flex: none; padding: .75rem; gap: .75rem; align-items: center; }
 #guess-app .stream-send-control { display: inline-flex; flex: 1; min-width: 0; max-inline-size: 17rem; margin-inline-start: auto; }
 #guess-app .guess-submit { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; inline-size: 100%; font-size: 1rem; min-height: 2.5rem; white-space: normal; }
-.submit-label { display: inline-grid; min-width: 0; }
-.submit-label > span { grid-area: 1/1; }
-.submit-label .label-sizer { visibility: hidden; pointer-events: none; }
-.submit-label .label-sizer::after { content: attr(data-label); }
+:is(.submit-label, .share-label) { display: inline-grid; min-width: 0; }
+:is(.submit-label, .share-label) > span { grid-area: 1/1; }
+:is(.submit-label, .share-label) .label-sizer { visibility: hidden; pointer-events: none; }
+:is(.submit-label, .share-label) .label-sizer::after { content: attr(data-label); }
 .submit-feedback { inline-size: 1.25rem; block-size: 1.25rem; display: inline-grid; place-items: center; flex: none; }
 .submit-feedback svg { inline-size: 1.25rem; block-size: 1.25rem; }
 .submit-feedback .spinner-border { inline-size: 1.125rem; block-size: 1.125rem; border-width: 2px; }
@@ -105,6 +112,10 @@
 #guess-app .stream-host-shell:has(.stream-warmup) .stream-toolbar-round > * { display: none; }
 #guess-app .stream-start-panel .stream-joined-count { font-size: 1.125rem; }
 #guess-app .stream-start-panel .progress { width: min(100%,24rem); height: 6px; }
+#guess-app .stream-lobby-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; }
+#guess-app .stream-lobby-actions :is(.stream-share-button, .primary) { min-block-size: 2.75rem; padding: .625rem 1rem; font-size: 1rem; }
+#guess-app .stream-start-panel .stream-share-status { font-size: .875rem; color: var(--text-muted); }
+#guess-app .stream-start-panel .stream-share-status:empty { display: none; }
 #guess-app .stream-rank { font-size: 1.5rem; }
 #guess-app :is(.stream-score-table,.daily-results-table) { font-size: 1rem; }
 #guess-app :is(.stream-score-table,.daily-results-table) th { font-size: .875rem; }

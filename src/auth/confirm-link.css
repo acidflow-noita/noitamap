@@ -1,0 +1,19 @@
+.auth-link-dialog {
+  --bs-dialog-width: 32rem;
+  max-inline-size: calc(100vw - 1rem);
+  max-block-size: calc(100dvh - 1rem);
+}
+.auth-link-dialog .btn {
+  --bs-btn-border-radius: var(--radius-control, .5rem);
+  border-radius: var(--radius-control, .5rem);
+  min-block-size: 2.5rem;
+  padding: .5rem .75rem;
+  font-size: .875rem;
+  line-height: 1.25;
+}
+.auth-link-dialog .dialog-body { display: grid; gap: .75rem; overflow-wrap: anywhere; }
+.auth-link-dialog .dialog-body > p { margin: 0; }
+.auth-link-dialog .account-detail-visibility { justify-self: start; display: inline-flex; align-items: center; gap: .5rem; max-inline-size: 100%; white-space: normal; text-align: start; }
+.auth-link-dialog .account-detail-visibility svg { display: block; inline-size: 1.125rem; block-size: 1.125rem; }
+.auth-link-dialog ul { margin: 0; padding-inline-start: 1.25rem; }
+.auth-link-dialog .dialog-footer { gap: .5rem; }

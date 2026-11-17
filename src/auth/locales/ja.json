@@ -18,5 +18,8 @@
   "Start this connection from the map.": "この接続は地図から開始してください。",
   "Return to the site that started this connection.": "このつながりのきっかけとなったサイトに戻る。",
   "Could not disconnect this account.": "このアカウントの接続を解除できませんでした。",
-  "Twitch chat connection is temporarily unavailable.": "Twitchのチャット接続が一時的に利用できません。"
+  "Twitch chat connection is temporarily unavailable.": "Twitchのチャット接続が一時的に利用できません。",
+  "Show account details": "アカウントの詳細を表示",
+  "Hide account details": "アカウントの詳細を非表示にする",
+  "Account details hidden": "アカウントの詳細が非表示になっています"
 }

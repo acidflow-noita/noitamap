@@ -18,5 +18,8 @@
   "Start this connection from the map.": "Mulailah koneksi ini dari peta.",
   "Return to the site that started this connection.": "Kembali ke situs yang menjadi awal terjalinnya hubungan ini.",
   "Could not disconnect this account.": "Tidak dapat memutuskan koneksi akun ini.",
-  "Twitch chat connection is temporarily unavailable.": "Koneksi obrolan Twitch sedang tidak tersedia untuk sementara waktu."
+  "Twitch chat connection is temporarily unavailable.": "Koneksi obrolan Twitch sedang tidak tersedia untuk sementara waktu.",
+  "Show account details": "Tampilkan rincian akun",
+  "Hide account details": "Sembunyikan detail akun",
+  "Account details hidden": "Rincian akun disembunyikan"
 }

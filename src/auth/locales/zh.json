@@ -18,5 +18,8 @@
   "Start this connection from the map.": "从地图上开始建立此连接。",
   "Return to the site that started this connection.": "返回建立此连接的网站。",
   "Could not disconnect this account.": "无法解除此账户的绑定。",
-  "Twitch chat connection is temporarily unavailable.": "Twitch 聊天功能暂时无法使用。"
+  "Twitch chat connection is temporarily unavailable.": "Twitch 聊天功能暂时无法使用。",
+  "Show account details": "显示账户详情",
+  "Hide account details": "隐藏账户详情",
+  "Account details hidden": "账户详情已隐藏"
 }

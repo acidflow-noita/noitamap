@@ -2,6 +2,7 @@ import type { ParallelAuthorization, ParallelClientMessage, ParallelServerMessag
 import type { RoomConnection } from './live-room-types';
 import { connectionDiagnostic } from './connection-diagnostics';
 import { GAME_PROTOCOL } from './game-protocol';
+import { GAME_UNAVAILABLE_MESSAGE } from './stream-lifetime';
 
 type Command = Extract<ParallelClientMessage, { id: string }>;
 function authorizationCloseCode(error: unknown): number {
@@ -16,6 +17,9 @@ export class ParallelConnection {
   private failures = 0;
   private authFailures = 0;
   private completed = false;
+  private unavailable = false;
+  private checkedAvailabilityAt = -Infinity;
+  private availabilityRequest?: AbortController;
   private timer?: ReturnType<typeof setTimeout>;
   private heartbeat?: ReturnType<typeof setInterval>;
   private pongDeadline?: ReturnType<typeof setTimeout>;
@@ -76,6 +80,7 @@ export class ParallelConnection {
   }
   recover(): void { this.send({ type: 'recover' }); }
   command(message: Command): Promise<void> {
+    if (this.unavailable) return Promise.reject(Error(GAME_UNAVAILABLE_MESSAGE));
     if (message.type === 'host-guess') {
       this.hostPending = message;
       try { localStorage.setItem(this.storageKey + ':host-guess', JSON.stringify(message)); } catch {}
@@ -87,7 +92,7 @@ export class ParallelConnection {
     });
   }
   private connect(): void {
-    if (this.closed) return;
+    if (this.closed || this.unavailable) return;
     clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
     const old = this.socket; this.socket = undefined; old?.close(); this.ready = false;
     if (navigator.onLine === false) { this.update('offline', 'Network issues'); return; }
@@ -165,6 +170,7 @@ export class ParallelConnection {
       if (!current()) return;
       connectionDiagnostic({ event: 'socket-close', transport: 'coordinator', status: event.code });
       this.ready = false; clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
+      if (this.unavailable) return;
       if (this.completed) { this.update('connected', 'Game finished'); return; }
       if (event.code === 4002) { this.update('stopped', 'This game is open in another tab. Continue there.'); return; }
       if (event.code === 4003) { this.update('stopped', 'This invitation is not available.'); return; }
@@ -174,14 +180,38 @@ export class ParallelConnection {
         if (++this.authFailures > 1) { this.update('stopped', 'Sign in with Twitch to play.'); return; }
       }
       this.update(navigator.onLine === false ? 'offline' : 'retrying', navigator.onLine === false ? 'Network issues' : 'Reconnecting…');
+      if (navigator.onLine !== false) void this.checkAvailability();
       const attempt = this.failures++;
       const backoff = attempt < 6 ? Math.min(15000, 750 * 2 ** Math.min(attempt, 5)) : attempt < 10 ? 60000 : 300000;
       this.timer = setTimeout(() => this.connect(), backoff + Math.random() * 500);
     };
   }
+  /** Browsers hide an upgrade's HTTP status. Check only after a failed socket,
+   * at most once per minute, and stop only on the coordinator's explicit 404. */
+  private async checkAvailability(): Promise<void> {
+    if (this.closed || this.ready || this.unavailable || this.availabilityRequest || Date.now() - this.checkedAvailabilityAt < 60000) return;
+    this.checkedAvailabilityAt = Date.now();
+    const controller = this.availabilityRequest = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await fetch(new URL(`/api/streams/live/${this.gameId}/socket`, this.origin), {
+        credentials: 'omit', cache: 'no-store', signal: controller.signal,
+      });
+      if (response.status !== 404) { await response.body?.cancel(); return; }
+      if ((await response.text()).trim() !== 'Game unavailable' || this.closed || this.ready) return;
+      this.unavailable = true;
+      clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
+      for (const command of this.commands.values()) command.reject(Error(GAME_UNAVAILABLE_MESSAGE));
+      this.commands.clear();
+      this.update('stopped', GAME_UNAVAILABLE_MESSAGE);
+      this.socket?.close();
+    } catch { /* A failed probe is not proof that the game is gone. */ }
+    finally { clearTimeout(timeout); if (this.availabilityRequest === controller) this.availabilityRequest = undefined; }
+  }
   retry(): void { if (!this.ready) { this.authFailures = 0; this.connect(); } }
   dispose(): void {
     this.closed = true; clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
+    this.availabilityRequest?.abort();
     window.removeEventListener('online', this.online); this.socket?.close();
     document.removeEventListener('visibilitychange', this.visibility);
     for (const pending of this.commands.values()) pending.reject(Error('Connection closed')); this.commands.clear();

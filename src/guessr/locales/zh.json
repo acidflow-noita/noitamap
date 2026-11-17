@@ -690,5 +690,9 @@
   "The Send button shows a spinner while sending and a checkmark after confirmation.": "“发送”按钮在发送过程中会显示一个加载图标，确认后则显示一个勾号。",
   "The account menu now keeps sign-in, Pro status and sign-out together.": "“账户”菜单现将“登录”、“Pro 状态”和“注销”整合在一起。",
   "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.": "关闭并重新打开浏览器时，系统会保持登录状态。您可以在账户中刷新“Pro”状态。",
-  "Connection status appears in the logo pin. Hover or focus the pin for details.": "连接状态会显示在徽标图钉上。将鼠标悬停在图钉上或选中该图钉即可查看详细信息。"
+  "Connection status appears in the logo pin. Hover or focus the pin for details.": "连接状态会显示在徽标图钉上。将鼠标悬停在图钉上或选中该图钉即可查看详细信息。",
+  "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "已过期的游戏大厅将不再以“就绪”状态重新开放。退出不可用的游戏后，您将返回主菜单。",
+  "Account-link confirmation hides account names and IDs until you choose to show them.": "账户关联确认功能会隐藏账户名称和ID，直到您选择显示它们为止。",
+  "Account-link buttons now match the rest of the interface.": "“账户关联”按钮现在与界面其他部分风格一致了。",
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "“分享”按钮现在位于大厅中 {{startGame}} 的旁边。其状态显示在按钮下方。"
 }

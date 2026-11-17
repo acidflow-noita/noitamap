@@ -708,5 +708,9 @@
   "The Send button shows a spinner while sending and a checkmark after confirmation.": "Кнопка «Отправить» отображает индикатор загрузки во время отправки и галочку после подтверждения.",
   "The account menu now keeps sign-in, Pro status and sign-out together.": "В меню учетной записи теперь в одном месте собраны функции входа в систему, статуса «Pro» и выхода из системы.",
   "Stay signed in when you close and reopen the browser. You can refresh Pro status from your account.": "Оставайтесь в системе после закрытия и повторного запуска браузера. Вы можете обновить статус Pro в своей учетной записи.",
-  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Статус подключения отображается на значке с логотипом. Наведите курсор на значок или выделите его, чтобы увидеть подробности."
+  "Connection status appears in the logo pin. Hover or focus the pin for details.": "Статус подключения отображается на значке с логотипом. Наведите курсор на значок или выделите его, чтобы увидеть подробности.",
+  "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Истекшие лобби больше не открываются в статусе «Готов». При выходе из недоступной игры вы возвращаетесь в меню.",
+  "Account-link confirmation hides account names and IDs until you choose to show them.": "При подтверждении привязки аккаунтов имена и идентификаторы аккаунтов скрываются до тех пор, пока вы не решите их отобразить.",
+  "Account-link buttons now match the rest of the interface.": "Кнопки привязки аккаунтов теперь гармонично вписываются в общий дизайн интерфейса.",
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Кнопка «Поделиться» теперь находится рядом с {{startGame}} в лобби. Её статус отображается ниже."
 }

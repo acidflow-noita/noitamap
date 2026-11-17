@@ -3,6 +3,7 @@ import { updateSubmit } from './submit-control';
 import { bindViewerAccount } from './account-menu';
 import { fitGameFrame } from './game-frame';
 import { moveGameExit } from './game-chrome';
+import { GAME_UNAVAILABLE_MESSAGE } from './stream-lifetime';
 import { allowGuessrChangelog } from './changelog';
 import { StreamRoundCache } from './stream-round-cache';
 import { mapControls } from './map-controls';
@@ -78,6 +79,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (!closed) refresh();
   };
   const exitMatch = () => {
+    if (unavailableGame) { if (pvp && requestedGame) forgetPvp(requestedGame); leave(); return; }
     if (!pvp || !live || live.phase === 'complete' || live.ended || connectionDetail === 'This invitation is not available.'
       || connectionDetail === 'This game is open in another tab. Continue there.') { leave(); return; }
     const leavingLobby = live.timing?.phase === 'lobby';
@@ -206,7 +208,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         receipt = await guessReceiptKey(target.roundId, playerId, Array.from(nonce, n => n.toString(16).padStart(2, '0')).join(''));
         // The click was allowed before zero. A round update while hashing or
         // sending must not cancel it, retarget it, or borrow the next allowance.
-        if (closed || live?.gameId !== target.gameId || viewer.getState().userId !== playerId) return;
+        if (closed || unavailableGame || live?.gameId !== target.gameId || viewer.getState().userId !== playerId) return;
         personal.identify(target.gameId, playerId);
         const revision = Math.max(personal.nextRevision(submittedRound - 1), feed?.nextRevision(target.roundId) ?? 1);
         personal.submit(submittedRound - 1, receipt, submittedPoint, submittedMaximum, revision, automatic);
@@ -439,6 +441,9 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       },
       status: (state, detail) => {
         if (closed || epoch !== roomEpoch) return;
+        if (state === 'stopped' && detail === GAME_UNAVAILABLE_MESSAGE) {
+          unavailableGame = true; emptyClue(GAME_UNAVAILABLE_MESSAGE, 'Game ended');
+        }
         connectionState = state; connectionDetail = detail; chat.setGameConnection(state, detail); refresh();
       },
     } satisfies Pick<Parameters<typeof watchParallelGame>[3], 'state' | 'status'>;
@@ -570,7 +575,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       timer.textContent = live.ended ? tr('Game ended') : live.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started')
         : live.phase !== 'guess' ? tr('Round closed') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) }) : timing.deadline === null ? tr('Manual timing')
         : `${formatGuessrNumber(Math.floor(remaining / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(remaining % 60, { minimumIntegerDigits: 2 })}`;
-      timer.hidden = timing.phase === 'lobby' || live.phase !== 'guess';
+      timer.hidden = unavailableGame || timing.phase === 'lobby' || live.phase !== 'guess';
       timer.dataset.clock = String(!live.ended && !live.paused && !starting && live.phase === 'guess' && timing.deadline !== null);
       board.setLocked(!canGuess() || reviewedRound !== null);
       let countdown = cluePanel.querySelector<HTMLElement>('.stream-countdown');
@@ -612,7 +617,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (resultId) result.href = guessRouteUrl('stream-result', location.origin, { result: resultId }).href;
     showSharedResults();
     if (pvp) {
-      const waiting = !!live?.pvp && (live.ended || live.timing?.phase === 'lobby' || live.phase === 'waiting');
+      const waiting = !unavailableGame && !!live?.pvp && (live.ended || live.timing?.phase === 'lobby' || live.phase === 'waiting');
       pvpLobby.hidden = !waiting; layout.classList.toggle('show-pvp-lobby', waiting);
       if (waiting) {
         const lobby = !live!.ended && live!.timing?.phase === 'lobby', players = live!.pvp!.players, creator = live!.pvp!.creator;
@@ -653,6 +658,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   window.addEventListener('online', refresh);
   startRoom(); refresh();
   checkAutomatic = () => {
+    if (unavailableGame) return;
     const deadline = live?.timing?.deadline;
     if (!live?.roundId || deadline == null || autoRound === live.roundId || gameNow() < deadline || gameNow() > deadline + STREAM_SUBMISSION_GRACE_MS) return;
     if (!point || !snapshot || !viewer.getState().connected || isHost() || guessKey() === lastSent) return;

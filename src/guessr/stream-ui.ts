@@ -3,6 +3,7 @@ import { updateGameConnection, moveGameExit } from './game-chrome';
 import { updateSubmit, submitHelp } from './submit-control';
 import { pvpViewer } from './pvp-identity';
 import { showActivity, clearActivity } from './activity-ticker';
+import { hostSessionExpired, GAME_UNAVAILABLE_MESSAGE } from './stream-lifetime';
 import { ParallelConnection } from './parallel-connection';
 import type { ParallelServerMessage } from './parallel-types';
 import { maximumScore } from './rules';
@@ -50,7 +51,7 @@ import { instructionSteps } from './stepper';
 import { pageHeading } from './page-heading';
 import { loadingPlaceholders } from './loading-placeholders';
 import type { LiveRoomView, RoomConnection } from './live-room-types';
-import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, tr } from './i18n';
+import { bindAttribute, bindText, clearTextBinding, formatGuessrNumber, guessrGameTerm, tr } from './i18n';
 import { GAME_PROTOCOL } from './game-protocol';
 import { startStreamTiming, beginStreamTiming, startHostWindow, streamTick, hostMayGuess, suspendStreamTiming, resumeStreamTiming, validStreamSeconds, shortenFinishedWindow, STREAM_DELIVERY_GRACE_MS } from './stream-timing';
 import { streamRoundResults } from './stream-round-results';
@@ -141,6 +142,18 @@ async function copy(
 function actionRow(...buttons: HTMLElement[]): HTMLElement {
   const row = el('div', '', 'action-row'); row.append(...buttons); return row;
 }
+function shareButtonLabel(button: HTMLButtonElement, source: string): void {
+  let label = button.querySelector<HTMLElement>('.share-button-text');
+  if (!label) {
+    clearTextBinding(button);
+    const wrap = el('span', '', 'share-label'); label = el('span', '', 'share-button-text'); wrap.append(label);
+    for (const key of ['Share game link in chat', 'Copy game link', 'Posting…', 'Posted in chat']) {
+      const sizer = el('span', '', 'label-sizer'); sizer.setAttribute('aria-hidden', 'true'); bindAttribute(sizer, 'data-label', key); wrap.append(sizer);
+    }
+    button.replaceChildren(wrap);
+  }
+  if (button.dataset.label !== source) { button.dataset.label = source; bindText(label, source); }
+}
 function copyAction(label: string, value: () => string, toast: (message: string) => void): HTMLButtonElement {
   const control = action(label, async () => {
     try { await copy(value(), toast, notice); }
@@ -157,6 +170,7 @@ export class StreamUI {
   private parallelAutoRound = '';
   private publicationError = '';
   private parallelDetail = '';
+  private coordinatorUnavailable = false;
   private get durable(): boolean { return this.game?.session.transport === 'parallel'; }
   private connectParallel(): void {
     const game = this.game;
@@ -165,9 +179,11 @@ export class StreamUI {
       async () => ({ role: 'host', ticket: await this.api.hostSocketTicket() }), {
         status: (status, detail) => {
           if (this.game !== game) return;
+          this.coordinatorUnavailable = status === 'stopped' && detail === GAME_UNAVAILABLE_MESSAGE;
           this.roomHealthy = status === 'connected'; this.parallelDetail = detail;
           this.status = status === 'connected' ? 'live' : status === 'retrying' ? 'reconnecting' : status === 'stopped' ? 'auth-required' : 'connecting';
           this.updateStatus(); this.updateTimer();
+          if (this.coordinatorUnavailable && this.mounted && !this.quitting) this.render();
         },
         message: message => { if (this.game === game) this.parallelMessage(message); },
       });
@@ -283,6 +299,7 @@ export class StreamUI {
       ) as StreamGame;
       if (
         saved?.schema === 1 &&
+        (this.api.local || !hostSessionExpired(saved)) &&
         (pane !== 'stream-result' || saved.stage === 'complete' && saved.session?.id === readGuessRoute(new URL(location.href)).result) &&
         (this.api.local || saved.stage === 'complete' || saved.session?.transport === 'parallel' && saved.session.protocol === GAME_PROTOCOL) &&
         typeof saved.session.token === "string" &&
@@ -352,9 +369,11 @@ export class StreamUI {
     const game = this.game;
     if (!game || game.stage === 'complete') return;
     if (this.busy) throw new Error(tr('Wait for the current game action to finish, then try quitting again.'));
-    if (this.durable) {
+    if (this.durable && !this.coordinatorUnavailable) {
       this.quitting = true;
-      try { await this.durableCommand('quit'); } catch (error) { this.quitting = false; throw error; }
+      try { await this.durableCommand('quit'); } catch (error) {
+        if ((error as Error).message !== GAME_UNAVAILABLE_MESSAGE) { this.quitting = false; throw error; }
+      }
     }
     this.busy = true;
     this.quitting = true;
@@ -363,6 +382,7 @@ export class StreamUI {
     game.paused = true;
     try {
       this.disposeHeader();
+      this.parallel?.dispose(); this.parallel = undefined; this.coordinatorUnavailable = false;
       clearTimeout(this.pulseTimer); this.pulseTimer = undefined;
       clearTimeout(this.saveTimer); this.saveTimer = undefined;
 
@@ -792,7 +812,14 @@ export class StreamUI {
         finally { this.busy = false; consent.disabled = false; this.updateTimer(); this.updateShareButton(); }
       }, 'btn btn-solid theme-primary');
       approval.append(el('p', 'First, allow NoitaGuessr to post messages in your Twitch chat.', 'form-text'), consent);
-      section.append(count, names, wrapper, approval); main.append(section); this.updateLobby(); this.updateTimer(); return;
+      const controls = actionRow(); controls.classList.add('stream-lobby-actions');
+      const share = document.getElementById('stream-share');
+      if (share) controls.append(share);
+      controls.append(wrapper);
+      section.append(count, names, controls);
+      const shared = document.getElementById('stream-share-status');
+      if (shared) section.append(shared);
+      section.append(approval); main.append(section); this.updateLobby(); this.updateTimer(); return;
     }
     section.classList.add('stream-warmup');
     section.append(el('h2', () => tr('Chat is playing round {{round}}', { round: formatGuessrNumber(1) })));
@@ -864,7 +891,7 @@ export class StreamUI {
     if (posted) this.shareTimer = setTimeout(() => this.updateShareButton(), this.sharedUntil - Date.now());
     button.disabled = this.sharePending || posted || this.status === 'connecting' || this.status === 'reconnecting';
     button.dataset.posted = String(posted);
-    bindText(button, this.sharePending ? 'Posting…' : posted ? 'Posted in chat'
+    shareButtonLabel(button, this.sharePending ? 'Posting…' : posted ? 'Posted in chat'
       : this.canPostGameLink() ? 'Share game link in chat' : 'Copy game link');
     const confirmation = document.getElementById('stream-share-status');
     if (confirmation) {
@@ -891,7 +918,7 @@ export class StreamUI {
   }
   private async shareGameLink(automatic = false): Promise<boolean> {
     const game = this.game;
-    if (!game || this.sharePending || !automatic && Date.now() < this.sharedUntil) return false;
+    if (!game || this.coordinatorUnavailable || this.quitting || this.sharePending || !automatic && Date.now() < this.sharedUntil) return false;
     if (!this.canPostGameLink()) {
       if (!automatic && this.shareNotice) await copy(this.pickerUrl(), this.hooks.toast, this.shareNotice);
       else { this.shareStatus = 'Sharing permission is unavailable. You can copy the game link.'; this.updateShareButton(); }
@@ -904,7 +931,7 @@ export class StreamUI {
       const alreadySent = automatic ? Math.max(0, Math.min(posts, game.initialShareCount ?? 0)) : 0;
       if (automatic && Date.now() < this.sharedUntil) await new Promise(resolve => setTimeout(resolve, this.sharedUntil - Date.now()));
       for (let index = alreadySent; index < posts; index++) {
-        if (this.game !== game || !this.mounted) return false;
+        if (this.game !== game || !this.mounted || this.quitting || this.coordinatorUnavailable) return false;
         if (this.api.local) await this.viewer!.postGameLink(game.session.host.login, message, game.shareAnnouncements === true);
         else await postTwitchGameLink(this.setupCredentials, game.session.host.id, message, game.shareAnnouncements === true);
         if (automatic) { game.initialShareCount = index + 1; this.save(); }
@@ -1013,6 +1040,15 @@ export class StreamUI {
     this.mounted = true;
     if (this.game.stage === "complete") {
       this.finish();
+      return;
+    }
+    if (this.coordinatorUnavailable) {
+      this.disposeHeader();
+      const main = this.hooks.shell(); main.classList.add('stream-setup-shell');
+      const panel = el('section', '', 'game-panel stream-start-panel');
+      panel.append(el('h2', 'Game ended'), el('p', GAME_UNAVAILABLE_MESSAGE), action('Start new game', async () => { await this.quit(); await this.open(); }, 'primary'));
+      main.append(panel); moveGameExit(main, action('Exit game', this.exit, 'btn btn-outline theme-secondary'));
+      updateGameConnection('disconnected', GAME_UNAVAILABLE_MESSAGE);
       return;
     }
     const game = this.game,

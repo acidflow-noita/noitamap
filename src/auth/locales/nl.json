@@ -18,5 +18,8 @@
   "Start this connection from the map.": "Begin deze route vanaf de kaart.",
   "Return to the site that started this connection.": "Ga terug naar de website waar deze verbinding is ontstaan.",
   "Could not disconnect this account.": "Het is niet gelukt om de verbinding met dit account te verbreken.",
-  "Twitch chat connection is temporarily unavailable.": "De verbinding met de Twitch-chat is tijdelijk niet beschikbaar."
+  "Twitch chat connection is temporarily unavailable.": "De verbinding met de Twitch-chat is tijdelijk niet beschikbaar.",
+  "Show account details": "Accountgegevens weergeven",
+  "Hide account details": "Accountgegevens verbergen",
+  "Account details hidden": "Accountgegevens verborgen"
 }

@@ -11,7 +11,7 @@ export function confirmQuitGame(quit: () => unknown | Promise<unknown>, descript
   dialog.setAttribute('aria-describedby', 'guessr-quit-description');
   dialog.innerHTML = `<div class="dialog-header"><h1 class="dialog-title fs-lg" id="guessr-quit-title"></h1><button type="button" class="btn-close" data-bs-dismiss="dialog"></button></div>
     <div class="dialog-body"><p id="guessr-quit-description"></p><p class="fg-danger" role="alert" hidden></p></div>
-    <div class="dialog-footer"><button type="button" class="btn-outline" data-bs-dismiss="dialog" autofocus></button><button type="button" class="btn-solid theme-danger" data-confirm-quit disabled></button></div>`;
+    <div class="dialog-footer"><button type="button" class="btn btn-outline theme-secondary" data-bs-dismiss="dialog" autofocus></button><button type="button" class="btn btn-solid theme-danger" data-confirm-quit disabled></button></div>`;
   bindText(dialog.querySelector('#guessr-quit-title')!, 'End this game?');
   bindAttribute(dialog.querySelector('.btn-close')!, 'aria-label', 'Close');
   bindText(dialog.querySelector('#guessr-quit-description')!, description);
