@@ -694,5 +694,10 @@
   "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.",
   "Account-link confirmation hides account names and IDs until you choose to show them.": "Account-link confirmation hides account names and IDs until you choose to show them.",
   "Account-link buttons now match the rest of the interface.": "Account-link buttons now match the rest of the interface.",
-  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath."
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.",
+  "{{whatsNew}} now opens automatically only on the NoitaGuessr main page.": "{{whatsNew}} now opens automatically only on the NoitaGuessr main page.",
+  "Fixed flickering in the game view for chat participants.": "Fixed flickering in the game view for chat participants.",
+  "Zoom controls line up with the bottom row of movement buttons.": "Zoom controls line up with the bottom row of movement buttons.",
+  "The streamer’s Pro badge stays beside their name in the chatter view.": "The streamer’s Pro badge stays beside their name in the chatter view.",
+  "The button for sharing a game link fits within the header, including longer translations.": "The button for sharing a game link fits within the header, including longer translations."
 }

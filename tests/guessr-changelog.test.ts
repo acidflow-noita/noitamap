@@ -25,6 +25,7 @@ function create(id?: string) {
 const flush = async () => { for (let i = 0; i < 4; i++) await Promise.resolve(); };
 const dialog = () => document.querySelector<HTMLDialogElement>('.guessr-changelog');
 beforeEach(async () => {
+  history.replaceState(null, '', '/guess/');
   for (const kind of ['localStorage', 'sessionStorage']) {
     const values = new Map<string, string>();
     vi.stubGlobal(kind, { getItem: (key: string) => values.get(key) ?? null,
@@ -51,6 +52,18 @@ it('waits for a safe screen, closes when play starts, and does not repeat on nav
   controller.destroy(); controller = create(); controller.setSafe(true);
   await flush(); expect(dialog()).toBeNull();
   expect(fetch).not.toHaveBeenCalled();
+});
+it.each(['/guess/stream/wuote/', '/guess/stream/', '/guess/daily/', '/guess/pvp/', '/guess/wuote/'])('never auto-opens on %s even if a caller marks it safe', async path => {
+  history.replaceState(null, '', path);
+  const controller = create(); controller.setSafe(true); await flush();
+  expect(dialog()).toBeNull(); expect(sessionStorage.getItem('noitamap-guessr-changelog-shown')).toBeNull();
+  const trigger = document.createElement('button'); document.body.append(trigger);
+  controller.show(trigger); await flush(); expect(dialog()?.open).toBe(true);
+});
+it('does not open a queued home-page popup after navigation into a game', async () => {
+  const controller = create(); controller.setSafe(true);
+  history.replaceState(null, '', '/guess/stream/wuote/'); await flush();
+  expect(dialog()).toBeNull();
 });
 
 it('remembers a seen release across sessions, but shows a new release in a later session', async () => {

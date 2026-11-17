@@ -1,11 +1,20 @@
 import Dialog from 'bootstrap/js/dist/dialog.js';
 import { bindAttribute, bindText, guessrLocale, tr } from './i18n';
+import { readGuessRoute } from './routes';
+
+const isMainPage = () => readGuessRoute(new URL(location.href)).pane === 'home';
 
 // Change this ID only when the player-facing notes below change.
 export const GUESSR_CHANGELOG = {
-  id: '2026-11-17-lobby-recovery',
+  id: '2026-11-17-layout-stability',
   date: '2026-11-17',
   notes: [
+    "{{whatsNew}} now opens automatically only on the NoitaGuessr main page.",
+    "Fixed flickering in the game view for chat participants.",
+    "Zoom controls line up with the bottom row of movement buttons.",
+    "The streamer’s Pro badge stays beside their name in the chatter view.",
+    "The button for sharing a game link fits within the header, including longer translations.",
+
     "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.",
     "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.",
     "Account-link confirmation hides account names and IDs until you choose to show them.",
@@ -81,7 +90,7 @@ export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
     opened = { element: dialog, instance };
     dialog.addEventListener('shown.bs.dialog', () => {
       // A game can start while Bootstrap opens the dialog.
-      if (!safe && !trigger) { void instance.hide(); return; }
+      if ((!safe || !isMainPage()) && !trigger) { void instance.hide(); return; }
       shown = true;
       write('localStorage', SEEN_KEY, release.id);
       write('sessionStorage', SESSION_KEY, '1');
@@ -100,7 +109,7 @@ export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
     queued = true;
     queueMicrotask(() => {
       queued = false;
-      if (destroyed || !safe || shown || document.visibilityState === 'hidden'
+      if (destroyed || !safe || !isMainPage() || shown || document.visibilityState === 'hidden'
         || read('sessionStorage', SESSION_KEY) || read('localStorage', SEEN_KEY) === release.id) return;
       show();
     });

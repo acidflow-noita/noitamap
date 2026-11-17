@@ -694,5 +694,10 @@
   "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Lobi yang sudah kedaluwarsa tidak akan dibuka kembali sebagai \"siap\". Jika Anda keluar dari permainan yang tidak tersedia, Anda akan kembali ke menu.",
   "Account-link confirmation hides account names and IDs until you choose to show them.": "Konfirmasi pengaitan akun menyembunyikan nama dan ID akun sampai Anda memilih untuk menampilkannya.",
   "Account-link buttons now match the rest of the interface.": "Tombol penghubungan akun kini tampil serasi dengan antarmuka lainnya.",
-  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Tombol berbagi kini terletak di sebelah {{startGame}} di lobi. Statusnya ditampilkan di bawahnya."
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Tombol berbagi kini terletak di sebelah {{startGame}} di lobi. Statusnya ditampilkan di bawahnya.",
+  "{{whatsNew}} now opens automatically only on the NoitaGuessr main page.": "{{whatsNew}} kini hanya terbuka secara otomatis di halaman utama NoitaGuessr.",
+  "Fixed flickering in the game view for chat participants.": "Masalah kedipan pada tampilan permainan bagi peserta obrolan telah diperbaiki.",
+  "Zoom controls line up with the bottom row of movement buttons.": "Kontrol Zoom sejajar dengan baris bawah tombol-tombol gerakan.",
+  "The streamer’s Pro badge stays beside their name in the chatter view.": "Lencana Pro sang streamer tetap muncul di samping namanya di tampilan obrolan.",
+  "The button for sharing a game link fits within the header, including longer translations.": "Tombol untuk membagikan tautan game muat di dalam bagian header, termasuk terjemahan yang lebih panjang."
 }

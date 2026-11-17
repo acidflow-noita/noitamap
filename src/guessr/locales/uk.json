@@ -712,5 +712,10 @@
   "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Лобі, термін дії яких закінчився, більше не відкриваються як «готові». Якщо вийти з недоступної гри, ви повернетеся до меню.",
   "Account-link confirmation hides account names and IDs until you choose to show them.": "Функція підтвердження прив’язки облікових записів приховує імена та ідентифікатори облікових записів, доки ви не вирішите їх відобразити.",
   "Account-link buttons now match the rest of the interface.": "Кнопки прив’язки облікових записів тепер гармонійно поєднуються з рештою інтерфейсу.",
-  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Кнопка «Поділитися» тепер розташована поруч із {{startGame}} у лобі. Її стан відображається нижче."
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Кнопка «Поділитися» тепер розташована поруч із {{startGame}} у лобі. Її стан відображається нижче.",
+  "{{whatsNew}} now opens automatically only on the NoitaGuessr main page.": "{{whatsNew}} тепер автоматично відкривається лише на головній сторінці NoitaGuessr.",
+  "Fixed flickering in the game view for chat participants.": "Виправлено мерехтіння в ігровому вікні для учасників чату.",
+  "Zoom controls line up with the bottom row of movement buttons.": "Елементи керування масштабуванням розташовані в одному ряду з нижнім рядом кнопок переміщення.",
+  "The streamer’s Pro badge stays beside their name in the chatter view.": "Значок «Pro» стрімера залишається поруч із його ім’ям у вікні чату.",
+  "The button for sharing a game link fits within the header, including longer translations.": "Кнопка для поширення посилання на гру вміщується в заголовку навіть із довгими перекладами."
 }

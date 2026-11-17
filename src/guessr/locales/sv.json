@@ -694,5 +694,10 @@
   "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Lobbyer som har löpt ut öppnas inte längre som ”redo”. Om du lämnar ett spel som inte är tillgängligt återgår du till menyn.",
   "Account-link confirmation hides account names and IDs until you choose to show them.": "Bekräftelsen av kontokopplingen döljer kontonamn och ID:n tills du väljer att visa dem.",
   "Account-link buttons now match the rest of the interface.": "Knapparna för att koppla samman konton har nu samma utseende som resten av gränssnittet.",
-  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Delningsknappen finns nu bredvid {{startGame}} i lobbyn. Dess status visas nedanför."
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Delningsknappen finns nu bredvid {{startGame}} i lobbyn. Dess status visas nedanför.",
+  "{{whatsNew}} now opens automatically only on the NoitaGuessr main page.": "{{whatsNew}} öppnas nu automatiskt endast på NoitaGuessrs startsida.",
+  "Fixed flickering in the game view for chat participants.": "Det flimrande i spelvyn för chattdeltagarna har åtgärdats.",
+  "Zoom controls line up with the bottom row of movement buttons.": "Zoomkontrollerna ligger i linje med den nedre raden av rörelseknappar.",
+  "The streamer’s Pro badge stays beside their name in the chatter view.": "Streamarens Pro-märke visas bredvid namnet i chattvyn.",
+  "The button for sharing a game link fits within the header, including longer translations.": "Knappen för att dela en spellänk får plats i sidhuvudet, även med längre översättningar."
 }

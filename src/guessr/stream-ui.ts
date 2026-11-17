@@ -421,7 +421,7 @@ export class StreamUI {
       return;
     }
     const shell = this.hooks.shell();
-    allowGuessrChangelog(true);
+    allowGuessrChangelog(false);
     shell.classList.add('stream-setup-shell');
     const main = el('section', '', 'card card-body rounded-9 stream-setup-card');
     shell.append(main);
@@ -1058,7 +1058,7 @@ export class StreamUI {
     this.proStatus = streamerProStatus({ local: this.api.local });
     this.proStatus.update({ gameId: game.session.id, hostPro: 'active', hostProVerifiedUntil: game.session.hostProVerifiedUntil });
     const main = this.hooks.shell(true);
-    allowGuessrChangelog(game.timing?.phase === 'lobby');
+    allowGuessrChangelog(false);
     main.classList.add('stream-host-shell');
     const banner = el("div", "", "stream-banner stream-toolbar");
     const navigation = el('div', '', 'stream-toolbar-navigation');
@@ -1316,7 +1316,7 @@ export class StreamUI {
     clearInterval(this.tickTimer);
     const result = streamResult(this.game),
       main = this.hooks.shell();
-    allowGuessrChangelog(true);
+    allowGuessrChangelog(false);
     const entry: ArchivedStreamResult = { result, published: !!this.game.published,
       ...(!this.game.published && this.game.session.token ? { pendingToken: this.game.session.token } : {}),
       ...(this.game.session.localChat ? { localChannel: this.game.session.host.login } : {}) };
@@ -1461,7 +1461,7 @@ export class StreamUI {
       const view = streamResultsView(entry.result, viewerId, this.exit, this.hooks.config);
       this.hooks.cleanupClue(view.destroy);
       main.append(view); this.resultPublication(view, entry);
-      allowGuessrChangelog(true);
+      allowGuessrChangelog(false);
 
     } catch (error) {
       if (main.isConnected) bindText(loading, (error as Error).message);

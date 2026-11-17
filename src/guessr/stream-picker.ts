@@ -430,7 +430,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
             complete: state.phase === 'complete', lobby: state.timing?.phase === 'lobby', creator: state.pvp?.creator,
           });
         }
-        if (pvp) { channel = state.channel; chat.setChannel(channel); chat.setPlayers(state.pvp?.players ?? []); }
+        channel = state.channel; chat.setChannel(channel);
+        if (pvp) chat.setPlayers(state.pvp?.players ?? []);
         personal.identify(state.gameId ?? requestedGame, viewer.getState().userId ?? viewer.getState().savedUserId ?? null);
         chat.setProStatus(state);
         setRound(state.clue, state.gameId && state.roundId ? `${state.gameId}/${state.roundId}` : `waiting/${channel}`);
@@ -511,7 +512,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     }
   };
   refresh = () => {
-    allowGuessrChangelog(live?.timing?.phase === 'lobby' || live?.phase === 'complete');
+    allowGuessrChangelog(false);
     const state = viewer.getState();
     personal.identify(live?.gameId ?? requestedGame, state.userId ?? state.savedUserId ?? null);
     if (live?.phase === 'complete' && !state.connected) connection.insertBefore(connect, disconnect);

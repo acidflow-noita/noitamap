@@ -712,5 +712,10 @@
   "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Lobby, jejichž platnost vypršela, se již znovu neotevřou jako připravené. Pokud opustíte nedostupnou hru, vrátíte se do nabídky.",
   "Account-link confirmation hides account names and IDs until you choose to show them.": "Při potvrzení propojení účtů se názvy a ID účtů skryjí, dokud se nerozhodnete je zobrazit.",
   "Account-link buttons now match the rest of the interface.": "Tlačítka pro propojení účtů nyní ladí se zbytkem uživatelského rozhraní.",
-  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Tlačítko pro sdílení se nyní nachází vedle {{startGame}} v lobby. Jeho stav se zobrazuje pod ním."
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Tlačítko pro sdílení se nyní nachází vedle {{startGame}} v lobby. Jeho stav se zobrazuje pod ním.",
+  "{{whatsNew}} now opens automatically only on the NoitaGuessr main page.": "{{whatsNew}} se nyní automaticky otevírá pouze na hlavní stránce NoitaGuessr.",
+  "Fixed flickering in the game view for chat participants.": "Bylo opraveno blikání v herním zobrazení u účastníků chatu.",
+  "Zoom controls line up with the bottom row of movement buttons.": "Ovládací prvky přiblížení jsou umístěny v jedné řadě s dolní řadou tlačítek pro pohyb.",
+  "The streamer’s Pro badge stays beside their name in the chatter view.": "Odznak „Pro“ streamera zůstává vedle jeho jména v zobrazení chatu.",
+  "The button for sharing a game link fits within the header, including longer translations.": "Tlačítko pro sdílení odkazu na hru se vejde do záhlaví, a to i v případě delších překladů."
 }

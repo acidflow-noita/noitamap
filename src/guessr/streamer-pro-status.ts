@@ -19,15 +19,19 @@ export function streamerProStatus(options: { local?: boolean; channel?: string; 
     const known = hasKnownStreamerPro(proof.hostId);
     const local = options.local && !known;
     const active = known || !local && !!proof.gameId;
-    badge.hidden = !proof.gameId && !known;
-    badge.className = 'badge stream-pro-status' + (active ? ' pro animation-pop' : '');
-    badge.dataset.proStatus = local ? 'local' : active ? 'active' : 'unknown';
-    badge.textContent = local ? tr('Local test') : tr('Pro');
-    badge.setAttribute('aria-label', local ? tr('Local test') : tr('Pro'));
-    explanation = options.player && active ? tr('Pro access was confirmed for this game.') : known ? tr('Streamer has Pro') : local ? tr('This is a local test game. Streamer Pro access is not checked here.')
+    const hidden = !proof.gameId && !known, classes = 'badge stream-pro-status' + (active ? ' pro' : '');
+    const status = local ? 'local' : active ? 'active' : 'unknown', label = local ? tr('Local test') : tr('Pro');
+    if (badge.hidden !== hidden) badge.hidden = hidden;
+    if (badge.className !== classes) badge.className = classes;
+    if (badge.dataset.proStatus !== status) badge.dataset.proStatus = status;
+    if (badge.textContent !== label) badge.textContent = label;
+    if (badge.getAttribute('aria-label') !== label) badge.setAttribute('aria-label', label);
+    const nextExplanation = options.player && active ? tr('Pro access was confirmed for this game.') : known ? tr('Streamer has Pro') : local ? tr('This is a local test game. Streamer Pro access is not checked here.')
       : tr('The streamer’s Pro access was confirmed for this game.');
-    badge.setAttribute('aria-description', explanation);
-    popup.setContent({ '.popover-body': explanation });
+    if (explanation !== nextExplanation) {
+      explanation = nextExplanation; badge.setAttribute('aria-description', explanation);
+      popup.setContent({ '.popover-body': explanation });
+    }
   };
   paint();
   const unsubscribe = onGuessrLanguageChanged(paint);

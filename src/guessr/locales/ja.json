@@ -694,5 +694,10 @@
   "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "有効期限が切れたロビーは、準備完了状態として再開されなくなりました。参加不可のゲームを離脱すると、メニュー画面に戻ります。",
   "Account-link confirmation hides account names and IDs until you choose to show them.": "アカウント連携の確認画面では、表示を選択するまでアカウント名とIDは非表示になります。",
   "Account-link buttons now match the rest of the interface.": "アカウント連携ボタンが、インターフェースの他の部分と統一されたデザインになりました。",
-  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "ロビー内の{{startGame}}の横に、共有ボタンが表示されるようになりました。そのステータスはボタンの下に表示されます。"
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "ロビー内の{{startGame}}の横に、共有ボタンが表示されるようになりました。そのステータスはボタンの下に表示されます。",
+  "{{whatsNew}} now opens automatically only on the NoitaGuessr main page.": "{{whatsNew}}は現在、NoitaGuessrのメインページでのみ自動的に開くようになりました。",
+  "Fixed flickering in the game view for chat participants.": "チャット参加者のゲーム画面でのちらつきを修正しました。",
+  "Zoom controls line up with the bottom row of movement buttons.": "ズーム操作ボタンは、移動ボタンの最下段と並んでいます。",
+  "The streamer’s Pro badge stays beside their name in the chatter view.": "チャット画面では、そのストリーマーの名前の横に「Pro」バッジが表示されます。",
+  "The button for sharing a game link fits within the header, including longer translations.": "ゲームリンクを共有するためのボタンは、翻訳文が長くなった場合でもヘッダー内に収まります。"
 }

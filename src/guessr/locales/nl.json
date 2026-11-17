@@ -694,5 +694,10 @@
   "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Lobby’s waarvan de geldigheidsduur is verstreken, worden niet meer heropend als ‘klaar’. Als je een spel verlaat dat niet beschikbaar is, ga je terug naar het menu.",
   "Account-link confirmation hides account names and IDs until you choose to show them.": "Bij de bevestiging van een accountkoppeling worden accountnamen en ID’s verborgen totdat je ervoor kiest om ze weer te geven.",
   "Account-link buttons now match the rest of the interface.": "De knoppen voor het koppelen van accounts passen nu bij de rest van de interface.",
-  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "De knop ‘Delen’ staat nu naast {{startGame}} in de lobby. De status ervan wordt eronder weergegeven."
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "De knop ‘Delen’ staat nu naast {{startGame}} in de lobby. De status ervan wordt eronder weergegeven.",
+  "{{whatsNew}} now opens automatically only on the NoitaGuessr main page.": "{{whatsNew}} wordt nu alleen nog automatisch geopend op de hoofdpagina van NoitaGuessr.",
+  "Fixed flickering in the game view for chat participants.": "Het flikkeren in het spelvenster voor chatdeelnemers is verholpen.",
+  "Zoom controls line up with the bottom row of movement buttons.": "De zoomknoppen staan op één lijn met de onderste rij bewegingsknoppen.",
+  "The streamer’s Pro badge stays beside their name in the chatter view.": "De Pro-badge van de streamer blijft naast zijn of haar naam staan in het chatvenster.",
+  "The button for sharing a game link fits within the header, including longer translations.": "De knop om een spellink te delen past in de koptekst, ook als de vertalingen langer zijn."
 }

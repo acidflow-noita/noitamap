@@ -694,5 +694,10 @@
   "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "已过期的游戏大厅将不再以“就绪”状态重新开放。退出不可用的游戏后，您将返回主菜单。",
   "Account-link confirmation hides account names and IDs until you choose to show them.": "账户关联确认功能会隐藏账户名称和ID，直到您选择显示它们为止。",
   "Account-link buttons now match the rest of the interface.": "“账户关联”按钮现在与界面其他部分风格一致了。",
-  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "“分享”按钮现在位于大厅中 {{startGame}} 的旁边。其状态显示在按钮下方。"
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "“分享”按钮现在位于大厅中 {{startGame}} 的旁边。其状态显示在按钮下方。",
+  "{{whatsNew}} now opens automatically only on the NoitaGuessr main page.": "{{whatsNew}} 现在仅在 NoitaGuessr 主页上自动展开。",
+  "Fixed flickering in the game view for chat participants.": "修复了聊天参与者在游戏视图中出现的画面闪烁问题。",
+  "Zoom controls line up with the bottom row of movement buttons.": "缩放控件与底部一排的移动按钮排列在一起。",
+  "The streamer’s Pro badge stays beside their name in the chatter view.": "在聊天视图中，主播的“Pro”徽章会显示在姓名旁边。",
+  "The button for sharing a game link fits within the header, including longer translations.": "“分享游戏链接”按钮可完整显示在页眉中，即使翻译内容较长也不例外。"
 }

@@ -703,5 +703,10 @@
   "Expired lobbies no longer reopen as ready. Leaving an unavailable game returns you to the menu.": "Les salles dont la durée est écoulée ne s'ouvrent plus en mode « prêt ». Si vous quittez une partie indisponible, vous revenez au menu.",
   "Account-link confirmation hides account names and IDs until you choose to show them.": "La confirmation de l'association des comptes masque les noms et les identifiants des comptes jusqu'à ce que vous choisissiez de les afficher.",
   "Account-link buttons now match the rest of the interface.": "Les boutons de liaison de comptes s'harmonisent désormais avec le reste de l'interface.",
-  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Le bouton de partage se trouve désormais à côté de {{startGame}} dans le hall. Son état s'affiche en dessous."
+  "The sharing button is now next to {{startGame}} in the lobby. Its status appears underneath.": "Le bouton de partage se trouve désormais à côté de {{startGame}} dans le hall. Son état s'affiche en dessous.",
+  "{{whatsNew}} now opens automatically only on the NoitaGuessr main page.": "{{whatsNew}} s'ouvre désormais automatiquement uniquement sur la page d'accueil de NoitaGuessr.",
+  "Fixed flickering in the game view for chat participants.": "Correction d'un problème de scintillement dans la vue du jeu pour les participants au chat.",
+  "Zoom controls line up with the bottom row of movement buttons.": "Les commandes de zoom sont alignées avec la rangée inférieure de boutons de déplacement.",
+  "The streamer’s Pro badge stays beside their name in the chatter view.": "Le badge « Pro » du streamer apparaît à côté de son nom dans la fenêtre de discussion.",
+  "The button for sharing a game link fits within the header, including longer translations.": "Le bouton permettant de partager un lien vers une partie s'intègre dans l'en-tête, même avec des traductions plus longues."
 }

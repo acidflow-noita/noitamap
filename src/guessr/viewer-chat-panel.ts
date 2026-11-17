@@ -34,8 +34,12 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
   let channel = initialChannel, hasGame = false;
   let gameStatus: RoomConnection | null = null, gameDetail = '';
   let pvpPlayers: import('./stream-types').StreamPlayer[] = [];
+  let renderedPlayers = '';
   const renderPlayers = () => {
     if (!pvpPlayers.length) { historyLink.textContent = tr('1v1'); return; }
+    const signature = JSON.stringify([pvpPlayers.map(player => [player.id, player.name]), tr('Waiting for an opponent')]);
+    if (signature === renderedPlayers && historyLink.contains(pro.badge)) return;
+    renderedPlayers = signature;
     const creator = document.createElement('span'); creator.className = 'stream-name';
     const label = document.createElement('strong'); label.textContent = pvpPlayers[0].name;
     creator.append(label, pro.badge);
@@ -72,7 +76,7 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
     gift.hidden = !!options.pvp || !channel || !!gameId || hasGame || state.login === channel;
     bindText(gift, 'Gift Pro to {{channel}}', { channel }); giftHelp.update();
     if (!options.pvp) {
-      historyLink.textContent = channel;
+      if (historyLink.textContent !== channel) historyLink.textContent = channel;
       historyLink.href = guessRouteUrl('history', location.origin, { channel }).href;
       bindAttribute(historyLink, 'aria-label', '{{player}}’s results', { player: channel });
     } else renderPlayers();
@@ -87,7 +91,7 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
       pvpPlayers = players; renderPlayers();
     },
     setGameConnection(status: RoomConnection | null, detail = '') { gameStatus = status; gameDetail = detail; paint(); },
-    setChannel(value: string) { channel = value; hasGame = false; pro.update({}); refresh(); },
+    setChannel(value: string) { if (value === channel) return; channel = value; hasGame = false; pro.update({}); refresh(); },
     dispose() {
       unsubscribe(); unsubscribeLanguage(); giftHelp.dispose(); pro.dispose();
       window.removeEventListener('offline', refresh); window.removeEventListener('online', refresh);

@@ -134,6 +134,20 @@ describe('shared channel guess picker', () => {
     f.button('Exit game').click(); expect(f.leave).toHaveBeenCalledOnce();
     expect(parallel.command).toHaveBeenCalledTimes(1);
   });
+  it('keeps the verified streamer and Pro badge visible without rebuilding the badge on state updates', () => {
+    const id = '11111111-1111-4111-8111-111111111111';
+    const f = mount(`/guess/old_channel/${gameCode(id, 'parallel')}/`, { connected: true, login: 'viewer', userId: '123' });
+    const state: LiveRoomView = { schema: 1, channel: 'wuote', gameId: id, hostId: '456', hostPro: 'active',
+      revision: 1, phase: 'waiting', online: true, paused: false, round: 1, totalRounds: 5, roundId: id, clue: null, expiresAt: Date.now() + 999999 };
+    parallel.events!.state(state);
+    const badge = f.main.querySelector<HTMLElement>('.stream-pro-status')!;
+    expect(badge.hidden).toBe(false); expect(badge.textContent).toBe('Pro');
+    expect(f.main.querySelector('.stream-channel-link')!.textContent).toBe('wuote');
+    const changes = new MutationObserver(() => {}); changes.observe(badge, { attributes: true, childList: true, subtree: true });
+    for (let revision = 2; revision < 22; revision++) parallel.events!.state({ ...state, revision });
+    expect(f.main.querySelector('.stream-pro-status')).toBe(badge);
+    expect(badge.hidden).toBe(false); expect(changes.takeRecords()).toHaveLength(0); changes.disconnect();
+  });
 
   it('keeps a conceded PvP match on results, then uses its published result URL instead of returning home', async () => {
     const id = '11111111-1111-4111-8111-111111111111';
