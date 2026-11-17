@@ -79,6 +79,7 @@ export interface StreamUIHooks {
   ): { clue: HTMLElement; bar: HTMLElement };
   cleanupClue(cleanup: () => void): void;
   markers(guess: Point | null, answer?: Point): void;
+  lockGuess(locked: boolean): void;
   hud(options: {
     label: string;
     badge: string;
@@ -238,6 +239,7 @@ export class StreamUI {
   private statusDetail = "Chat disconnected.";
   private busy = false;
   private clearSubmit?: () => void;
+  private playView?: { main: HTMLElement; gameId: string; round: number };
   private quitting = false;
   private mounted = false;
   private saveTimer?: ReturnType<typeof setTimeout>;
@@ -271,6 +273,7 @@ export class StreamUI {
   private archive = new StreamResultArchive();
   private publications = new Map<string, Promise<void>>();
   private disposeHeader(): void {
+    this.playView = undefined;
     clearActivity(document.getElementById('stream-activity-message'));
     this.clearSubmit?.(); this.clearSubmit = undefined;
     this.proStatus?.dispose(); this.proStatus = undefined;
@@ -1032,6 +1035,30 @@ export class StreamUI {
     } catch (error) { this.hooks.toast(tr((error as Error).message)); }
     finally { this.busy = false; }
   }
+  private waitingForGuesses(): string {
+    const game = this.game!;
+    return streamRevealAt(game, streamTime(game)) > streamTime(game) && !streamsAhead(game.session)
+      ? 'Your guess is locked. Waiting for the other players.'
+      : this.durable ? 'Waiting for confirmation' : 'Round closed. Chat guesses and your submission are saved.';
+  }
+  /** Accepting a guess changes controls, not the two live map surfaces. */
+  private lockSubmittedView(): boolean {
+    const game = this.game!, view = this.playView;
+    if (!this.durable || game.stage !== 'closing' || game.reveals[game.round] || !view?.main.isConnected
+      || view.gameId !== game.session.id || view.round !== game.round) return false;
+    const submit = view.main.querySelector<HTMLButtonElement>('#confirm-guess');
+    if (!submit) return false;
+    this.hooks.lockGuess(true);
+    for (const controls of view.main.querySelectorAll<HTMLElement>('.clue-controls')) {
+      controls.inert = true;
+      for (const button of controls.querySelectorAll<HTMLButtonElement>('button')) button.disabled = true;
+    }
+    submit.disabled = true; updateSubmit(submit, 'Guess received', 'received');
+    const hint = view.main.querySelector('.action-hint-label');
+    if (hint) bindText(hint, this.waitingForGuesses());
+    this.updateStatus(); this.updateTimer();
+    return true;
+  }
   render(): void {
     if (!this.game) {
       void this.open();
@@ -1051,6 +1078,7 @@ export class StreamUI {
       updateGameConnection('disconnected', GAME_UNAVAILABLE_MESSAGE);
       return;
     }
+    if (this.lockSubmittedView()) return;
     const game = this.game,
       index = game.round,
       reveal = game.reveals[index];
@@ -1185,8 +1213,6 @@ export class StreamUI {
     } else if (game.stage === "closing") {
       const accepted = action('Guess received', () => {}, 'primary'); accepted.id = 'confirm-guess'; accepted.disabled = true; actions.append(accepted);
       const waiting = streamRevealAt(game, streamTime(game)) > streamTime(game);
-      actions.append(el("p", waiting && !streamsAhead(game.session) ? 'Your guess is locked. Waiting for the other players.'
-        : this.durable ? "Waiting for confirmation" : "Round closed. Chat guesses and your submission are saved."));
       if (!this.durable && !waiting) actions.append(action("Retry reveal", () => this.submit(), "primary"));
     } else {
       const submit = action(
@@ -1196,16 +1222,19 @@ export class StreamUI {
       );
       submit.id = "confirm-guess";
       submit.disabled = !game.guess || !hostMayGuess(game, streamTime(game)) || !this.roomHealthy;
-      actions.append(
-        el(
-          "p",
-          game.paused
-            ? "Paused: chat guesses are not being accepted."
-            : game.timing?.seconds ? 'Your guess locks when submitted. Chat keeps its full timer.' : "Submitting closes chat guesses for this round.",
-          "action-hint",
-        ),
-        submit,
-      );
+      actions.append(submit);
+    }
+    if (!reveal) {
+      const hint = el('p', '', 'action-hint submit-label'), label = el('span', '', 'action-hint-label'); hint.append(label);
+      const currentHint = game.stage === 'closing' ? this.waitingForGuesses() : game.paused
+        ? 'Paused: chat guesses are not being accepted.'
+        : game.timing?.seconds ? 'Your guess locks when submitted. Chat keeps its full timer.' : 'Submitting closes chat guesses for this round.';
+      bindText(label, currentHint);
+      for (const key of [currentHint, 'Pin placed. Ready when you are.', 'Your guess is locked. Waiting for the other players.',
+        'Waiting for confirmation', 'Round closed. Chat guesses and your submission are saved.']) {
+        const sizer = el('span', '', 'label-sizer'); sizer.setAttribute('aria-hidden', 'true'); bindAttribute(sizer, 'data-label', key); hint.append(sizer);
+      }
+      actions.prepend(hint);
     }
     const mapPanel = main.querySelector('.game-panel--map');
     if (mapPanel) {
@@ -1217,6 +1246,7 @@ export class StreamUI {
       }
       mapPanel.insertBefore(actions, mapPanel.querySelector('.map-board'));
     } else main.append(actions);
+    if (!reveal) this.playView = { main, gameId: game.session.id, round: index };
     this.updateTimer();
     if (this.api.local && !reveal && game.stage === "guess")
       this.localInput(main);

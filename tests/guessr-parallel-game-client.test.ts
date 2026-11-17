@@ -5,11 +5,13 @@ import type { ParallelServerMessage } from '../src/guessr/parallel-types';
 import type { TwitchViewer } from '../src/guessr/twitch-viewer';
 import type { StreamResult } from '../src/guessr/stream-types';
 import type { RoomConnection } from '../src/guessr/live-room-types';
+import type { LiveRoomView } from '../src/guessr/live-room-types';
 
-const transport = vi.hoisted(() => ({ receive: (_message: ParallelServerMessage) => {}, status: (_state: RoomConnection, _detail: string) => {}, connected: true, offset: 0, join: vi.fn(), dispose: vi.fn(), twitch: vi.fn() }));
+const transport = vi.hoisted(() => ({ receive: (_message: ParallelServerMessage) => {}, status: (_state: RoomConnection, _detail: string) => {}, connected: true, offset: 0, opened: vi.fn(), join: vi.fn(), dispose: vi.fn(), twitch: vi.fn() }));
 vi.mock('../src/guessr/parallel-connection', () => ({ ParallelConnection: class {
   constructor(_origin: string, _game: string, _player: string, _auth: unknown, events: { message: typeof transport.receive; status: typeof transport.status }) {
     transport.receive = events.message; transport.status = events.status;
+    transport.opened(_game, _player);
   }
   connected() { return transport.connected; } now() { return Date.now() + transport.offset; } dispose = transport.dispose;
 } }));
@@ -24,14 +26,13 @@ it('delivers the existing published-result socket event to chatters without fetc
     recovery: () => ({ missing: 0, receipts: [] }), durableReceipt: vi.fn(), roundResults: vi.fn(), published: vi.fn() };
   const id = '11111111-1111-4111-8111-111111111111';
   const client = watchParallelGame(viewer, 'wuote', id, handlers);
-  client.join();
   const result: StreamResult = { schema: 1, id, version: 'fixture', createdAt: 1, finishedAt: 2,
     host: { id: '456', login: 'wuote', name: 'WUOTE' }, rounds: [], players: [] };
   transport.receive({ type: 'published', result });
   expect(handlers.published).toHaveBeenCalledExactlyOnceWith(result);
   transport.receive({ type: 'published', result: { ...result, id: '22222222-2222-4222-8222-222222222222' } });
   expect(handlers.published).toHaveBeenCalledTimes(1);
-  expect(client.hasJoined()).toBe(true);
+  expect(transport.opened).toHaveBeenCalledExactlyOnceWith(id, '123');
   expect(fetch).not.toHaveBeenCalled();
   client.dispose(); expect(transport.dispose).toHaveBeenCalledTimes(1);
 });
@@ -42,7 +43,6 @@ it('keeps PvP time synchronized while reconnecting and preserves the actual stop
   const handlers = { state: vi.fn(), status: vi.fn(), reveal: vi.fn(), receipts: vi.fn(),
     recovery: () => ({ missing: 0, receipts: [] }), durableReceipt: vi.fn(), roundResults: vi.fn(), published: vi.fn() };
   const client = watchParallelGame(viewer, 'pvp', '11111111-1111-4111-8111-111111111111', handlers, { pvp: true });
-  client.join();
   transport.connected = false; transport.offset = 120000;
   transport.status('retrying', 'Reconnecting…');
   expect(client.now()).toBeGreaterThanOrEqual(Date.now() + 119990);
@@ -51,4 +51,30 @@ it('keeps PvP time synchronized while reconnecting and preserves the actual stop
   }
   expect(transport.twitch).not.toHaveBeenCalled(); expect(transport.join).not.toHaveBeenCalled();
   client.dispose();
+});
+
+it('auto-joins after sign-in, confirms membership from state, and ignores an old identity after sign-out', () => {
+  let user = { connected: false, userId: null as string | null };
+  const listeners = new Set<() => void>();
+  const update = (connected: boolean, userId: string | null) => { user = { connected, userId }; listeners.forEach(fn => fn()); };
+  const viewer = { getState: () => ({ ...user }), subscribe(fn: () => void) { listeners.add(fn); fn(); return () => listeners.delete(fn); } } as unknown as TwitchViewer;
+  const handlers = { state: vi.fn(), status: vi.fn(), reveal: vi.fn(), durableReceipt: vi.fn(), roundResults: vi.fn(), published: vi.fn() };
+  const id = '11111111-1111-4111-8111-111111111111';
+  const state: LiveRoomView = { schema: 1, channel: 'wuote', gameId: id, revision: 1, phase: 'waiting', online: true, paused: false, round: 1, roundId: null, clue: null, expiresAt: Date.now() + 60000 };
+  const client = watchParallelGame(viewer, 'wuote', id, handlers);
+  expect(transport.opened).not.toHaveBeenCalled();
+  update(true, '123'); expect(transport.opened).toHaveBeenCalledExactlyOnceWith(id, '123');
+  expect(client.hasJoined()).toBe(false);
+  transport.receive({ type: 'state', state, now: Date.now() }); expect(client.hasJoined()).toBe(true);
+  update(true, '123'); update(true, '123'); expect(transport.opened).toHaveBeenCalledTimes(1);
+  const oldReceive = transport.receive;
+  update(false, null); expect(client.hasJoined()).toBe(false); expect(transport.dispose).toHaveBeenCalledTimes(1);
+  update(true, '456'); expect(transport.opened).toHaveBeenCalledTimes(2);
+  oldReceive({ type: 'state', state, now: Date.now() }); expect(handlers.state).toHaveBeenCalledTimes(1);
+  expect(client.hasJoined()).toBe(false);
+  transport.receive({ type: 'state', state, now: Date.now() }); expect(client.hasJoined()).toBe(true);
+  client.dispose(); expect(client.hasJoined()).toBe(false);
+  transport.receive({ type: 'state', state, now: Date.now() }); expect(handlers.state).toHaveBeenCalledTimes(2);
+  const restored = watchParallelGame(viewer, 'wuote', id, handlers);
+  expect(transport.opened).toHaveBeenCalledTimes(3); restored.dispose();
 });

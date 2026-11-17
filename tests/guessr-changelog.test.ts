@@ -82,6 +82,15 @@ it('does not open twice in one session even if another release arrives', async (
   await flush(); expect(dialog()?.open).toBe(true);
 });
 
+it('does not repeat for a same-day hotfix or a previously stored detailed release ID', async () => {
+  const first = create('2026-11-17-first-fix'); first.setSafe(true); await flush(); first.destroy();
+  expect(localStorage.getItem('noitamap-guessr-changelog-seen')).toBe('2026-11-17');
+  sessionStorage.clear(); const hotfix = create('2026-11-17-second-fix'); hotfix.setSafe(true); await flush();
+  expect(dialog()).toBeNull(); hotfix.destroy();
+  localStorage.setItem('noitamap-guessr-changelog-seen', '2026-11-17-layout-stability');
+  const sameDay = create('2026-11-17-third-fix'); sameDay.setSafe(true); await flush(); expect(dialog()).toBeNull();
+});
+
 it('waits for another dialog to close and never opens during play', async () => {
   const other = document.createElement('dialog'); other.open = true; document.body.append(other);
   const controller = create(); controller.setSafe(true); await flush(); expect(dialog()).toBeNull();

@@ -11,14 +11,15 @@ export function updateSubmit(button: HTMLButtonElement, label: string, state: 'r
     button.classList.add('guess-submit'); button.setAttribute('aria-live', 'polite'); button.setAttribute('aria-atomic', 'true');
     const wrap = document.createElement('span'); wrap.className = 'submit-label';
     const text = document.createElement('span'); wrap.append(text);
-    for (const key of ['Send guess', 'Update guess', 'Sending…', 'Waiting for confirmation', 'Guess received', 'Auto-submitted', 'Guess locked']) {
+    for (const key of ['Send guess', 'Submit guess', 'Update guess', 'Sending…', 'Auto-sending…', 'Resend guess', 'Waiting for confirmation', 'Guess received', 'Auto-submitted', 'Lock guess', 'Guess locked']) {
       const size = document.createElement('span'); size.className = 'label-sizer'; size.setAttribute('aria-hidden', 'true'); bindAttribute(size, 'data-label', key); wrap.append(size);
     }
     const feedback = document.createElement('span'); feedback.className = 'submit-feedback'; feedback.setAttribute('aria-hidden', 'true');
     button.replaceChildren(wrap, feedback); parts = { label: text, feedback, state: '', source: '' }; controls.set(button, parts);
   }
   if (parts.source !== label) { parts.source = label; bindText(parts.label, label); }
-  button.dataset.state = state; button.setAttribute('aria-busy', String(state === 'waiting'));
+  if (button.dataset.state !== state) button.dataset.state = state;
+  if (button.getAttribute('aria-busy') !== String(state === 'waiting')) button.setAttribute('aria-busy', String(state === 'waiting'));
   if (parts.state === state) return;
   parts.state = state;
   if (state === 'waiting') {

@@ -448,7 +448,7 @@ function makePlayPanels(
       if (confirm) confirm.disabled = false;
       const hint = document.querySelector(".game-actions .action-hint");
       if (hint) {
-        bindText(hint, 'Pin placed. Ready when you are.');
+        bindText(hint.querySelector('.action-hint-label') ?? hint, 'Pin placed. Ready when you are.');
         hint.classList.add("is-ready");
       }
       announce(msg("Pin placed. Submit your guess when ready."));
@@ -1661,6 +1661,7 @@ if (!isGuessrAvailable(location.hostname, import.meta.env.DEV)) {
         clearClue = cleanup;
       },
       markers: (guess, answer) => board?.setMarkers(guess, answer),
+      lockGuess: locked => board?.setLocked(locked),
       hud: gameHud,
       result: showMapResult,
       home,

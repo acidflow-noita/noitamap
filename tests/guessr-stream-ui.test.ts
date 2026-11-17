@@ -74,12 +74,35 @@ async function fixture() {
     panels: vi.fn(main => {
       const clue = document.createElement('div'), bar = document.createElement('div'), map = document.createElement('section');
       map.className = 'game-panel game-panel--map';
+      const toolbar = document.createElement('div'); toolbar.className = 'map-bar'; map.append(toolbar);
       const grid = document.createElement('div'); grid.className = 'game-grid'; grid.append(clue, bar, map); main.append(grid); return { clue, bar };
-    }), cleanupClue: vi.fn(), markers: vi.fn(), hud: vi.fn(() => { const hud = document.createElement('div'); hud.className = 'game-hud'; return hud; }), result: vi.fn(), home: vi.fn(), toast: vi.fn(),
+    }), cleanupClue: vi.fn(), markers: vi.fn(), lockGuess: vi.fn(), hud: vi.fn(() => { const hud = document.createElement('div'); hud.className = 'game-hud'; return hud; }), result: vi.fn(), home: vi.fn(), toast: vi.fn(),
   };
   return { game, hooks, service };
 }
 async function flush() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
+
+it('keeps both panels, clue canvas, controls and header mounted when a submitted host guess is accepted', async () => {
+  vi.useFakeTimers(); vi.setSystemTime(streamNow);
+  const { game, hooks } = await fixture(); game.session.transport = 'parallel';
+  startStreamTiming(game, 90, streamNow - 10000); startHostWindow(game, streamNow - 10000);
+  game.guess = streamAnswer;
+  ui = new StreamUI(hooks); ui.game = game; ui.render();
+  const main = document.querySelector('main')!, grid = main.querySelector('.game-grid');
+  const header = main.querySelector('.stream-toolbar'), submit = main.querySelector<HTMLButtonElement>('#confirm-guess')!;
+  const controls = document.createElement('div'); controls.className = 'clue-controls';
+  controls.append(document.createElement('button')); grid!.prepend(controls);
+  const canvas = document.createElement('canvas'); grid!.append(canvas);
+  const sizeLabels = [...submit.querySelectorAll('.label-sizer')];
+  closeStreamRound(game, streamAnswer, streamNow); ui.render();
+  expect(document.querySelector('main')).toBe(main); expect(main.querySelector('.game-grid')).toBe(grid);
+  expect(main.querySelector('.stream-toolbar')).toBe(header); expect(canvas.isConnected).toBe(true);
+  expect(main.querySelector('#confirm-guess')).toBe(submit); expect(submit.disabled).toBe(true);
+  expect(submit.dataset.state).toBe('received'); expect(submit.querySelector('.submit-label > span')?.textContent).toBe('Guess received');
+  expect([...submit.querySelectorAll('.label-sizer')]).toEqual(sizeLabels);
+  expect(hooks.panels).toHaveBeenCalledOnce(); expect(hooks.lockGuess).toHaveBeenCalledWith(true);
+  expect(controls.inert).toBe(true); expect(controls.querySelector('button')!.disabled).toBe(true);
+});
 
 it.each(['lobby', 'warmup'] as const)('restores the coordinator-owned %s without requiring unrevealed clue images', async phase => {
   const f = await fixture(); history.replaceState(null, '', '/guess/stream/');
@@ -541,6 +564,8 @@ it('keeps the between-round countdown and table visible while the coordinator re
 
 
 it('recovers a failed publication from its result URL after a new game and F5, then retries exactly once', async () => {
+  // Keep this recovery test inside the retry credential's 30-day lifetime.
+  vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(streamNow + 60000);
   const { game, hooks, service } = await fixture();
   game.session.localChat = true;
   const publicationToken = game.session.token;
@@ -551,8 +576,10 @@ it('recovers a failed publication from its result URL after a new game and F5, t
   }
   mocks.publish.mockRejectedValueOnce(new Error('Offline'));
   history.replaceState(null, '', '/guess/stream/'); ui = new StreamUI(hooks); ui.game = game; ui.render();
-  await vi.waitFor(() => expect(document.getElementById('stream-publish-message')?.textContent).toContain('Not published.'));
-  expect(mocks.publish).toHaveBeenCalledOnce();
+  await vi.waitFor(() => {
+    expect(mocks.publish).toHaveBeenCalledOnce();
+    expect(document.getElementById('stream-publish-message')?.textContent).toContain('Not published.');
+  });
   expect(document.getElementById('stream-publish-message')!.closest('.stream-publication')!.compareDocumentPosition(document.querySelector('.stream-score-table')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   // The next game replaces the singleton host session; the prior retry survives.
   ui.game = (await fixture()).game; ui.save();

@@ -16,25 +16,27 @@ export interface GameHandlers {
 }
 /** Gameplay has one authenticated durable path. Twitch is used only for login. */
 export function watchParallelGame(viewer: TwitchViewer, _channel: string, gameId: string, handlers: GameHandlers, _options: { pvp?: boolean } = {}) {
-  let socket: ParallelConnection | undefined, socketUser: string | null = null, closed = false, consented: string | null = null;
-  const key = 'noitamap-guessr-joined-v3:' + gameId;
+  let socket: ParallelConnection | undefined, socketUser: string | null = null, joinedUser: string | null = null, closed = false, epoch = 0;
   const explored = new Set<string>();
   const hasJoined = () => {
     const user = viewer.getState();
-    if (!user.connected || !user.userId) return false;
-    if (consented === user.userId) return true;
-    try { return sessionStorage.getItem(key) === user.userId; } catch { return false; }
+    return !closed && user.connected && !!user.userId && joinedUser === user.userId;
   };
   const connect = () => {
     const user = viewer.getState();
     if (closed || user.userId === socketUser && socket && user.connected) return;
-    socket?.dispose(); socket = undefined; socketUser = null;
-    if (!hasJoined() || !user.userId) return;
+    const currentEpoch = ++epoch;
+    socketUser = null; joinedUser = null; socket?.dispose(); socket = undefined;
+    if (!user.connected || !user.userId) return;
     socketUser = user.userId;
+    const current = () => !closed && epoch === currentEpoch;
     socket = new ParallelConnection(gameApiOrigin()!, gameId, user.userId, () => viewer.transportAuthorization(), {
-      status: handlers.status,
+      status: (state, detail) => { if (current()) handlers.status(state, detail); },
       message: message => {
-        if (message.type === 'state') handlers.state(message.state);
+        if (!current()) return;
+        if (message.type === 'state' && message.state.gameId === gameId) {
+          joinedUser = user.userId; handlers.state(message.state);
+        }
         else if (message.type === 'reveal') {
           handlers.reveal(message.round - 1, message.reveal);
           if (message.results) handlers.roundResults(message.results);
@@ -47,11 +49,6 @@ export function watchParallelGame(viewer: TwitchViewer, _channel: string, gameId
   connect();
   return {
     hasJoined,
-    join() {
-      const id = viewer.getState().userId; if (!id) return;
-      consented = id; try { sessionStorage.setItem(key, id); } catch {}
-      connect();
-    },
     now: () => socket?.now() ?? Date.now(),
     command: (message: Extract<ParallelClientMessage, { id: string }>) => {
       connect(); return socket ? socket.command(message) : Promise.reject(Error('Join game'));

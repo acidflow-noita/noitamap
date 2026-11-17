@@ -699,5 +699,11 @@
   "Fixed flickering in the game view for chat participants.": "Det flimrande i spelvyn för chattdeltagarna har åtgärdats.",
   "Zoom controls line up with the bottom row of movement buttons.": "Zoomkontrollerna ligger i linje med den nedre raden av rörelseknappar.",
   "The streamer’s Pro badge stays beside their name in the chatter view.": "Streamarens Pro-märke visas bredvid namnet i chattvyn.",
-  "The button for sharing a game link fits within the header, including longer translations.": "Knappen för att dela en spellänk får plats i sidhuvudet, även med längre översättningar."
+  "The button for sharing a game link fits within the header, including longer translations.": "Knappen för att dela en spellänk får plats i sidhuvudet, även med längre översättningar.",
+  "Successfully joined {{channel}}’s game": "Du har nu anslutit dig till spelet i {{channel}}",
+  "Opening an invitation link joins the game automatically after you sign in.": "Du ansluter dig automatiskt till spelet när du öppnar inbjudningslänken och loggar in.",
+  "The timer and sharing controls stay inside the game header.": "Tidtagaren och delningsfunktionerna finns kvar i spelets rubrik.",
+  "Submitting a guess keeps the maps and controls in place.": "När du skickar in ett förslag behålls kartorna och kontrollerna på sina platser.",
+  "Buttons now use consistent rounded corners, including Pro gift and account controls.": "Knapparna har nu enhetliga rundade hörn, inklusive Pro-present- och kontofunktionerna.",
+  "The update notice no longer opens again for each small fix.": "Uppdateringsmeddelandet visas inte längre vid varje mindre korrigering."
 }

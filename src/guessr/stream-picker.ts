@@ -40,6 +40,7 @@ import { confirmQuitGame } from './quit-game';
 import { buttonNotice } from './button-notice';
 import { rememberPvp, forgetPvp } from './pvp-resume';
 import { StreamResultArchive } from './stream-result-archive';
+import { gameJoinNotice } from './join-notice';
 
 const ROUND_STORAGE_KEY = 'noitamap-guessr-viewer-round-v1';
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text: string | (() => string) = '') {
@@ -68,6 +69,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   let reviewedRound: number | null = null, lastSendAt = 0, actionError = '', sendReason = '';
   let pvpCommands = 0;
   let unavailableGame = false;
+  const joinedNotice = gameJoinNotice();
   let channel = /^[a-z0-9_]{1,25}$/.test(candidate) ? candidate : '';
   const leave = onLeave ?? (() => { location.href = '/guess/'; });
   const pvpCommand = async (message: Omit<Extract<import('./parallel-types').ParallelClientMessage, { id: string }>, 'id'> & Record<string, unknown>) => {
@@ -135,7 +137,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const connect = button('Sign in with Twitch', async () => {
     try { actionError = '';
       if (connectionState === 'stopped' && viewer.getState().connected) viewer.disconnect();
-      await viewer.connect(); feed?.join(); feed?.retry();
+      await viewer.connect();
     } catch (error) { if (!closed) { actionError = twitchMessageText((error as Error).message); refresh(); } }
   }, 'btn-twitch small');
   const disconnect = button('Sign out', () => viewer.disconnect(), 'small secondary');
@@ -167,9 +169,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const map = node('div', 'map-board'), actions = node('div', 'stream-guess-actions');
   const signIn = node('div', 'stream-signin');
   const signInError = node('p', 'stream-signin-error'); signInError.setAttribute('role', 'status');
-  const joinGame = button('Join game', () => { feed?.join(); refresh(); }, 'primary');
-  bindText(joinGame, () => tr('Join {{channel}}’s game', { channel }));
-  joinGame.hidden = true; signIn.append(connect, joinGame, signInError);
+  signIn.append(connect, signInError);
   const budget = maximumIndicator(); budget.classList.add('stream-maximum'); budget.hidden = true;
   const budgetBar = node('div', 'panel-bar stream-budget-bar'); budgetBar.hidden = true;
   budgetBar.append(budget);
@@ -432,6 +432,11 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         }
         channel = state.channel; chat.setChannel(channel);
         if (pvp) chat.setPlayers(state.pvp?.players ?? []);
+        const playerId = viewer.getState().userId;
+        if (playerId && viewer.getState().connected && !state.ended && state.phase !== 'complete'
+          && playerId !== state.hostId && (!pvp || state.pvp?.players.some(player => player.id === playerId))) {
+          joinedNotice.show(playerId, channel);
+        }
         personal.identify(state.gameId ?? requestedGame, viewer.getState().userId ?? viewer.getState().savedUserId ?? null);
         chat.setProStatus(state);
         setRound(state.clue, state.gameId && state.roundId ? `${state.gameId}/${state.roundId}` : `waiting/${channel}`);
@@ -519,9 +524,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     else if (connect.parentElement !== signIn) signIn.prepend(connect);
     const joined = !!feed?.hasJoined();
     const needsAuthorization = connectionState === 'stopped' && connectionDetail === 'Sign in with Twitch to play.';
-    signIn.hidden = state.connected && joined && !needsAuthorization || reviewedRound !== null;
-    map.hidden = (!state.connected || !joined || needsAuthorization) && reviewedRound === null;
-    joinGame.hidden = !state.connected || joined;
+    signIn.hidden = state.connected && !needsAuthorization || reviewedRound !== null;
+    map.hidden = (!state.connected || needsAuthorization) && reviewedRound === null;
     signInError.textContent = actionError || (state.error ? twitchMessageText(state.error) : '');
     signInError.hidden = !signInError.textContent;
     if (snapshot) round.textContent = tr('Round {{value1}} / {{value2}}', { value1: formatGuessrNumber(snapshot.round), value2: formatGuessrNumber(live?.totalRounds ?? STREAM_ROUNDS) });
@@ -587,7 +591,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     }
     const disabledReason = live?.ended ? 'The streamer ended this game.' : !state.connected ? 'Sign in with Twitch'
       : pvp && live?.pvp?.locked ? 'Your guess is locked. Waiting for the other players.'
-      : !joined ? 'Join game' : isHost() ? 'You are the streamer. Submit your guess in the streamer tab.' : !channel ? 'Open the game link shared by your streamer.'
+      : !joined ? 'Connecting to the NoitaGuessr game…' : isHost() ? 'You are the streamer. Submit your guess in the streamer tab.' : !channel ? 'Open the game link shared by your streamer.'
       : live?.timing?.phase === 'lobby' ? pvp ? 'Waiting for both players to be ready.' : 'Waiting for the streamer to start the game.'
       : connectionState !== 'connected' ? 'The NoitaGuessr game connection is unavailable'
       : !snapshot ? 'Waiting for the streamer to start a round'
@@ -668,7 +672,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   };
   const ticks = setInterval(() => { checkAutomatic(); refresh(); }, 250);
   return () => {
-    clearAccount(); clearFrame();
+    clearAccount(); clearFrame(); joinedNotice.dispose();
     closed = true; clearShared?.(); room?.dispose(); unsubscribe(); unsubscribeLanguage(); chat.dispose(); board.destroy(); viewport?.destroy(); clearControls?.(); clearResults?.();
     clearInterval(ticks);
     window.removeEventListener('offline', refresh); window.removeEventListener('online', refresh);

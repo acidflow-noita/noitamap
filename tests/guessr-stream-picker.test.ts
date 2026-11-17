@@ -81,6 +81,33 @@ function mount(url: string, initial: Partial<TwitchViewerState> = {}) {
 }
 
 describe('shared channel guess picker', () => {
+  it('needs no extra Join click after login and shows one confirmation only after receiving a live game', async () => {
+    const id = '11111111-1111-4111-8111-111111111111';
+    const f = mount(`/guess/wuote/${gameCode(id, 'parallel')}/`);
+    f.button('Sign in with Twitch').click(); await flush();
+    expect(f.viewer.connect).toHaveBeenCalledOnce();
+    expect(f.button('Join wuote’s game')).toBeUndefined();
+    expect(document.querySelector('.guessr-join-toast')).toBeNull();
+    const state: LiveRoomView = { schema: 1, channel: 'wuote', hostId: '456', gameId: id, revision: 1,
+      phase: 'waiting', online: true, paused: false, round: 1, roundId: null, clue: null, expiresAt: Date.now() + 60000 };
+    parallel.events!.state(state); await flush();
+    const toast = document.querySelector('.guessr-join-toast');
+    expect(toast?.textContent).toBe('Successfully joined wuote’s game');
+    expect(toast?.getAttribute('role')).toBe('status');
+    for (let revision = 2; revision < 8; revision++) parallel.events!.state({ ...state, revision });
+    expect(document.querySelector('.guessr-join-toast')).toBe(toast);
+    expect(document.querySelectorAll('.guessr-join-toast')).toHaveLength(1);
+    dispose?.(); dispose = undefined; expect(document.querySelector('.guessr-join-toast')).toBeNull();
+  });
+  it('does not announce that a completed or wrong game was joined', () => {
+    const id = '11111111-1111-4111-8111-111111111111';
+    mount(`/guess/wuote/${gameCode(id, 'parallel')}/`, { connected: true, login: 'viewer', userId: '123' });
+    const state: LiveRoomView = { schema: 1, channel: 'wuote', hostId: '456', gameId: id, revision: 1,
+      phase: 'complete', online: true, paused: false, round: 1, roundId: null, clue: null, expiresAt: Date.now() + 60000 };
+    parallel.events!.state(state);
+    parallel.events!.state({ ...state, gameId: '22222222-2222-4222-8222-222222222222', phase: 'waiting', revision: 2 });
+    expect(document.querySelector('.guessr-join-toast')).toBeNull();
+  });
   it('lets a PvP creator lock a private guess with no chat connection, and keeps it locked before the next snapshot', async () => {
     const id = '11111111-1111-4111-8111-111111111111';
     const f = mount(`/guess/pvp/${gameCode(id, 'pvp')}/`, { connected: true, login: 'wuote', userId: '456' });

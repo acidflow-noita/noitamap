@@ -160,7 +160,7 @@ export function attachClueControls(
       typeof options.difficultyTier === 'function' ? options.difficultyTier() : options.difficultyTier);
     for (const { button, anchor, costLabel, target, label, shortcut } of buttons) {
       const { available, same } = preview(target);
-      button.disabled = pending || !available || same;
+      button.disabled = controls.inert || pending || !available || same;
       anchor.tabIndex = button.disabled ? 0 : -1;
       bindText(costLabel, () => {
         const next = preview(target);
@@ -201,7 +201,7 @@ export function attachClueControls(
   }
 
   async function load(dx: number, dy: number, level: number): Promise<void> {
-    if (stopped || pending || !supportedCamera(place, { dx, dy, level }))
+    if (stopped || controls.inert || pending || !supportedCamera(place, { dx, dy, level }))
       return;
     pending = true;
     error.replaceChildren();
@@ -242,7 +242,7 @@ export function attachClueControls(
   }
   let lastKey = 0;
   const keydown = (event: KeyboardEvent) => {
-    if (stopped || !clue.isConnected || clue.closest('[hidden]') || !gameShortcut(event)) return;
+    if (stopped || controls.inert || !clue.isConnected || clue.closest('[hidden]') || !gameShortcut(event)) return;
     const labels: Record<string, string> = { KeyW: 'Travel north', KeyA: 'Travel west', KeyS: 'Travel south', KeyD: 'Travel east', KeyQ: 'Zoom out', KeyE: 'Zoom in' };
     const label = labels[event.code] ?? ({ w: 'Travel north', a: 'Travel west', s: 'Travel south', d: 'Travel east', q: 'Zoom out', e: 'Zoom in' } as Record<string, string>)[event.key.toLowerCase()];
     if (!label) return;

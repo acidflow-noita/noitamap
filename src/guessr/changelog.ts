@@ -4,11 +4,16 @@ import { readGuessRoute } from './routes';
 
 const isMainPage = () => readGuessRoute(new URL(location.href)).pane === 'home';
 
-// Change this ID only when the player-facing notes below change.
+// One announcement per release day. Editing hotfix notes must not reopen it.
 export const GUESSR_CHANGELOG = {
   id: '2026-11-17-layout-stability',
   date: '2026-11-17',
   notes: [
+    "Opening an invitation link joins the game automatically after you sign in.",
+    "The timer and sharing controls stay inside the game header.",
+    "Submitting a guess keeps the maps and controls in place.",
+    "Buttons now use consistent rounded corners, including Pro gift and account controls.",
+    "The update notice no longer opens again for each small fix.",
     "{{whatsNew}} now opens automatically only on the NoitaGuessr main page.",
     "Fixed flickering in the game view for chat participants.",
     "Zoom controls line up with the bottom row of movement buttons.",
@@ -62,6 +67,11 @@ function write(kind: 'localStorage' | 'sessionStorage', key: string, value: stri
 }
 
 export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
+  const announcement = /^\d{4}-\d{2}-\d{2}/.exec(release.id)?.[0] ?? release.id;
+  const seen = () => {
+    const saved = read('localStorage', SEEN_KEY);
+    return saved === announcement || !!saved && saved.startsWith(announcement + '-');
+  };
   let safe = false, shown = false, destroyed = false, queued = false;
   let opened: { element: HTMLDialogElement; instance: Dialog } | undefined;
 
@@ -87,13 +97,15 @@ export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
     body.append(date, notes);
     dialog.append(header, body); document.body.append(dialog);
     const instance = new Dialog(dialog);
+    // Claim the notice before an asynchronous show. Navigation or a reload
+    // during the opening transition must not schedule the same notice again.
+    shown = true;
+    write('localStorage', SEEN_KEY, announcement);
+    write('sessionStorage', SESSION_KEY, '1');
     opened = { element: dialog, instance };
     dialog.addEventListener('shown.bs.dialog', () => {
       // A game can start while Bootstrap opens the dialog.
       if ((!safe || !isMainPage()) && !trigger) { void instance.hide(); return; }
-      shown = true;
-      write('localStorage', SEEN_KEY, release.id);
-      write('sessionStorage', SESSION_KEY, '1');
     }, { once: true });
     dialog.addEventListener('hidden.bs.dialog', () => {
       instance.dispose(); dialog.remove(); opened = undefined;
@@ -110,7 +122,7 @@ export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
     queueMicrotask(() => {
       queued = false;
       if (destroyed || !safe || !isMainPage() || shown || document.visibilityState === 'hidden'
-        || read('sessionStorage', SESSION_KEY) || read('localStorage', SEEN_KEY) === release.id) return;
+        || read('sessionStorage', SESSION_KEY) || seen()) return;
       show();
     });
   }
