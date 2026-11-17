@@ -705,5 +705,8 @@
   "The timer and sharing controls stay inside the game header.": "The timer and sharing controls stay inside the game header.",
   "Submitting a guess keeps the maps and controls in place.": "Submitting a guess keeps the maps and controls in place.",
   "Buttons now use consistent rounded corners, including Pro gift and account controls.": "Buttons now use consistent rounded corners, including Pro gift and account controls.",
-  "The update notice no longer opens again for each small fix.": "The update notice no longer opens again for each small fix."
+  "The update notice no longer opens again for each small fix.": "The update notice no longer opens again for each small fix.",
+  "The join confirmation appears at the top center in green.": "The join confirmation appears at the top center in green.",
+  "Game headers use the same round indicator as the main page.": "Game headers use the same round indicator as the main page.",
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line."
 }

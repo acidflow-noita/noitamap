@@ -81,6 +81,25 @@ function mount(url: string, initial: Partial<TwitchViewerState> = {}) {
 }
 
 describe('shared channel guess picker', () => {
+  it('shows early-close feedback outside the header and both map panels', () => {
+    const id = '11111111-1111-4111-8111-111111111111';
+    const f = mount(`/guess/wuote/${gameCode(id, 'parallel')}/`, { connected: true, login: 'viewer', userId: '123' });
+    const state: LiveRoomView = { schema: 1, channel: 'wuote', gameId: id, hostId: '456', revision: 1,
+      phase: 'guess', online: true, paused: false, round: 3, totalRounds: 5, roundId: id,
+      clue: new URL(roundLink('/guess/?channel=wuote', 3, true)).hash.slice(6), expiresAt: Date.now() + 60000,
+      timing: { phase: 'play', startsAt: Date.now() - 1000, deadline: Date.now() + 30000, seconds: 30, hostRound: 2, chatRound: 3 } };
+    parallel.events!.state(state);
+    const header = f.main.querySelector('.stream-connection-bar')!, before = header.textContent;
+    const progress = header.querySelector('[role="progressbar"]')!;
+    expect(progress.children).toHaveLength(5); expect(progress.getAttribute('aria-valuenow')).toBe('2');
+    parallel.events!.state({ ...state, revision: 2, timing: { ...state.timing!, early: true } });
+    const status = f.main.querySelector('.stream-room-status')!;
+    expect(status.textContent).toBe('Everyone has submitted. This round is closing.');
+    expect(status.closest('.stream-connection-bar, .game-panel')).toBeNull();
+    expect(status.parentElement!.parentElement).toBe(f.main);
+    expect(status.parentElement!.hidden).toBe(false);
+    expect(header.textContent).toBe(before); expect(header.querySelector('[role="progressbar"]')).toBe(progress);
+  });
   it('needs no extra Join click after login and shows one confirmation only after receiving a live game', async () => {
     const id = '11111111-1111-4111-8111-111111111111';
     const f = mount(`/guess/wuote/${gameCode(id, 'parallel')}/`);

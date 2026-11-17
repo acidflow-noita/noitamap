@@ -714,5 +714,8 @@
   "The timer and sharing controls stay inside the game header.": "Il timer e i comandi di condivisione rimangono all'interno dell'intestazione del gioco.",
   "Submitting a guess keeps the maps and controls in place.": "Inviando una risposta, le mappe e i comandi rimangono al loro posto.",
   "Buttons now use consistent rounded corners, including Pro gift and account controls.": "I pulsanti presentano ora angoli arrotondati uniformi, compresi quelli relativi ai regali Pro e alle impostazioni dell'account.",
-  "The update notice no longer opens again for each small fix.": "La notifica di aggiornamento non viene più visualizzata ogni volta che viene apportata una piccola correzione."
+  "The update notice no longer opens again for each small fix.": "La notifica di aggiornamento non viene più visualizzata ogni volta che viene apportata una piccola correzione.",
+  "The join confirmation appears at the top center in green.": "La conferma dell'adesione appare in alto al centro, in verde.",
+  "Game headers use the same round indicator as the main page.": "Le intestazioni dei giochi utilizzano lo stesso indicatore circolare della pagina principale.",
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "I messaggi di stato rimangono nella parte inferiore dello schermo senza spostare le mappe. Il nome dello streamer e la modalità di gioco occupano la stessa riga."
 }

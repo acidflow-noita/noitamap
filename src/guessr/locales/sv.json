@@ -705,5 +705,8 @@
   "The timer and sharing controls stay inside the game header.": "Tidtagaren och delningsfunktionerna finns kvar i spelets rubrik.",
   "Submitting a guess keeps the maps and controls in place.": "När du skickar in ett förslag behålls kartorna och kontrollerna på sina platser.",
   "Buttons now use consistent rounded corners, including Pro gift and account controls.": "Knapparna har nu enhetliga rundade hörn, inklusive Pro-present- och kontofunktionerna.",
-  "The update notice no longer opens again for each small fix.": "Uppdateringsmeddelandet visas inte längre vid varje mindre korrigering."
+  "The update notice no longer opens again for each small fix.": "Uppdateringsmeddelandet visas inte längre vid varje mindre korrigering.",
+  "The join confirmation appears at the top center in green.": "Bekräftelsen på anslutningen visas högst upp i mitten i grönt.",
+  "Game headers use the same round indicator as the main page.": "Spelrubrikerna använder samma runda indikator som huvudsidan.",
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Statusmeddelanden visas längst ner utan att kartorna flyttas. Streamerns namn och spelläget visas på samma rad."
 }

@@ -616,7 +616,10 @@ it('labels the streamer’s last round and gives its rendered score table 30 sec
   expect(game.timing!.resultsUntil).toBe(streamNow + 30000);
   expect(document.getElementById('stream-auto-next')!.textContent).toBe('Results available in: 00:27');
   expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:27');
-  expect(document.querySelector('.stream-toolbar-round')!.textContent).toContain('Your round 10 / 10');
+  const progress = document.querySelector('.stream-toolbar-round [role="progressbar"]')!;
+  expect(progress.getAttribute('title')).toBe('Round 10 of 10');
+  expect(progress.getAttribute('aria-valuenow')).toBe('10');
+  expect(progress.children).toHaveLength(10);
   expect(document.body.textContent).toContain('Chatters have finished all rounds.');
   vi.setSystemTime(streamNow + 4000); ui.render();
   expect(game.timing!.resultsUntil).toBe(streamNow + 30000); // Rendering again must not restart the timer.

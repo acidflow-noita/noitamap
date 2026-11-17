@@ -41,6 +41,7 @@ import { buttonNotice } from './button-notice';
 import { rememberPvp, forgetPvp } from './pvp-resume';
 import { StreamResultArchive } from './stream-result-archive';
 import { gameJoinNotice } from './join-notice';
+import { showRoundProgress } from './round-progress';
 
 const ROUND_STORAGE_KEY = 'noitamap-guessr-viewer-round-v1';
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text: string | (() => string) = '') {
@@ -232,7 +233,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const sendHelp = hoverHelp(sendControl, () => tr(sendReason), send);
   const secondaryActions = node('div', 'stream-secondary-actions');
   secondaryActions.append(previousResult, result, retry);
-  actions.append(sendControl); mapPanel.append(revealBar, actions, delivery, secondaryActions, signIn, map); layout.append(mapPanel);
+  actions.append(sendControl); mapPanel.append(revealBar, actions, secondaryActions, signIn, map); layout.append(mapPanel);
   const resultsPanel = node('section', 'stream-viewer-results'); resultsPanel.hidden = true;
   layout.append(resultsPanel);
   const sharedPanel = node('section', 'stream-shared-round'); sharedPanel.hidden = true; layout.append(sharedPanel);
@@ -244,8 +245,9 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   toolbar.querySelector('.stream-chat-heading')?.classList.add('stream-toolbar-navigation');
   toolbar.querySelector('.stream-chat-actions')?.classList.add('stream-toolbar-actions');
   const phase = node('div', 'stream-toolbar-round'); phase.append(round, timer); toolbar.insertBefore(phase, toolbar.lastElementChild);
-  roomStatus.className = 'stream-room-status stream-activity'; chat.panel.append(roomStatus);
-  layout.prepend(chat.panel); main.append(layout);
+  const activity = node('div', 'stream-activity stream-viewer-activity');
+  activity.hidden = true; activity.append(roomStatus, delivery);
+  layout.prepend(chat.panel); main.append(layout, activity);
   const pvpLobby = node('section', 'game-panel stream-start-panel pvp-lobby'); pvpLobby.hidden = true;
   const pvpTitle = node('h2'), pvpDetail = node('p'), pvpRule = node('p', 'form-text'), pvpClock = node('output', 'stream-waiting-timer');
   const pvpNames = node('div', 'pvp-lobby-players');
@@ -280,7 +282,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       snapshot = decodeViewerClue(payload, { imageRoot, version: config.version });
       if (snapshot.round > STREAM_ROUNDS) throw Error();
     } catch { snapshot = undefined; }
-    round.textContent = snapshot ? tr('Round {{value1}} / {{value2}}', { value1: formatGuessrNumber(snapshot.round), value2: formatGuessrNumber(live?.totalRounds ?? STREAM_ROUNDS) }) : tr('Ready to start');
+    if (snapshot) showRoundProgress(round, live?.totalRounds ?? STREAM_ROUNDS, snapshot.round);
+    else bindText(round, 'Ready to start');
     if (!snapshot) emptyClue(payload ? 'This clue uses a different map version. Reload the page to update.' : undefined);
     else {
       if (snapshot.assistance) progress = { ...newClueProgress(), ...snapshot.camera, ...snapshot.assistance,
@@ -528,7 +531,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     map.hidden = (!state.connected || needsAuthorization) && reviewedRound === null;
     signInError.textContent = actionError || (state.error ? twitchMessageText(state.error) : '');
     signInError.hidden = !signInError.textContent;
-    if (snapshot) round.textContent = tr('Round {{value1}} / {{value2}}', { value1: formatGuessrNumber(snapshot.round), value2: formatGuessrNumber(live?.totalRounds ?? STREAM_ROUNDS) });
+    if (snapshot && live?.phase !== 'complete' && reviewedRound === null && sharedRound === null)
+      showRoundProgress(round, live?.totalRounds ?? STREAM_ROUNDS, snapshot.round);
     showPersonalOutcome();
     if (progress) updateRoundIndicators(layout, progress,
       reviewedRound === null ? live?.difficultyTier : personal.round(reviewedRound).reveal?.area.difficultyTier);
@@ -656,6 +660,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       bindText(roomStatus, actionError || (live?.ended ? 'The match was cancelled.' : connectionState === 'stopped' ? connectionDetail : ''));
       roomStatus.hidden = !roomStatus.textContent || live?.phase === 'complete';
     }
+    activity.hidden = roomStatus.hidden && delivery.hidden;
   };
   const unsubscribe = viewer.subscribe(refresh);
   const unsubscribeLanguage = onGuessrLanguageChanged(refresh);
@@ -676,7 +681,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     closed = true; clearShared?.(); room?.dispose(); unsubscribe(); unsubscribeLanguage(); chat.dispose(); board.destroy(); viewport?.destroy(); clearControls?.(); clearResults?.();
     clearInterval(ticks);
     window.removeEventListener('offline', refresh); window.removeEventListener('online', refresh);
-    sendHelp.dispose(); inviteNotice.dispose(); connection.remove(); round.remove(); roomStatus.remove();
+    sendHelp.dispose(); inviteNotice.dispose(); connection.remove(); round.remove(); activity.remove();
     page?.classList.remove('stream-viewer-page'); main.classList.remove('stream-viewer-shell');
   };
 }

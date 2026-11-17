@@ -3,6 +3,7 @@ import { confirmQuitGame } from './quit-game';
 import { bindText, bindAttribute, tr, formatGuessrNumber, guessrLocale } from './i18n';
 import { msg, setText, type LocalizedText } from './messages';
 import { iconLabel, type ControlIcon } from './control-icons';
+import { roundProgress } from './round-progress';
 
 type LobbyAction = () => unknown;
 
@@ -119,20 +120,7 @@ function continueGame(
       ? msg(() => `${tr(resume.modeLabel)}: ${tr('Results')}`) : msg("{{value1}} in progress", () => ({ value1: tr(resume.modeLabel) }))),
     ...(!resume.complete ? [element("span", "lobby-resume-round", msg("Round {{value1}} of {{value2}}", () => ({ value1: current, value2: total })))] : []),
   );
-  const progress = element("div", "lobby-rounds");
-  progress.setAttribute("role", "progressbar");
-  bindAttribute(progress, 'aria-label', 'Completed rounds');
-  progress.setAttribute("aria-valuemin", "0");
-  progress.setAttribute("aria-valuemax", String(total));
-  progress.setAttribute("aria-valuenow", String(completed));
-  bindAttribute(progress, 'aria-valuetext', '{{completed}} of {{total}} rounds completed', { completed, total });
-  for (let round = 1; round <= total; round++) {
-    const segment = element(
-      "span",
-      round <= completed ? "complete" : round === current ? "current" : "",
-    );
-    progress.append(segment);
-  }
+  const progress = roundProgress(total, current, completed);
   body.append(
     details,
     ...(!resume.complete ? [progress] : []),

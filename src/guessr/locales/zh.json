@@ -705,5 +705,8 @@
   "The timer and sharing controls stay inside the game header.": "计时器和分享控件仍位于游戏标题栏内。",
   "Submitting a guess keeps the maps and controls in place.": "提交猜测后，地图和控制项将保持原位。",
   "Buttons now use consistent rounded corners, including Pro gift and account controls.": "按钮现在均采用统一的圆角设计，包括“Pro 礼品”和“账户”控制项。",
-  "The update notice no longer opens again for each small fix.": "每次进行小幅修复时，更新通知都不会再次弹出。"
+  "The update notice no longer opens again for each small fix.": "每次进行小幅修复时，更新通知都不会再次弹出。",
+  "The join confirmation appears at the top center in green.": "加入确认信息以绿色文字显示在页面顶部中央。",
+  "Game headers use the same round indicator as the main page.": "游戏标题栏使用与主页相同的回合指示器。",
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "状态消息会始终显示在底部，且不会移动地图。主播名称和游戏模式共用一行。"
 }

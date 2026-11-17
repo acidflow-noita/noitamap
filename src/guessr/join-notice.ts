@@ -12,7 +12,7 @@ export function gameJoinNotice() {
       if (shown.has(playerId)) return;
       shown.add(playerId); dispose();
       element = document.createElement('div');
-      element.className = 'toast toast-instant guessr-join-toast';
+      element.className = 'toast toast-instant theme-success guessr-join-toast';
       element.setAttribute('role', 'status'); element.setAttribute('aria-live', 'polite'); element.setAttribute('aria-atomic', 'true');
       const body = document.createElement('div'); body.className = 'toast-body';
       body.append(iconLabel('check-lg', ''));

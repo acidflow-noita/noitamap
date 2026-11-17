@@ -705,5 +705,8 @@
   "The timer and sharing controls stay inside the game header.": "タイマーと共有機能の操作ボタンは、ゲームヘッダー内に表示されたままになります。",
   "Submitting a guess keeps the maps and controls in place.": "予想を送信しても、地図や操作ボタンはそのまま表示されたままになります。",
   "Buttons now use consistent rounded corners, including Pro gift and account controls.": "ボタンには、Proギフトやアカウント関連の操作ボタンを含め、統一された角丸デザインが採用されました。",
-  "The update notice no longer opens again for each small fix.": "小さな修正が行われるたびに、更新通知が再度表示されることはなくなりました。"
+  "The update notice no longer opens again for each small fix.": "小さな修正が行われるたびに、更新通知が再度表示されることはなくなりました。",
+  "The join confirmation appears at the top center in green.": "参加確認メッセージが画面上部の中央に緑色で表示されます。",
+  "Game headers use the same round indicator as the main page.": "ゲームのヘッダーには、メインページと同じラウンドインジケーターが使用されています。",
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "ステータスメッセージは、マップを動かさずに画面下部に表示されたままになります。ストリーマーの名前とゲームモードは1行にまとめて表示されます。"
 }

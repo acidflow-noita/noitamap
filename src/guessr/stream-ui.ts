@@ -63,6 +63,7 @@ import { streamingSetting } from './streaming-setting';
 import { streamsAhead } from './match-settings';
 import { streamRevealAt } from './stream-timing';
 import { localizedError } from './messages';
+import { showRoundProgress } from './round-progress';
 
 const SHARE_ANNOUNCEMENTS_KEY = 'noitamap-guessr-share-announcements';
 
@@ -1092,9 +1093,11 @@ export class StreamUI {
     const navigation = el('div', '', 'stream-toolbar-navigation');
     moveGameExit(main, action('Exit game', this.exit, 'btn btn-sm btn-outline theme-secondary'));
     const phase = el('div', '', 'stream-toolbar-round');
-    phase.append(el('strong', () => game.timing?.phase === 'lobby' ? tr('Ready to start') : game.timing?.phase === 'warmup'
-      ? tr('Chat goes first')
-      : tr('Your round {{round}} / {{total}}', { round: formatGuessrNumber(index + 1), total: formatGuessrNumber(game.session.rounds.length) })));
+    const roundIndicator = el('strong');
+    if (game.timing?.phase === 'lobby') bindText(roundIndicator, 'Ready to start');
+    else if (game.timing?.phase === 'warmup') bindText(roundIndicator, 'Chat goes first');
+    else showRoundProgress(roundIndicator, game.session.rounds.length, index + 1, game.reveals.length);
+    phase.append(roundIndicator);
     if (game.timing) { const timer = el('span', '', 'stream-round-timer'); timer.id = 'stream-round-timer'; phase.append(timer); }
     const commands = el('div', '', 'stream-toolbar-actions');
     banner.append(navigation, phase, commands);

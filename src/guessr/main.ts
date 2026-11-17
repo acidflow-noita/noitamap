@@ -3,6 +3,7 @@ import { fitGameFrame } from './game-frame';
 import { gameLogo, moveGameExit } from './game-chrome';
 import { mountAccountMenu } from './account-menu';
 import { updateSubmit, submitHelp } from './submit-control';
+import { roundProgress } from './round-progress';
 import { readPvpResume, leaveSavedPvp, forgetPvp } from './pvp-resume';
 import "./game.css";
 import Dialog from "bootstrap/js/dist/dialog.js";
@@ -508,22 +509,9 @@ function gameHud(options: {
   if (options.badge === 'pro') group.append(node('span', options.twitch ? 'twitch-mode-label' : '', msg(options.label)));
   group.append(
     node("span", `badge ${options.badge}${options.badge === 'pro' ? ' animation-pop' : ''}${options.twitch && options.badge !== 'pro' ? ' twitch-mode-label' : ''}`, msg(options.badge === 'pro' ? 'Pro' : options.label)),
-    node("span", "round", msg("Round {{value1}} / {{value2}}", () => ({ value1: options.round, value2: options.total }))),
   );
   if (options.extra) group.append(node("span", "hint", options.extra));
-  const progress = node("div", "round-progress");
-  progress.setAttribute("aria-hidden", "true");
-  for (let round = 1; round <= options.total; round++)
-    progress.append(
-      node(
-        "span",
-        round < options.round
-          ? "complete"
-          : round === options.round
-            ? "current"
-            : "",
-      ),
-    );
+  const progress = roundProgress(options.total, options.round);
   group.append(progress);
   const exit = button(msg("Exit game"), options.exit, 'btn btn-outline theme-secondary');
   const hud = pageHeading(group, exit);

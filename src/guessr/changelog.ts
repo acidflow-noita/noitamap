@@ -9,6 +9,9 @@ export const GUESSR_CHANGELOG = {
   id: '2026-11-17-layout-stability',
   date: '2026-11-17',
   notes: [
+    "The join confirmation appears at the top center in green.",
+    "Game headers use the same round indicator as the main page.",
+    "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.",
     "Opening an invitation link joins the game automatically after you sign in.",
     "The timer and sharing controls stay inside the game header.",
     "Submitting a guess keeps the maps and controls in place.",

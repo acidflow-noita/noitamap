@@ -705,5 +705,8 @@
   "The timer and sharing controls stay inside the game header.": "De timer en de bedieningsknoppen voor delen blijven in de koptekst van het spel staan.",
   "Submitting a guess keeps the maps and controls in place.": "Als je een gok indient, blijven de kaarten en bedieningselementen op hun plaats staan.",
   "Buttons now use consistent rounded corners, including Pro gift and account controls.": "Knoppen hebben nu overal afgeronde hoeken, ook de knoppen voor Pro-cadeaus en accountinstellingen.",
-  "The update notice no longer opens again for each small fix.": "De updatemelding verschijnt niet meer bij elke kleine aanpassing."
+  "The update notice no longer opens again for each small fix.": "De updatemelding verschijnt niet meer bij elke kleine aanpassing.",
+  "The join confirmation appears at the top center in green.": "De bevestiging van de deelname verschijnt bovenaan in het midden in het groen.",
+  "Game headers use the same round indicator as the main page.": "De kopteksten van de spellen maken gebruik van dezelfde ronde indicator als de hoofdpagina.",
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Statusberichten blijven onderaan staan zonder dat de kaarten verschuiven. De naam van de streamer en de spelmodus staan op één regel."
 }

@@ -723,5 +723,8 @@
   "The timer and sharing controls stay inside the game header.": "Таймер и элементы управления для публикации остаются в верхней части экрана игры.",
   "Submitting a guess keeps the maps and controls in place.": "При отправке ответа карты и элементы управления остаются на своих местах.",
   "Buttons now use consistent rounded corners, including Pro gift and account controls.": "Теперь все кнопки имеют одинаковые закругленные углы, в том числе элементы управления в разделах «Подарки Pro» и «Аккаунт».",
-  "The update notice no longer opens again for each small fix.": "Уведомление об обновлении больше не открывается заново при каждом незначительном исправлении."
+  "The update notice no longer opens again for each small fix.": "Уведомление об обновлении больше не открывается заново при каждом незначительном исправлении.",
+  "The join confirmation appears at the top center in green.": "Подтверждение присоединения отображается в верхней центральной части экрана зелёным цветом.",
+  "Game headers use the same round indicator as the main page.": "В заголовках игр используется тот же круглый индикатор, что и на главной странице.",
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Сообщения о статусе отображаются внизу экрана, не смещая карты. Имя стримера и режим игры занимают одну строку."
 }

@@ -705,5 +705,8 @@
   "The timer and sharing controls stay inside the game header.": "Timer dan tombol berbagi tetap berada di bagian header game.",
   "Submitting a guess keeps the maps and controls in place.": "Dengan mengirimkan tebakan, peta dan kontrol akan tetap berada di tempatnya.",
   "Buttons now use consistent rounded corners, including Pro gift and account controls.": "Tombol-tombol kini menggunakan sudut membulat yang seragam, termasuk tombol hadiah Pro dan pengaturan akun.",
-  "The update notice no longer opens again for each small fix.": "Pemberitahuan pembaruan tidak lagi muncul setiap kali ada perbaikan kecil."
+  "The update notice no longer opens again for each small fix.": "Pemberitahuan pembaruan tidak lagi muncul setiap kali ada perbaikan kecil.",
+  "The join confirmation appears at the top center in green.": "Konfirmasi bergabung muncul di bagian tengah atas dengan warna hijau.",
+  "Game headers use the same round indicator as the main page.": "Header game menggunakan indikator lingkaran yang sama seperti yang ada di halaman utama.",
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Pesan status tetap berada di bagian bawah tanpa menggeser tampilan peta. Nama streamer dan mode permainan ditampilkan dalam satu baris."
 }

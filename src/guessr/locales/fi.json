@@ -705,5 +705,8 @@
   "The timer and sharing controls stay inside the game header.": "Ajastin ja jakamistoiminnot pysyvät pelin otsikkopalkissa.",
   "Submitting a guess keeps the maps and controls in place.": "Arvauksen lähettäminen säilyttää kartat ja hallintalaitteet paikoillaan.",
   "Buttons now use consistent rounded corners, including Pro gift and account controls.": "Painikkeissa on nyt yhtenäiset pyöristetyt kulmat, mukaan lukien Pro-lahja- ja tilitoiminnot.",
-  "The update notice no longer opens again for each small fix.": "Päivitysilmoitus ei enää avaudu uudelleen jokaisen pienen korjauksen yhteydessä."
+  "The update notice no longer opens again for each small fix.": "Päivitysilmoitus ei enää avaudu uudelleen jokaisen pienen korjauksen yhteydessä.",
+  "The join confirmation appears at the top center in green.": "Liittymisvahvistus näkyy yläreunassa keskellä vihreänä.",
+  "Game headers use the same round indicator as the main page.": "Pelien otsikoissa käytetään samaa pyöreää merkkiä kuin pääsivulla.",
+  "Status messages stay at the bottom without moving the maps. The streamer name and game mode share one line.": "Tilanilmoitukset pysyvät alareunassa ilman, että kartat liikkuvat. Streamerin nimi ja pelitila näkyvät samalla rivillä."
 }
