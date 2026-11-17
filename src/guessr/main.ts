@@ -1,6 +1,6 @@
 import { mapControls } from './map-controls';
 import { fitGameFrame } from './game-frame';
-import { gameLogo, moveGameExit } from './game-chrome';
+import { compactHeaderNavigation, gameLogo, moveGameExit } from './game-chrome';
 import { mountAccountMenu } from './account-menu';
 import { updateSubmit, submitHelp } from './submit-control';
 import { roundProgress } from './round-progress';
@@ -206,16 +206,18 @@ function shell(game = false): HTMLElement {
   const identity = node('div', 'header-identity');
   identity.append(logo.element, createGuessrLanguagePicker());
   const actions = node("div", "header-actions");
+  let back: HTMLAnchorElement | undefined;
   if (readGuessRoute(new URL(location.href)).pane !== 'stream-picker') {
-    const back = link(msg("Back to map"), mapReturnUrl(), 'btn btn-sm btn-outline theme-secondary map-return', 'arrow-left');
+    back = link(msg("Back to map"), mapReturnUrl(), 'btn btn-sm btn-outline theme-secondary map-return', 'arrow-left');
     bindAttribute(back, 'title', 'Back to map'); identity.append(back);
   }
-  const helpButton = button(msg("How to play"), help, "small secondary guessr-help", 'info-circle');
+  const helpButton: HTMLButtonElement = button(msg("How to play"), () => help(helpButton), "small secondary guessr-help", 'info-circle');
   bindAttribute(helpButton, 'aria-label', 'How to play'); bindAttribute(helpButton, 'title', 'How to play'); actions.append(helpButton);
   const updatesButton = button(msg("What's new"), () => showGuessrChangelog(updatesButton), 'small secondary guessr-updates', 'clock-history');
   bindAttribute(updatesButton, 'aria-label', "What's new"); bindAttribute(updatesButton, 'title', "What's new"); actions.append(updatesButton);
   const clearAccount = mountAccountMenu(actions);
-  clearHeader = () => { logo.dispose(); clearAccount(); };
+  const clearNavigation = back && compactHeaderNavigation(back, helpButton);
+  clearHeader = () => { logo.dispose(); clearAccount(); clearNavigation?.(); };
   header.append(identity, actions);
   root.append(header);
   const live = node("div", "sr-only");
@@ -1586,16 +1588,12 @@ function reviewRanked(ordinal: number, continueGame = false): void {
   );
   main.append(actions); promoteSubmit(main);
 }
-function help(): void {
+function help(trigger: HTMLButtonElement): void {
   const existing = document.getElementById("guessr-help-dialog");
   if (existing) {
     void Dialog.getOrCreateInstance(existing).show();
     return;
   }
-  const trigger =
-    document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
   const dialog = node("dialog", "dialog dialog-scrollable");
   dialog.id = "guessr-help-dialog";
   dialog.setAttribute("aria-labelledby", "guessr-help-title");
@@ -1626,11 +1624,12 @@ function help(): void {
     () => {
       instance.dispose();
       dialog.remove();
-      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      const control = trigger.closest('.guessr-nav')?.querySelector<HTMLButtonElement>('.guessr-nav-toggle') ?? trigger;
+      if (control.isConnected) control.focus({ preventScroll: true });
     },
     { once: true },
   );
-  void instance.show(trigger ?? undefined);
+  void instance.show(trigger);
 }
 window.addEventListener("pagehide", save);
 if (!isGuessrAvailable(location.hostname, import.meta.env.DEV)) {

@@ -1,4 +1,5 @@
 import logo from '../../public/assets/noitaguessr-logo.svg?raw';
+import Menu from 'bootstrap/js/dist/menu.js';
 import { bindAttribute, bindText, clearTextBinding, tr } from './i18n';
 import { hoverHelp } from './hover-help';
 
@@ -39,6 +40,57 @@ export function gameLogo(onHome: () => void) {
 export function updateGameConnection(state: Connection, detail = '') {
   const indicator = document.querySelector<HTMLElement>('[data-game-connection]');
   if (indicator) indicators.get(indicator)?.(state, detail);
+}
+
+/** Put secondary links in a menu when six full-size touch targets would crowd the wordmark. */
+export function compactHeaderNavigation(back: HTMLAnchorElement, help: HTMLButtonElement) {
+  const compact = window.matchMedia?.('(max-width: 25rem)');
+  if (!compact) return;
+  const identity = back.parentElement!;
+  const group = document.createElement('div');
+  group.className = 'guessr-nav';
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'small secondary with-icon guessr-nav-toggle';
+  toggle.dataset.bsToggle = 'menu';
+  toggle.dataset.bsPlacement = 'bottom-end';
+  toggle.setAttribute('aria-controls', 'guessr-nav-links');
+  toggle.setAttribute('aria-expanded', 'false');
+  bindAttribute(toggle, 'aria-label', 'Navigation menu');
+  bindAttribute(toggle, 'title', 'Navigation menu');
+  const icon = document.createElement('i');
+  icon.className = 'bi bi-list';
+  icon.setAttribute('aria-hidden', 'true');
+  toggle.append(icon);
+  const menu = document.createElement('div');
+  menu.id = 'guessr-nav-links';
+  menu.className = 'menu';
+  group.append(toggle, menu);
+  help.before(group);
+
+  const layout = () => {
+    const focused = document.activeElement;
+    group.hidden = !compact.matches;
+    if (compact.matches) {
+      menu.append(back, help);
+    } else if (help.parentElement === menu) {
+      void Menu.getInstance(toggle)?.hide();
+      identity.append(back);
+      group.after(help);
+    }
+    back.classList.toggle('menu-item', compact.matches);
+    help.classList.toggle('menu-item', compact.matches);
+    if (focused === back || focused === help || focused === toggle) {
+      const direct = focused === back ? back : help;
+      (compact.matches ? toggle : direct).focus({ preventScroll: true });
+    }
+  };
+  layout();
+  compact.addEventListener('change', layout);
+  return () => {
+    compact.removeEventListener('change', layout);
+    Menu.getInstance(toggle)?.dispose();
+  };
 }
 
 export function moveGameExit(main: HTMLElement, exit: HTMLButtonElement) {

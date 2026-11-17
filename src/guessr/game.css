@@ -256,7 +256,6 @@ button.secondary:hover:not(:disabled) {
 }
 .site-header {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--game-gutter);
@@ -302,6 +301,9 @@ button.secondary:hover:not(:disabled) {
   display: flex;
   align-items: center;
   gap: var(--game-gutter);
+}
+.buttons,
+.action-row {
   flex-wrap: wrap;
 }
 .header-actions a {

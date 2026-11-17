@@ -36,6 +36,13 @@ body:has(#guess-app) .pro-gift-link {
   gap: 1rem; border-block-end: 1px solid var(--border);
 }
 #guess-app .header-identity, #guess-app .header-actions { flex-wrap: nowrap; gap: .5rem; min-inline-size: 0; }
+.guessr-nav { position: relative; }
+#guess-app .guessr-nav .menu-item {
+  display: flex; align-items: center; justify-content: flex-start; gap: .625rem;
+  inline-size: 100%; min-block-size: 2.75rem; padding: .5rem .75rem;
+  color: var(--text); background: transparent; border: 0; white-space: nowrap;
+}
+#guess-app .guessr-nav .menu-item:is(:hover, :focus-visible) { background: var(--surface-2); }
 #guess-app .guessr-logo { position: relative; flex: none; inline-size: 10.5rem; }
 #guess-app .guessr-logo .brand { display: block; inline-size: 100%; }
 .guessr-logo svg { display: block; inline-size: 100%; block-size: auto; }
@@ -491,6 +498,8 @@ body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none
     --game-page-padding: 0.5rem;
     --game-toolbar-height: 3.25rem;
   }
+}
+@media (max-width: 64rem) {
   #guess-app > .site-header {
     gap: 0.375rem;
     min-block-size: 3.5rem;
@@ -509,9 +518,15 @@ body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none
     flex: 0 1 auto;
     min-inline-size: 0;
   }
+  #guess-app .guessr-logo .brand {
+    display: grid;
+    align-items: center;
+    min-block-size: 2.75rem;
+  }
+  #guess-app .logo-status-trigger { top: 50%; }
   #guess-app
     .site-header
-    :is(.map-return, .guessr-help, .guessr-updates, .guessr-exit, .guessr-account, .combobox-toggle) {
+    :is(.map-return, .guessr-help, .guessr-updates, .guessr-exit, .guessr-account, .combobox-toggle, .guessr-nav-toggle):not(.menu-item) {
     display: inline-grid;
     place-items: center;
     inline-size: 2.75rem;
@@ -524,7 +539,7 @@ body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none
   }
   #guess-app
     .site-header
-    :is(.map-return, .guessr-help, .guessr-updates, .guessr-exit, .guessr-account)
+    :is(.map-return, .guessr-help, .guessr-updates, .guessr-exit, .guessr-account):not(.menu-item)
     > span:not(.badge) {
     position: absolute;
     inline-size: 1px;
@@ -547,6 +562,8 @@ body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none
     inline-size: 1.25rem;
     block-size: 1.25rem;
   }
+}
+@media (max-width: 48rem) {
   #guess-app > .shell {
     padding-inline: var(--game-page-padding);
   }
@@ -695,21 +712,6 @@ body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none
   }
 }
 @media (max-width: 22rem) {
-  #guess-app > .site-header {
-    gap: 0.25rem;
-    padding-inline: 0.25rem;
-  }
-  #guess-app .header-identity,
-  #guess-app .header-actions {
-    gap: 0.125rem;
-  }
-  #guess-app .header-identity:has(.map-return) {
-    flex-wrap: wrap;
-  }
-  #guess-app .header-identity:has(.map-return) .guessr-logo {
-    flex-basis: 100%;
-    max-inline-size: 6.5rem;
-  }
   #guess-app .clue-heading + .round-maximum {
     max-inline-size: 8em;
   }

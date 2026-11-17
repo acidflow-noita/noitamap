@@ -9,6 +9,8 @@ export const GUESSR_CHANGELOG = {
   id: '2026-11-17-layout-stability',
   date: '2026-11-17',
   notes: [
+    'On phones, the top navigation stays in one row.',
+    'The game menu shows wider map previews.',
     'The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.',
     'The clue appears above its controls. On small screens, a cost of 0 means the move is free.',
     'Round count and duration are together in game setup.',

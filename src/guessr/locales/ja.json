@@ -727,5 +727,8 @@
   "More changes": "その他の変更点",
   "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "共有された{{dailyMode}}の結果では、スコアの上に{{share}}と{{answers}}が表示されます。",
   "When a streamer reconnects during an open round, their saved pin is ready to submit.": "オープンラウンド中にストリーマーが再接続すると、保存されていたピンは送信可能な状態になります。",
-  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "{{dailyMode}} ページでは、ログインパネルが中央に配置されています。Twitchのログインボタンには、ベータ版バッジが表示されなくなりました。"
+  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "{{dailyMode}} ページでは、ログインパネルが中央に配置されています。Twitchのログインボタンには、ベータ版バッジが表示されなくなりました。",
+  "Navigation menu": "ナビゲーションメニュー",
+  "On phones, the top navigation stays in one row.": "スマートフォンでは、上部のナビゲーションは1行にまとめられます。",
+  "The game menu shows wider map previews.": "ゲームメニューでは、より広範囲のマッププレビューが表示されます。"
 }

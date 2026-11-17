@@ -727,5 +727,8 @@
   "More changes": "Weitere Änderungen",
   "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "Bei geteilten {{dailyMode}}-Ergebnissen werden {{share}} und {{answers}} über den Punkteständen angezeigt.",
   "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Wenn ein Streamer während einer offenen Runde die Verbindung wiederherstellt, kann sein gespeicherter Pin sofort eingereicht werden.",
-  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Das Anmeldefeld ist auf der Seite {{dailyMode}} zentriert. Die Twitch-Anmeldeschaltflächen zeigen das Beta-Symbol nicht mehr an."
+  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Das Anmeldefeld ist auf der Seite {{dailyMode}} zentriert. Die Twitch-Anmeldeschaltflächen zeigen das Beta-Symbol nicht mehr an.",
+  "Navigation menu": "Navigationsmenü",
+  "On phones, the top navigation stays in one row.": "Auf Smartphones bleibt die obere Navigationsleiste in einer Zeile.",
+  "The game menu shows wider map previews.": "Das Spielmenü zeigt größere Kartenvorschauen an."
 }

@@ -727,5 +727,8 @@
   "More changes": "Fler ändringar",
   "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "I delade {{dailyMode}}-resultat visas {{share}} och {{answers}} ovanför poängen.",
   "When a streamer reconnects during an open round, their saved pin is ready to submit.": "När en streamare återansluter sig under en pågående omgång är den sparade placeringen redo att skickas in.",
-  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Inloggningsfältet är centrerat på sidan {{dailyMode}}. Twitch-inloggningsknapparna visar inte längre betamärket."
+  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Inloggningsfältet är centrerat på sidan {{dailyMode}}. Twitch-inloggningsknapparna visar inte längre betamärket.",
+  "Navigation menu": "Navigationsmeny",
+  "On phones, the top navigation stays in one row.": "På mobiltelefoner visas den övre navigeringsmenyn i en rad.",
+  "The game menu shows wider map previews.": "Spelmenyn visar större kartförhandsvisningar."
 }

@@ -745,5 +745,8 @@
   "More changes": "Ще більше змін",
   "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "У результатах, опублікованих у режимі {{dailyMode}}, над балами відображаються {{share}} та {{answers}}.",
   "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Коли стрімер відновлює з’єднання під час відкритого раунду, його збережений варіант відповіді готовий до відправлення.",
-  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Панель входу розміщена по центру на сторінці {{dailyMode}}. На кнопках входу в Twitch більше не відображається позначка «Бета»."
+  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Панель входу розміщена по центру на сторінці {{dailyMode}}. На кнопках входу в Twitch більше не відображається позначка «Бета».",
+  "Navigation menu": "Меню навігації",
+  "On phones, the top navigation stays in one row.": "На мобільних телефонах верхня навігаційна панель залишається в одному рядку.",
+  "The game menu shows wider map previews.": "У меню гри відображаються більш широкі попередні перегляди карти."
 }
