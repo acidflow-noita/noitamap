@@ -748,5 +748,7 @@
   "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Panel pro přihlášení je na stránce {{dailyMode}} vycentrován. Tlačítka pro přihlášení na Twitch již nezobrazují značku „Beta“.",
   "Navigation menu": "Navigační menu",
   "On phones, the top navigation stays in one row.": "Na mobilních telefonech zůstává horní navigační lišta v jednom řádku.",
-  "The game menu shows wider map previews.": "Herní menu zobrazuje větší náhledy mapy."
+  "The game menu shows wider map previews.": "Herní menu zobrazuje větší náhledy mapy.",
+  "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Používá mapu {{mode}}. Pouze streamer potřebuje {{tier}}.",
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "V režimu {{streamMode}} jsou tlačítka {{hostAction}} a {{chatterAction}} nyní umístěna vedle sebe."
 }

@@ -16,7 +16,7 @@
 .lobby-modes {
   --other-modes: 2;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(34rem, 1.1fr);
   gap: 0.75rem 1rem;
 }
 .lobby-modes:has(> :nth-child(4)) {
@@ -89,6 +89,22 @@
   max-inline-size: 100%;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+.lobby-stream .lobby-mode-heading,
+.lobby-stream .lobby-mode-actions {
+  flex-wrap: nowrap;
+}
+.lobby-stream .lobby-mode-heading {
+  align-items: center;
+  gap: .375rem;
+}
+.lobby-stream .lobby-mode-heading h2 { white-space: nowrap; }
+.lobby-stream .lobby-mode-body { padding-inline: 1rem; }
+.lobby-stream .lobby-mode-description { text-wrap: balance; }
+.lobby-stream .lobby-mode-actions > button {
+  min-inline-size: 0;
+  min-block-size: 2.75rem;
+  padding-inline: .625rem;
 }
 .lobby-feature {
   grid-column: 1;
@@ -190,7 +206,7 @@
     flex-basis: 100%;
   }
 }
-@media (max-width: 32rem) {
+@media (max-width: 35rem) {
   .lobby-mode:not(.lobby-feature) {
     grid-template: "heading heading" auto "art description" auto "actions actions" auto / 47% minmax(0, 1fr);
     gap: .25rem .75rem;
@@ -206,4 +222,9 @@
   .lobby-mode:not(.lobby-feature) .lobby-mode-heading { grid-area: heading; align-self: end; }
   .lobby-mode:not(.lobby-feature) .lobby-mode-description { grid-area: description; align-self: center; }
   .lobby-mode:not(.lobby-feature) .lobby-mode-actions { grid-area: actions; }
+  #guess-app .lobby-stream .lobby-mode-heading h2 {
+    font-size: clamp(1rem, 5.5vw, 1.125rem);
+    gap: .25em;
+  }
+  .lobby-stream .lobby-mode-heading { gap: .25rem; }
 }

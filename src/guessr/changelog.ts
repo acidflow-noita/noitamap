@@ -9,6 +9,7 @@ export const GUESSR_CHANGELOG = {
   id: '2026-11-17-layout-stability',
   date: '2026-11-17',
   notes: [
+    'In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.',
     'On phones, the top navigation stays in one row.',
     'The game menu shows wider map previews.',
     'The menu puts {{dailyMode}} beside the other game modes. On phones, each mode has a compact card.',
@@ -106,6 +107,7 @@ export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
     date.dateTime = release.date; date.className = 'muted';
     const notes = document.createElement('ul'); notes.className = 'guessr-changelog-notes';
     const labels = () => ({ streaming: tr('I’m streaming'), streamMode: tr('Chat vs Streamer'),
+      hostAction: tr('Play as streamer'), chatterAction: tr('Play as chatter'),
       dailyMode: tr('Daily'), received: tr('Guess received'), startGame: tr('Start game'), howToPlay: tr('How to play'), whatsNew: tr("What's new"),
       share: tr('Share result'), answers: tr('View answers') });
     const earlier = document.createElement('ul'); earlier.className = 'guessr-changelog-notes';

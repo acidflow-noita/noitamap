@@ -730,5 +730,7 @@
   "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "{{dailyMode}} ページでは、ログインパネルが中央に配置されています。Twitchのログインボタンには、ベータ版バッジが表示されなくなりました。",
   "Navigation menu": "ナビゲーションメニュー",
   "On phones, the top navigation stays in one row.": "スマートフォンでは、上部のナビゲーションは1行にまとめられます。",
-  "The game menu shows wider map previews.": "ゲームメニューでは、より広範囲のマッププレビューが表示されます。"
+  "The game menu shows wider map previews.": "ゲームメニューでは、より広範囲のマッププレビューが表示されます。",
+  "Uses {{mode}} map. Only the streamer needs {{tier}}.": "{{mode}}マップを使用します。{{tier}}が必要なのはストリーマーのみです。",
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "{{streamMode}} では、{{hostAction}} ボタンと {{chatterAction}} ボタンが並んで表示されるようになりました。"
 }

@@ -82,6 +82,7 @@ function modeCard(options: {
 }): HTMLElement {
   const card = element("section", "card lobby-mode rounded-9");
   if (options.featured) card.classList.add('lobby-feature');
+  if (options.twitch) card.classList.add('lobby-stream');
   const image = element("img", "card-img-top lobby-mode-image");
   image.src = `/guessr/lobby/${options.image}.webp`;
   image.alt = "";
@@ -194,9 +195,9 @@ export function createLobby(options: LobbyOptions): HTMLElement {
       name: "Chat vs Streamer",
       twitch: true,
       image: "fungal-caverns",
-      description: "Uses {{mode}} map",
-      descriptionValues: () => ({ mode: tr('Daily') }),
-      badge: "Streamer with Pro",
+      description: "Uses {{mode}} map. Only the streamer needs {{tier}}.",
+      descriptionValues: () => ({ mode: tr('Daily'), tier: tr('Pro') }),
+      badge: "Pro",
       pro: true,
       actions: streamActions,
     }),

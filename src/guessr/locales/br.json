@@ -748,5 +748,7 @@
   "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "O painel de login está centralizado na página {{dailyMode}}. Os botões de login do Twitch não exibem mais o selo “Beta”.",
   "Navigation menu": "Menu de navegação",
   "On phones, the top navigation stays in one row.": "Em celulares, a barra de navegação superior permanece em uma única linha.",
-  "The game menu shows wider map previews.": "O menu do jogo exibe visualizações mais amplas do mapa."
+  "The game menu shows wider map previews.": "O menu do jogo exibe visualizações mais amplas do mapa.",
+  "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Utiliza o mapa {{mode}}. Apenas o streamer precisa do {{tier}}.",
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "No {{streamMode}}, os botões {{hostAction}} e {{chatterAction}} agora estão lado a lado."
 }

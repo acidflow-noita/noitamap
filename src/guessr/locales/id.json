@@ -730,5 +730,7 @@
   "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Panel masuk ditempatkan di tengah halaman {{dailyMode}}. Tombol masuk Twitch tidak lagi menampilkan lencana Beta.",
   "Navigation menu": "Menu navigasi",
   "On phones, the top navigation stays in one row.": "Di ponsel, bilah navigasi atas tetap berada dalam satu baris.",
-  "The game menu shows wider map previews.": "Menu permainan menampilkan pratinjau peta yang lebih luas."
+  "The game menu shows wider map previews.": "Menu permainan menampilkan pratinjau peta yang lebih luas.",
+  "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Menggunakan peta {{mode}}. Hanya orang yang menjadi tuan rumah permainan ini yang memerlukan {{tier}}.",
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "Dalam mode {{streamMode}}, tombol {{hostAction}} dan {{chatterAction}} kini ditempatkan berdampingan."
 }

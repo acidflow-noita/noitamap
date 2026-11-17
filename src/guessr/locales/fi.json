@@ -730,5 +730,7 @@
   "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Kirjautumispaneeli on keskitetty {{dailyMode}}-sivulla. Twitchin kirjautumispainikkeissa ei enää näy Beta-merkkiä.",
   "Navigation menu": "Navigointivalikko",
   "On phones, the top navigation stays in one row.": "Puhelimissa yläosan navigointipalkki pysyy yhdellä rivillä.",
-  "The game menu shows wider map previews.": "Pelin valikossa näkyy laajempia karttanäkymiä."
+  "The game menu shows wider map previews.": "Pelin valikossa näkyy laajempia karttanäkymiä.",
+  "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Käyttää {{mode}}-karttaa. Vain striimaaja tarvitsee {{tier}}:n.",
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "{{streamMode}}-tilassa {{hostAction}}- ja {{chatterAction}}-painikkeet ovat nyt vierekkäin."
 }

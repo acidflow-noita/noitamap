@@ -730,5 +730,7 @@
   "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.",
   "Navigation menu": "Navigation menu",
   "On phones, the top navigation stays in one row.": "On phones, the top navigation stays in one row.",
-  "The game menu shows wider map previews.": "The game menu shows wider map previews."
+  "The game menu shows wider map previews.": "The game menu shows wider map previews.",
+  "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Uses {{mode}} map. Only the streamer needs {{tier}}.",
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side."
 }

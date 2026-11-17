@@ -730,5 +730,7 @@
   "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "登录面板位于 {{dailyMode}} 页面的中央。Twitch 登录按钮不再显示“测试版”标识。",
   "Navigation menu": "导航菜单",
   "On phones, the top navigation stays in one row.": "在手机上，顶部导航栏始终显示为一行。",
-  "The game menu shows wider map previews.": "游戏菜单中显示的地图预览范围更广。"
+  "The game menu shows wider map previews.": "游戏菜单中显示的地图预览范围更广。",
+  "Uses {{mode}} map. Only the streamer needs {{tier}}.": "使用 {{mode}} 地图。只有主播需要 {{tier}}。",
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "在 {{streamMode}} 模式下，{{hostAction}} 和 {{chatterAction}} 按钮现在并排显示。"
 }

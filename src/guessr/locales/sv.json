@@ -730,5 +730,7 @@
   "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Inloggningsfältet är centrerat på sidan {{dailyMode}}. Twitch-inloggningsknapparna visar inte längre betamärket.",
   "Navigation menu": "Navigationsmeny",
   "On phones, the top navigation stays in one row.": "På mobiltelefoner visas den övre navigeringsmenyn i en rad.",
-  "The game menu shows wider map previews.": "Spelmenyn visar större kartförhandsvisningar."
+  "The game menu shows wider map previews.": "Spelmenyn visar större kartförhandsvisningar.",
+  "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Använder {{mode}}-kartan. Endast streamaren behöver {{tier}}.",
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "I {{streamMode}} ligger knapparna {{hostAction}} och {{chatterAction}} nu bredvid varandra."
 }
