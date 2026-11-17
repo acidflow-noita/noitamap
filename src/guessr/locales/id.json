@@ -726,5 +726,6 @@
   "Clue navigation buttons show their keyboard shortcuts.": "Tombol navigasi Clue menampilkan pintasan keyboardnya.",
   "More changes": "Perubahan lainnya",
   "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "Pada hasil {{dailyMode}} yang dibagikan, {{share}} dan {{answers}} muncul di atas skor.",
-  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Ketika seorang streamer terhubung kembali saat babak terbuka sedang berlangsung, pin yang telah disimpannya siap untuk dikirimkan."
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Ketika seorang streamer terhubung kembali saat babak terbuka sedang berlangsung, pin yang telah disimpannya siap untuk dikirimkan.",
+  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Panel masuk ditempatkan di tengah halaman {{dailyMode}}. Tombol masuk Twitch tidak lagi menampilkan lencana Beta."
 }

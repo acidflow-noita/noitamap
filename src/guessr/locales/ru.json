@@ -744,5 +744,6 @@
   "Clue navigation buttons show their keyboard shortcuts.": "На кнопках навигации по подсказкам отображаются соответствующие сочетания клавиш.",
   "More changes": "Еще изменения",
   "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "В результатах, опубликованных в режиме {{dailyMode}}, над оценками отображаются {{share}} и {{answers}}.",
-  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Если стример восстанавливает соединение во время открытого раунда, его сохраненная отметка готова к отправке."
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Если стример восстанавливает соединение во время открытого раунда, его сохраненная отметка готова к отправке.",
+  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Панель входа расположена по центру на странице {{dailyMode}}. На кнопках входа в Twitch больше не отображается значок «Бета»."
 }

@@ -33,9 +33,8 @@
 
 .has-alpha-badge { position: relative; overflow: visible; }
 
-.btn-twitch::after,
 .has-alpha-badge::after {
-  content: "Beta";
+  content: "α";
   position: absolute;
   top: -0.45rem;
   right: -0.35rem;
@@ -44,15 +43,13 @@
   background: oklch(0.9 0.14 95);
   color: oklch(0.25 0.04 296.5);
   box-shadow: 0 1px 4px oklch(0 0 0 / 0.35);
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  text-transform: none;
   pointer-events: none;
 }
-
-.has-alpha-badge::after { content: "α"; text-transform: none; font-size: .75rem; }
 
 .btn-twitch:hover {
   background-color: oklch(0.46 0.226 296.5); /* darker brand */
@@ -154,7 +151,6 @@
 .pro-gift-recipient label { text-align: start; }
 .pro-gift-recipient input { width: 100%; min-width: 0; }
 .pro-gift-checkout:disabled { opacity: .5; cursor: not-allowed; }
-.btn-twitch[data-pro-gift]::after { content: none; }
 .pro-gift-featured { text-decoration: none; }
 .pro-gift-offer { display: flex; flex-direction: column; align-items: center; gap: 1rem; text-align: center; }
 .pro-gift-offer > .pro-gift-hint { max-width: 44ch; }

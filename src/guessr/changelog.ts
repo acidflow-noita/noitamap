@@ -14,6 +14,7 @@ export const GUESSR_CHANGELOG = {
     'Round count and duration are together in game setup.',
     'Round previews open below their row. Share, Save and the standings are closer together.',
     'On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.',
+    'The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.',
     'When a streamer reconnects during an open round, their saved pin is ready to submit.',
     "Choose \"{{whatsNew}}\" in the header to read these notes again.",
     "The connection dot glows and pulses slowly while connected. Reduced motion keeps it steady.",

@@ -726,5 +726,6 @@
   "Clue navigation buttons show their keyboard shortcuts.": "提示导航按钮会显示其键盘快捷键。",
   "More changes": "更多更改",
   "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "在共享的 {{dailyMode}} 结果中，{{share}} 和 {{answers}} 会显示在分数上方。",
-  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "当主播在开放回合期间重新连接时，其保存的定位点已准备好提交。"
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "当主播在开放回合期间重新连接时，其保存的定位点已准备好提交。",
+  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "登录面板位于 {{dailyMode}} 页面的中央。Twitch 登录按钮不再显示“测试版”标识。"
 }

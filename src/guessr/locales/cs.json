@@ -744,5 +744,6 @@
   "Clue navigation buttons show their keyboard shortcuts.": "U navigačních tlačítek Clue se zobrazují jejich klávesové zkratky.",
   "More changes": "Další změny",
   "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "U sdílených výsledků {{dailyMode}} se nad skóre zobrazují položky {{share}} a {{answers}}.",
-  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Pokud se streamer během probíhajícího kola znovu připojí, jeho uložený tip je připraven k odeslání."
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Pokud se streamer během probíhajícího kola znovu připojí, jeho uložený tip je připraven k odeslání.",
+  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Panel pro přihlášení je na stránce {{dailyMode}} vycentrován. Tlačítka pro přihlášení na Twitch již nezobrazují značku „Beta“."
 }

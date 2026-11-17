@@ -58,7 +58,8 @@ body:has(#guess-app) .pro-gift-link {
 #guess-app .badge.pro, .guessr-account-dialog .badge.pro { padding: 2px 6px; font-size: .75rem; font-weight: 600; line-height: 1.25; white-space: nowrap; flex: none; }
 .guessr-account-dialog { --bs-dialog-width: 28rem; --bs-dialog-bg: var(--surface-1); --bs-dialog-color: var(--text); --bs-dialog-border-radius: .75rem; }
 .guessr-account-dialog .dialog-body { display: grid; gap: 1rem; }
-.guessr-account-dialog .dialog-body > button { text-align: start; justify-content: start; white-space: normal; }
+.guessr-account-dialog .dialog-body > button { white-space: normal; }
+.guessr-account-dialog .dialog-body > button:not(.btn-twitch, .btn-patreon) { text-align: start; justify-content: start; }
 body:has(#guess-app) dialog :is(button, .btn, .btn-solid, .btn-outline, .btn-twitch, .btn-patreon, .btn-patron),
 body:has(#guess-app) .pro-gift-link { --bs-btn-border-radius: var(--bs-radius-9,1rem); border-radius: var(--bs-radius-9,1rem); min-block-size: 2.5rem; }
 body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none; align-items: center; line-height: 1.25; font-size: .875rem; }
@@ -361,6 +362,10 @@ body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none
 #guess-app .shell:has(> .daily-page-title, > .page-heading .daily-page-title) {
   max-inline-size: 68rem;
   margin-inline: auto;
+}
+.shell:has(.daily-page-title) > .empty-state {
+  margin-inline: auto;
+  text-align: center;
 }
 #guess-app .daily-start {
   max-inline-size: 46rem;

@@ -735,5 +735,6 @@
   "Clue navigation buttons show their keyboard shortcuts.": "Les boutons de navigation « Clue » affichent leurs raccourcis clavier.",
   "More changes": "D'autres changements",
   "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "Dans les résultats partagés de {{dailyMode}}, les éléments {{share}} et {{answers}} apparaissent au-dessus des scores.",
-  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Lorsqu'un streamer se reconnecte au cours d'un tour ouvert, son choix enregistré est prêt à être validé."
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Lorsqu'un streamer se reconnecte au cours d'un tour ouvert, son choix enregistré est prêt à être validé.",
+  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Le panneau de connexion est centré sur la page {{dailyMode}}. Les boutons de connexion à Twitch n'affichent plus le badge « Bêta »."
 }

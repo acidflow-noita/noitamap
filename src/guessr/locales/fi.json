@@ -726,5 +726,6 @@
   "Clue navigation buttons show their keyboard shortcuts.": "Vihjeiden navigointipainikkeiden vieressä näkyy niiden pikanäppäimet.",
   "More changes": "Lisää muutoksia",
   "On shared {{dailyMode}} results, {{share}} and {{answers}} appear above the scores.": "Jaetuissa {{dailyMode}}-tuloksissa {{share}} ja {{answers}} näkyvät pisteiden yläpuolella.",
-  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Kun striimaaja muodostaa yhteyden uudelleen avoimen kierroksen aikana, hänen tallennettu vastauksensa on valmis lähetettäväksi."
+  "When a streamer reconnects during an open round, their saved pin is ready to submit.": "Kun striimaaja muodostaa yhteyden uudelleen avoimen kierroksen aikana, hänen tallennettu vastauksensa on valmis lähetettäväksi.",
+  "The sign-in panel is centered on the {{dailyMode}} page. Twitch sign-in buttons no longer show the Beta badge.": "Kirjautumispaneeli on keskitetty {{dailyMode}}-sivulla. Twitchin kirjautumispainikkeissa ei enää näy Beta-merkkiä."
 }
