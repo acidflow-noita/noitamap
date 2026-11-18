@@ -184,7 +184,6 @@
   "Pin placed. Submit your guess when ready.": "Repère placé. Validez votre proposition quand vous êtes prêt.",
   "Place a pin first": "Placez d’abord un repère",
   "Place your guess": "Indiquez votre proposition sur la carte",
-  "Place your pin, then submit.": "Placez votre repère, puis validez.",
   "Play again": "Rejouer",
   "Player": "Joueur",
   "Playing as {{player}}": "Vous jouez sous le nom {{player}}",
@@ -259,8 +258,6 @@
   "Simulate a viewer guess (local testing only)": "Simuler une proposition de spectateur (tests locaux uniquement)",
   "Simulated Twitch user ID": "Identifiant Twitch simulé",
   "Simulated guess command": "Commande de proposition simulée",
-  "Skip round": "Passer la manche",
-  "Skip this round without scoring": "Passer cette manche sans marquer de points",
   "Skipped": "Manche passée",
   "Something went wrong. Please try again.": "Une erreur est survenue. Veuillez réessayer.",
   "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.": "Lancez une partie, puis cliquez sur « {{copyLink}} » et collez le lien dans le chat Twitch. Les spectateurs utilisent le même lien NoitaGuessr à chaque manche.",
@@ -741,5 +738,8 @@
   "The game menu shows wider map previews.": "Le menu du jeu affiche des aperçus de carte plus grands.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Utilise la carte {{mode}}. Seul le streamer a besoin du niveau {{tier}}.",
   "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "En mode {{streamMode}}, les boutons {{hostAction}} et {{chatterAction}} sont désormais placés côte à côte.",
-  "The lobby now starts with your saved game or the game modes.": "Le menu d'accueil s'ouvre désormais sur votre partie sauvegardée ou sur les modes de jeu."
+  "The lobby now starts with your saved game or the game modes.": "Le menu d'accueil s'ouvre désormais sur votre partie sauvegardée ou sur les modes de jeu.",
+  "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.": "Les panneaux « Indice » et « Deviner » s'alignent côte à côte. {{nextRound}} apparaît désormais au-dessus des cartes.",
+  "You can now quit an unfinished game from the {{dailyMode}} page.": "Vous pouvez désormais quitter une partie inachevée depuis la page {{dailyMode}}.",
+  "In round reviews, {{backToResults}} is at the top left.": "Dans les résumés de tour, {{backToResults}} se trouve en haut à gauche."
 }

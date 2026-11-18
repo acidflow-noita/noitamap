@@ -49,8 +49,9 @@ import {
 import { supportedCamera, type ClueSource } from "./clue-camera";
 import { ClueViewport } from "./clue-viewport";
 import { createLobby, type LobbyOptions } from "./lobby";
+import { confirmQuitGame } from './quit-game';
 import { instructionSteps } from './stepper';
-import { pageHeading } from './page-heading';
+import { pageBack, pageHeading } from './page-heading';
 import { restoreDailyView, saveDailyView } from './daily-progress';
 import { dailyResultsTable, dailyScoreTable } from './daily-results';
 import { dailyResultShare } from './daily-share';
@@ -80,6 +81,7 @@ let imageClue: ClueProgress = newClueProgress();
 let imageGuess: Point | null = null;
 let imagePaused = false;
 const IMAGE_SESSION_KEY = "noitamap-guessr-images-v1";
+const DAILY_QUIT_DESCRIPTION = 'Unplayed rounds will score zero. You cannot restart this daily.';
 let board: MapBoard | undefined;
 let view:
   "home" | "practice" | "ranked" | "leaderboard" | "history" | "stream" =
@@ -142,7 +144,6 @@ function button(
   const source = typeof text === 'string' ? text : text.source;
   if (source === 'Submit guess' || source === 'Send guess') updateSubmit(b, source);
   b.type = "button";
-  if ((typeof text === 'string' ? text : text.source) === 'Skip round') bindAttribute(b, 'title', 'Skip this round without scoring');
   b.addEventListener("click", () => void action());
   return b;
 }
@@ -293,14 +294,9 @@ function home(): void {
     mode: 'daily', modeLabel: 'Daily', continueLabel: 'Continue daily',
     currentRound: daily.round + 1, totalRounds: daily.totalRounds, completedRounds: daily.completedRounds,
     action: () => rankedLobby(daily.id, daily.day),
-    quitDescription: 'Unplayed rounds will score zero. You cannot restart this daily.',
+    quitDescription: DAILY_QUIT_DESCRIPTION,
     quit: async () => {
-      const origin = gameApiOrigin();
-      const service = api ?? (origin ? new GameApi(origin) : null);
-      if (!service) throw Error('The daily service is unavailable. Please retry later.');
-      await service.request<RankedState>(`/api/attempts/${daily.id}/quit`, { body: {} });
-      forgetDailyResume(daily.id, storage);
-      if (ranked?.id === daily.id) ranked = null;
+      await quitDailyAttempt(daily.id);
       home();
     },
   });
@@ -402,7 +398,7 @@ function makePlayPanels(
   onPick?: (point: Point) => void,
   readOnly = false,
   config?: ImageGameConfig,
-): { clue: HTMLElement; bar: HTMLElement; mapActions: HTMLElement } {
+): { clue: HTMLElement; bar: HTMLElement; mapBar: HTMLElement } {
   const grid = node("div", "game-grid"),
     left = node("section", "game-panel"),
     right = node("section", "game-panel game-panel--map");
@@ -419,11 +415,9 @@ function makePlayPanels(
   const mapBar = node("div", "panel-bar map-bar");
   const mapHeading = node("div", "map-heading");
   mapBar.append(mapHeading);
-  const mapActions = node("div", "buttons");
-  mapActions.classList.add('guess-submit-row');
   const map = node("div", "map-board");
   map.id = "guess-map";
-  right.append(mapBar, mapActions, map);
+  right.append(mapBar, map);
   grid.append(left, right);
   main.append(grid);
   board = new MapBoard(
@@ -455,7 +449,7 @@ function makePlayPanels(
         "confirm-guess",
       ) as HTMLButtonElement | null;
       if (confirm) confirm.disabled = false;
-      const hint = document.querySelector(".game-actions .action-hint");
+      const hint = main.querySelector(".stream-host-actions .action-hint");
       if (hint) {
         bindText(hint.querySelector('.action-hint-label') ?? hint, 'Pin placed. Ready when you are.');
         hint.classList.add("is-ready");
@@ -468,7 +462,7 @@ function makePlayPanels(
   board.setMarkers(guess);
   board.setLocked(locked);
   clearFrame = fitGameFrame(grid);
-  return { clue, bar, mapActions };
+  return { clue, bar, mapBar };
 }
 function putClue(clue: HTMLElement, url: string, crop: number): void {
   clue.classList.add("loading");
@@ -491,10 +485,10 @@ function putClue(clue: HTMLElement, url: string, crop: number): void {
   img.src = url;
   clue.replaceChildren(img, clueLoadingPlaceholder());
 }
-function promoteSubmit(main: HTMLElement): void {
-  const confirm = main.querySelector<HTMLButtonElement>('#confirm-guess');
-  const toolbar = main.querySelector<HTMLElement>('.game-panel--map .map-bar');
-  if (!confirm || !toolbar) return;
+function addSubmit(toolbar: HTMLElement, action: () => unknown, disabled: boolean): void {
+  const confirm = button(msg('Submit guess'), action, 'primary');
+  confirm.id = 'confirm-guess';
+  confirm.disabled = disabled;
   toolbar.classList.add('guess-map-toolbar'); toolbar.append(confirm);
   clearSubmit?.();
   clearSubmit = submitHelp(confirm, () => busy ? 'Sending…' : confirm.disabled ? 'Place a pin first' : 'Submit guess');
@@ -513,18 +507,19 @@ function gameHud(options: {
   exit: () => void;
   extra?: string;
 }): HTMLElement {
-  const group = node("div", "hud-group");
-  if (options.badge === 'pro') group.append(node('span', options.twitch ? 'twitch-mode-label' : '', msg(options.label)));
-  group.append(
+  const group = node("div", "hud-group"), mode = node('span', 'hud-mode');
+  if (options.badge === 'pro') mode.append(node('span', options.twitch ? 'twitch-mode-label' : '', msg(options.label)));
+  mode.append(
     node("span", `badge ${options.badge}${options.badge === 'pro' ? ' animation-pop' : ''}${options.twitch && options.badge !== 'pro' ? ' twitch-mode-label' : ''}`, msg(options.badge === 'pro' ? 'Pro' : options.label)),
   );
+  group.append(mode);
   if (options.extra) group.append(node("span", "hint", options.extra));
   const progress = roundProgress(options.total, options.round);
   group.append(progress);
   const exit = button(msg("Exit game"), options.exit, 'btn btn-outline theme-secondary');
-  const hud = pageHeading(group, exit);
+  const hud = node('header', 'game-hud');
+  hud.append(group, exit);
   moveGameExit(root.querySelector('main')!, exit);
-  hud.classList.add('game-hud');
   return hud;
 }
 function showMapResult(
@@ -563,12 +558,16 @@ function showMapResult(
   heading.replaceChildren(explore, detail);
   heading.after(points);
 }
-function guessHint(guess: Point | null): HTMLElement {
-  return node(
-    "p",
-    `action-hint${guess ? " is-ready" : ""}`,
-    guess ? msg("Pin placed. Ready when you are.") : msg("Place your pin, then submit."),
-  );
+function backToResults(action: () => unknown): HTMLButtonElement {
+  return pageBack(button(msg('Back to results'), action, '', 'arrow-left'));
+}
+function roundNavigation(main: HTMLElement, control: HTMLButtonElement, legend: LocalizedText): void {
+  const hud = main.querySelector('.game-hud')!;
+  if (control.classList.contains('page-back')) hud.prepend(control);
+  else hud.append(control);
+  main.append(node('p', 'round-map-legend', legend));
+  control.focus({ preventScroll: true });
+  if (control.getBoundingClientRect().top < 0) control.scrollIntoView({ block: 'nearest', behavior: 'instant' });
 }
 function renderPractice(): void {
   storage.setItem(ACTIVE_MODE_KEY, 'demo');
@@ -597,7 +596,7 @@ function renderPractice(): void {
       },
     }),
   );
-  const { clue, bar } = makePlayPanels(
+  const { clue, bar, mapBar } = makePlayPanels(
     main,
     session.guess,
     !!result || session.pausedAt !== null,
@@ -632,7 +631,6 @@ function renderPractice(): void {
     );
   } else clueActions.append(node("span", "hint", msg(() => guessrGameTerm(place.biome))));
   bar.append(clueActions);
-  const actions = node("div", "game-actions");
   if (result) {
     board?.setMarkers(result.guess, place);
     showMapResult(
@@ -645,43 +643,22 @@ function renderPractice(): void {
     const finished =
       session.results.length === session.order.length ||
       (session.settings.mode === "survival" && livesLeft(session) === 0);
-    actions.append(
-      node("p", "", msg("Your guess is blue. The location is green.")),
-      button(
-        finished ? msg("View results") : msg("Next round"),
-        advancePractice,
-        "primary",
-      ),
+    roundNavigation(main, button(finished ? msg("View results") : msg("Next round"), advancePractice, 'primary round-next'),
+      msg("Your guess is blue. The location is green."),
     );
   } else {
-    const confirm = button(
-      msg("Submit guess"),
-      () => guessPractice(false),
-      "primary",
-    );
-    confirm.id = "confirm-guess";
-    confirm.disabled = !session.guess || session.pausedAt !== null;
-    actions.append(
-      button(msg("Skip round"), () => guessPractice(true), "secondary"),
-      guessHint(session.guess),
-      confirm,
-    );
-  }
-  main.append(actions); promoteSubmit(main);
-  if (session.pausedAt !== null) {
-    for (const action of actions.querySelectorAll("button"))
-      action.disabled = true;
+    addSubmit(mapBar, guessPractice, !session.guess || session.pausedAt !== null);
   }
 }
-function guessPractice(skip: boolean): void {
+function guessPractice(): void {
   if (imageSession) {
-    void submitImageGame(skip);
+    void submitImageGame();
     return;
   }
   if (!session || session.stage !== "guess" || session.pausedAt !== null)
     return;
   try {
-    const result = submitPractice(session, pack, skip);
+    const result = submitPractice(session, pack);
     save();
     renderPractice();
     announce(msg("Location revealed. {{value1}}.", () => ({ value1: localizedDistance(result.distance) })));
@@ -723,7 +700,7 @@ function finish(): void {
   actions.append(
     button(msg("Replay demo"), startPractice, "primary"),
   );
-  main.append(actions); promoteSubmit(main);
+  main.append(actions);
   const wrap = node("div", "table-wrap"),
     table = node("table"),
     thead = node("thead"),
@@ -763,7 +740,7 @@ function reviewPractice(index: number): void {
     place = pack.places.find((p) => p.id === result.placeId)!;
   main.append(pageHeading(
     node("h1", "", msg("Round {{value1}}: {{value2}}", () => ({ value1: index + 1, value2: place.name }))),
-    button(msg("← Results"), finish),
+    backToResults(finish),
   ));
   const { clue } = makePlayPanels(main, result.guess, true, undefined, true);
   putClue(clue, place.views?.["0,0,6"]?.image ?? place.image, 1);
@@ -803,7 +780,7 @@ function renderImageGame(review?: {
       },
     }),
   );
-  const { clue, bar } = makePlayPanels(
+  const { clue, bar, mapBar } = makePlayPanels(
     main,
     result ? result.guess : imageGuess,
     !!result || imagePaused,
@@ -835,7 +812,6 @@ function renderImageGame(review?: {
         "small",
       ),
     );
-  const actions = node("div", "game-actions");
   if (result) {
     board?.setMarkers(result.guess, result.answer);
     showMapResult(
@@ -846,53 +822,30 @@ function renderImageGame(review?: {
       result.score,
       result.difficultyTier,
     );
-    actions.append(
-      node("p", "", msg("Your guess is blue. The location is green.")),
-      button(
-        review ? msg("Back to results") : imageSession.round + 1 === imageSession.totalRounds ? msg("View results") : msg("Next round"),
-        review ? finishImageGame : () => void advanceImageGame(),
-        "primary",
-      ),
+    roundNavigation(main, review ? backToResults(finishImageGame)
+      : button(imageSession.round + 1 === imageSession.totalRounds ? msg("View results") : msg("Next round"), advanceImageGame, 'primary round-next'),
+      msg("Your guess is blue. The location is green."),
     );
   } else {
-    const confirm = button(
-      msg("Submit guess"),
-      () => void submitImageGame(false),
-      "primary",
-    );
-    confirm.id = "confirm-guess";
-    confirm.disabled = !imageGuess || imagePaused;
-    actions.append(
-      button(msg("Skip round"), () => void submitImageGame(true), "secondary"),
-      guessHint(imageGuess),
-      confirm,
-    );
-    if (imagePaused)
-      for (const b of actions.querySelectorAll("button")) b.disabled = true;
+    addSubmit(mapBar, submitImageGame, !imageGuess || imagePaused);
   }
-  main.append(actions); promoteSubmit(main);
 }
 
-async function submitImageGame(skip: boolean): Promise<void> {
+async function submitImageGame(): Promise<void> {
   if (
     !imageSession?.current ||
     imageSession.stage !== "guess" ||
     imagePaused ||
-    busy
+    busy || !imageGuess
   )
     return;
-  if (!skip && !imageGuess) return;
   busy = true; showSubmitting();
-  for (const b of document.querySelectorAll<HTMLButtonElement>(
-    ".game-actions button",
-  ))
-    b.disabled = true;
   try {
     imageSession = await imageGameRequest<ImageGameState>(
       `/sessions/${imageSession.id}/guess`,
       {
         roundId: imageSession.current.id,
-        guess: skip ? null : imageGuess,
+        guess: imageGuess,
         maximum: maximumScore(imageClue),
       },
     );
@@ -982,7 +935,7 @@ function finishImageGame(): void {
   actions.append(
     button(msg("Play again"), startPractice, "primary"),
   );
-  main.append(actions); promoteSubmit(main);
+  main.append(actions);
   const wrap = node("div", "table-wrap"),
     table = node("table"),
     head = node("tr");
@@ -1173,6 +1126,15 @@ async function rankedAccess(main: HTMLElement): Promise<GameApi | null> {
     return null;
   }
 }
+async function quitDailyAttempt(id: string): Promise<RankedState> {
+  const origin = gameApiOrigin();
+  const service = api ?? (origin ? new GameApi(origin) : null);
+  if (!service) throw Error(tr('The daily service is unavailable. Please retry later.'));
+  const ended = await service.request<RankedState>(`/api/attempts/${id}/quit`, { body: {} });
+  forgetDailyResume(id, storage);
+  if (ranked?.id === id) ranked = null;
+  return ended;
+}
 async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
   save();
   view = "ranked";
@@ -1218,6 +1180,10 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
   }
   const service = await rankedAccess(main);
   if (!service || version !== generation) return;
+  const quitButton = (id: string) => button(msg('Quit game'), () => confirmQuitGame(async () => {
+    const ended = await quitDailyAttempt(id);
+    if (version === generation) openRanked(ended);
+  }, DAILY_QUIT_DESCRIPTION), 'secondary');
   try {
     if (resumeId && /^[\w-]{1,100}$/.test(resumeId)) {
       const a = await service.request<RankedState>("/api/attempts/" + resumeId);
@@ -1263,7 +1229,10 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
         }, 'small secondary');
         resume.disabled = !a.complete && hasViewedDailyAnswers(a.day, storage);
         if (resume.disabled) bindAttribute(resume, 'aria-description', ANSWERS_VIEWED_MESSAGE);
-        action.append(resume);
+        const buttons = node('div', 'daily-attempt-actions');
+        buttons.append(resume);
+        if (!a.complete) buttons.append(quitButton(a.id));
+        action.append(buttons);
         row.append(date, points, action); body.append(row);
       }
       table.append(thead, body); wrap.append(table); historyPanel.append(wrap);
@@ -1317,7 +1286,10 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
       "primary",
     );
     start.disabled = blocked;
-    panel.append(start);
+    const buttons = node('div', 'daily-attempt-actions');
+    buttons.append(start);
+    if (status.attemptId && !completed) buttons.append(quitButton(status.attemptId));
+    panel.append(buttons);
     main.insertBefore(panel, main.querySelector(".panel"));
   } catch (e) {
     if (version === generation)
@@ -1439,7 +1411,7 @@ function renderRanked(): void {
     const share = dailyResultShare(ranked);
     if (share) { const actions = node('div', 'finish-actions daily-result-actions'); actions.append(share.element); hero.append(actions); }
     main.append(pageHeading(node("h1", "", msg('Daily result')), rankedReadOnly && publicDaily
-      ? button(msg('Back to results'), () => renderPublicDaily(publicDaily!)) : button(msg("Back to daily"), rankedLobby)), hero);
+      ? backToResults(() => renderPublicDaily(publicDaily!)) : button(msg("Back to daily"), rankedLobby)), hero);
     const results = dailyResultsTable(ranked, reviewRanked);
     main.append(results.element);
     clearClue = () => { share?.destroy(); results.destroy(); };
@@ -1455,32 +1427,23 @@ function renderRanked(): void {
         (sum, r) => sum + (r.guess?.score ?? 0),
         0,
       ),
-      exit: rankedLobby,
+      exit: () => rankedLobby(undefined, ranked!.day),
     }),
   );
-  const { clue } = makePlayPanels(main, rankedGuess, false);
+  const { clue, mapBar } = makePlayPanels(main, rankedGuess, false);
   updateRoundIndicators(main, rankedClue, ranked.difficultyTier);
   if (ranked.clue) clearClue = attachClueControls(clue, ranked.clue, rankedClue, 256, saveRankedView, { difficultyTier: ranked.difficultyTier });
   else if (ranked.image) void rankedImage(clue, ranked.image);
-  const actions = node("div", "game-actions"),
-    submit = button(msg("Submit guess"), () => submitRanked(false), "primary");
-  submit.id = "confirm-guess";
-  submit.disabled = !rankedGuess;
-  actions.append(
-    button(msg("Skip round"), () => submitRanked(true), "secondary"),
-    guessHint(rankedGuess),
-    submit,
-  );
-  main.append(actions); promoteSubmit(main);
+  addSubmit(mapBar, submitRanked, !rankedGuess);
 }
-async function submitRanked(skip: boolean): Promise<void> {
+async function submitRanked(): Promise<void> {
   if (ranked?.status === 'active' && hasViewedDailyAnswers(ranked.day, storage)) { showDailyAnswersBlock(ranked.day); return; }
   if (
     !api ||
     !ranked ||
     ranked.status !== "active" ||
     busy ||
-    (!skip && !rankedGuess)
+    !rankedGuess
   )
     return;
   busy = true; showSubmitting();
@@ -1497,7 +1460,7 @@ async function submitRanked(skip: boolean): Promise<void> {
         ? saved
         : {
             round: current.round,
-            guess: skip ? null : rankedGuess,
+            guess: rankedGuess,
             requestId: crypto.randomUUID(),
             ...(current.clue ? { maximum: maximumScore(rankedClue) } : {}),
           };
@@ -1505,7 +1468,7 @@ async function submitRanked(skip: boolean): Promise<void> {
   } catch {
     body = {
       round: current.round,
-      guess: skip ? null : rankedGuess,
+      guess: rankedGuess,
       requestId: crypto.randomUUID(),
       ...(current.clue ? { maximum: maximumScore(rankedClue) } : {}),
     };
@@ -1526,7 +1489,7 @@ async function submitRanked(skip: boolean): Promise<void> {
       box.id = "ranked-save-error";
       box.append(
         node("span", "", msg(() => localizedError(e) + ' ')),
-        button(msg("Retry saving this guess"), () => submitRanked(skip), "small"),
+        button(msg("Retry saving this guess"), submitRanked, "small"),
       );
       main.append(box);
       announce(msg("Your guess was not confirmed. Retry to save it."));
@@ -1549,7 +1512,7 @@ function reviewRanked(ordinal: number, continueGame = false): void {
         (sum, result) => sum + (result.guess?.score ?? 0),
         0,
       ),
-      exit: rankedLobby,
+      exit: () => rankedLobby(undefined, ranked!.day),
     }),
   );
   const guess =
@@ -1577,16 +1540,11 @@ function reviewRanked(ordinal: number, continueGame = false): void {
     r.guess?.score ?? 0,
     r.difficultyTier,
   );
-  const actions = node("div", "game-actions");
-  actions.append(
-    node("p", "", msg(rankedReadOnly ? 'Green: correct location. Blue: player’s map marker.' : "Green: correct location. Blue: your guess.")),
-    button(
-      continueGame ? ranked?.status === "complete" ? msg("View results") : msg("Next round") : msg("Back to results"),
-      renderRanked,
-      "primary",
-    ),
+  roundNavigation(main, continueGame
+    ? button(ranked?.status === 'complete' ? msg('View results') : msg('Next round'), renderRanked, 'primary round-next')
+    : backToResults(renderRanked),
+    msg(rankedReadOnly ? 'Green: correct location. Blue: player’s map marker.' : "Green: correct location. Blue: your guess."),
   );
-  main.append(actions); promoteSubmit(main);
 }
 function help(trigger: HTMLButtonElement): void {
   const existing = document.getElementById("guessr-help-dialog");

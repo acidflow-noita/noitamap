@@ -186,7 +186,6 @@
   "Pin placed. Submit your guess when ready.": "Метка поставлена. Отправьте ответ, когда будете готовы.",
   "Place a pin first": "Сначала поставьте метку",
   "Place your guess": "Укажите свой ответ",
-  "Place your pin, then submit.": "Поставьте метку и отправьте ответ.",
   "Play again": "Играть снова",
   "Player": "Игрок",
   "Playing as {{player}}": "Вы играете как {{player}}",
@@ -261,8 +260,6 @@
   "Simulate a viewer guess (local testing only)": "Симуляция ответа зрителя (только для локального тестирования)",
   "Simulated Twitch user ID": "Тестовый ID пользователя Twitch",
   "Simulated guess command": "Тестовая команда ответа",
-  "Skip round": "Пропустить раунд",
-  "Skip this round without scoring": "Пропустить раунд без очков",
   "Skipped": "Пропущено",
   "Something went wrong. Please try again.": "Что-то пошло не так. Повторите попытку.",
   "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.": "Запустите игру, затем нажмите «{{copyLink}}» и вставьте ссылку в чат Twitch. Зрители используют одну и ту же ссылку NoitaGuessr для каждого раунда.",
@@ -750,5 +747,8 @@
   "The game menu shows wider map previews.": "В меню игры отображаются более широкие фрагменты карты.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Использует карту {{mode}}. Уровень {{tier}} требуется только стримеру.",
   "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "В режиме {{streamMode}} кнопки {{hostAction}} и {{chatterAction}} теперь расположены рядом.",
-  "The lobby now starts with your saved game or the game modes.": "Теперь в главном меню сначала отображаются ваши сохраненные игры или режимы игры."
+  "The lobby now starts with your saved game or the game modes.": "Теперь в главном меню сначала отображаются ваши сохраненные игры или режимы игры.",
+  "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.": "Панели с подсказками и вариантами ответов располагаются рядом друг с другом. Над картами теперь отображается надпись {{nextRound}}.",
+  "You can now quit an unfinished game from the {{dailyMode}} page.": "Теперь вы можете выйти из незавершённой игры со страницы {{dailyMode}}.",
+  "In round reviews, {{backToResults}} is at the top left.": "В обзорах раундов кнопка {{backToResults}} находится в левом верхнем углу."
 }

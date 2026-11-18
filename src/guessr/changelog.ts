@@ -6,9 +6,12 @@ const isMainPage = () => readGuessRoute(new URL(location.href)).pane === 'home';
 
 // One announcement per release day. Editing hotfix notes must not reopen it.
 export const GUESSR_CHANGELOG = {
-  id: '2026-11-17-layout-stability',
+  id: '2026-11-18-round-layout',
   date: '2026-11-18',
   notes: [
+    'The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.',
+    'In round reviews, {{backToResults}} is at the top left.',
+    'You can now quit an unfinished game from the {{dailyMode}} page.',
     'The lobby now starts with your saved game or the game modes.',
     'In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.',
     'On phones, the top navigation stays in one row.',
@@ -108,7 +111,7 @@ export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
     date.dateTime = release.date; date.className = 'muted';
     const notes = document.createElement('ul'); notes.className = 'guessr-changelog-notes';
     const labels = () => ({ streaming: tr('I’m streaming'), streamMode: tr('Chat vs Streamer'),
-      hostAction: tr('Play as streamer'), chatterAction: tr('Play as chatter'),
+      hostAction: tr('Play as streamer'), chatterAction: tr('Play as chatter'), nextRound: tr('Next round'), backToResults: tr('Back to results'),
       dailyMode: tr('Daily'), received: tr('Guess received'), startGame: tr('Start game'), howToPlay: tr('How to play'), whatsNew: tr("What's new"),
       share: tr('Share result'), answers: tr('View answers') });
     const earlier = document.createElement('ul'); earlier.className = 'guessr-changelog-notes';

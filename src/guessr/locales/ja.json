@@ -182,7 +182,6 @@
   "Pin placed. Submit your guess when ready.": "ピンが配置されました。準備ができたら、予想を送信してください。",
   "Place a pin first": "まずピンを刺してください",
   "Place your guess": "予想を入れてください",
-  "Place your pin, then submit.": "ピンを配置してから、送信してください。",
   "Play again": "別のゲームをプレイする",
   "Player": "プレイヤー",
   "Playing as {{player}}": "{{player}}としてプレイ中",
@@ -257,8 +256,6 @@
   "Simulate a viewer guess (local testing only)": "視聴者の推測をシミュレートする（ローカルテストのみ）",
   "Simulated Twitch user ID": "シミュレートされた Twitch ユーザー ID",
   "Simulated guess command": "推測コマンドのシミュレーション",
-  "Skip round": "ラウンドをスキップ",
-  "Skip this round without scoring": "このラウンドは得点なしでスキップする",
   "Skipped": "スキップしました",
   "Something went wrong. Please try again.": "問題が発生しました。もう一度お試しください。",
   "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.": "ゲームを開始し、「{{copyLink}}」をクリックして、そのリンクをTwitchのチャットに貼り付けてください。視聴者は、どのラウンドでも同じNoitaGuessrのリンクを使用します。",
@@ -732,5 +729,8 @@
   "The game menu shows wider map previews.": "ゲームメニューでは、より広範囲のマッププレビューが表示されます。",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "{{mode}}マップを使用します。{{tier}}が必要なのはストリーマーのみです。",
   "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "{{streamMode}} では、{{hostAction}} ボタンと {{chatterAction}} ボタンが並んで表示されるようになりました。",
-  "The lobby now starts with your saved game or the game modes.": "ロビーでは、セーブデータまたはゲームモードからゲームを開始できるようになりました。"
+  "The lobby now starts with your saved game or the game modes.": "ロビーでは、セーブデータまたはゲームモードからゲームを開始できるようになりました。",
+  "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.": "ヒントパネルと推測パネルが並んで表示されます。マップの上部に {{nextRound}} が表示されるようになりました。",
+  "You can now quit an unfinished game from the {{dailyMode}} page.": "{{dailyMode}} ページから、未完了のゲームを終了できるようになりました。",
+  "In round reviews, {{backToResults}} is at the top left.": "ラウンドのレビュー画面では、{{backToResults}}が左上に表示されます。"
 }

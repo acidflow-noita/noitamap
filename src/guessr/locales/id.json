@@ -182,7 +182,6 @@
   "Pin placed. Submit your guess when ready.": "Penanda terpasang. Kirim tebakan saat Anda siap.",
   "Place a pin first": "Letakkan penanda terlebih dahulu",
   "Place your guess": "Tandai tebakan Anda",
-  "Place your pin, then submit.": "Letakkan penanda, lalu kirim.",
   "Play again": "Main lagi",
   "Player": "Pemain",
   "Playing as {{player}}": "Bermain sebagai {{player}}",
@@ -257,8 +256,6 @@
   "Simulate a viewer guess (local testing only)": "Simulasikan tebakan penonton (hanya untuk pengujian lokal)",
   "Simulated Twitch user ID": "ID pengguna Twitch simulasi",
   "Simulated guess command": "Perintah tebakan simulasi",
-  "Skip round": "Lewati ronde",
-  "Skip this round without scoring": "Lewati ronde ini tanpa mendapat poin",
   "Skipped": "Dilewati",
   "Something went wrong. Please try again.": "Terjadi kesalahan. Silakan coba lagi.",
   "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.": "Mulai permainan, lalu klik “{{copyLink}}” dan tempelkan tautan tersebut ke obrolan Twitch. Para penonton menggunakan tautan NoitaGuessr yang sama untuk setiap babak.",
@@ -732,5 +729,8 @@
   "The game menu shows wider map previews.": "Menu permainan menampilkan pratinjau peta yang lebih luas.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Menggunakan peta {{mode}}. Hanya orang yang menjadi tuan rumah permainan ini yang memerlukan {{tier}}.",
   "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "Dalam mode {{streamMode}}, tombol {{hostAction}} dan {{chatterAction}} kini ditempatkan berdampingan.",
-  "The lobby now starts with your saved game or the game modes.": "Lobi kini dimulai dengan data permainan yang telah Anda simpan atau mode permainan."
+  "The lobby now starts with your saved game or the game modes.": "Lobi kini dimulai dengan data permainan yang telah Anda simpan atau mode permainan.",
+  "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.": "Panel petunjuk dan tebakan ditempatkan berdampingan. {{nextRound}} kini muncul di atas peta-peta tersebut.",
+  "You can now quit an unfinished game from the {{dailyMode}} page.": "Kini Anda dapat keluar dari permainan yang belum selesai melalui halaman {{dailyMode}}.",
+  "In round reviews, {{backToResults}} is at the top left.": "Dalam ulasan putaran, {{backToResults}} terletak di pojok kiri atas."
 }

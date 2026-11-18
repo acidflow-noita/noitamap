@@ -182,7 +182,6 @@
   "Pin placed. Submit your guess when ready.": "Markören är placerad. Skicka in din gissning när du är redo.",
   "Place a pin first": "Sätt en markör först",
   "Place your guess": "Markera din gissning",
-  "Place your pin, then submit.": "Sätt din markör och skicka sedan in.",
   "Play again": "Spela igen",
   "Player": "Spelare",
   "Playing as {{player}}": "Spelar som {{player}}",
@@ -257,8 +256,6 @@
   "Simulate a viewer guess (local testing only)": "Simulera en tittargissning (endast för lokala tester)",
   "Simulated Twitch user ID": "Simulerat Twitch-användar-ID",
   "Simulated guess command": "Simulerat gissningskommando",
-  "Skip round": "Hoppa över omgången",
-  "Skip this round without scoring": "Hoppa över den här omgången utan poäng",
   "Skipped": "Överhoppad",
   "Something went wrong. Please try again.": "Något gick fel. Försök igen.",
   "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.": "Starta ett spel, klicka sedan på ”{{copyLink}}” och klistra in länken i Twitch-chatten. Tittarna använder samma NoitaGuessr-länk för varje omgång.",
@@ -732,5 +729,8 @@
   "The game menu shows wider map previews.": "Spelmenyn visar större kartförhandsvisningar.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Använder {{mode}}-kartan. Endast streamaren behöver {{tier}}.",
   "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "I {{streamMode}} ligger knapparna {{hostAction}} och {{chatterAction}} nu bredvid varandra.",
-  "The lobby now starts with your saved game or the game modes.": "I lobbyn kommer du nu direkt till ditt sparade spel eller spellägena."
+  "The lobby now starts with your saved game or the game modes.": "I lobbyn kommer du nu direkt till ditt sparade spel eller spellägena.",
+  "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.": "Ledtråds- och gissningsrutorna placeras sida vid sida. {{nextRound}} visas nu ovanför kartorna.",
+  "You can now quit an unfinished game from the {{dailyMode}} page.": "Du kan nu avsluta ett oavslutat spel från sidan {{dailyMode}}.",
+  "In round reviews, {{backToResults}} is at the top left.": "I omgångsöversikterna finns {{backToResults}} längst upp till vänster."
 }

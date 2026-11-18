@@ -182,7 +182,6 @@
   "Pin placed. Submit your guess when ready.": "Markierung gesetzt. Gib deinen Tipp ab, sobald du bereit bist.",
   "Place a pin first": "Setze zuerst eine Markierung",
   "Place your guess": "Tipp auf der Karte setzen",
-  "Place your pin, then submit.": "Setze deine Markierung und gib dann deinen Tipp ab.",
   "Play again": "Erneut spielen",
   "Player": "Spieler",
   "Playing as {{player}}": "Du spielst als {{player}}",
@@ -257,8 +256,6 @@
   "Simulate a viewer guess (local testing only)": "Zuschauertipp simulieren (nur für lokale Tests)",
   "Simulated Twitch user ID": "Simulierte Twitch-Benutzer-ID",
   "Simulated guess command": "Simulierter Tippbefehl",
-  "Skip round": "Runde überspringen",
-  "Skip this round without scoring": "Diese Runde ohne Punkte überspringen",
   "Skipped": "Übersprungen",
   "Something went wrong. Please try again.": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
   "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.": "Starte ein Spiel, klicke dann auf „{{copyLink}}“ und füge den Link in den Twitch-Chat ein. Die Zuschauer verwenden für jede Runde denselben NoitaGuessr-Link.",
@@ -732,5 +729,8 @@
   "The game menu shows wider map previews.": "Das Spielmenü zeigt größere Kartenvorschauen an.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Verwendet die Karte {{mode}}. Nur der Streamer benötigt {{tier}}.",
   "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "Im {{streamMode}} befinden sich die Schaltflächen {{hostAction}} und {{chatterAction}} nun nebeneinander.",
-  "The lobby now starts with your saved game or the game modes.": "Die Lobby beginnt nun mit Ihrem gespeicherten Spielstand oder den Spielmodi."
+  "The lobby now starts with your saved game or the game modes.": "Die Lobby beginnt nun mit Ihrem gespeicherten Spielstand oder den Spielmodi.",
+  "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.": "Die Felder für Hinweise und Vermutungen werden nebeneinander angeordnet. Über den Karten erscheint nun {{nextRound}}.",
+  "You can now quit an unfinished game from the {{dailyMode}} page.": "Du kannst nun ein unvollendetes Spiel über die Seite {{dailyMode}} beenden.",
+  "In round reviews, {{backToResults}} is at the top left.": "In den Rundenergebnissen befindet sich {{backToResults}} oben links."
 }

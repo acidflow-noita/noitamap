@@ -182,7 +182,6 @@
   "Pin placed. Submit your guess when ready.": "已添加标记。准备好后请提交您的猜测。",
   "Place a pin first": "先插上别针",
   "Place your guess": "请猜一猜",
-  "Place your pin, then submit.": "放置图钉，然后提交。",
   "Play again": "再玩一局",
   "Player": "玩家",
   "Playing as {{player}}": "以 {{player}} 的身份进行游戏",
@@ -257,8 +256,6 @@
   "Simulate a viewer guess (local testing only)": "模拟观众的猜测（仅限本地测试）",
   "Simulated Twitch user ID": "模拟的 Twitch 用户 ID",
   "Simulated guess command": "模拟猜测命令",
-  "Skip round": "跳过本轮",
-  "Skip this round without scoring": "跳过本轮，不计分",
   "Skipped": "已跳过",
   "Something went wrong. Please try again.": "出现错误。请重试。",
   "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.": "开始一局游戏，然后点击“{{copyLink}}”，并将链接粘贴到Twitch聊天框中。观众每轮都使用同一个NoitaGuessr链接。",
@@ -732,5 +729,8 @@
   "The game menu shows wider map previews.": "游戏菜单中显示的地图预览范围更广。",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "使用 {{mode}} 地图。只有主播需要 {{tier}}。",
   "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "在 {{streamMode}} 模式下，{{hostAction}} 和 {{chatterAction}} 按钮现在并排显示。",
-  "The lobby now starts with your saved game or the game modes.": "现在，大厅界面会直接显示你的存档或游戏模式。"
+  "The lobby now starts with your saved game or the game modes.": "现在，大厅界面会直接显示你的存档或游戏模式。",
+  "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.": "“线索”和“猜测”面板并排排列。地图上方现在显示 {{nextRound}}。",
+  "You can now quit an unfinished game from the {{dailyMode}} page.": "现在，您可以从{{dailyMode}}页面退出未完成的游戏。",
+  "In round reviews, {{backToResults}} is at the top left.": "在回合回顾中，{{backToResults}} 位于左上角。"
 }

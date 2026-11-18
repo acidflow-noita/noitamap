@@ -182,7 +182,6 @@
   "Pin placed. Submit your guess when ready.": "Pin geplaatst. Dien je gok in wanneer je klaar bent.",
   "Place a pin first": "Plaats eerst een pin",
   "Place your guess": "Plaats je gok",
-  "Place your pin, then submit.": "Plaats je pin en dien je gok in.",
   "Play again": "Opnieuw spelen",
   "Player": "Speler",
   "Playing as {{player}}": "Je speelt als {{player}}",
@@ -257,8 +256,6 @@
   "Simulate a viewer guess (local testing only)": "Gok van een kijker simuleren (alleen voor lokale tests)",
   "Simulated Twitch user ID": "Gesimuleerde Twitch-gebruikers-ID",
   "Simulated guess command": "Gesimuleerd gokcommando",
-  "Skip round": "Ronde overslaan",
-  "Skip this round without scoring": "Deze ronde overslaan zonder punten",
   "Skipped": "Overgeslagen",
   "Something went wrong. Please try again.": "Er is iets misgegaan. Probeer het opnieuw.",
   "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.": "Start een spel, klik vervolgens op “{{copyLink}}” en plak de link in de Twitch-chat. Kijkers gebruiken voor elke ronde dezelfde NoitaGuessr-link.",
@@ -732,5 +729,8 @@
   "The game menu shows wider map previews.": "In het spelmenu worden grotere kaartvoorbeelden weergegeven.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Maakt gebruik van de {{mode}}-kaart. Alleen de streamer heeft {{tier}} nodig.",
   "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "In {{streamMode}} staan de knoppen {{hostAction}} en {{chatterAction}} nu naast elkaar.",
-  "The lobby now starts with your saved game or the game modes.": "De lobby begint nu met je opgeslagen spel of de spelmodi."
+  "The lobby now starts with your saved game or the game modes.": "De lobby begint nu met je opgeslagen spel of de spelmodi.",
+  "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.": "De panelen met aanwijzingen en gissingen staan naast elkaar. Boven de kaarten verschijnt nu {{nextRound}}.",
+  "You can now quit an unfinished game from the {{dailyMode}} page.": "Je kunt nu een nog niet voltooid spel afsluiten vanaf de {{dailyMode}}-pagina.",
+  "In round reviews, {{backToResults}} is at the top left.": "In de overzichten van de rondes staat {{backToResults}} linksboven."
 }

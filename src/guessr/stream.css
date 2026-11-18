@@ -270,7 +270,9 @@
 .stream-viewer-layout.show-pvp-lobby > :is(.stream-viewer-clue, .stream-picker) { display: none; }
 .stream-length-setting { display: flex; align-items: center; gap: .75rem; margin-block-end: .75rem; }
 .stream-length-setting .form-select { inline-size: auto; min-inline-size: 7rem; }
-.stream-shared-round { grid-column: 1 / -1; grid-row: 2 / -1; display: flex; min-inline-size: 0; min-block-size: 0; }
+.stream-shared-round { grid-column: 1 / -1; grid-row: 2 / -1; display: flex; flex-direction: column; min-inline-size: 0; min-block-size: 0; }
+.stream-shared-round > .page-back { align-self: start; margin-block-end: .5rem; }
+.stream-shared-round > .page-back[hidden], .stream-round-review-actions:not(:has(> :not([hidden]))) { display: none; }
 .stream-shared-round > .game-grid { flex: 1; min-block-size: 0; }
 .stream-shared-round .game-panel, .stream-shared-round .map-board { min-block-size: 0; }
 .stream-viewer-layout.show-round-results { grid-template-rows: auto minmax(0, 1fr); }

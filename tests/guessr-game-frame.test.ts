@@ -50,6 +50,23 @@ it('does not enlarge the clue because the page was scrolled', async () => {
   scroll = 240; vi.stubGlobal('scrollY', scroll); window.dispatchEvent(new Event('resize')); await tick();
   expect(grid.style.getPropertyValue('--round-clue-width')).toBe(before);
 });
+it('settles before paint when fitting the clue wraps its controls at an intermediate width', async () => {
+  vi.stubGlobal('innerHeight', 582);
+  const grid = document.querySelector<HTMLElement>('.stream-viewer-layout')!;
+  const stage = grid.querySelector<HTMLElement>('.clue-stage')!, controls = grid.querySelector<HTMLElement>('.clue-controls')!;
+  stage.after(controls);
+  const widthOfClue = () => parseFloat(grid.style.getPropertyValue('--round-clue-width'));
+  controls.getBoundingClientRect = () => new DOMRect(0, 0, widthOfClue(), widthOfClue() > 512 && widthOfClue() < 650 ? 158 : 104);
+  await tick();
+  const fitted = widthOfClue();
+  expect(fitted / 2.25 + controls.getBoundingClientRect().height + 200 + 16).toBeLessThanOrEqual(582);
+  for (let i = 0; i < 5; i++) {
+    window.dispatchEvent(new Event('resize')); await tick();
+    expect(widthOfClue()).toBe(fitted);
+  }
+  vi.stubGlobal('innerHeight', 900); window.dispatchEvent(new Event('resize')); await tick();
+  expect(widthOfClue()).toBeGreaterThan(fitted);
+});
 it('clears fitting for a hidden review and restores it without rebuilding the grid', async () => {
   await tick(); const grid = document.querySelector<HTMLElement>('.stream-viewer-layout')!, clue = grid.querySelector<HTMLElement>('.stream-viewer-clue')!;
   clue.hidden = true; await tick(); expect(grid.dataset.roundFrame).toBeUndefined();

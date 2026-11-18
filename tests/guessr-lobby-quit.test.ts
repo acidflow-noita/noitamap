@@ -31,6 +31,34 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); document.body.replaceChildren(); });
 const button = (name: string) => [...document.querySelectorAll('button')].find(element => element.textContent === name)!;
 
+it('offers Quit beside Continue on the Daily page and opens the saved score only after confirmation', async () => {
+  const day = '2026-11-18', id = 'active-daily';
+  history.replaceState(null, '', '/guess/daily/?lng=en');
+  saved.set(DAILY_RESUME_KEY, JSON.stringify({ id, day, round: 2, totalRounds: 10, completedRounds: 2 }));
+  app.auth.mockResolvedValue({ getState: () => ({ authenticated: true, isSubscriber: true }) });
+  app.api.mockImplementation(async path => {
+    if (path.startsWith('/api/daily?')) return { challenge: { id: 'daily-test', day, totalRounds: 10 }, attemptId: id, attemptStatus: 'active' };
+    if (path === '/api/history') return { attempts: [
+      { id, day, complete: false }, { id: 'finished', day: '2026-11-17', complete: true, score: 2000 },
+    ] };
+    if (path === `/api/attempts/${id}/quit`) return { id, day, round: 10, totalRounds: 10, status: 'complete', score: 1250, submitted: [0, 1], results: [] };
+    throw Error('Unexpected Daily request');
+  });
+  await import('../src/guessr/main');
+  const labels = (selector: string) => [...document.querySelectorAll(`${selector} button`)].map(b => b.textContent);
+  await vi.waitFor(() => expect(labels('.daily-start')).toEqual(['Continue daily', 'Quit game']));
+  expect(labels('tbody tr:first-child')).toEqual(['Continue daily', 'Quit game']);
+  expect(labels('tbody tr:last-child')).toEqual(['View results']);
+  document.querySelector<HTMLButtonElement>('.daily-start .daily-attempt-actions button:last-child')!.click();
+  expect(app.confirm.mock.calls[0][1]).toContain('cannot restart');
+  expect(app.api).toHaveBeenCalledTimes(2);
+  await app.confirm.mock.calls[0][0]();
+  expect(app.api.mock.calls.slice(2)).toEqual([[`/api/attempts/${id}/quit`, { body: {} }]]);
+  expect(saved.has(DAILY_RESUME_KEY)).toBe(false);
+  expect(document.querySelector('.daily-score-line')?.textContent).toContain('1,250');
+  expect(new URL(location.href).searchParams.get('a')).toBe(id);
+});
+
 it('explains the unconfigured daily and returns home without querying Pro authentication', async () => {
   app.origin = null;
   await import('../src/guessr/main');

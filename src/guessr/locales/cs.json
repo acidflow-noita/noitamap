@@ -186,7 +186,6 @@
   "Pin placed. Submit your guess when ready.": "Značka umístěna. Až budete připraveni, odešlete tip.",
   "Place a pin first": "Nejprve umístěte značku",
   "Place your guess": "Umístěte svůj tip",
-  "Place your pin, then submit.": "Umístěte značku a odešlete tip.",
   "Play again": "Hrát znovu",
   "Player": "Hráč",
   "Playing as {{player}}": "Hrajete jako {{player}}",
@@ -261,8 +260,6 @@
   "Simulate a viewer guess (local testing only)": "Simulovat tip diváka (jen pro místní testování)",
   "Simulated Twitch user ID": "Simulované ID uživatele Twitch",
   "Simulated guess command": "Simulovaný příkaz tipu",
-  "Skip round": "Přeskočit kolo",
-  "Skip this round without scoring": "Přeskočit toto kolo bez bodů",
   "Skipped": "Přeskočeno",
   "Something went wrong. Please try again.": "Něco se pokazilo. Zkuste to znovu.",
   "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.": "Spusťte hru, poté klikněte na „{{copyLink}}“ a vložte odkaz do chatu Twitch. Diváci používají pro každé kolo stejný odkaz NoitaGuessr.",
@@ -750,5 +747,8 @@
   "The game menu shows wider map previews.": "Herní menu zobrazuje větší náhledy mapy.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Používá mapu {{mode}}. Pouze streamer potřebuje {{tier}}.",
   "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "V režimu {{streamMode}} jsou tlačítka {{hostAction}} a {{chatterAction}} nyní umístěna vedle sebe.",
-  "The lobby now starts with your saved game or the game modes.": "Úvodní obrazovka se nyní spustí buď s vaší uloženou hrou, nebo s herními režimy."
+  "The lobby now starts with your saved game or the game modes.": "Úvodní obrazovka se nyní spustí buď s vaší uloženou hrou, nebo s herními režimy.",
+  "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.": "Panely s nápovědou a tipy jsou uspořádány vedle sebe. Nad mapami se nyní zobrazuje {{nextRound}}.",
+  "You can now quit an unfinished game from the {{dailyMode}} page.": "Nyní můžete nedohranou hru ukončit na stránce {{dailyMode}}.",
+  "In round reviews, {{backToResults}} is at the top left.": "V přehledech kol se {{backToResults}} nachází vlevo nahoře."
 }

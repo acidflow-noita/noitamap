@@ -182,7 +182,6 @@
   "Pin placed. Submit your guess when ready.": "Merkki asetettu. Lähetä arvauksesi, kun olet valmis.",
   "Place a pin first": "Aseta ensin merkki",
   "Place your guess": "Merkitse arvauksesi",
-  "Place your pin, then submit.": "Aseta merkki ja lähetä sitten arvauksesi.",
   "Play again": "Pelaa uudelleen",
   "Player": "Pelaaja",
   "Playing as {{player}}": "Pelaat nimellä {{player}}",
@@ -257,8 +256,6 @@
   "Simulate a viewer guess (local testing only)": "Simuloi katsojan arvaus (vain paikalliseen testaukseen)",
   "Simulated Twitch user ID": "Simuloitu Twitch-käyttäjätunniste",
   "Simulated guess command": "Simuloitu arvauskomento",
-  "Skip round": "Ohita kierros",
-  "Skip this round without scoring": "Ohita tämä kierros ilman pisteitä",
   "Skipped": "Ohitettu",
   "Something went wrong. Please try again.": "Jokin meni vikaan. Yritä uudelleen.",
   "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.": "Aloita peli, napsauta sitten ”{{copyLink}}” ja liitä linkki Twitch-keskusteluun. Katsojat käyttävät samaa NoitaGuessr-linkkiä jokaisella kierroksella.",
@@ -732,5 +729,8 @@
   "The game menu shows wider map previews.": "Pelin valikossa näkyy laajempia karttanäkymiä.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Käyttää {{mode}}-karttaa. Vain striimaaja tarvitsee {{tier}}:n.",
   "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "{{streamMode}}-tilassa {{hostAction}}- ja {{chatterAction}}-painikkeet ovat nyt vierekkäin.",
-  "The lobby now starts with your saved game or the game modes.": "Aulasta pääsee nyt joko tallennettuun pelitilaan tai pelitiloihin."
+  "The lobby now starts with your saved game or the game modes.": "Aulasta pääsee nyt joko tallennettuun pelitilaan tai pelitiloihin.",
+  "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.": "Vihje- ja arvausruudut ovat vierekkäin. Karttojen yläpuolelle ilmestyy nyt teksti {{nextRound}}.",
+  "You can now quit an unfinished game from the {{dailyMode}} page.": "Voit nyt lopettaa keskeneräisen pelin {{dailyMode}}-sivulta.",
+  "In round reviews, {{backToResults}} is at the top left.": "Kierroskatsauksissa {{backToResults}} sijaitsee vasemmassa yläkulmassa."
 }

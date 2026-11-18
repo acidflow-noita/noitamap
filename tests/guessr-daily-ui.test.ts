@@ -63,6 +63,9 @@ it('uses the daily tile set and shared exploration controls, then submits their 
   await import('../src/guessr/main');
   await vi.waitFor(() => expect(document.querySelector('[aria-label="Zoom out"]')).not.toBeNull());
   expect(document.querySelector('.daily-share-open')).toBeNull();
+  expect(document.querySelector('.game-actions')).toBeNull();
+  expect(document.querySelector('.guess-map-toolbar #confirm-guess')).not.toBeNull();
+  expect(document.querySelector('main')?.textContent).not.toContain('Skip round');
   expect(app.board).toHaveBeenCalledWith(config.bounds, config.map);
   expect(app.source).toHaveBeenCalledWith(clue);
   const zoom = document.querySelector<HTMLButtonElement>('button[aria-label="Zoom out"]')!;
@@ -71,6 +74,7 @@ it('uses the daily tile set and shared exploration controls, then submits their 
   app.pick({ x: 0, y: 0 });
   document.querySelector<HTMLButtonElement>('#confirm-guess')!.click();
   await vi.waitFor(() => expect(app.request).toHaveBeenCalledWith('/api/attempts/daily-one/guess', expect.objectContaining({ body: expect.objectContaining({ maximum: 4600, guess: { x: 0, y: 0 } }) })));
+  await vi.waitFor(() => expect(document.querySelector('.game-hud .round-next')?.textContent).toBe('Next round'));
   expect(app.image).not.toHaveBeenCalled();
 });
 
@@ -117,9 +121,14 @@ it('opens shared scores without auth or previews after F5 and reveals answers on
   expect(app.image).not.toHaveBeenCalled();
   expect(app.source).toHaveBeenCalledTimes(10);
   document.querySelector<HTMLButtonElement>('.result-preview-open')!.click();
-  await vi.waitFor(() => expect(document.body.textContent).toContain('Back to results'));
+  await vi.waitFor(() => expect(document.querySelector('.game-hud > .page-back:first-child')?.textContent).toBe('Back to results'));
+  const back = document.querySelector<HTMLButtonElement>('.game-hud .page-back')!;
+  expect(back.classList.contains('theme-secondary')).toBe(true);
+  expect(document.querySelector('.game-hud .primary')).toBeNull();
   expect(app.publicResult).toHaveBeenCalledTimes(2);
   expect(app.marks).toHaveBeenLastCalledWith({ x: 10, y: 10 }, { x: 0, y: 0 }, 'Player’s map marker');
+  back.click();
+  expect(document.querySelector('.daily-results-table')).not.toBeNull();
 });
 
 

@@ -333,6 +333,8 @@ describe('shared channel guess picker', () => {
     expect(f.main.querySelector<HTMLElement>('.stream-shared-round')!.hidden).toBe(true);
     f.button('Round 1 results').click();
     expect(f.main.querySelector<HTMLElement>('.stream-shared-round')!.hidden).toBe(false);
+    expect(f.main.querySelector('.stream-shared-round > .page-back:first-child')).toBe(f.button('Back to round 2'));
+    expect(f.button('Back to round 2').classList.contains('theme-secondary')).toBe(true);
     expect(f.main.querySelectorAll('.stream-shared-round tbody tr')).toHaveLength(2);
     expect(f.main.querySelector('.stream-shared-round .game-actions')!.compareDocumentPosition(f.main.querySelector('.stream-shared-round table')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(f.main.querySelector('.stream-shared-round .score-perfect')!.textContent).toBe('5,000');

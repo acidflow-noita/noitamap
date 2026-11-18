@@ -852,7 +852,7 @@ header.page-heading {
   margin: 0;
   flex: 1;
 }
-.game-actions .action-hint.is-ready {
+.stream-host-actions .action-hint.is-ready {
   color: var(--text);
 }
 .hint {
@@ -1165,8 +1165,7 @@ textarea {
 .guess-map-controls svg { inline-size: 1.1rem; block-size: 1.1rem; }
 .guess-map-controls { flex-wrap: wrap; }
 .map-bar:has(.guess-map-controls) { padding: 0; min-block-size: 0; }
-.map-heading:empty, .guess-submit-row:empty { display: none; }
-.guess-submit-row { flex: none; padding: .375rem .5rem; border-block-end: 1px solid var(--border); }
+.map-heading:empty { display: none; }
 .game-panel--map > .game-actions { position: static; flex: none; margin: 0; box-shadow: none; }
 .guess-map-toolbar { display: flex; flex: none; align-items: center; justify-content: space-between; gap: .5rem; padding: .375rem .5rem; min-block-size: 0; }
 .map-bar.guess-map-toolbar { padding: .375rem .5rem; }

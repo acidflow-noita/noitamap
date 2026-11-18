@@ -37,12 +37,16 @@ export function fitGameFrame(grid: HTMLElement): () => void {
     const left = clue?.closest<HTMLElement>('.game-panel'), right = map?.closest<HTMLElement>('.game-panel');
     const inputs: Element[] = [parent, ...parent.querySelectorAll(':scope > .stream-banner, :scope > .game-hud'),
       ...grid.querySelectorAll(':scope > .stream-connection-bar')];
+    const legend = parent.querySelector<HTMLElement>(':scope > .round-map-legend');
+    if (legend) inputs.push(legend);
     const siteHeader = parent.parentElement?.querySelector(':scope > .site-header');
     if (siteHeader) inputs.push(siteHeader);
     if (left && right) inputs.push(...[...left.children, ...right.children].filter(child => child !== clue && child !== map));
     watch(inputs);
     const style = getComputedStyle(parent);
     const width = parent.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
+    const bottom = (parseFloat(style.paddingBottom) || 0)
+      + (legend ? legend.getBoundingClientRect().height + (parseFloat(style.rowGap) || 0) : 0);
     const shortLandscape = innerHeight < 650 && innerWidth >= 720 && innerWidth > innerHeight;
     if (!clue || !map || !left || !right || left.hidden || right.hidden || map.hidden || grid.hidden
       || getComputedStyle(left).display === 'none' || getComputedStyle(right).display === 'none') {
@@ -55,7 +59,6 @@ export function fitGameFrame(grid: HTMLElement): () => void {
       clear();
       // The clue and touch controls keep their natural sizes. Give the map
       // the space below them and reserve the footer even before a receipt.
-      const bottom = parseFloat(style.paddingBottom) || 0;
       const room = innerHeight - (map.getBoundingClientRect().top + scrollY) - bottom - heightAfter(map);
       const height = Math.max(192, Math.min(448, Math.floor(room))) + 'px';
       if (grid.style.getPropertyValue('--round-map-height') !== height) grid.style.setProperty('--round-map-height', height);
@@ -65,18 +68,32 @@ export function fitGameFrame(grid: HTMLElement): () => void {
     if (grid.dataset.roundFrame !== 'split') grid.dataset.roundFrame = 'split';
     const head = (viewport: HTMLElement, panel: HTMLElement) =>
       viewport.getBoundingClientRect().top - panel.getBoundingClientRect().top - (parseFloat(getComputedStyle(viewport).marginTop) || 0);
-    const clueHead = head(clue, left), mapHead = head(map, right), top = Math.max(clueHead, mapHead);
-    // Controls below the maps need room too. Measure their own boxes, never
-    // a stretched panel or canvas whose height is an output of this fit.
-    const footer = Math.max(heightAfter(clue), heightAfter(map));
-    const available = innerHeight - (left.getBoundingClientRect().top + scrollY) - top - footer - 64;
     const mapMinimum = Math.max(shortLandscape ? 308 : 384, Math.min(512, width * .36));
-    const clueWidth = Math.floor(Math.min(width - 16 - mapMinimum, Math.max(shortLandscape ? 320 : 400, available * 2.25)));
+    const gap = parseFloat(getComputedStyle(grid).columnGap) || 16;
+    const maxWidth = Math.floor(width - gap - mapMinimum);
+    const minWidth = Math.min(maxWidth, shortLandscape ? 320 : 400);
+    const room = innerHeight - (left.getBoundingClientRect().top + scrollY) - bottom;
     const px = (value: number) => Math.round(value * 100) / 100 + 'px';
-    for (const [key, value] of Object.entries({
-      '--round-clue-width': px(clueWidth), '--round-canvas-height': px(clueWidth / 2.25),
-      '--clue-head-gap': px(Math.max(0, top - clueHead)), '--map-head-gap': px(Math.max(0, top - mapHead)),
-    })) if (grid.style.getPropertyValue(key) !== value) grid.style.setProperty(key, value);
+    const setSize = (key: string, number: number) => {
+      const value = px(number);
+      if (grid.style.getPropertyValue(key) !== value) grid.style.setProperty(key, value);
+    };
+    // A smaller width can add or remove a row of controls. Measure at each
+    // candidate width before paint and only shrink during this fit.
+    let clueWidth = maxWidth;
+    for (;;) {
+      setSize('--round-clue-width', clueWidth);
+      setSize('--round-canvas-height', clueWidth / 2.25);
+      const clueHead = head(clue, left), mapHead = head(map, right), top = Math.max(clueHead, mapHead);
+      const footer = Math.max(heightAfter(clue), heightAfter(map));
+      const fitsWidth = Math.max(minWidth, Math.floor((room - top - footer) * 2.25));
+      if (fitsWidth >= clueWidth) {
+        setSize('--clue-head-gap', top - clueHead);
+        setSize('--map-head-gap', top - mapHead);
+        break;
+      }
+      clueWidth = fitsWidth;
+    }
   };
   function queue() { if (!stopped && !frame) frame = requestAnimationFrame(fit); }
   const mutation = new MutationObserver(records => {

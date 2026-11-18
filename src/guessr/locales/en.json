@@ -182,7 +182,6 @@
   "Pin placed. Submit your guess when ready.": "Pin placed. Submit your guess when ready.",
   "Place a pin first": "Place a pin first",
   "Place your guess": "Place your guess",
-  "Place your pin, then submit.": "Place your pin, then submit.",
   "Play again": "Play again",
   "Player": "Player",
   "Playing as {{player}}": "Playing as {{player}}",
@@ -257,8 +256,6 @@
   "Simulate a viewer guess (local testing only)": "Simulate a viewer guess (local testing only)",
   "Simulated Twitch user ID": "Simulated Twitch user ID",
   "Simulated guess command": "Simulated guess command",
-  "Skip round": "Skip round",
-  "Skip this round without scoring": "Skip this round without scoring",
   "Skipped": "Skipped",
   "Something went wrong. Please try again.": "Something went wrong. Please try again.",
   "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.": "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.",
@@ -732,5 +729,8 @@
   "The game menu shows wider map previews.": "The game menu shows wider map previews.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Uses {{mode}} map. Only the streamer needs {{tier}}.",
   "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.",
-  "The lobby now starts with your saved game or the game modes.": "The lobby now starts with your saved game or the game modes."
+  "The lobby now starts with your saved game or the game modes.": "The lobby now starts with your saved game or the game modes.",
+  "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.": "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.",
+  "You can now quit an unfinished game from the {{dailyMode}} page.": "You can now quit an unfinished game from the {{dailyMode}} page.",
+  "In round reviews, {{backToResults}} is at the top left.": "In round reviews, {{backToResults}} is at the top left."
 }

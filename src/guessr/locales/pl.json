@@ -186,7 +186,6 @@
   "Pin placed. Submit your guess when ready.": "Znacznik ustawiony. Zatwierdź odpowiedź, gdy będziesz gotowy.",
   "Place a pin first": "Najpierw postaw znacznik",
   "Place your guess": "Wskaż swoją odpowiedź",
-  "Place your pin, then submit.": "Postaw znacznik, a potem zatwierdź odpowiedź.",
   "Play again": "Zagraj ponownie",
   "Player": "Gracz",
   "Playing as {{player}}": "Grasz jako {{player}}",
@@ -261,8 +260,6 @@
   "Simulate a viewer guess (local testing only)": "Symuluj odpowiedź widza (tylko testy lokalne)",
   "Simulated Twitch user ID": "Symulowany identyfikator użytkownika Twitch",
   "Simulated guess command": "Symulowana komenda odpowiedzi",
-  "Skip round": "Pomiń rundę",
-  "Skip this round without scoring": "Pomiń tę rundę bez punktów",
   "Skipped": "Pominięto",
   "Something went wrong. Please try again.": "Coś poszło nie tak. Spróbuj ponownie.",
   "Start a game, then click “{{copyLink}}” and paste the link into Twitch chat. Viewers use the same NoitaGuessr link for every round.": "Rozpocznij grę, a następnie kliknij „{{copyLink}}” i wklej link do czatu Twitch. Widzowie używają tego samego linku NoitaGuessr w każdej rundzie.",
@@ -750,5 +747,8 @@
   "The game menu shows wider map previews.": "W menu gry wyświetlane są szersze podglądy mapy.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Wykorzystuje mapę {{mode}}. Tylko streamer potrzebuje {{tier}}.",
   "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "W trybie {{streamMode}} przyciski {{hostAction}} i {{chatterAction}} znajdują się teraz obok siebie.",
-  "The lobby now starts with your saved game or the game modes.": "Ekran startowy wyświetla teraz zapisany stan gry lub tryby gry."
+  "The lobby now starts with your saved game or the game modes.": "Ekran startowy wyświetla teraz zapisany stan gry lub tryby gry.",
+  "The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.": "Panele z podpowiedziami i typami są ułożone obok siebie. Nad mapami pojawia się teraz napis {{nextRound}}.",
+  "You can now quit an unfinished game from the {{dailyMode}} page.": "Teraz możesz zakończyć niedokończoną grę ze strony {{dailyMode}}.",
+  "In round reviews, {{backToResults}} is at the top left.": "W przeglądach rund {{backToResults}} znajduje się w lewym górnym rogu."
 }

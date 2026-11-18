@@ -2,6 +2,7 @@ import { sharedRoundResults } from './stream-round-results';
 import { updateSubmit } from './submit-control';
 import { bindViewerAccount } from './account-menu';
 import { fitGameFrame } from './game-frame';
+import { pageBack } from './page-heading';
 import { moveGameExit } from './game-chrome';
 import { GAME_UNAVAILABLE_MESSAGE } from './stream-lifetime';
 import { allowGuessrChangelog } from './changelog';
@@ -62,7 +63,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   let personal = new StreamViewerHistory(config.bounds);
   let sharedRounds = requestedGame ? new StreamRoundCache(requestedGame, config.bounds) : undefined;
   let sharedRound: number | null = null, sharedSignature = '', clearShared: (() => void) | undefined;
-  let sharedNext: HTMLButtonElement | undefined, sharedBack: HTMLButtonElement | undefined;
+  let sharedNext: HTMLButtonElement | undefined, sharedBack: HTMLButtonElement | undefined, sharedReady: HTMLButtonElement | undefined;
   personal.identify(requestedGame, viewer.getState().userId ?? viewer.getState().savedUserId ?? null);
   let feed: ReturnType<typeof watchParallelGame> | undefined;
   let autoRound = '';
@@ -493,20 +494,28 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       clearShared?.(); sharedPanel.replaceChildren(); sharedSignature = signature;
       const actions = node('div', 'game-actions stream-round-review-actions');
       actions.classList.toggle('pvp-actions', pvp);
-      sharedBack = button('Back', () => {
-        if (pvp && live?.phase === 'reveal') void pvpCommand({ type: 'ready', ready: true, round: (live.timing?.hostRound ?? 1) - 1, phase: 'review' });
-        else { sharedRound = null; refresh(); }
-      }, 'primary');
+      sharedBack = pageBack(button('Back', () => { sharedRound = null; refresh(); }, 'secondary'));
+      sharedPanel.append(sharedBack);
+      if (pvp) {
+        sharedReady = button('Ready to continue', () => void pvpCommand({
+          type: 'ready', ready: true, round: (live?.timing?.hostRound ?? 1) - 1, phase: 'review',
+        }), 'primary');
+        actions.append(sharedReady);
+      }
       sharedNext = button('Waiting for the streamer', () => {}, 'secondary'); sharedNext.disabled = true;
-      actions.append(sharedBack, sharedNext);
+      actions.append(sharedNext);
       clearShared = sharedRoundResults(sharedPanel, config, data, actions);
     }
-    sharedBack!.hidden = !pvp && live?.phase !== 'guess' && live?.phase !== 'complete'; sharedNext!.hidden = live?.phase === 'guess' || live?.phase === 'complete';
+    const readyPhase = pvp && live?.phase === 'reveal';
+    sharedBack!.hidden = readyPhase || (!pvp && live?.phase !== 'guess' && live?.phase !== 'complete');
+    sharedNext!.hidden = live?.phase === 'guess' || live?.phase === 'complete';
     bindText(sharedBack!, live?.phase === 'complete' ? 'Back to results' : 'Back to round {{round}}', { round: formatGuessrNumber(live?.round ?? 1) });
-    if (pvp && live?.phase === 'reveal') {
-      const ready = !!live.pvp?.ready.includes(viewer.getState().userId ?? '');
-      bindText(sharedBack!, ready ? 'Ready' : 'Ready to continue'); sharedBack!.disabled = ready || pvpCommands > 0;
-    } else sharedBack!.disabled = false;
+    if (sharedReady) {
+      sharedReady.hidden = !readyPhase;
+      const ready = !!live?.pvp?.ready.includes(viewer.getState().userId ?? '');
+      bindText(sharedReady, ready ? 'Ready' : 'Ready to continue');
+      sharedReady.disabled = !readyPhase || ready || pvpCommands > 0;
+    }
     if (live?.phase !== 'guess') {
       bindText(round, 'Round {{round}} results', { round: formatGuessrNumber(data.round) });
       const until = live?.phase === 'complete' ? undefined : live?.timing?.resultsUntil;
