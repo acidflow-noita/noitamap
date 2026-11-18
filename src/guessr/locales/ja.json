@@ -32,7 +32,6 @@
   "Choose a Twitch channel": "Twitch チャンネルを選択してください",
   "Choose a Twitch channel.": "Twitch チャンネルを選択してください。",
   "Choose a channel and enter a message of up to 500 characters.": "チャンネルを選択し、最大500文字のメッセージを入力してください。",
-  "Choose a game": "ゲームを選んでください",
   "Choose a valid round, map position, and Twitch channel before sending.": "送信する前に、有効なラウンド、マップ上の位置、および Twitch チャンネルを選択してください。",
   "Choose another recipient. The channel owner cannot receive their own channel’s subscription.": "別の受信者を選択してください。チャンネル所有者は、自身のチャンネルの登録を受け取ることはできません。",
   "Join game": "ゲームに参加する",
@@ -732,5 +731,6 @@
   "On phones, the top navigation stays in one row.": "スマートフォンでは、上部のナビゲーションは1行にまとめられます。",
   "The game menu shows wider map previews.": "ゲームメニューでは、より広範囲のマッププレビューが表示されます。",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "{{mode}}マップを使用します。{{tier}}が必要なのはストリーマーのみです。",
-  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "{{streamMode}} では、{{hostAction}} ボタンと {{chatterAction}} ボタンが並んで表示されるようになりました。"
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "{{streamMode}} では、{{hostAction}} ボタンと {{chatterAction}} ボタンが並んで表示されるようになりました。",
+  "The lobby now starts with your saved game or the game modes.": "ロビーでは、セーブデータまたはゲームモードからゲームを開始できるようになりました。"
 }

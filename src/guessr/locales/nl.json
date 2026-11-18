@@ -32,7 +32,6 @@
   "Choose a Twitch channel": "Kies een Twitch-kanaal",
   "Choose a Twitch channel.": "Kies een Twitch-kanaal.",
   "Choose a channel and enter a message of up to 500 characters.": "Kies een kanaal en typ een bericht van maximaal 500 tekens.",
-  "Choose a game": "Kies een spel",
   "Choose a valid round, map position, and Twitch channel before sending.": "Kies vóór het versturen een geldige ronde, kaartpositie en Twitch-kanaal.",
   "Choose another recipient. The channel owner cannot receive their own channel’s subscription.": "Kies een andere ontvanger. De kanaaleigenaar kan geen abonnement op het eigen kanaal ontvangen.",
   "Join game": "Meedoen aan het spel",
@@ -732,5 +731,6 @@
   "On phones, the top navigation stays in one row.": "Op telefoons blijft de navigatiebalk bovenaan in één rij staan.",
   "The game menu shows wider map previews.": "In het spelmenu worden grotere kaartvoorbeelden weergegeven.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Maakt gebruik van de {{mode}}-kaart. Alleen de streamer heeft {{tier}} nodig.",
-  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "In {{streamMode}} staan de knoppen {{hostAction}} en {{chatterAction}} nu naast elkaar."
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "In {{streamMode}} staan de knoppen {{hostAction}} en {{chatterAction}} nu naast elkaar.",
+  "The lobby now starts with your saved game or the game modes.": "De lobby begint nu met je opgeslagen spel of de spelmodi."
 }

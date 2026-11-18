@@ -3,15 +3,9 @@
 .guessr-lobby {
   max-inline-size: 72rem;
   margin-inline: auto;
-  padding-block: clamp(1rem, 4vh, 3rem) 2rem;
+  padding-block-end: 2rem;
   display: grid;
   gap: 1.25rem;
-}
-#guess-app .lobby-title {
-  margin: 0;
-  font-size: clamp(1.625rem, 3vw, 2.5rem);
-  line-height: 1.1;
-  letter-spacing: -0.035em;
 }
 .lobby-modes {
   --other-modes: 2;
@@ -178,7 +172,6 @@
 @media (max-width: 58rem) {
   .guessr-lobby {
     gap: 0.875rem;
-    padding-block: 1rem 2rem;
   }
   .lobby-modes {
     grid-template-columns: minmax(0, 1fr);

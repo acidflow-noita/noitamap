@@ -32,7 +32,6 @@
   "Choose a Twitch channel": "Виберіть канал Twitch",
   "Choose a Twitch channel.": "Виберіть канал Twitch.",
   "Choose a channel and enter a message of up to 500 characters.": "Виберіть канал і введіть повідомлення довжиною до 500 символів.",
-  "Choose a game": "Виберіть гру",
   "Choose a valid round, map position, and Twitch channel before sending.": "Перед надсиланням виберіть допустимий раунд, точку на мапі та канал Twitch.",
   "Choose another recipient. The channel owner cannot receive their own channel’s subscription.": "Виберіть іншого одержувача. Власник каналу не може отримати підписку на власний канал.",
   "Join game": "Приєднатися до гри",
@@ -750,5 +749,6 @@
   "On phones, the top navigation stays in one row.": "На мобільних телефонах верхня навігаційна панель залишається в одному рядку.",
   "The game menu shows wider map previews.": "У меню гри відображаються більш широкі попередні перегляди карти.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Використовує карту {{mode}}. Тільки стрімеру потрібен {{tier}}.",
-  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "У режимі {{streamMode}} кнопки {{hostAction}} та {{chatterAction}} тепер розташовані одна поруч з одною."
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "У режимі {{streamMode}} кнопки {{hostAction}} та {{chatterAction}} тепер розташовані одна поруч з одною.",
+  "The lobby now starts with your saved game or the game modes.": "Тепер у головній меню спочатку відображається збережений прогрес гри або режими гри."
 }

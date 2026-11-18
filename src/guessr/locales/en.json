@@ -32,7 +32,6 @@
   "Choose a Twitch channel": "Choose a Twitch channel",
   "Choose a Twitch channel.": "Choose a Twitch channel.",
   "Choose a channel and enter a message of up to 500 characters.": "Choose a channel and enter a message of up to 500 characters.",
-  "Choose a game": "Choose a game",
   "Choose a valid round, map position, and Twitch channel before sending.": "Choose a valid round, map position, and Twitch channel before sending.",
   "Choose another recipient. The channel owner cannot receive their own channel’s subscription.": "Choose another recipient. The channel owner cannot receive their own channel’s subscription.",
   "Join game": "Join game",
@@ -732,5 +731,6 @@
   "On phones, the top navigation stays in one row.": "On phones, the top navigation stays in one row.",
   "The game menu shows wider map previews.": "The game menu shows wider map previews.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Uses {{mode}} map. Only the streamer needs {{tier}}.",
-  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side."
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.",
+  "The lobby now starts with your saved game or the game modes.": "The lobby now starts with your saved game or the game modes."
 }

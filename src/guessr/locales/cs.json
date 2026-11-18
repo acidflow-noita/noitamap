@@ -32,7 +32,6 @@
   "Choose a Twitch channel": "Vyberte kanál Twitch",
   "Choose a Twitch channel.": "Vyberte kanál Twitch.",
   "Choose a channel and enter a message of up to 500 characters.": "Vyberte kanál a napište zprávu o délce nejvýše 500 znaků.",
-  "Choose a game": "Vybrat hru",
   "Choose a valid round, map position, and Twitch channel before sending.": "Před odesláním vyberte platné kolo, pozici na mapě a kanál Twitch.",
   "Choose another recipient. The channel owner cannot receive their own channel’s subscription.": "Vyberte jiného příjemce. Vlastník kanálu nemůže získat předplatné vlastního kanálu.",
   "Join game": "Připojit se ke hře",
@@ -750,5 +749,6 @@
   "On phones, the top navigation stays in one row.": "Na mobilních telefonech zůstává horní navigační lišta v jednom řádku.",
   "The game menu shows wider map previews.": "Herní menu zobrazuje větší náhledy mapy.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Používá mapu {{mode}}. Pouze streamer potřebuje {{tier}}.",
-  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "V režimu {{streamMode}} jsou tlačítka {{hostAction}} a {{chatterAction}} nyní umístěna vedle sebe."
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "V režimu {{streamMode}} jsou tlačítka {{hostAction}} a {{chatterAction}} nyní umístěna vedle sebe.",
+  "The lobby now starts with your saved game or the game modes.": "Úvodní obrazovka se nyní spustí buď s vaší uloženou hrou, nebo s herními režimy."
 }

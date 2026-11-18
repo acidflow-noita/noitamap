@@ -32,7 +32,6 @@
   "Choose a Twitch channel": "Выберите канал Twitch",
   "Choose a Twitch channel.": "Выберите канал Twitch.",
   "Choose a channel and enter a message of up to 500 characters.": "Выберите канал и введите сообщение длиной до 500 символов.",
-  "Choose a game": "Выберите игру",
   "Choose a valid round, map position, and Twitch channel before sending.": "Перед отправкой выберите допустимый раунд, точку на карте и канал Twitch.",
   "Choose another recipient. The channel owner cannot receive their own channel’s subscription.": "Выберите другого получателя. Владелец канала не может получить подписку на собственный канал.",
   "Join game": "Присоединиться к игре",
@@ -750,5 +749,6 @@
   "On phones, the top navigation stays in one row.": "На мобильных устройствах верхняя панель навигации отображается в один ряд.",
   "The game menu shows wider map previews.": "В меню игры отображаются более широкие фрагменты карты.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Использует карту {{mode}}. Уровень {{tier}} требуется только стримеру.",
-  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "В режиме {{streamMode}} кнопки {{hostAction}} и {{chatterAction}} теперь расположены рядом."
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "В режиме {{streamMode}} кнопки {{hostAction}} и {{chatterAction}} теперь расположены рядом.",
+  "The lobby now starts with your saved game or the game modes.": "Теперь в главном меню сначала отображаются ваши сохраненные игры или режимы игры."
 }

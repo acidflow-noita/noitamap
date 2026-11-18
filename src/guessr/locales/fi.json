@@ -32,7 +32,6 @@
   "Choose a Twitch channel": "Valitse Twitch-kanava",
   "Choose a Twitch channel.": "Valitse Twitch-kanava.",
   "Choose a channel and enter a message of up to 500 characters.": "Valitse kanava ja kirjoita enintään 500 merkin viesti.",
-  "Choose a game": "Valitse peli",
   "Choose a valid round, map position, and Twitch channel before sending.": "Valitse kelvollinen kierros, kartan sijainti ja Twitch-kanava ennen lähettämistä.",
   "Choose another recipient. The channel owner cannot receive their own channel’s subscription.": "Valitse toinen vastaanottaja. Kanavan omistaja ei voi vastaanottaa oman kanavansa tilausta.",
   "Join game": "Liity peliin",
@@ -732,5 +731,6 @@
   "On phones, the top navigation stays in one row.": "Puhelimissa yläosan navigointipalkki pysyy yhdellä rivillä.",
   "The game menu shows wider map previews.": "Pelin valikossa näkyy laajempia karttanäkymiä.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Käyttää {{mode}}-karttaa. Vain striimaaja tarvitsee {{tier}}:n.",
-  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "{{streamMode}}-tilassa {{hostAction}}- ja {{chatterAction}}-painikkeet ovat nyt vierekkäin."
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "{{streamMode}}-tilassa {{hostAction}}- ja {{chatterAction}}-painikkeet ovat nyt vierekkäin.",
+  "The lobby now starts with your saved game or the game modes.": "Aulasta pääsee nyt joko tallennettuun pelitilaan tai pelitiloihin."
 }

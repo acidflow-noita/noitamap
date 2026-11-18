@@ -32,7 +32,6 @@
   "Choose a Twitch channel": "Välj en Twitch-kanal",
   "Choose a Twitch channel.": "Välj en Twitch-kanal.",
   "Choose a channel and enter a message of up to 500 characters.": "Välj en kanal och skriv ett meddelande på högst 500 tecken.",
-  "Choose a game": "Välj ett spel",
   "Choose a valid round, map position, and Twitch channel before sending.": "Välj en giltig omgång, kartposition och Twitch-kanal innan du skickar.",
   "Choose another recipient. The channel owner cannot receive their own channel’s subscription.": "Välj en annan mottagare. Kanalägaren kan inte ta emot en prenumeration på sin egen kanal.",
   "Join game": "Gå med i spelet",
@@ -732,5 +731,6 @@
   "On phones, the top navigation stays in one row.": "På mobiltelefoner visas den övre navigeringsmenyn i en rad.",
   "The game menu shows wider map previews.": "Spelmenyn visar större kartförhandsvisningar.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Använder {{mode}}-kartan. Endast streamaren behöver {{tier}}.",
-  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "I {{streamMode}} ligger knapparna {{hostAction}} och {{chatterAction}} nu bredvid varandra."
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "I {{streamMode}} ligger knapparna {{hostAction}} och {{chatterAction}} nu bredvid varandra.",
+  "The lobby now starts with your saved game or the game modes.": "I lobbyn kommer du nu direkt till ditt sparade spel eller spellägena."
 }

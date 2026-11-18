@@ -32,7 +32,6 @@
   "Choose a Twitch channel": "Escolher um canal da Twitch",
   "Choose a Twitch channel.": "Escolha um canal da Twitch.",
   "Choose a channel and enter a message of up to 500 characters.": "Escolha um canal e digite uma mensagem de até 500 caracteres.",
-  "Choose a game": "Escolher uma partida",
   "Choose a valid round, map position, and Twitch channel before sending.": "Escolha uma rodada, uma posição no mapa e um canal da Twitch válidos antes de enviar.",
   "Choose another recipient. The channel owner cannot receive their own channel’s subscription.": "Escolha outro destinatário. O dono do canal não pode receber uma inscrição no próprio canal.",
   "Join game": "Entrar no jogo",
@@ -750,5 +749,6 @@
   "On phones, the top navigation stays in one row.": "Em celulares, a barra de navegação superior permanece em uma única linha.",
   "The game menu shows wider map previews.": "O menu do jogo exibe visualizações mais amplas do mapa.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Utiliza o mapa {{mode}}. Apenas o streamer precisa do {{tier}}.",
-  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "No {{streamMode}}, os botões {{hostAction}} e {{chatterAction}} agora estão lado a lado."
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "No {{streamMode}}, os botões {{hostAction}} e {{chatterAction}} agora estão lado a lado.",
+  "The lobby now starts with your saved game or the game modes.": "Agora, a tela inicial exibe seu jogo salvo ou os modos de jogo."
 }

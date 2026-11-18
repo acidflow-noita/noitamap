@@ -7,8 +7,9 @@ const isMainPage = () => readGuessRoute(new URL(location.href)).pane === 'home';
 // One announcement per release day. Editing hotfix notes must not reopen it.
 export const GUESSR_CHANGELOG = {
   id: '2026-11-17-layout-stability',
-  date: '2026-11-17',
+  date: '2026-11-18',
   notes: [
+    'The lobby now starts with your saved game or the game modes.',
     'In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.',
     'On phones, the top navigation stays in one row.',
     'The game menu shows wider map previews.',

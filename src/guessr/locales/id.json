@@ -32,7 +32,6 @@
   "Choose a Twitch channel": "Pilih saluran Twitch",
   "Choose a Twitch channel.": "Pilih saluran Twitch.",
   "Choose a channel and enter a message of up to 500 characters.": "Pilih saluran dan masukkan pesan hingga 500 karakter.",
-  "Choose a game": "Pilih permainan",
   "Choose a valid round, map position, and Twitch channel before sending.": "Pilih ronde, posisi peta, dan saluran Twitch yang valid sebelum mengirim.",
   "Choose another recipient. The channel owner cannot receive their own channel’s subscription.": "Pilih penerima lain. Pemilik saluran tidak dapat menerima langganan untuk salurannya sendiri.",
   "Join game": "Ikut main",
@@ -732,5 +731,6 @@
   "On phones, the top navigation stays in one row.": "Di ponsel, bilah navigasi atas tetap berada dalam satu baris.",
   "The game menu shows wider map previews.": "Menu permainan menampilkan pratinjau peta yang lebih luas.",
   "Uses {{mode}} map. Only the streamer needs {{tier}}.": "Menggunakan peta {{mode}}. Hanya orang yang menjadi tuan rumah permainan ini yang memerlukan {{tier}}.",
-  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "Dalam mode {{streamMode}}, tombol {{hostAction}} dan {{chatterAction}} kini ditempatkan berdampingan."
+  "In {{streamMode}}, the {{hostAction}} and {{chatterAction}} buttons are now side by side.": "Dalam mode {{streamMode}}, tombol {{hostAction}} dan {{chatterAction}} kini ditempatkan berdampingan.",
+  "The lobby now starts with your saved game or the game modes.": "Lobi kini dimulai dengan data permainan yang telah Anda simpan atau mode permainan."
 }

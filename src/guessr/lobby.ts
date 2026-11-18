@@ -162,7 +162,7 @@ function historySummary(
 /** Creates only the lobby content; the app owns navigation, sessions and auth. */
 export function createLobby(options: LobbyOptions): HTMLElement {
   const lobby = element("div", "guessr-lobby");
-  lobby.append(element("h1", "lobby-title", msg("Choose a game")));
+  lobby.append(element("h1", "sr-only", "NoitaGuessr"));
   if (options.resume) lobby.append(continueGame(options.resume));
 
   // Fixed scenery from the archived seed 78633191 capture, never today's clues.
