@@ -706,7 +706,7 @@ async function handleGuessrPoll(request: Request, env: Env, origin: string | nul
   // concurrent registrations cannot reset a poll already in the database.
   if (!ballot) {
     const published = await fetch('https://dynamic-map.noitamap.com/guessr/polls/hard-puzzles-v1/window.json', {
-      redirect: 'error', signal: AbortSignal.timeout(5000),
+      redirect: 'manual', signal: AbortSignal.timeout(5000),
     });
     if (!published.ok && published.status !== 404) return jsonResponse({ error: 'The poll is unavailable. Try again.' }, origin, 503);
     const start = published.ok ? (await readAccountBody(published))?.opensAt : null;

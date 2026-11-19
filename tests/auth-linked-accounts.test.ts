@@ -124,12 +124,24 @@ describe('Hard puzzle ballot', () => {
     providerFetch.mockResolvedValueOnce(Response.json({ opensAt: start }));
     const scheduled = await (await request(path)).json();
     expect(scheduled).toMatchObject({ phase: 'scheduled', opensAt: start, closesAt: start + 259200, vote: null });
-    expect(providerFetch).toHaveBeenCalledOnce();
+    expect(providerFetch).toHaveBeenCalledExactlyOnceWith(
+      'https://dynamic-map.noitamap.com/guessr/polls/hard-puzzles-v1/window.json',
+      expect.objectContaining({ redirect: 'manual' }),
+    );
     await request(path);
     expect(providerFetch).toHaveBeenCalledOnce();
     const voter = await login('twitch');
     expect((await request(path, voter.token, { choice: 'yes' })).status).toBe(409);
     expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM guessr_votes').get()?.n).toBe(0);
+  });
+
+  it('rejects a redirected schedule without registering a voting window', async () => {
+    db.sqlite.exec('DELETE FROM guessr_polls');
+    providerFetch.mockResolvedValueOnce(Response.json({ opensAt: Math.floor(Date.now() / 1000) },
+      { status: 302, headers: { Location: 'https://fixture.invalid/other-window.json' } }));
+    expect((await request(path)).status).toBe(503);
+    expect(providerFetch).toHaveBeenCalledOnce();
+    expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM guessr_polls').get()?.n).toBe(0);
   });
 
   it('accepts one final vote from a free account and returns the original receipt on retry', async () => {
