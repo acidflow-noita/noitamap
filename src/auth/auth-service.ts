@@ -3,6 +3,7 @@
  */
 
 import i18next from "../i18n";
+import { HARD_PUZZLE_POLL_PATH, type GuessrBallot, type PollChoice } from '../../workers/noitamap-auth/src/poll-contract';
 import { LoginReturn } from './login-return';
 import { beginBrowserLogin, cancelBrowserLogin, consumeBrowserLogin } from './browser-login';
 
@@ -367,12 +368,35 @@ class AuthService {
     this.applyAuthData(data);
   }
 
-  private async accountRequest(path: string, body?: Record<string, unknown>): Promise<Response> {
-    const send = () => fetch(`${AUTH_WORKER_URL}${path}`, {
-      method: body ? 'POST' : 'GET',
-      headers: { Authorization: `Bearer ${this.getToken() || ''}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    });
+  async guessrBallot(choice?: PollChoice, expectedAccount?: string): Promise<GuessrBallot | null> {
+    const owner = this.state.accountId;
+    if (choice && (!owner || owner !== expectedAccount)) throw new Error('Sign in to vote.');
+    const response = owner
+      ? await this.accountRequest(HARD_PUZZLE_POLL_PATH, choice ? { choice } : undefined, owner)
+      : await fetch(AUTH_WORKER_URL + HARD_PUZZLE_POLL_PATH, { credentials: 'omit', cache: 'no-store', signal: AbortSignal.timeout(15000) });
+    if (this.state.accountId !== owner) throw new Error('Your account changed. Reopen the poll.');
+    if (response.status === 404) return null;
+    if (response.status === 401) throw new Error('Sign in to vote.');
+    if (!response.ok && response.status !== 409) throw new Error('The poll is unavailable. Try again.');
+    const ballot = await response.json() as GuessrBallot;
+    if (!ballot || !['open', 'scheduled', 'closed'].includes(ballot.phase)
+      || !Number.isSafeInteger(ballot.opensAt) || !Number.isSafeInteger(ballot.closesAt) || !Number.isSafeInteger(ballot.serverNow)
+      || ballot.closesAt <= ballot.opensAt || ![null, 'yes', 'no'].includes(ballot.vote))
+      throw new Error('The poll is unavailable. Try again.');
+    if (choice && ballot.phase === 'open' && !ballot.vote) throw new Error('Your vote could not be confirmed. Please retry.');
+    return ballot;
+  }
+
+  private async accountRequest(path: string, body?: Record<string, unknown>, expectedAccount?: string): Promise<Response> {
+    const send = () => {
+      if (expectedAccount && this.state.accountId !== expectedAccount) throw new Error('Your account changed. Reopen the poll.');
+      return fetch(`${AUTH_WORKER_URL}${path}`, {
+        method: body ? 'POST' : 'GET',
+        headers: { Authorization: `Bearer ${this.getToken() || ''}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+        ...(expectedAccount ? { signal: AbortSignal.timeout(15000) } : {}),
+      });
+    };
     let response = await send();
     if (response.status === 401 && await this.tryRefresh()) response = await send();
     return response;

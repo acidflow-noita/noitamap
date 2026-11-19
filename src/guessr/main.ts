@@ -1,6 +1,7 @@
 import { mapControls } from './map-controls';
 import { fitGameFrame } from './game-frame';
 import { compactHeaderNavigation, gameLogo, moveGameExit } from './game-chrome';
+import { createPollBanner } from './poll-banner';
 import { mountAccountMenu } from './account-menu';
 import { updateSubmit, submitHelp } from './submit-control';
 import { roundProgress } from './round-progress';
@@ -74,6 +75,7 @@ import {
 } from "./api";
 
 const root = document.getElementById("guess-app")!;
+let pollBanner: HTMLElement | undefined;
 let pack: Pack;
 let session: PracticeSession | null = null;
 let imageSession: ImageGameState | null = null;
@@ -203,6 +205,7 @@ function shell(game = false): HTMLElement {
   clearFrame?.(); clearFrame = undefined; clearHeader?.(); clearSubmit?.(); clearSubmit = undefined;
   disposeGuessrLanguagePickers(root);
   root.replaceChildren();
+  root.append(pollBanner ??= createPollBanner(save));
   const header = node("header", "site-header"), logo = gameLogo(home);
   const identity = node('div', 'header-identity');
   identity.append(logo.element, createGuessrLanguagePicker());
@@ -561,6 +564,13 @@ function showMapResult(
 function backToResults(action: () => unknown): HTMLButtonElement {
   return pageBack(button(msg('Back to results'), action, '', 'arrow-left'));
 }
+function demoPause(paused: boolean, action: () => void): HTMLButtonElement {
+  const label = paused ? 'Resume' : 'Pause';
+  const control = button(msg(label), action, 'small demo-pause bi ' + (paused ? 'bi-play-fill' : 'bi-pause-fill'));
+  bindAttribute(control, 'aria-label', label);
+  bindAttribute(control, 'title', label);
+  return control;
+}
 function roundNavigation(main: HTMLElement, control: HTMLButtonElement, legend: LocalizedText): void {
   const hud = main.querySelector('.game-hud')!;
   if (control.classList.contains('page-back')) hud.prepend(control);
@@ -619,14 +629,13 @@ function renderPractice(): void {
   const clueActions = node("div", "buttons");
   if (!result) {
     clueActions.append(
-      button(
-        session.pausedAt !== null ? msg("Resume") : msg("Pause"),
+      demoPause(
+        session.pausedAt !== null,
         () => {
           pausePractice(session!, session!.pausedAt === null);
           save();
           renderPractice();
         },
-        "small",
       ),
     );
   } else clueActions.append(node("span", "hint", msg(() => guessrGameTerm(place.biome))));
@@ -801,15 +810,14 @@ function renderImageGame(review?: {
   clue.classList.toggle("paused", imagePaused && !result);
   if (!result)
     bar.append(
-      button(
-        imagePaused ? msg("Resume") : msg("Pause"),
+      demoPause(
+        imagePaused,
         () => {
           if (busy) return;
           imagePaused = !imagePaused;
           save();
           renderImageGame();
         },
-        "small",
       ),
     );
   if (result) {

@@ -110,6 +110,68 @@ async function link(token: string, provider: string, person: string, chat = fals
 }
 const check = async (token: string) => (await request('/auth/check', token)).json() as Promise<any>;
 
+describe('Hard puzzle ballot', () => {
+  const path = '/auth/polls/hard-puzzles-v1';
+  beforeEach(() => {
+    const now = Math.floor(Date.now() / 1000);
+    db.sqlite.prepare('INSERT INTO guessr_polls (id, opens_at, closes_at) VALUES (?, ?, ?)')
+      .run('hard-puzzles-v1', now - 60, now - 60 + 3 * 86400);
+  });
+
+  it('takes the published opening time once and closes exactly 72 hours later', async () => {
+    db.sqlite.exec('DELETE FROM guessr_polls');
+    const start = Math.floor(Date.now() / 1000) + 600;
+    providerFetch.mockResolvedValueOnce(Response.json({ opensAt: start }));
+    const scheduled = await (await request(path)).json();
+    expect(scheduled).toMatchObject({ phase: 'scheduled', opensAt: start, closesAt: start + 259200, vote: null });
+    expect(providerFetch).toHaveBeenCalledOnce();
+    await request(path);
+    expect(providerFetch).toHaveBeenCalledOnce();
+    const voter = await login('twitch');
+    expect((await request(path, voter.token, { choice: 'yes' })).status).toBe(409);
+    expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM guessr_votes').get()?.n).toBe(0);
+  });
+
+  it('accepts one final vote from a free account and returns the original receipt on retry', async () => {
+    const anonymous = await (await request(path)).json();
+    expect(anonymous).toMatchObject({ phase: 'open', vote: null });
+    expect(anonymous).not.toHaveProperty('totals');
+    expect((await request(path, undefined, { choice: 'yes' })).status).toBe(401);
+    const free = await login('twitch');
+    expect((await request(path, free.token, { choice: 'yes', accountId: 'other' })).status).toBe(400);
+    const first = await (await request(path, free.token, { choice: 'yes' })).json();
+    expect(first).toMatchObject({ phase: 'open', vote: 'yes' });
+    expect(await (await request(path, free.token, { choice: 'no' })).json()).toMatchObject({ phase: 'open', vote: 'yes' });
+    expect(await (await request(path, free.token)).json()).toMatchObject({ phase: 'open', vote: 'yes' });
+    expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM guessr_votes').get()?.n).toBe(1);
+    db.sqlite.exec('UPDATE guessr_polls SET opens_at = opens_at - 259200, closes_at = closes_at - 259200');
+    expect(await (await request(path)).json()).toMatchObject({ phase: 'closed', vote: null, totals: { yes: 1, no: 0 } });
+    expect((await request(path, (await login('patreon')).token, { choice: 'no' })).status).toBe(409);
+  });
+
+  it('keeps the earliest ballot when previously separate Twitch and Patreon accounts link', async () => {
+    const patreon = await login('patreon'), twitch = await login('twitch');
+    await request(path, twitch.token, { choice: 'no' });
+    await request(path, patreon.token, { choice: 'yes' });
+    const merged = await (await link(patreon.token, 'twitch', 'twitch')).json() as { token: string };
+    expect(await (await request(path, merged.token)).json()).toMatchObject({ vote: 'no' });
+    expect(await (await request(path, merged.token, { choice: 'yes' })).json()).toMatchObject({ vote: 'no' });
+    expect(db.sqlite.prepare('SELECT yes_count, no_count FROM guessr_polls').get()).toMatchObject({ yes_count: 0, no_count: 1 });
+  });
+
+  it('returns the same stored choice to simultaneous submissions from two tabs', async () => {
+    const voter = await login('twitch');
+    const results = await Promise.all(['yes', 'no'].map(async choice => {
+      const response = await request(path, voter.token, { choice });
+      expect(response.status).toBe(200);
+      return (await response.json() as { vote: string }).vote;
+    }));
+    expect(['yes', 'no']).toContain(results[0]);
+    expect(results[0]).toBe(results[1]);
+    expect(db.sqlite.prepare('SELECT yes_count + no_count AS total FROM guessr_polls').get()?.total).toBe(1);
+  });
+});
+
 it('refreshes a new Twitch subscription on the same free account, with a shared cooldown', async () => {
   env.TWITCH_BROADCASTER_ID = secret('broadcaster'); env.TWITCH_BROADCASTER_REFRESH_TOKEN = secret('broadcaster-refresh');
   const session = await login('twitch'), before = await check(session.token);

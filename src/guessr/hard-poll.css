@@ -1,0 +1,41 @@
+.hard-poll-dialog {
+  --bs-dialog-width: 60rem;
+  --bs-dialog-margin: .5rem;
+  --bs-dialog-bg: var(--surface-1);
+  --bs-dialog-color: var(--text);
+  inline-size: min(60rem, calc(100% - 1rem));
+  max-inline-size: calc(100% - 1rem);
+  max-block-size: calc(100dvh - 1rem);
+  overflow: hidden;
+}
+.hard-poll-dialog[open] { display: flex; flex-direction: column; }
+.hard-poll-dialog .dialog-header, .hard-poll-dialog .dialog-footer { flex: none; }
+.hard-poll-dialog .dialog-header { align-items: start; }
+.hard-poll-dialog .dialog-title { margin: 0; font-size: clamp(1.15rem, 3vw, 1.6rem); line-height: 1.2; }
+.hard-poll-dialog .dialog-body { min-block-size: 0; overflow: auto; overscroll-behavior: contain; }
+.hard-poll-dialog p { margin: 0 0 .75rem; line-height: 1.45; }
+.hard-poll-dialog .poll-dates { margin: .25rem 0 0; }
+.poll-examples, .poll-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.poll-examples { margin-block-end: .5rem; }
+body:has(#guess-app) .hard-poll-dialog .poll-examples [aria-pressed="true"] { color: #d1fae5; border-color: #6ee7b7; background: #13332b; }
+.hard-poll-dialog img { display: block; inline-size: 100%; block-size: auto; border: 1px solid var(--border); border-radius: .5rem; }
+.hard-poll-dialog .poll-caption, .hard-poll-dialog .poll-dates, .hard-poll-dialog .poll-rule { color: var(--text-muted); font-size: .875rem; }
+.hard-poll-dialog .poll-caption { margin-block: .375rem .75rem; }
+.hard-poll-dialog .poll-rule { margin: .5rem 0 0; }
+.poll-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; padding: 0; margin: 0; border: 0; }
+.poll-options label { display: flex; align-items: center; gap: .625rem; padding: .625rem .875rem; min-block-size: 2.75rem; border: 1px solid var(--border-strong); border-radius: .65rem; cursor: pointer; }
+.poll-options label:has(:checked) { border-color: var(--accent-fg); background: var(--surface-2); }
+.poll-options input { flex: none; accent-color: var(--accent-strong); }
+.poll-options:disabled label { cursor: default; }
+.hard-poll-dialog .dialog-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .375rem .75rem; }
+.poll-actions { margin-inline-start: auto; }
+.poll-actions:has(.btn-twitch) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.hard-poll-dialog .poll-actions > :is(.btn-twitch, .btn-patreon) { inline-size: auto; max-inline-size: none; margin: 0; text-wrap: balance; }
+.hard-poll-dialog [hidden], .poll-actions:empty { display: none; }
+@media (max-width: 40rem) {
+  .poll-options { grid-template-columns: 1fr; }
+  .hard-poll-dialog .dialog-body, .hard-poll-dialog .dialog-header, .hard-poll-dialog .dialog-footer { padding: .625rem .875rem; }
+  .poll-actions { flex: 1 1 auto; justify-content: end; }
+  .poll-actions:has(.btn-twitch) { flex-basis: 100%; }
+  .poll-actions button { min-inline-size: 0; white-space: normal; }
+}

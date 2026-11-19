@@ -35,6 +35,32 @@ body:has(#guess-app) .pro-gift-link {
   flex: none; flex-wrap: nowrap; min-block-size: 3.5rem; padding: .5rem var(--game-page-padding);
   gap: 1rem; border-block-end: 1px solid var(--border);
 }
+#guess-app > .guessr-poll-bar {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(2rem, 1fr); align-items: center;
+  padding-inline: .375rem; color: #d1fae5; background: #102b27; border-block-end: 1px solid #255247;
+}
+#guess-app > .guessr-poll-bar[hidden] { display: none; }
+#guess-app .poll-invite {
+  grid-column: 2; display: grid; grid-template-columns: auto auto auto; align-items: center; justify-content: center; gap: .75rem;
+  padding: .125rem .5rem; min-block-size: 2.25rem; border: 0; border-radius: .5rem; background: transparent; color: inherit;
+  font-size: .875rem; line-height: 1.15;
+}
+.poll-deadline { color: #b8dacc; font-size: .8125rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.poll-short-title { display: none; }
+.demo-pause::before { display: none; }
+.poll-invite strong { color: #fff; background: #065f46; border: 1px solid #37946e; border-radius: var(--bs-radius-9, 1rem); padding: .2em .8em; }
+#guess-app .guessr-poll-bar .btn-close { justify-self: end; min-block-size: 2rem; inline-size: 2rem; padding: .5rem; }
+@media (max-width: 48rem) {
+  #guess-app > .guessr-poll-bar { grid-template-columns: minmax(0, 1fr) auto; }
+  #guess-app .poll-invite {
+    grid-column: 1; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto;
+    min-block-size: 2.75rem; min-inline-size: 0; align-content: center; gap: 0 .5rem; text-align: start;
+  }
+  .poll-invite > span > :first-child { display: none; }
+  .poll-invite .poll-short-title { display: inline; }
+  .poll-invite .poll-deadline { grid-area: 2 / 1 / auto / -1; font-size: .75rem; }
+  .poll-invite strong { grid-area: 1 / 2; }
+}
 #guess-app .header-identity, #guess-app .header-actions { flex-wrap: nowrap; gap: .5rem; min-inline-size: 0; }
 .guessr-nav { position: relative; }
 #guess-app .guessr-nav .menu-item {
@@ -749,6 +775,27 @@ body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none
   }
   .game-shell:has(> .game-hud) .panel-bar:has(.clue-heading) > :is(button, .buttons) {
     grid-area: 2 / 2;
+  }
+}
+@media (min-width: 45rem) and (orientation: landscape) and (max-height: 28rem) {
+  #guess-app:has(> .guessr-poll-bar:not([hidden])):has(> .game-shell > .game-hud) {
+    & > .guessr-poll-bar :is(.poll-invite, .btn-close) {
+      min-block-size: 1.875rem; block-size: 1.875rem; padding-block: 0;
+    }
+    & > .site-header { padding-block: 0; min-block-size: 2.75rem; }
+    & > .game-shell { --game-toolbar-height: 2.75rem; padding-block: 0 .125rem; gap: .125rem; }
+    & .guess-map-toolbar { padding-block: .125rem; }
+    & .panel-bar:has(.demo-pause) {
+      grid-template: "title title pause" auto "tier budget pause" auto / auto minmax(0, 1fr) auto;
+      padding-block: .125rem; gap: .125rem .375rem;
+      & .clue-heading { display: contents; }
+      & .panel-title { grid-area: title; }
+      & .clue-difficulty { grid-area: tier; }
+      & .round-maximum { grid-area: budget; }
+      & > :is(.demo-pause, .buttons:has(.demo-pause)) { grid-area: pause; }
+    }
+    & .demo-pause { font-size: 0; inline-size: 2.75rem; min-block-size: 2.75rem; padding: 0; }
+    & .demo-pause::before { display: inline-block; font-size: 1.125rem; }
   }
 }
 @media (max-width: 35rem) {

@@ -66,6 +66,11 @@ export function tr(source: string, values: TranslationValues = {}): string {
 }
 
 export function guessrLocale(): string { return languageLocale(); }
+
+export function formatPollDate(seconds: number, withYear = false): string {
+  return new Intl.DateTimeFormat(guessrLocale(), { month: 'short', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}),
+    hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(seconds * 1000);
+}
 export function formatGuessrNumber(value: number, options?: Intl.NumberFormatOptions): string {
   return new Intl.NumberFormat(guessrLocale(), options).format(value);
 }

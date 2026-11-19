@@ -42,3 +42,11 @@ secret deletion commands while either deployment check is false.
 For a build check without uploading, run `npm run deploy -- --dry-run`.
 Keep `.env` and `.dev.vars` files, plus the `.wrangler` and `node_modules`
 directories, out of the transfer archive. Production secrets remain in Cloudflare.
+
+## Guessr hard-puzzle poll
+
+Apply `0003_guessr_polls.sql` to `ACCOUNT_DB` on the primary account and deploy the production auth Worker. This prepares voting without starting the clock.
+
+After verifying that deployment, set `opensAt` in `public/guessr/polls/hard-puzzles-v1/window.json` to the announced UTC opening time in Unix seconds and deploy the dynamic map before that time. A null value keeps the invitation hidden. The banner reads the schedule from the site build. On the first ballot request the Worker reads that first-party file and registers the same window in D1. It closes exactly 259,200 seconds after opening. The unique poll ID keeps later requests from reopening or extending it.
+
+Visitors can read the examples. A registered Twitch or Patreon site session can cast one final vote, including a free account. After the deadline the ballot returns aggregate totals. Individual choices are visible only to the signed-in voter and database administrators.

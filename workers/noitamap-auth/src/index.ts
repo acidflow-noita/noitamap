@@ -1,6 +1,8 @@
 import { authKey, encryptCredential, decryptCredential, secretMatches, SESSION_FORMAT, SESSION_KEY_ID, type CredentialKeys } from './crypto';
 import { createLoginSession, readSessionAccount, rotateRefresh, revokeLoginSession, type LoginSession, type SessionClaims, type SessionAccount } from './sessions';
 import { signGameTicket } from './game-ticket';
+import { castGuessrBallot, readGuessrBallot } from './guessr-poll';
+import { HARD_PUZZLE_POLL, HARD_PUZZLE_POLL_PATH, HARD_PUZZLE_POLL_SECONDS, type PollChoice } from './poll-contract';
 import { readAccount, saveIdentity, unlinkIdentity, createLinkIntent, startLinkIntent, finishLinkOAuth, consumeLinkIntent, reviewLinkIntent,
   type Account, type Identity, type VerifiedIdentity, type Provider } from './accounts';
 
@@ -239,6 +241,9 @@ export default {
         case "/auth/membership/refresh":
           if (request.method !== "POST") return methodNotAllowed("POST", allowedOrigin);
           return await handleMembershipRefresh(request, env, await resolveSessionSecrets(env), allowedOrigin);
+        case HARD_PUZZLE_POLL_PATH:
+          if (request.method !== 'GET' && request.method !== 'POST') return methodNotAllowed('GET, POST', allowedOrigin);
+          return await handleGuessrPoll(request, env, allowedOrigin);
         case "/auth/link/start":
         case "/auth/link/review":
         case "/auth/link/complete":
@@ -649,7 +654,7 @@ async function completeProviderOAuth(request: Request, env: Env, secrets: Sessio
   return redirectResponse(target.href, clearOAuthStateCookie(request));
 }
 
-async function readAccountBody(request: Request): Promise<Record<string, unknown> | null> {
+async function readAccountBody(request: Request | Response): Promise<Record<string, unknown> | null> {
   if (!request.headers.get('Content-Type')?.startsWith('application/json')) return null;
   // These endpoint bodies contain only a provider/redirect or a short nonce.
   const reader = request.body?.getReader();
@@ -668,6 +673,53 @@ async function readAccountBody(request: Request): Promise<Record<string, unknown
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
   try { const value = JSON.parse(new TextDecoder().decode(bytes)); return value && typeof value === 'object' ? value : null; }
   catch { return null; }
+}
+
+async function handleGuessrPoll(request: Request, env: Env, origin: string | null): Promise<Response> {
+  if (!origin) return jsonResponse({ error: 'A trusted site origin is required.' }, origin, 403);
+  if (!env.ACCOUNT_DB) return jsonResponse({ error: 'The poll is unavailable.' }, origin, 503);
+  const token = getBearerToken(request);
+  let account: SessionAccount | null = null;
+  if (request.headers.has('Authorization') || request.method === 'POST') {
+    if (!token) return jsonResponse({ error: 'Sign in to vote.' }, origin, 401);
+    const { jwtSecret } = await resolveSessionSecrets(env);
+    const session = await verifyJWT(token, jwtSecret);
+    if (session && !await sessionRateAllowed(env, session.sid)) return rateLimited(origin);
+    account = session ? await sessionAccount(env, session) : null;
+    if (!account) return jsonResponse({ error: 'Sign in to vote.' }, origin, 401);
+  }
+  let choice: PollChoice | undefined;
+  if (request.method === 'POST') {
+    const body = await readAccountBody(request);
+    if (!body || Object.keys(body).length !== 1 || (body.choice !== 'yes' && body.choice !== 'no'))
+      return jsonResponse({ error: 'Choose one answer.' }, origin, 400);
+    choice = body.choice;
+  }
+  const db = env.ACCOUNT_DB;
+  const receipt = async () => {
+    if (choice && account) await castGuessrBallot(db, account, choice);
+    return readGuessrBallot(db, account?.id ?? null, Math.floor(Date.now() / 1000));
+  };
+  let ballot = await receipt();
+  // The banner and the database use the same first-party release file. Only
+  // the first interaction needs to register the window. Later releases and
+  // concurrent registrations cannot reset a poll already in the database.
+  if (!ballot) {
+    const published = await fetch('https://dynamic-map.noitamap.com/guessr/polls/hard-puzzles-v1/window.json', {
+      redirect: 'error', signal: AbortSignal.timeout(5000),
+    });
+    if (!published.ok && published.status !== 404) return jsonResponse({ error: 'The poll is unavailable. Try again.' }, origin, 503);
+    const start = published.ok ? (await readAccountBody(published))?.opensAt : null;
+    if (typeof start === 'number' && Number.isSafeInteger(start) && start > 0) {
+      await db.prepare('INSERT INTO guessr_polls (id, opens_at, closes_at) VALUES (?, ?, ?) ON CONFLICT(id) DO NOTHING')
+        .bind(HARD_PUZZLE_POLL, start, start + HARD_PUZZLE_POLL_SECONDS).run();
+      ballot = await receipt();
+    }
+  }
+  if (!ballot) return jsonResponse({ error: 'This poll has not opened.' }, origin, 404);
+  if (request.method === 'POST' && !ballot.vote)
+    return jsonResponse(ballot, origin, 409);
+  return jsonResponse(ballot, origin);
 }
 
 async function handleAccountAction(request: Request, env: Env, secrets: SessionSecrets, origin: string | null): Promise<Response> {
