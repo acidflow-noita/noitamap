@@ -8,7 +8,7 @@ const isMainPage = () => readGuessRoute(new URL(location.href)).pane === 'home';
 // One announcement per release day. Editing hotfix notes must not reopen it.
 export const GUESSR_CHANGELOG = {
   id: '2026-11-18-round-layout',
-  date: '2026-11-18',
+  date: '2026-11-20',
   notes: [
     ...(hardPollWindow.opensAt ? ['The hard-puzzle poll runs for three days and covers all four game modes.'] : []),
     'The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.',
