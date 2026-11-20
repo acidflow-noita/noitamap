@@ -198,6 +198,7 @@ declare global {
 
   interface Window {
     __noitamap?: NoitamapProHooks;
+    __noitamapInitialDaily?: { started: number; responses: Map<string, Promise<Response>> };
   }
 
   const __BUILD_VERSION__: string;

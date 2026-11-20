@@ -1,13 +1,6 @@
 // Optional startup metadata must not leave the application waiting forever.
 export const STARTUP_REQUEST_TIMEOUT_MS = 5000;
 
-/** Let the completed shell paint before starting optional/heavy initialization. */
-export function afterStartupPaint(work: () => void): void {
-  const run = () => setTimeout(work, 0);
-  if (document.hidden || typeof requestAnimationFrame !== 'function') run();
-  else requestAnimationFrame(run);
-}
-
 /** Reveal after the resolved map controls and event handlers are installed.
  * Locale downloads, terrain generation and auth must remain independent. */
 export function finishNavbarStartup(): void {
@@ -33,7 +26,7 @@ export function startWhenReady(start: () => Promise<void>, onError: (error: unkn
   else launch();
 }
 
-export function showStartupFailure(error: unknown, message: string, retryLabel: string): void {
+export function showStartupFailure(error: unknown, message = 'Noitamap could not start. Reload the page to try again.', retryLabel = 'Reload page'): void {
   console.error('[Noitamap] Startup failed:', error);
   document.querySelector('.navbar-startup')?.remove();
   document.querySelector('.mapNavbar')?.setAttribute('aria-busy', 'false');

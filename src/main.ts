@@ -6,16 +6,19 @@ import { mountCreatureSpawnNotice } from "./creature-spawn-notice";
 import { createCreatureSpawnSharing } from "./creature-spawn-sharing";
 import { dismissEnclosingPopup, getExtendedCreature, isProUser, loadExtendedCreatures } from "./extended-info";
 import { ReportMapHighlights } from './report-map-highlights';
-import { getCachedDailyComparisonTarget, getCachedDailySeedIdentity } from './data_sources/daily_seed';
+import { getCachedDailyComparisonTarget, getCachedDailySeed, getCachedDailySeedIdentity } from './data_sources/daily_seed';
 import { getPOIDisplayName } from "./telescope/poi-display-name";
 import { getPOIBiomeDescription } from "./data_sources/biome-names";
 import { getCachedGeneration } from "./telescope/tile-cache";
 import { telescopeSearchUrl } from './search/telescope-link';
 import i18next, { initializeTranslations, STARTUP_MESSAGES, SUPPORTED_LANGUAGES } from "./i18n";
-import { afterStartupPaint, finishNavbarStartup, showStartupFailure, startWhenReady } from './startup';
+import { finishNavbarStartup, showStartupFailure } from './startup';
+import type { AppOSD } from './app_osd';
+import type { InitialDaily } from './initial-daily';
+import type { URLState } from './data_sources/url';
 import { setupDropOverlay } from "./drop-overlay";
 import { createProLoader } from "./pro-loader";
-import { negotiateTabHandoff, registerTabHandoff } from "./tab-coordinator";
+import { registerTabHandoff } from "./tab-coordinator";
 import { createModNavigation } from './mod-navigation';
 import { createDynamicUI, updateDynamicUIVisibility, setDynamicUISeed, setDynamicUIBusy, createLoadingStripProgress, hideLoadingStrip } from "./dynamic_ui";
 import {
@@ -28,7 +31,6 @@ import {
   buildPOIName,
   dailyCacheKey,
   ensureSeedCached,
-  startDailyFastPath,
 } from "./dynamic-map";
 import type { DynamicPOI } from "./dynamic-map";
 import {
@@ -234,19 +236,18 @@ export const refreshSearchTranslations = () => {
   }
 };
 
-// Start cross-tab handoff negotiation as early as possible (the mod opens a
-// new browser tab on every M-press; if another noitamap tab is already open
-// we want it to take over so this duplicate tab can self-close).
-const _tabHandoff = negotiateTabHandoff();
+export function reportMapStartupFailure(error: unknown): void {
+  showStartupFailure(error,
+    i18next.t('startup.failed', { defaultValue: STARTUP_MESSAGES.failed }) || STARTUP_MESSAGES.failed,
+    i18next.t('startup.retry', { defaultValue: STARTUP_MESSAGES.retry }) || STARTUP_MESSAGES.retry);
+}
 
-startWhenReady(async () => {
-  if (!(await _tabHandoff)) return;
+export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState: URLState, initialDaily?: InitialDaily) {
   // Bundled English is usable immediately. A slow selected-language download
   // must not hold the viewer or the entire toolbar behind its placeholder.
   void initializeTranslations().then(updateTranslations).catch(error => {
     console.error("i18next initialization failed:", error);
   });
-  startDailyFastPath();
 
   // Handle map loading progress UI (non-blocking strip).
   const loadingProgress = createLoadingStripProgress();
@@ -322,34 +323,13 @@ startWhenReady(async () => {
   const storedRenderer = getStoredRenderer();
   (rendererForm.elements as any)["renderer"].value = storedRenderer;
 
-  // Parse URL state including overlays and drawing
-  const urlState = parseURL();
-
-  const appReady = App.create({
-    mountTo: osdRootElement,
-    overlayButtons: overlayButtonsElement,
-    initialState: urlState,
-    useWebGL: storedRenderer === "webgl",
-  }).catch(async (e) => {
-    // The default or URL-specified map failed to open (e.g. CORS block on a new domain).
-    // Fall back to a known-good map so the rest of the app still initializes.
-    console.warn("[Noitamap] Map failed to open, falling back to regular-main-branch:", e);
-    return App.create({
-      mountTo: osdRootElement,
-      overlayButtons: overlayButtonsElement,
-      initialState: { ...urlState, map: "regular-main-branch" as MapName },
-      useWebGL: storedRenderer === "webgl",
-    });
-  });
+  const overlaysReady = osd.addMapOverlays(openedMap);
   createLanguageSelector();
   updateTranslations();
-  const app = await appReady;
+  await overlaysReady;
+  const app = App.fromViewer(osd, openedMap, overlayButtonsElement);
   globalApp = app;
   console.log(`[Noitamap] Active OSD drawer: ${(app.osd as any).drawer?.getType?.() ?? storedRenderer}`);
-
-  // The generic boot spinner must not linger after the viewer is open. Actual
-  // tile/generation loading below owns subsequent visibility changes.
-  loadingIndicator.style.display = 'none';
 
   // Helper to update the map selector button: shows the current map's full
   // label plus icon-only versions of its badges. Hover popovers on the badges
@@ -656,6 +636,10 @@ startWhenReady(async () => {
   }
 
   createDynamicUI(dynamicOpts);
+  if (openedMap === 'dynamic-main-branch') {
+    const seed = urlState.seed ?? getCachedDailySeed();
+    if (seed !== null) setDynamicUISeed(seed, !!initialDaily || !!urlState.dailySeed);
+  }
   updateDynamicUIVisibility(app.getMap());
 
   // Helper to rebuild/update search, markers, and sidebar when active unlock descriptor changes
@@ -1654,17 +1638,8 @@ startWhenReady(async () => {
   }
 
   initKonamiCode();
+  if (app.getMap() === 'dynamic-main-branch') {
+    void runDynamicMapFromURL(dynamicOpts, false, initialDaily).catch(reportMapStartupFailure);
+  }
   finishNavbarStartup();
-  // Give the ready controls and base map a paint opportunity before synchronous
-  // terrain/shader initialization can occupy JS. Sprites load on demand.
-  afterStartupPaint(() => {
-    if (app.getMap() === 'dynamic-main-branch') {
-      void runDynamicMapFromURL(dynamicOpts).catch(error => showStartupFailure(error,
-        i18next.t('startup.failed', { defaultValue: STARTUP_MESSAGES.failed }) || STARTUP_MESSAGES.failed,
-        i18next.t('startup.retry', { defaultValue: STARTUP_MESSAGES.retry }) || STARTUP_MESSAGES.retry));
-    }
-  });
-
-}, error => showStartupFailure(error,
-  i18next.t('startup.failed', { defaultValue: STARTUP_MESSAGES.failed }) || STARTUP_MESSAGES.failed,
-  i18next.t('startup.retry', { defaultValue: STARTUP_MESSAGES.retry }) || STARTUP_MESSAGES.retry));
+}

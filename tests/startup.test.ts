@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
-import { afterStartupPaint, finishNavbarStartup, showStartupFailure, startWhenReady, STARTUP_REQUEST_TIMEOUT_MS } from '../src/startup';
+import { takeInitialDailyResponse } from '../src/data_sources/daily_seed';
+import { finishNavbarStartup, showStartupFailure, startWhenReady, STARTUP_REQUEST_TIMEOUT_MS } from '../src/startup';
 
 beforeEach(() => { vi.resetModules(); document.body.innerHTML = ''; });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); history.replaceState(null, '', '/'); });
@@ -44,17 +45,16 @@ describe('navbar startup', () => {
 });
 
 describe('document readiness', () => {
-  it('gives the ready toolbar a paint opportunity before heavy initialization', async () => {
-    vi.useFakeTimers();
-    try {
-      vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
-      let frame!: FrameRequestCallback;
-      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => { frame = callback; return 1; });
-      const work = vi.fn(); afterStartupPaint(work);
-      expect(work).not.toHaveBeenCalled();
-      frame(0); expect(work).not.toHaveBeenCalled();
-      await vi.runOnlyPendingTimersAsync(); expect(work).toHaveBeenCalledOnce();
-    } finally { vi.useRealTimers(); }
+  it('adopts each parser response once and expires it across a suspended tab or UTC midnight', async () => {
+    const now = Date.UTC(2026, 10, 20, 0, 0, 1);
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+    const read = Promise.resolve(new Response('123'));
+    for (const [age, fresh] of [[50, true], [60_000, false], [2000, false]] as const) {
+      window.__noitamapInitialDaily = { started: now - age, responses: new Map([['seed', read]]) };
+      expect(takeInitialDailyResponse('seed')).toBe(fresh ? read : undefined);
+      expect(takeInitialDailyResponse('seed')).toBeUndefined();
+      expect(window.__noitamapInitialDaily).toBeUndefined();
+    }
   });
   it('starts once after DOM readiness, even if readiness is dispatched again while setup is pending', async () => {
     vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading');

@@ -247,8 +247,10 @@ export class App extends EventEmitter2 {
       throw error;
     }
 
-    // our app _requires_ that we have a known position, so we initialize
-    // it after we've figured out the ZoomPos data from AppOSD
+    return App.fromViewer(osd, mapName, overlayButtons);
+  }
+
+  static fromViewer(osd: AppOSD, mapName: MapName, overlayButtons: HTMLDivElement) {
     return new App({
       overlayButtons,
       initialState: {

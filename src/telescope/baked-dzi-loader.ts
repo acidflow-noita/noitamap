@@ -1,3 +1,4 @@
+import { takeInitialDailyResponse } from '../data_sources/daily_seed';
 import { isGLTerrainEnabled } from "../renderer_settings";
 import { TERRAIN_VERSION } from "./terrain-policy";
 import { beginDailyBakeCheck } from './daily-bake-status';
@@ -115,7 +116,9 @@ async function fetchWorldManifest(
 ): Promise<PerWorldManifest | null> {
   try {
     const origin = originFor(prefix, world);
-    const resp = await fetch(`${origin}/manifest.json`, { signal: signal ?? AbortSignal.timeout(15000) });
+    const url = `${origin}/manifest.json`;
+    const initial = signal ? undefined : takeInitialDailyResponse(url);
+    const resp = await (initial ?? fetch(url, { signal: signal ?? AbortSignal.timeout(15000) }));
     if (!resp.ok) return null;
     const m = (await resp.json()) as PerWorldManifest;
     if (!m || typeof m.seed !== 'number' || !Array.isArray(m.regions) || m.regions.length === 0) {
@@ -137,15 +140,17 @@ async function fetchWorldManifest(
  */
 export async function probeBakedDZIs(
   prefix: 'daily' | 'previous-daily',
-  seed: number,
+  requestedSeed: number | Promise<number>,
   signal?: AbortSignal
 ): Promise<BakedDziProbeResult> {
+  const pending = Promise.all(WORLDS.map(w => fetchWorldManifest(prefix, w, signal)));
+  const seed = typeof requestedSeed === 'number' ? requestedSeed : await requestedSeed;
   const report = isLocalBakeView() ? undefined : beginDailyBakeCheck(prefix, seed);
   const finish = (result: BakedDziProbeResult): BakedDziProbeResult => {
     report?.(signal?.aborted ? 'unknown' : result.baked ? 'ready' : 'unavailable');
     return result;
   };
-  const manifests = await Promise.all(WORLDS.map(w => fetchWorldManifest(prefix, w, signal)));
+  const manifests = await pending;
 
   for (let i = 0; i < WORLDS.length; i++) {
     const m = manifests[i];

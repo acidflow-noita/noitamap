@@ -83,6 +83,63 @@ describe('URL seed request ownership', () => {
     return vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
   }
 
+  it.each([true, false])('hands the initial Daily probe to the pipeline once (baked=%s)', async hit => {
+    history.replaceState(null, '', '/');
+    const frame = livePipeline();
+    vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
+    const osd = { addOnceHandler: vi.fn(), world: { removeItem: vi.fn() } } as any;
+    const placements = [{ pw: 0, x: 0, y: 0, width: 100, bust: String(today), dziUrl: '/map.dzi' }];
+    const baked = { seed: today, worldSize: 70, worldCenter: 35, parallelWorlds: [0],
+      tileLayers: [], poisByPW: {}, pixelScenesByPW: {} } as any;
+    vi.mocked(fetchBakedGeneration).mockResolvedValue(hit ? baked : null);
+    vi.mocked(probeBakedDZIs).mockResolvedValue(hit
+      ? { baked: true, prefix: 'daily', placements, decorationsBaked: true, fullPixelsBaked: true }
+      : { baked: false, reason: 'one world is missing' });
+    const { startInitialDaily } = await import('../src/initial-daily');
+    const pipeline = await import('../src/dynamic-map');
+    try {
+      const initial = startInitialDaily(parseURL(), Promise.resolve({ osd, map: 'dynamic-main-branch' }))!;
+      await initial.tiles;
+      expect(addBakedDZIsToOSD).toHaveBeenCalledTimes(hit ? 1 : 0);
+      expect(renderGenerationResult).not.toHaveBeenCalled();
+      expect(await pipeline.runDynamicMapFromURL({ viewer: osd }, false, initial)).toMatchObject({ seed: today });
+      expect(fetchDailySeed).toHaveBeenCalledOnce();
+      expect(fetchPreviousDailySeed).not.toHaveBeenCalled();
+      expect(probeBakedDZIs).toHaveBeenCalledOnce();
+      expect(addBakedDZIsToOSD).toHaveBeenCalledTimes(hit ? 1 : 0);
+      expect(generateDynamicMap).toHaveBeenCalledTimes(hit ? 0 : 1);
+      expect(vi.mocked(renderGenerationResult).mock.calls[0].slice(6, 8)).toEqual([hit ? placements : null, hit]);
+    } finally { pipeline.clearDynamicMap(osd); frame.mockRestore(); }
+  });
+
+  it.each(['manifest', 'DZI'])('drops a late initial %s after navigation', async delayed => {
+    history.replaceState(null, '', '/');
+    const lookup = deferred<Awaited<ReturnType<typeof probeBakedDZIs>>>();
+    vi.mocked(probeBakedDZIs).mockReturnValue(lookup.promise);
+    const { startInitialDaily } = await import('../src/initial-daily');
+    const pipeline = await import('../src/dynamic-map');
+    const osd = { addOnceHandler: vi.fn(), world: { removeItem: vi.fn() } };
+    const initial = startInitialDaily(parseURL(), Promise.resolve({ osd: osd as any, map: 'dynamic-main-branch' }))!;
+    await vi.waitFor(() => expect(osd.addOnceHandler).toHaveBeenCalledOnce());
+    const [event, leaveMap] = osd.addOnceHandler.mock.calls[0];
+    expect(event).toBe('map-change-start');
+    if (delayed === 'manifest') leaveMap();
+    const placement = { pw: 0, x: 0, y: 0, width: 100, bust: '1', dziUrl: '/map.dzi' };
+    lookup.resolve({ baked: true, prefix: 'daily', placements: [placement], decorationsBaked: true, fullPixelsBaked: true });
+    await initial.tiles;
+    if (delayed === 'DZI') {
+      expect(addBakedDZIsToOSD).toHaveBeenCalledOnce();
+      leaveMap();
+      const item = {};
+      vi.mocked(addBakedDZIsToOSD).mock.calls[0][2]!(item, placement);
+      expect(osd.world.removeItem).toHaveBeenCalledExactlyOnceWith(item);
+    } else expect(addBakedDZIsToOSD).not.toHaveBeenCalled();
+    const onRequestStateChange = vi.fn();
+    expect(await pipeline.runDynamicMapFromURL({ viewer: osd, onRequestStateChange }, false, initial)).toBeNull();
+    expect(onRequestStateChange).not.toHaveBeenCalled();
+    expect(parseURL().seed).toBeUndefined();
+  });
+
   it('does not reuse a normal starting loadout for a daily run of the same seed', async () => {
     const frame = livePipeline();
     const pipeline = await import('../src/dynamic-map');
@@ -645,8 +702,10 @@ describe('dynamic seed URL identity', () => {
 
   it.each([previous, today])('only prefetches today when it matches the pinned daily seed %s', async seed => {
     history.replaceState(null, '', `/?m=dy&se=${seed}&ds=1`);
-    const { startDailyFastPath } = await import('../src/dynamic-map');
-    startDailyFastPath();
+    const { startInitialDaily } = await import('../src/initial-daily');
+    const osd = { addOnceHandler: vi.fn(), world: {} } as any;
+    const startup = startInitialDaily(parseURL(), Promise.resolve({ map: 'dynamic-main-branch', osd }));
+    await startup?.tiles;
     await vi.waitFor(() => expect(fetchDailySeed).toHaveBeenCalledOnce());
     await Promise.resolve(); await Promise.resolve();
     if (seed === today) expect(probeBakedDZIs).toHaveBeenCalledExactlyOnceWith('daily', today);

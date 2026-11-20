@@ -1,5 +1,4 @@
 import { fetchMapVersions, getCachedMapVersions, getTileData, MapName } from './data_sources/tile_data';
-import { createOverlays } from './data_sources/overlays';
 import { isLightMode } from './light-mode';
 import { isSimplisticBackground } from './simplistic-background';
 
@@ -10,7 +9,6 @@ import { installTileContinuity } from './osd-tile-continuity';
 import { installTerrainAdmission } from './osd-terrain-admission';
 import { installStaticBackgroundResidency } from './osd-static-background';
 import { installOffscreenRedrawGuard } from './osd-offscreen-redraw';
-import { dismissPopovers } from './popover-util';
 
 declare const OpenSeadragon: any;
 
@@ -35,6 +33,13 @@ function createPanCurve(x1: number, y1: number, x2: number, y2: number): PanCurv
 }
 
 type DziTileSource = any;
+
+// Card owners tear down their Bootstrap instances before OSD detaches the DOM.
+function dismissOverlayCards(element: HTMLElement): void {
+  for (const card of element.querySelectorAll('.osOverlayPopup')) {
+    card.dispatchEvent(new Event('map-card-remove'));
+  }
+}
 
 export class AppOSD {
   public viewer: any; // OpenSeadragon.Viewer
@@ -176,14 +181,14 @@ export class AppOSD {
     this.viewer.clearOverlays();
   }
   removeOverlay(el: HTMLElement) {
-    el.querySelectorAll<HTMLElement>('.osOverlayPopup').forEach(dismissPopovers);
+    dismissOverlayCards(el);
     this.viewer.removeOverlay(el);
   }
 
   private disposeOverlayPopovers() {
     // POI cards are rebuilt per map; cached biome overlays remain reusable.
     for (const overlay of this.viewer.currentOverlays ?? []) {
-      overlay.element.querySelectorAll('.osOverlayPopup').forEach(dismissPopovers);
+      dismissOverlayCards(overlay.element);
     }
   }
 
@@ -376,6 +381,19 @@ export class AppOSD {
 
   async setMap(mapName: MapName, pos?: ZoomPos): Promise<void> {
     if (mapName === this.mapName) return;
+    await this.openBaseMap(mapName, pos);
+    await this.addMapOverlays(mapName);
+  }
+
+  async addMapOverlays(mapName: MapName): Promise<void> {
+    const { createOverlays } = await import('./data_sources/overlays');
+    if (this.mapName !== mapName) return;
+    for (const overlay of createOverlays(mapName)) this.addOverlay(overlay);
+  }
+
+  /** Open and frame the tile sources without loading POI cards or toolbar code. */
+  async openBaseMap(mapName: MapName, pos?: ZoomPos): Promise<void> {
+    if (mapName === this.mapName) return;
     this.cancelNavigation();
     this.viewer.raiseEvent('map-change-start', { mapName });
     this.mapName = mapName;
@@ -396,10 +414,6 @@ export class AppOSD {
     }
     this.open(sources);
     this.clearOverlays();
-    const overlays = createOverlays(mapName);
-    for (const overlay of overlays) {
-      this.addOverlay(overlay);
-    }
     await this.onOpen();
     const fullSize = this.getCombinedItemsRect();
     this.viewport.fitBounds(fullSize, true);

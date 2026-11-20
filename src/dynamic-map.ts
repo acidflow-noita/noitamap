@@ -12,6 +12,7 @@ import { isInstantTerrainEnabled, shouldUseBakedTerrain } from "./renderer_setti
  *   7. Index POIs into FlexSearch for dynamic search
  */
 
+import { addBakedWorlds, beginDynamicRequest, generationToken, type InitialDaily } from "./initial-daily";
 import { fetchDailySeed, fetchPreviousDailySeed } from "./data_sources/daily_seed";
 import { parseURL, updateURLWithSeed, clearSeedParams } from "./data_sources/url";
 import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
@@ -35,7 +36,7 @@ import {
   prepareInstantTerrainResources,
   prewarmMapPresentation,
 } from "./telescope/telescope-osd-bridge";
-import { addBakedDZIsToOSD, probeBakedDZIs, isLocalBakeView, type BakedDziProbeResult } from "./telescope/baked-dzi-loader";
+import { probeBakedDZIs, isLocalBakeView, type BakedDziProbeResult } from "./telescope/baked-dzi-loader";
 import { perkNameKey } from "./telescope/perk-i18n";
 import { gameTranslator } from "./game-translations/translator";
 
@@ -73,7 +74,6 @@ let currentUnlocksKey: string | null = null;
 let currentAllowsBaked: boolean | null = null;
 let lastResult: GenerationResult | null = null;
 let dynamicRendered: boolean = false;
-let generationToken: number = 0;
 let scenePrefetchLifetime: AbortController | undefined;
 
 /** Get the seed currently displayed on the dynamic map */
@@ -162,42 +162,6 @@ export function ensureSeedCached(seed: number, isDaily: boolean): Promise<boolea
   return run;
 }
 
-// ─── Daily baked-overlay fast path (pre-warm) ────────────────────────────────
-
-// main.ts calls startDailyFastPath() the instant OSD exists. With no explicit
-// seed in the URL we KNOW it's today's daily, whose baked DZIs live at fixed
-// worker URLs — so we fire the daily-seed lookup + the manifest probe NOW, in
-// parallel with the rest of page init, instead of waiting for the dynamic
-// pipeline to spin up (~UI wiring) and then serialize those round-trips. By the
-// time runDynamicMap reaches its probe, this is already resolved, so the baked
-// biome DZIs get queued onto OSD almost as early as the static background.
-let dailyFastPath: {
-  seed: Promise<number | null>;
-  probe: Promise<BakedDziProbeResult | null>;
-} | null = null;
-
-export function startDailyFastPath(): void {
-  if (dailyFastPath) return;
-  let requestedSeed: number | undefined;
-  try {
-    const urlState = parseURL();
-    if (urlState.seed !== undefined && !urlState.dailySeed) return; // custom seed — not a daily
-    requestedSeed = urlState.seed;
-    if (!shouldUseBakedTerrain(window.location.search)) return; // baked path disabled
-  } catch {
-    return;
-  }
-  // A shared daily-mode link may identify yesterday or an older daily. Only
-  // prefetch today's terrain when it is the seed this URL actually requests.
-  const seed = fetchDailySeed()
-    .then(seed => requestedSeed === undefined || requestedSeed === seed ? seed : null)
-    .catch(() => null);
-  const probe = seed
-    .then((s) => (s == null ? null : probeBakedDZIs("daily", s)))
-    .catch(() => null);
-  dailyFastPath = { seed, probe };
-}
-
 // ─── Seed resolution ─────────────────────────────────────────────────────────
 
 /**
@@ -206,7 +170,7 @@ export function startDailyFastPath(): void {
  * - ?ds=1 without ?se → fetch today's seed and pin it in the URL
  * - Neither present → treat as daily seed (fetch + set both params)
  */
-export async function resolveSeed(isCurrent = () => true, requirePublishedDaily = false): Promise<{ seed: number; isDaily: boolean }> {
+export async function resolveSeed(isCurrent = () => true, requirePublishedDaily = false, startupSeed?: Promise<number>): Promise<{ seed: number; isDaily: boolean }> {
   const urlState = parseURL();
 
   if (urlState.seed !== undefined) {
@@ -218,7 +182,7 @@ export async function resolveSeed(isCurrent = () => true, requirePublishedDaily 
   // No seed identity: daily-only links and the default map resolve today.
   // A failed lookup must never invent a seed and label it as today's Daily.
   // Leave the URL unchanged so retry can resolve the published seed.
-  const seed = await fetchDailySeed(requirePublishedDaily);
+  const seed = await (startupSeed ?? fetchDailySeed(requirePublishedDaily));
   if (isCurrent()) updateURLWithSeed(seed, true);
   return { seed, isDaily: true };
 }
@@ -234,7 +198,7 @@ export async function runDynamicMap(
   isDailyParam: boolean,
   opts: DynamicMapOptions,
 ): Promise<GenerationResult | null> {
-  const myToken = ++generationToken;
+  const myToken = beginDynamicRequest();
   try {
     opts.onRequestStateChange?.(true);
     if (myToken !== generationToken) return null;
@@ -249,6 +213,7 @@ async function runDynamicMapRequest(
   isDailyParam: boolean,
   opts: DynamicMapOptions,
   myToken: number,
+  initialDaily?: InitialDaily,
 ): Promise<GenerationResult | null> {
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
   const runStarted = performance.now();
@@ -351,12 +316,8 @@ async function runDynamicMapRequest(
   await new Promise((r) => setTimeout(r, 0));
   if (myToken !== generationToken) return null;
 
-  // Fire the baked-DZI probe FIRST, ahead of telescope init. The probe is
-  // pure network work and doesn't depend on telescope. Painting baked DZIs
-  // the moment they arrive lets the user see the map within ~150-300ms of
-  // page load instead of waiting for the ~700ms telescope init + cache check
-  // + (in worst case) full generation.
-  // Lives at function scope so the later render() call can reference it.
+  // The initial viewer may already have queued the validated Daily layers.
+  // Every other route probes here before starting the live renderer.
   let bakedAlreadyPainted = false;
   // ?nb=1 disables the baked fast path entirely. The bake page uses it so a
   // re-bake of an already-deployed seed still runs a real local generation
@@ -369,14 +330,14 @@ async function runDynamicMapRequest(
       // the previous-daily lookup (an extra request) only fires when the seed
       // isn't today's — keeping the common daily overlay off that RTT.
       let prefix: "daily" | "previous-daily" | null = isLocalBakeView() ? "daily" : null;
-      const todayDaily = await fetchDailySeed().catch(() => null);
+      const todayDaily = await (initialDaily?.today ?? fetchDailySeed()).catch(() => null);
       if (!prefix && todayDaily !== null && seed === todayDaily) {
         prefix = "daily";
       } else if (!prefix) {
         const prevDaily = await fetchPreviousDailySeed().catch(() => null);
         if (prevDaily !== null && seed === prevDaily) prefix = "previous-daily";
       }
-      if (!prefix) return null;
+      if (!prefix || myToken !== generationToken) return null;
       // Generation data (POIs, pixel scenes, biome map) rides on the same
       // workers as the DZIs. Fetch it in PARALLEL with the probe: once the
       // probe paints, OSD floods these same origins with hundreds of tile
@@ -392,30 +353,15 @@ async function runDynamicMapRequest(
               return fetchBakedGeneration(prefix, worlds, seed);
             })().catch(() => null)
           : Promise.resolve(null);
-      // Reuse the pre-warmed probe when it covers this exact daily seed so the
-      // manifest round-trips don't repeat on the critical path.
-      let probe: BakedDziProbeResult | null = null;
-      if (prefix === "daily" && dailyFastPath && (await dailyFastPath.seed) === seed) {
-        probe = await dailyFastPath.probe;
-      }
-      if (!probe) probe = await probeBakedDZIs(prefix, seed);
+      const initial = prefix === "daily" ? await initialDaily?.tiles : null;
+      if (myToken !== generationToken) return null;
+      const probe = initial ?? await probeBakedDZIs(prefix, seed);
       if (!probe.baked) return { probe, generation: null };
-      if (myToken === generationToken && !bakedAlreadyPainted) {
-        console.log(`[DynamicMap] Baked ${probe.prefix}-* hit, painting biomes immediately`);
-        clearDynamicOverlays(viewer as any);
-        // Light mode: only paint the middle world (pw=0). The other two worlds'
-        // DZIs are still on CF — we just don't ask OSD to load them.
-        const placements = isLightMode()
-          ? probe.placements.filter((p) => p.pw === 0)
-          : probe.placements;
-        // addTiledImage is async: if the user switches seed while these are
-        // in flight, they'd land AFTER the next clearDynamicOverlays pass and
-        // linger as stale tiles. Remove on arrival when outdated.
-        addBakedDZIsToOSD(viewer as any, placements, (item) => {
-          if (myToken !== generationToken) {
-            try { (viewer as any).world.removeItem(item); } catch {}
-          }
-        });
+      if (myToken === generationToken) {
+        if (!initial?.baked) {
+          clearDynamicOverlays(viewer);
+          addBakedWorlds(viewer, probe, myToken);
+        }
         bakedAlreadyPainted = true;
         // Hide live-render controls as soon as the bake is selected; fetching
         // generation.json must not leave a disabled switch visible in between.
@@ -671,17 +617,18 @@ async function runDynamicMapRequest(
 /**
  * Convenience wrapper: resolve seed from URL then run the full pipeline.
  */
-export async function runDynamicMapFromURL(opts: DynamicMapOptions, requirePublishedDaily = false): Promise<GenerationResult | null> {
+export async function runDynamicMapFromURL(opts: DynamicMapOptions, requirePublishedDaily = false, initialDaily?: InitialDaily): Promise<GenerationResult | null> {
   // Own the request before Daily resolution awaits the network. A newer seed
   // or clearDynamicMap must invalidate both its URL write and pipeline start.
-  const token = ++generationToken;
+  const token = initialDaily?.token ?? beginDynamicRequest();
   const isCurrent = () => token === generationToken;
+  if (!isCurrent()) return null;
   try {
     opts.onRequestStateChange?.(true);
     if (!isCurrent()) return null;
-    const { seed, isDaily } = await resolveSeed(isCurrent, requirePublishedDaily);
+    const { seed, isDaily } = await resolveSeed(isCurrent, requirePublishedDaily, initialDaily?.today);
     if (!isCurrent()) return null;
-    return await runDynamicMapRequest(seed, isDaily, opts, token);
+    return await runDynamicMapRequest(seed, isDaily, opts, token, initialDaily);
   } catch (error) {
     // A failed older lookup must not replace a newer map with an error panel.
     if (!isCurrent()) return null;
@@ -706,7 +653,7 @@ export function clearDynamicMap(viewer: any): void {
   currentUnlocksKey = null;
   currentAllowsBaked = null;
   dynamicRendered = false;
-  generationToken++;
+  beginDynamicRequest();
   clearSeedParams();
   // Drop pre-warmed alt-unlocks POIs — they belong to the seed we just left.
   resetAltCache();

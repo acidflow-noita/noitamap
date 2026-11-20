@@ -44,8 +44,22 @@ function notifyDailySeedIdentity(): void {
 }
 
 /** Current UTC date as "YYYY-MM-DD" */
-function currentUTCDate(): string {
-  return new Date().toISOString().slice(0, 10);
+function currentUTCDate(time = Date.now()): string {
+  return new Date(time).toISOString().slice(0, 10);
+}
+
+/** Adopt a parser-started read on this navigation. A suspended page must
+ * recheck the publication after the seed-cache window or UTC rollover. */
+export function takeInitialDailyResponse(url: string): Promise<Response> | undefined {
+  const batch = typeof window !== 'undefined' && window.__noitamapInitialDaily;
+  if (!batch) return;
+  const response = batch.responses.get(url);
+  batch.responses.delete(url);
+  if (!batch.responses.size) delete window.__noitamapInitialDaily;
+  const now = Date.now();
+  if (now - batch.started < CACHE_MS && currentUTCDate(batch.started) === currentUTCDate(now)) {
+    return response;
+  }
 }
 
 /**
@@ -68,7 +82,7 @@ function fetchSeed(cache: SeedCache, url: string, force: boolean): Promise<numbe
 
   const request: SeedRequest = {
     utcDate: today,
-    promise: readSeed(url).then((seed) => {
+    promise: readSeed(url, force).then((seed) => {
       // Superseded requests still resolve for their original callers, but may
       // not repopulate a cleared cache or overwrite a newer manual refresh.
       if (cache.pending === request && currentUTCDate() === today) {
@@ -86,11 +100,12 @@ function fetchSeed(cache: SeedCache, url: string, force: boolean): Promise<numbe
   return request.promise;
 }
 
-async function readSeed(url: string): Promise<number> {
-  const resp = await fetch(url, {
+async function readSeed(url: string, force: boolean): Promise<number> {
+  const initial = force ? undefined : takeInitialDailyResponse(url);
+  const resp = await (initial ?? fetch(url, {
     cache: "no-store",
     signal: AbortSignal.timeout(15000),
-  });
+  }));
   if (!resp.ok) throw new Error(`Daily seed fetch failed: ${resp.status}`);
 
   const text = await resp.text();

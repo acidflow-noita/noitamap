@@ -17,7 +17,7 @@ import { drawSpriteToCanvas, getSpriteOffset, loadSpritesheetAndAtlas } from '..
 import { buildExtendedCreatureSectionByName } from '../extended-info';
 import { describeBiome } from './biome-names';
 import { clearCreatureSpawnBiomeFocus } from './creature-spawn-biomes';
-import { attachWikiLinkPopover, hidePopovers } from '../popover-util';
+import { attachWikiLinkPopover, dismissPopovers, hidePopovers } from '../popover-util';
 import { createDustAttribution, usesDustAnimation } from '../portals/attribution';
 
 // Cards and marker layers load sprites on demand; there is no startup prewarm.
@@ -401,6 +401,7 @@ function resetPopupPosition(popup: HTMLElement): void {
 function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: PointOfInterest, overlayType?: OverlayKey) {
   const popup = document.createElement('div');
   popup.className = 'osOverlayPopup';
+  popup.addEventListener('map-card-remove', () => dismissPopovers(popup));
 
   // Store original data for retranslation
   popup.dataset.originalName = name;

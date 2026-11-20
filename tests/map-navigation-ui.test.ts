@@ -108,7 +108,8 @@ describe('map navigation UI during camera movement', () => {
     createMapLinks();
     const source = readFileSync('src/main.ts', 'utf8');
     const start = source.indexOf('  let lastKnownMap:');
-    const end = source.indexOf('\n  const loadingIndicator', start);
+    const end = source.indexOf('\n  const modNavigation', start);
+    expect(end).toBeGreaterThan(start);
     // Execute this small registration from main.ts with its host dependencies,
     // avoiding the unrelated application/network boot sequence in that module.
     const script = transpileModule(source.slice(start, end), { compilerOptions: { target: ScriptTarget.ES2022 } }).outputText;

@@ -297,11 +297,12 @@ describe("asset extraction and failure handling", () => {
     expect(original).not.toHaveBeenCalled();
   });
 
-  it("reuses full-pixel atlas inputs and versions the underlying HTTP request", async () => {
+  it("shares the packaged scene atlas across approximate and full-pixel rendering", async () => {
     const original = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(new Uint8Array([4, 0, 255])));
     vi.stubGlobal("window", { fetch: original });
-    installFetchInterceptor(true);
+    installFetchInterceptor(false);
     const one = await window.fetch("../data/material_atlas.bin");
+    installFetchInterceptor(true);
     const two = await window.fetch("../data/material_atlas.bin");
     expect(new Uint8Array(await one.arrayBuffer())).toEqual(new Uint8Array([4, 0, 255]));
     expect(new Uint8Array(await two.arrayBuffer())).toEqual(new Uint8Array([4, 0, 255]));

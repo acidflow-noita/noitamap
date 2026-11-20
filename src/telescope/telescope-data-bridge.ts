@@ -41,7 +41,7 @@ export function installFetchInterceptor(
     if (method !== "GET" && method !== "HEAD")
       return originalFetch.call(window, input, init);
     signal?.throwIfAborted();
-    const asset = mode.fullPixels && fullPixelDataUrl(url);
+    const asset = fullPixelDataUrl(url, mode.fullPixels);
     if (asset) {
       if (method === "HEAD") return originalFetch.call(window, asset, init);
       return immutableTelescopeAssets.fetch(

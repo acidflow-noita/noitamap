@@ -227,15 +227,20 @@ export default defineConfig({
     emptyOutDir: true, // Always start clean — no stale hashed files
     sourcemap: false,
     minify: "oxc",
-    // IMPORTANT: Disable modulepreload injection. Vite injects <link rel="modulepreload">
-    // for dynamically-imported chunks, which causes the browser to eagerly evaluate them.
-    // The telescope-lib chunk has top-level await (image_processing.js) that MUST only run
-    // after interceptors are installed — eager evaluation crashes the app silently.
-    modulePreload: false,
+    // Flatten the viewer and toolbar request waterfalls. The generation forks
+    // must still be loaded only after Telescope installs its interceptors.
+    modulePreload: {
+      polyfill: false,
+      resolveDependencies(file, dependencies, { hostType, hostId }) {
+        if (hostType === "html" && hostId === "index.html") return dependencies;
+        if (hostType === "js" && /^build\/main-[^/]+\.js$/.test(file)) return dependencies;
+        return [];
+      },
+    },
 
     rollupOptions: {
       input: {
-        main: resolve(import.meta.dirname, "index.html"),
+        "map-entry": resolve(import.meta.dirname, "index.html"),
         guessr: resolve(import.meta.dirname, "guess/index.html"),
       },
       output: {
@@ -244,11 +249,18 @@ export default defineConfig({
         codeSplitting: {
           includeDependenciesRecursively: true,
           groups: [
-            { name: "startup", test: /\/src\/(?:startup\.ts|i18n\.ts|locales\/en\/translation\.json)$/, priority: 45 },
+            // The viewer, route and manifest validation can run while menu code is in flight.
+            { name: "map-viewer", test: /\/src\/(?:app_osd|initial-daily|renderer_settings|tab-coordinator|util|data_sources\/url)\.ts$/, priority: 155 },
+            // Both pages use the timeout and pixel draw settings without starting a map viewer.
+            { name: "startup", test: /\/src\/startup\.ts$/, priority: 170 },
+            { name: "i18n", test: /\/src\/(?:i18n\.ts|locales\/en\/translation\.json)$/, priority: 45 },
+            { name: "module-preload", test: /vite\/preload-helper\.js$/, priority: 200 },
+            // Portal markers use the same small PRNG as Telescope on baked maps.
+            { name: "nolla-prng", test: /\/lib\/noita-telescope\/js\/nolla_prng\.js$/, priority: 145 },
             { name: "creature-data", test: /\/src\/data\/creature-data\.ts$/, priority: 150 },
             { name: "terrain-assets", test: /\/lib\/noita-telescope-vm\/data\/.*\?url/, priority: 200 },
             { name: "telescope-data-tables", test: /\/lib\/noita-telescope-vm\/js\/.*(?:enemy_config|engine_data)\.js$/, priority: 140 },
-            { name: "telescope-runtime", test: /\/src\/(?:data-archive|renderer_settings|telescope\/(?:telescope-(?:data-bridge|dom-shim|app-shim|assets|asset-paths)|zip-extraction-shim|png-decode|full-pixel-data))\.[jt]s$/, priority: 150 },
+            { name: "telescope-runtime", test: /\/src\/(?:data-archive|telescope\/(?:telescope-(?:data-bridge|dom-shim|app-shim|assets|asset-paths)|zip-extraction-shim|png-decode|full-pixel-data))\.[jt]s$/, priority: 150 },
             { name: "telescope-full-pixels", test: /\/lib\/noita-telescope-vm\/js\/|\/src\/telescope\/full-pixel-telescope-exports\.ts$/, priority: 80 },
             { name: "telescope-lib", test: (id) => id.startsWith(TELESCOPE_JS + "/") || id.endsWith("/src/telescope/telescope-exports.ts"), priority: 70 },
             { name: "vendor-png", test: /\/node_modules\/(?:fast-png|fflate|iobuffer|pngjs|upng-js|pako)\//, priority: 190 },
@@ -259,7 +271,7 @@ export default defineConfig({
             { name: "vendor", test: /\/node_modules\//, priority: 160 },
             // Viewer scheduling/continuity is shared with lazy terrain layers.
             // Keep it separate without making controller installation async.
-            { name: "map-rendering", test: /\/src\/osd-(?:pixel-rendering|tile-continuity|terrain-admission)\.ts$/, priority: 150 },
+            { name: "map-rendering", test: /\/src\/osd-(?:pixel-rendering|tile-continuity|terrain-admission)\.ts$/, priority: 170 },
             { debugName: "map-data", name: (id) => "map-data-" + id.split("/").pop()!.replace(/\.json$/, ""), test: /\/src\/data\/[^/]+\.json$/, priority: 40 },
           ],
         },

@@ -148,7 +148,9 @@ describe("full-pixel mode", () => {
       "material_data.json",
       "pixel_scene_meta.json",
     ]) {
-      expect(fullPixelDataUrl(`../data/${file}`)).toBeTruthy();
+      const url = `../data/${file}`;
+      expect(fullPixelDataUrl(url)).toBeTruthy();
+      expect(fullPixelDataUrl(url, false)).toBe(file.includes('_atlas.') ? fullPixelDataUrl(url) : undefined);
       expect(fullPixelDataUrl(`https://example.com/data/${file}?v=1`)).toBe(
         fullPixelDataUrl(`../data/${file}`),
       );

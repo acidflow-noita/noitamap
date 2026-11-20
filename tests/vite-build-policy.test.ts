@@ -309,7 +309,7 @@ describe("browser build boundaries", () => {
       (file) =>
         file.type === "chunk" &&
         file.isEntry &&
-        file.facadeModuleId?.endsWith("index.html"),
+        file.facadeModuleId === resolve(root, "index.html"),
     );
     expect(entry).toBeTruthy();
     const eager = new Set<string>();
@@ -322,6 +322,7 @@ describe("browser build boundaries", () => {
     visit(entry.fileName);
     for (const name of eager) {
       const modules = Object.keys(chunks.get(name)?.modules ?? {});
+      expect(modules.some(id => /\/src\/(?:main|i18n|dynamic-map|dynamic_ui)\.ts$/.test(id)), name).toBe(false);
       expect(
         modules.some((id) => /\/lib\/noita-telescope[^/]*\/js\//.test(id)),
         name,
@@ -330,6 +331,21 @@ describe("browser build boundaries", () => {
         modules.some((id) => id.includes("noitamap-sprite-atlas")),
         name,
       ).toBe(false);
+    }
+    const menu = output.find(file => file.facadeModuleId === resolve(root, 'src/main.ts'));
+    expect(menu).toBeTruthy();
+    visit(menu.fileName);
+    for (const name of eager) {
+      const modules = Object.keys(chunks.get(name)?.modules ?? {});
+      expect(modules.filter(id => /\/lib\/noita-telescope[^/]*\/js\//.test(id)
+        && !id.endsWith('/nolla_prng.js')), name).toEqual([]);
+    }
+    eager.clear();
+    const guessr = output.find(file => file.facadeModuleId === resolve(root, 'guess/index.html'));
+    visit(guessr.fileName);
+    for (const name of eager) {
+      const modules = Object.keys(chunks.get(name)?.modules ?? {});
+      expect(modules.some(id => /\/src\/(?:app_osd|tab-coordinator)\.ts$/.test(id)), name).toBe(false);
     }
     expect(
       output.filter((file) => file.fileName.includes("sprite-atlas-part-"))
