@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { ScriptTarget, transpileModule } from 'typescript';
+import { isDynamicMap } from '../src/data_sources/tile_data';
 
 vi.mock('../src/data_sources/overlays', () => ({ isValidOverlayKey: () => false }));
 
@@ -116,6 +117,7 @@ describe('shared creature spawn selection', () => {
       compilerOptions: { target: ScriptTarget.ES2022 },
     }).outputText;
     const dependencies = {
+      isDynamicMap,
       app: { getMap: () => 'dynamic-main-branch' },
       getCurrentDynamicSeed: () => 789,
       getCurrentIsDaily: () => true,

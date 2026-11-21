@@ -1,3 +1,4 @@
+import { isDynamicMap } from '../../src/data_sources/tile_data';
 import { readFileSync } from 'node:fs';
 import { ScriptTarget, transpileModule } from 'typescript';
 
@@ -14,10 +15,10 @@ export function bindLoadingProgress(ui: typeof import('../../src/dynamic_ui')) {
   let map = 'dynamic-main-branch';
   let progress: ReturnType<typeof ui.createLoadingStripProgress> | undefined;
   const setBakedFlag = new Function('app', 'window', 'i18next', 'showLoadingStrip', 'hideLoadingStrip',
-    'finishLoadingStrip', 'createLoadingStripProgress', `${script}\nreturn value => { bakedViewActive = value; };`)(
+    'finishLoadingStrip', 'createLoadingStripProgress', 'isDynamicMap', `${script}\nreturn value => { bakedViewActive = value; };`)(
     { getMap: () => map }, { addEventListener: (name: string, handler: (event: CustomEvent) => void) => handlers.set(name, handler) },
     { isInitialized: true, t: (key: string) => key, on() {} }, ui.showLoadingStrip, ui.hideLoadingStrip,
-    ui.finishLoadingStrip, () => (progress = ui.createLoadingStripProgress()));
+    ui.finishLoadingStrip, () => (progress = ui.createLoadingStripProgress()), isDynamicMap);
   return {
     start() { setBakedFlag(false); progress?.start(); },
     show() { if (progress) progress.show(); else ui.showLoadingStrip(); },
