@@ -49,7 +49,7 @@ export function templeCrystals(scenes: readonly Scene[], pw: number): POI[] {
 
 /** Repair older generation records for searches, interactions and decoration exports.
  * Keep existing IDs and ordering for legitimate crystals and all other items. */
-export function reconcileTempleCrystals<T extends Rooms>(input: T, changes?: CrystalPoint[]): T {
+export function reconcileTempleCrystals<T extends Rooms>(input: T): T {
   if (input.isNGP || (input.ngPlus ?? 0) !== 0) return input;
   let poisByPW = input.poisByPW;
   for (const [key, pois] of Object.entries(input.poisByPW)) {
@@ -57,68 +57,19 @@ export function reconcileTempleCrystals<T extends Rooms>(input: T, changes?: Cry
     const scenes = input.pixelScenesByPW?.[key];
     if (plane !== 0 || !Array.isArray(scenes)) continue;
     const expected = new Map(templeCrystals(scenes, pw).map(p => [identity(p), p]));
-    const kept = pois.filter(p => {
-      if (!isTempleCrystal(p) || expected.delete(identity(p))) return true;
-      changes?.push({ x: p.x, y: p.y });
-      return false;
-    });
+    const kept = pois.filter(p => !isTempleCrystal(p) || expected.delete(identity(p)));
     if (kept.length === pois.length && !expected.size) continue;
     if (poisByPW === input.poisByPW) poisByPW = { ...poisByPW };
-    for (const p of expected.values()) changes?.push({ x: p.x, y: p.y });
     poisByPW[key] = kept.concat([...expected.values()]);
   }
   return poisByPW === input.poisByPW ? input : { ...input, poisByPW };
-}
-
-export function lookingAtCrystalChange(viewer: any, points: CrystalPoint[]): boolean {
-  if (!points.length) return false;
-  const osd = viewer.viewer ?? viewer, viewport = osd.viewport;
-  const visible = viewport?.getBounds?.(true);
-  const bounds = visible?.getBoundingBox?.() ?? visible;
-  const screenWidth = viewport?.getContainerSize?.()?.x ?? osd.container?.clientWidth;
-  // Both crystal sprites are 8 × 14 world pixels. Keep the baked overview while
-  // their width is below a display pixel; include their extents at the viewport edge.
-  if (!bounds || !(screenWidth > 0) || bounds.width > 8 * screenWidth) return false;
-  return points.some(p => p.x + 4 >= bounds.x && p.x - 4 <= bounds.x + bounds.width &&
-    p.y + 7 >= bounds.y && p.y - 7 <= bounds.y + bounds.height);
-}
-
-// Positions stamped by the previous baker. These are only used to recognize stale pixels.
-function oldCrystalPair(pw: number, width: number, altarY: number): [POI, POI] {
-  const x = pw * width * 512 + (altarY === 13181 ? 2560 : -32);
-  return [{ ...worm, x: x - 280, y: altarY + 45 }, { ...greed, x: x - 730, y: altarY - 73 }];
 }
 
 /** The old baker stamped both final-altar sprites in every world. Only the main
  * boss arena contains a deflector. All five obsolete footprints are transparent
  * in the regular baked overlay, revealing the captured background beneath it. */
 export function legacyFinalCrystalGhosts(pw: number, width: number): CrystalPoint[] {
-  const [deflector, statue] = oldCrystalPair(pw, width, 13181);
-  return pw === 0 ? [statue] : [deflector, statue];
-}
-
-export function lookingAtLegacyFinalCrystals(viewer: any, gameMode: string, light: boolean): boolean {
-  const width = gameMode === "nightmare" ? 64 : 70;
-  return lookingAtCrystalChange(viewer, (light ? [0] : [-1, 0, 1]).flatMap(pw => legacyFinalCrystalGhosts(pw, width)));
-}
-
-/** Older decorated WebPs painted seven fixed pairs in every world. Compare their pixels'
- * positions with the actual rooms so only inspection of an affected area needs live terrain. */
-export function legacyCrystalChanges(result: GenerationResult): CrystalPoint[] {
-  if (result.isNGP || result.ngPlus !== 0 || !result.worldSize) return [];
-  const changes: CrystalPoint[] = [];
-  for (const pw of result.parallelWorlds ?? []) {
-    // The narrow strips of PW ±2 never contain the old markers at their world's center.
-    if (Math.abs(pw) > 1) continue;
-    const scenes = result.pixelScenesByPW?.[pw + ",0"];
-    if (!Array.isArray(scenes)) continue;
-    const actual = new Map(templeCrystals(scenes, pw).map(p => [identity(p), p]));
-    for (const y of [1410, 2946, 4994, 6530, 8578, 10626, 13181]) {
-      for (const old of oldCrystalPair(pw, result.worldSize, y)) {
-        if (!actual.delete(identity(old))) changes.push({ x: old.x, y: old.y });
-      }
-    }
-    for (const p of actual.values()) changes.push({ x: p.x, y: p.y });
-  }
-  return changes;
+  const worldX = pw * width * 512;
+  const statue = { x: worldX + 1830, y: 13108 };
+  return pw === 0 ? [statue] : [{ x: worldX + 2280, y: 13226 }, statue];
 }

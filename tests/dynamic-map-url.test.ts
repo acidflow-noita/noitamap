@@ -85,10 +85,12 @@ describe('URL seed request ownership', () => {
     return vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
   }
 
-  it.each([true, false])('opens the fixed Nightmare seed with matching baked POIs or live fallback (hit=%s)', async hit => {
+  it.each([true, false])('keeps the fixed Nightmare tiles even when published POIs are missing (hit=%s)', async hit => {
     history.replaceState(null, '', '/?m=dn');
     const frame = livePipeline(), seed = 786433191;
     vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
+    // Returning players can have a saved unlock profile on a plain map URL.
+    vi.mocked(getUnlocksFromURL).mockReturnValue([]);
     const osd = { addOnceHandler: vi.fn(), world: { removeItem: vi.fn() } } as any;
     const baked = { seed, gameMode: 'nightmare', tileLayers: [], poisByPW: {}, pixelScenesByPW: {}, parallelWorlds: [0,-1,1] } as any;
     vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix: 'nightmare', renderId: 'revision', placements: [],
@@ -103,16 +105,16 @@ describe('URL seed request ownership', () => {
       expect(fetchBakedGeneration).toHaveBeenCalledWith('nightmare', ['left', 'middle', 'right'], seed, 'revision', false);
       expect(fetchDailySeed).not.toHaveBeenCalled();
       expect(fetchPreviousDailySeed).not.toHaveBeenCalled();
-      expect(addBakedDZIsToOSD).toHaveBeenCalledTimes(hit ? 1 : 0);
-      if (hit) expect(generateDynamicMap).not.toHaveBeenCalled();
-      else expect(generateDynamicMap).toHaveBeenCalledWith(expect.objectContaining({ seed, gameMode: 'nightmare', dailySeed: false }));
+      expect(addBakedDZIsToOSD).toHaveBeenCalledOnce();
+      expect(generateDynamicMap).not.toHaveBeenCalled();
+      expect(initTelescope).not.toHaveBeenCalled();
     } finally { pipeline.clearDynamicMap(osd); frame.mockRestore(); }
   });
 
   it.each([
     { mode: 'normal' as const, seed: today, x: -33797, crystalX: -33560 },
     { mode: 'nightmare' as const, seed: 786433191, x: -30725, crystalX: -30488 },
-  ])('keeps the baked overview and repairs old $mode pixels at the phantom crystal', async ({ mode, seed, x, crystalX }) => {
+  ])('keeps the published $mode tiles when zooming across a legacy crystal', async ({ mode, seed, x, crystalX }) => {
     const frame = livePipeline(), pipeline = await import('../src/dynamic-map');
     vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
     const daily = mode === 'normal', prefix = daily ? 'daily' : 'nightmare';
@@ -125,20 +127,12 @@ describe('URL seed request ownership', () => {
       viewport: { getBounds: () => bounds, getContainerSize: () => ({ x: 1200, y: 800 }) } };
     try {
       await pipeline.runDynamicMap(seed, daily, { viewer: osd, gameMode: mode });
-      if (daily) {
-        expect(osd.addHandler.mock.calls.some(([name]) => name === 'viewport-change')).toBe(false);
-        expect(generateDynamicMap).not.toHaveBeenCalled();
-        return;
-      }
-      const watch = osd.addHandler.mock.calls.find(([name]) => name === 'viewport-change')![1];
-      watch();
-      expect(generateDynamicMap).not.toHaveBeenCalled();
       bounds = { x: x - 440, y: 13159 - 280, width: 880, height: 560 };
-      watch();
-      await vi.waitFor(() => expect(generateDynamicMap).toHaveBeenCalledOnce());
-      expect(generateDynamicMap).toHaveBeenCalledWith(expect.objectContaining({ seed, gameMode: mode, dailySeed: daily }));
+      for (const [event, handler] of osd.addHandler.mock.calls) if (event === 'viewport-change') handler();
+      await Promise.resolve();
+      expect(generateDynamicMap).not.toHaveBeenCalled();
+      expect(initTelescope).not.toHaveBeenCalled();
       expect(probeBakedDZIs).toHaveBeenCalledOnce();
-      expect(osd.removeHandler).toHaveBeenCalledWith('viewport-change', watch);
     } finally { pipeline.clearDynamicMap(osd); frame.mockRestore(); }
   });
 
@@ -196,7 +190,7 @@ describe('URL seed request ownership', () => {
     } finally { pipeline.clearDynamicMap(viewer); frame.mockRestore(); }
   });
 
-  it('keeps a completed narrow Nightmare bake until visiting the missing edge, then generates it live', async () => {
+  it('keeps a completed narrow Nightmare bake when visiting its outer edge', async () => {
     const frame = livePipeline(), seed = 786433191, center = { x: 0, y: 0 };
     vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
     const osd = { viewport: { getCenter: () => center }, world: { removeItem: vi.fn() },
@@ -208,13 +202,10 @@ describe('URL seed request ownership', () => {
     try {
       await pipeline.runDynamicMap(seed, false, { gameMode: 'nightmare', viewer: osd });
       expect(generateDynamicMap).not.toHaveBeenCalled();
-      const watch = osd.addHandler.mock.calls.find(([name]) => name === 'viewport-change')![1];
-      watch();
-      expect(generateDynamicMap).not.toHaveBeenCalled();
       center.x = -100 * 512;
-      watch();
-      await vi.waitFor(() => expect(generateDynamicMap).toHaveBeenCalledOnce());
-      expect(osd.removeHandler).toHaveBeenCalledWith('viewport-change', watch);
+      for (const [event, handler] of osd.addHandler.mock.calls) if (event === 'viewport-change') handler();
+      await Promise.resolve();
+      expect(generateDynamicMap).not.toHaveBeenCalled();
       expect(probeBakedDZIs).toHaveBeenCalledOnce();
     } finally { pipeline.clearDynamicMap(osd); frame.mockRestore(); }
   });

@@ -176,7 +176,6 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[], daily = fal
     }
   }
 
-  const changedCrystals: Array<{ x: number; y: number }> = [];
   const result = finalizeGeneration({
     seed: base.seed,
     dailySeed: daily || base.dailySeed,
@@ -198,8 +197,7 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[], daily = fal
     poisByPW,
     pixelScenesByPW,
     eyes: undefined,
-  }, changedCrystals) as GenerationResult;
-  result.bakedTempleCrystalChanges = changedCrystals;
+  }) as GenerationResult;
   if (repairedLoadout) result.reportInventory = createReportInventorySnapshot(result.seed,
     getAllPOIsFlat(result), result.parallelWorlds);
   return result;

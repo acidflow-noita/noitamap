@@ -1,7 +1,7 @@
+import type { PixelScene, POI } from "../src/telescope/telescope-adapter";
 import { describe, expect, it } from "vitest";
-import { templeCrystals, reconcileTempleCrystals, legacyCrystalChanges } from "../src/telescope/temple-crystals";
+import { templeCrystals, reconcileTempleCrystals } from "../src/telescope/temple-crystals";
 import { hydrateBakedGeneration } from "../src/telescope/baked-generation";
-import type { GenerationResult, PixelScene, POI } from "../src/telescope/telescope-adapter";
 
 const room = (key: string, x: number, y: number, variantKey?: string): PixelScene =>
   ({ key, name: key.split("/").at(-1)!, x, y, width: 512, height: 282, variantKey } as PixelScene);
@@ -28,19 +28,16 @@ describe("Holy Mountain crystal placement", () => {
     const unrelated = { type: "item", item: "heart", x: shift, y: 100, id: "previous-link" };
     const input = { gameMode: mode, seed, ngPlus: 0, worldCenter: width / 2, worldSize: width,
       parallelWorlds: [-1], poisByPW: { "-1,0": [...original, unrelated] }, pixelScenesByPW: { "-1,0": scenes } };
-    const changes: Array<{ x: number; y: number }> = [];
-    const fixed = reconcileTempleCrystals(input, changes);
-    expect(changes).toContainEqual({ x: phantom[0], y: 13226 });
-    expect(changes).toContainEqual({ x: phantom[1], y: 13108 });
+    const fixed = reconcileTempleCrystals(input);
+    expect(fixed.poisByPW["-1,0"]).not.toContainEqual(expect.objectContaining({ x: phantom[0], y: 13226 }));
+    expect(fixed.poisByPW["-1,0"]).not.toContainEqual(expect.objectContaining({ x: phantom[1], y: 13108 }));
     expect(fixed.poisByPW["-1,0"]).toHaveLength(actual.length + 1);
     expect(fixed.poisByPW["-1,0"]).toContain(unrelated);
     expect(fixed.poisByPW["-1,0"][0]).toBe(original[0]);
     expect(reconcileTempleCrystals(fixed)).toBe(fixed);
     expect(original).toHaveLength(14);
-    expect(legacyCrystalChanges(input as unknown as GenerationResult)).toEqual(changes);
     const hydrated = hydrateBakedGeneration([{ ...input, version: 1, isNGP: false, biomeDataW: width, biomeDataH: 48,
       biomeDataPixels: Buffer.alloc(width * 48 * 4).toString("base64") }], mode === "normal");
-    expect(hydrated.bakedTempleCrystalChanges).toEqual(changes);
     expect(hydrated.poisByPW["-1,0"].filter(p => p.item?.endsWith("_crystal"))).toHaveLength(actual.length);
   });
 

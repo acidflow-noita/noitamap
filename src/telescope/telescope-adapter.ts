@@ -143,8 +143,6 @@ export interface GenerationResult {
   reportInventory?: import("../report-inventory").ReportInventorySnapshot;
   /** Per-world decoration revision, retained when loading old daily bakes. */
   bakedMimicSpritesVersionByPW?: Record<number, number>;
-  /** Marker positions that disagree with this bake’s original POI records. */
-  bakedTempleCrystalChanges?: Array<{ x: number; y: number }>;
   seed: number;
   dailySeed?: boolean;
   gameMode?: string;
