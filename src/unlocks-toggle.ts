@@ -28,6 +28,7 @@
 import { generateDynamicMap, type GenerationResult } from "./telescope/telescope-adapter";
 import { getUnlocksFromURL, getUrlUnlockKind } from "./unlocks";
 import { getPillarFlagsFromURL } from "./pillars-unlocks";
+import type { DynamicGameMode } from "./data_sources/tile_data";
 import { isLightMode } from "./light-mode";
 import { getCurrentIsDaily } from "./dynamic-map";
 
@@ -48,13 +49,15 @@ const persistentReadyListeners: AltReadyListener[] = [];
 let viewListeners: Array<(v: UnlockDescriptor) => void> = [];
 
 let lastSeedSeen: number | null = null;
+let lastMode: DynamicGameMode = "normal";
 
 /** Bind speculative work to the requested seed before any network lookup or
  * primary generation wait. A completed same-seed variant remains reusable. */
-export function beginAltSeed(seed: number): void {
-  if (lastSeedSeen === seed) return;
+export function beginAltSeed(seed: number, gameMode: DynamicGameMode = "normal"): void {
+  if (lastSeedSeen === seed && lastMode === gameMode) return;
   if (lastSeedSeen !== null) resetAltCache();
   lastSeedSeen = seed;
+  lastMode = gameMode;
 }
 
 /** True if the page was opened with a `?u=<base64>` URL parameter — i.e. the
@@ -229,6 +232,7 @@ function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescriptor): 
   const input = {
     seed,
     ngPlus: 0,
+    gameMode: lastMode,
     dailySeed: isDaily,
     unlocks: descriptorToUnlocks(desc),
     // Pillars track real achievements, independent of the spell-unlock toggle.
@@ -278,8 +282,8 @@ function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescriptor): 
 /** Background pre-warm of every non-primary variant. Called after the
  *  primary render completes; fires the generations sequentially so we
  *  don't thrash telescope's PRNG / cache. */
-export async function prewarmAlt(seed: number, isDaily: boolean, generate = true): Promise<void> {
-  beginAltSeed(seed);
+export async function prewarmAlt(seed: number, isDaily: boolean, generate = true, gameMode: DynamicGameMode = "normal"): Promise<void> {
+  beginAltSeed(seed, gameMode);
   if (!generate) return; // Baked maps generate an alternate only when explicitly requested.
   const lifetime = altLifetime;
   const primary = primaryDescriptor();

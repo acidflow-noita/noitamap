@@ -27,7 +27,7 @@ import { getStartingLoadout } from "./starting-equipment/loadout.js";
  */
 
 import type { GenerationResult } from "./telescope-adapter";
-import { originFor, type World } from "./baked-dzi-loader";
+import { originFor, type World, type BakedMapPrefix } from "./baked-dzi-loader";
 
 export const BAKED_GENERATION_VERSION = 1;
 
@@ -41,6 +41,8 @@ export interface BakedGenerationFile {
   reportInventory?: ReportInventorySnapshot;
   seed: number;
   dailySeed?: boolean;
+  gameMode?: string;
+  renderId?: string;
   calendar?: { month: number; day: number };
   startingLoadoutVersion?: number;
   ngPlus: number;
@@ -104,6 +106,7 @@ export function serializeGenerationForBake(result: GenerationResult): BakedGener
       getAllPOIsFlat(normalizeScenePOIs(completeGenerationBossPOIs(result))), result.parallelWorlds),
     seed: result.seed,
     dailySeed: result.dailySeed,
+    gameMode: result.gameMode,
     calendar: result.calendar,
     startingLoadoutVersion: result.startingLoadoutVersion,
     ngPlus: result.ngPlus,
@@ -112,7 +115,7 @@ export function serializeGenerationForBake(result: GenerationResult): BakedGener
     worldCenter: result.worldCenter,
     parallelWorlds: result.parallelWorlds || [-1, 0, 1],
     biomeDataPixels: bufToB64(new Uint32Array(result.biomeData.pixels).buffer),
-    biomeDataW: result.isNGP ? 72 : 70,
+    biomeDataW: result.worldSize,
     biomeDataH: 48,
     poisByPW: result.poisByPW,
     pixelScenesByPW,
@@ -159,7 +162,7 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[], daily = fal
 
   // Same biomeData reconstruction as getCachedGeneration in tile-cache.ts.
   const pixels = new Uint32Array(b64ToBuf(base.biomeDataPixels));
-  const w = base.biomeDataW > 0 ? base.biomeDataW : base.isNGP ? 72 : 70;
+  const w = base.biomeDataW > 0 ? base.biomeDataW : base.worldSize;
   const h = base.biomeDataH > 0 ? base.biomeDataH : 48;
   const heavenPixels = new Uint32Array(pixels.length);
   const hellPixels = new Uint32Array(pixels.length);
@@ -179,6 +182,7 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[], daily = fal
     reportInventory: inventoryComplete ? reportInventory : undefined,
     bakedMimicSpritesVersionByPW,
     ngPlus: base.ngPlus,
+    gameMode: base.gameMode ?? "normal",
     isNGP: base.isNGP,
     worldSize: base.worldSize,
     worldCenter: base.worldCenter,
@@ -202,22 +206,30 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[], daily = fal
  * Returns null on any miss; caller falls back to client-side telescope.
  */
 export async function fetchBakedGeneration(
-  prefix: "daily" | "previous-daily",
+  prefix: BakedMapPrefix,
   worlds: World[],
   seed: number,
+  renderId?: string,
 ): Promise<GenerationResult | null> {
   try {
     const files = await Promise.all(
       worlds.map(async (w) => {
-        const resp = await fetch(`${originFor(prefix, w)}/generation.json`);
+        const url = originFor(prefix, w) + "/generation.json";
+        const resp = renderId ? await fetch(url + "?v=" + encodeURIComponent(renderId), { signal: AbortSignal.timeout(10000) }) : await fetch(url);
         if (!resp.ok) return null;
         const j = (await resp.json()) as BakedGenerationFile;
         if (!j || j.version !== BAKED_GENERATION_VERSION || j.seed !== seed || !j.biomeDataPixels) return null;
+        if (prefix === "nightmare") {
+          const pw = { left: -1, middle: 0, right: 1 }[w];
+          if (!renderId || j.renderId !== renderId || j.gameMode !== "nightmare" || j.ngPlus !== 0 ||
+            j.dailySeed || j.worldSize !== 64 || j.worldCenter !== 32 || j.biomeDataW !== 64 || j.biomeDataH !== 48 ||
+            j.parallelWorlds?.length !== 1 || j.parallelWorlds[0] !== pw || !j.poisByPW?.[pw + ",0"]?.length) return null;
+        } else if ((j.gameMode ?? "normal") !== "normal" || (j.ngPlus ?? 0) !== 0) return null;
         return j;
       }),
     );
     if (files.some((f) => !f)) return null;
-    return hydrateBakedGeneration(files as BakedGenerationFile[], true);
+    return hydrateBakedGeneration(files as BakedGenerationFile[], prefix !== "nightmare");
   } catch (e) {
     console.warn("[baked-generation] fetch failed:", e);
     return null;

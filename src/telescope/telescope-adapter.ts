@@ -144,6 +144,7 @@ export interface GenerationResult {
   bakedMimicSpritesVersionByPW?: Record<number, number>;
   seed: number;
   dailySeed?: boolean;
+  gameMode?: string;
   calendar?: { month: number; day: number };
   startingLoadoutVersion?: number;
   ngPlus: number;
@@ -180,7 +181,7 @@ export interface GenerateOptions {
   /** Start independent GPU preparation before scanning POIs and scene placements.
    * This snapshot is not a complete map and must not be presented as one. */
   onTerrainReady?: (terrain: Pick<GenerationResult,
-    "seed" | "ngPlus" | "isNGP" | "worldSize" | "worldCenter" | "tileLayers" |
+    "seed" | "gameMode" | "ngPlus" | "isNGP" | "worldSize" | "worldCenter" | "tileLayers" |
     "elevatorShafts" | "biomeData" | "parallelWorlds">) => void;
 }
 
@@ -552,6 +553,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
     telescopeApp.w = w;
     telescopeApp.h = h;
     telescopeApp.ngPlusCount = ngPlus;
+    telescopeApp.gameMode = gameMode;
     telescopeApp.biomeData = biomeData;
 
     // Populate heaven recolor buffer (from top row of main recolor, matching app.js logic)
@@ -629,7 +631,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   // of leaving a fake second endpoint and a gap between the two copies.
   const elevatorShafts = useRenderPerfGeneration() ? await prepareElevatorShafts({ tileLayers, biomeData, seed, ngPlus, isNGP, gameMode }) : [];
   opts.signal?.throwIfAborted();
-  opts.onTerrainReady?.({ seed, ngPlus, isNGP, worldSize, worldCenter,
+  opts.onTerrainReady?.({ seed, gameMode, ngPlus, isNGP, worldSize, worldCenter,
     tileLayers, elevatorShafts, biomeData, parallelWorlds });
   const elevatorColumns = elevatorShafts.map(layer => layer.minX);
   const elevatorSpawns = prescanSpawnFunctions(elevatorShafts, isNGP, gameMode).filter((spawn: any) => spawn.y >= 34 * 512 && spawn.y < 82 * 512);
@@ -1401,7 +1403,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   }
 
   // Step 5: Eye messages (main world only)
-  const eyes = findEyeMessages(biomeData.pixels, seed, ngPlus);
+  const eyes = gameMode === "normal" ? findEyeMessages(biomeData.pixels, seed, ngPlus) : [];
 
   // Essence rooms (Essence of Earth/Air/Water/Spirits). These are fixed
   // biome-map rooms (hasStuff:false) so telescope never emits a POI for them.
@@ -1520,6 +1522,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
 
   return normalizeScenePOIs(completeGenerationBossPOIs({
     seed,
+    gameMode,
     dailySeed,
     calendar: { ...telescopeMods.settingsMod.appSettings.date },
     startingLoadoutVersion: 1,

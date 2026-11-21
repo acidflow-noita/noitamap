@@ -4,7 +4,7 @@ import { getPoiPreviewItems } from "../telescope/poi-inventory";
 import { loadSpritesheetAndAtlas, FIRST_FRAME_SIZE } from "../telescope/poi-spatial-index";
 import { searchOverlays } from "../flexsearch";
 import { resetBiomeOverlays } from "../data_sources/overlays";
-import { MapName } from "../data_sources/tile_data";
+import { isDynamicMap, type MapName } from "../data_sources/tile_data";
 import { debounce } from "../util";
 import { UnifiedSearchResults, UnifiedSearchResult } from "./unifiedsearchresults";
 import { TargetOfInterest, Spell } from "../data_sources/overlays";
@@ -658,10 +658,11 @@ export class UnifiedSearch extends EventEmitter2 {
     return this._currentMap;
   }
   public set currentMap(value: MapName) {
-    const wasDynamic = this._currentMap === "dynamic-main-branch";
-    const isDynamic = value === "dynamic-main-branch";
+    const wasDynamic = isDynamicMap(this._currentMap);
+    const isDynamic = isDynamicMap(value);
+    const changedMode = isDynamic && value !== this._currentMap;
     this._currentMap = value;
-    if (wasDynamic !== isDynamic) {
+    if (wasDynamic !== isDynamic || changedMode) {
       this.rebuildFilters(value);
       // Clear search state so stale results don't persist
       this.searchInput.value = "";
@@ -702,7 +703,7 @@ export class UnifiedSearch extends EventEmitter2 {
   /** Notify the search that the map viewport has moved. Re-sorts results by proximity. */
   notifyViewportChanged(): void {
     if (this.alchemyActive) return;
-    if (this.currentMap !== "dynamic-main-branch") return;
+    if (!isDynamicMap(this.currentMap)) return;
     if (this.isInteracting) return; // Skip sorting while user is actively moving the map
 
     if (this.searchInput.value.trim() === "") {
@@ -824,8 +825,8 @@ export class UnifiedSearch extends EventEmitter2 {
     });
     filterBox.replaceChildren();
 
-    const isDynamicMap = newMap === "dynamic-main-branch";
-    const filters: Array<{ type: string; iconSrc?: string; atlasKey?: string }> = isDynamicMap
+    const dynamic = isDynamicMap(newMap);
+    const filters: Array<{ type: string; iconSrc?: string; atlasKey?: string }> = dynamic
       ? [
           { type: "w", atlasKey: "wand:handgun" },
           { type: "s", atlasKey: "spell:mana" },
@@ -931,8 +932,8 @@ export class UnifiedSearch extends EventEmitter2 {
       filterBox.appendChild(filterLabel);
     }
 
-    if (isDynamicMap) appendAlchemyStubs(filterBox);
-    if (isDynamicMap) appendHighValueStub(filterBox, this);
+    if (dynamic) appendAlchemyStubs(filterBox);
+    if (dynamic) appendHighValueStub(filterBox, this);
 
     // Initialize Bootstrap popovers
     // @ts-ignore
@@ -1052,7 +1053,7 @@ export class UnifiedSearch extends EventEmitter2 {
     // generation already carries real orb POIs (NG+ maps, where
     // biomeData.orbs is populated). Empty input means the map was cleared —
     // keep it empty.
-    if (pois.length > 0 && !pois.some((p) => p.item === "orb")) {
+    if (this.currentMap === "dynamic-main-branch" && pois.length > 0 && !pois.some((p) => p.item === "orb")) {
       pois = pois.concat(getTrueOrbPOIs());
     }
     this.dynamicPOIs = pois;
@@ -1481,7 +1482,7 @@ export class UnifiedSearch extends EventEmitter2 {
     this.lastSearchFilters = filterKey;
     this.lastViewportKey = vpKey;
 
-    const isDynamic = this.currentMap === "dynamic-main-branch";
+    const isDynamic = isDynamicMap(this.currentMap);
 
     // Read player position from URL for proximity sorting (needed for both empty & non-empty search on dynamic map)
     // NB: use Number.isNaN, NOT `|| null` — `parseFloat("0") || null` is null,
@@ -1534,7 +1535,7 @@ export class UnifiedSearch extends EventEmitter2 {
             displayName: p.name ?? p.type,
             x: p.worldX,
             y: p.worldY,
-            maps: ["dynamic-main-branch" as any],
+            maps: [this.currentMap],
             chunksAway,
             isDynamic: true,
             type: p.type,
@@ -1653,7 +1654,7 @@ export class UnifiedSearch extends EventEmitter2 {
           displayName: finalName,
           x: p.worldX,
           y: p.worldY,
-          maps: ["dynamic-main-branch" as MapName],
+          maps: [this.currentMap],
           chunksAway,
           isDynamic: true,
           type: p.type,
@@ -1693,7 +1694,7 @@ export class UnifiedSearch extends EventEmitter2 {
         // Offer the handoff only after this seed's index is ready. Check again
         // on activation so a replaced map/query cannot leave a stale link.
         const getUrl = () => this.indexingState === 'ready'
-          && this.currentMap === 'dynamic-main-branch' && this.searchInput.value === searchText
+          && isDynamicMap(this.currentMap) && this.searchInput.value === searchText
           ? this.getTelescopeSearchUrl?.(searchText) : undefined;
         const url = searchText.trim() ? getUrl() : undefined;
         this.searchResults.setNoResults(url ? {
@@ -1784,12 +1785,12 @@ export class UnifiedSearch extends EventEmitter2 {
     const filterBox = document.createElement("div");
     filterBox.id = "unifiedSearchFilterBox";
 
-    const isDynamicMap = currentMap === "dynamic-main-branch";
+    const dynamic = isDynamicMap(currentMap);
     const filters: Array<{
       type: string;
       iconSrc?: string;
       atlasKey?: string;
-    }> = isDynamicMap
+    }> = dynamic
       ? [
           { type: "w", atlasKey: "wand:handgun" },
           { type: "s", atlasKey: "spell:mana" },
@@ -1898,11 +1899,11 @@ export class UnifiedSearch extends EventEmitter2 {
       filterBox.appendChild(filterLabel);
     }
 
-    if (isDynamicMap) appendAlchemyStubs(filterBox);
+    if (dynamic) appendAlchemyStubs(filterBox);
     // Note: `this` in this static factory is the class itself, not an instance.
     // The stub is appended without a search-ref here; the instance's constructor
     // calls rebuildFilters(), which re-creates the stub with `this` bound.
-    if (isDynamicMap) appendHighValueStub(filterBox);
+    if (dynamic) appendHighValueStub(filterBox);
 
     overlayDiv.appendChild(filterBox);
 

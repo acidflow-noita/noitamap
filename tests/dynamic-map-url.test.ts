@@ -26,6 +26,7 @@ vi.mock('../src/telescope/perk-i18n', () => ({ perkNameKey: vi.fn() }));
 vi.mock('../src/game-translations/translator', () => ({ gameTranslator: {} }));
 
 import { fetchDailySeed, fetchPreviousDailySeed } from '../src/data_sources/daily_seed';
+import { isDynamicMap } from "../src/data_sources/tile_data";
 import { parseURL, reorderParams, updateURLWithSeed } from '../src/data_sources/url';
 import { shouldUseBakedTerrain, isInstantTerrainEnabled } from '../src/renderer_settings';
 import { initTelescope, generateDynamicMap, prewarmParallelWorlds } from '../src/telescope/telescope-adapter';
@@ -82,6 +83,46 @@ describe('URL seed request ownership', () => {
     vi.mocked(hasDynamicOverlays).mockReturnValue(false);
     return vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
   }
+
+  it.each([true, false])('opens the fixed Nightmare seed with matching baked POIs or live fallback (hit=%s)', async hit => {
+    history.replaceState(null, '', '/?m=dn');
+    const frame = livePipeline(), seed = 786433191;
+    vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
+    const osd = { addOnceHandler: vi.fn(), world: { removeItem: vi.fn() } } as any;
+    const baked = { seed, gameMode: 'nightmare', tileLayers: [], poisByPW: {}, pixelScenesByPW: {}, parallelWorlds: [0,-1,1] } as any;
+    vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix: 'nightmare', renderId: 'revision', placements: [],
+      decorationsBaked: true, fullPixelsBaked: true });
+    vi.mocked(fetchBakedGeneration).mockResolvedValue(hit ? baked : null);
+    const pipeline = await import('../src/dynamic-map');
+    try {
+      await pipeline.runDynamicMapFromURL({ viewer: osd, gameMode: 'nightmare' });
+      expect(parseURL()).toMatchObject({ map: 'nightmare-dynamic-main-branch', seed });
+      expect(parseURL().dailySeed).toBeUndefined();
+      expect(probeBakedDZIs).toHaveBeenCalledExactlyOnceWith('nightmare', seed);
+      expect(fetchBakedGeneration).toHaveBeenCalledWith('nightmare', ['left', 'middle', 'right'], seed, 'revision');
+      expect(fetchDailySeed).not.toHaveBeenCalled();
+      expect(fetchPreviousDailySeed).not.toHaveBeenCalled();
+      expect(addBakedDZIsToOSD).toHaveBeenCalledTimes(hit ? 1 : 0);
+      if (hit) expect(generateDynamicMap).not.toHaveBeenCalled();
+      else expect(generateDynamicMap).toHaveBeenCalledWith(expect.objectContaining({ seed, gameMode: 'nightmare', dailySeed: false }));
+    } finally { pipeline.clearDynamicMap(osd); frame.mockRestore(); }
+  });
+
+  it('generates a custom Nightmare seed locally and isolates it from the same Regular seed', async () => {
+    const frame = livePipeline(), pipeline = await import('../src/dynamic-map');
+    try {
+      await pipeline.runDynamicMap(today, false, { viewer: {}, gameMode: 'normal' });
+      const normal = vi.mocked(getCachedGeneration).mock.calls.at(-1)![0];
+      vi.clearAllMocks();
+      vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
+      await pipeline.runDynamicMap(today, false, { viewer: {}, gameMode: 'nightmare' });
+      expect(generateDynamicMap).toHaveBeenCalledWith(expect.objectContaining({ seed: today, gameMode: 'nightmare', dailySeed: false }));
+      expect(getCachedGeneration).toHaveBeenCalledWith(expect.stringContaining('|nightmare'));
+      expect(vi.mocked(getCachedGeneration).mock.calls.at(-1)![0]).not.toBe(normal);
+      expect(probeBakedDZIs).not.toHaveBeenCalled();
+      expect(fetchDailySeed).not.toHaveBeenCalled();
+    } finally { pipeline.clearDynamicMap({}); frame.mockRestore(); }
+  });
 
   it.each([true, false])('hands the initial Daily probe to the pipeline once (baked=%s)', async hit => {
     history.replaceState(null, '', '/');
@@ -607,7 +648,7 @@ describe('dynamic seed URL identity', () => {
       expect(prewarmMapPresentation).not.toHaveBeenCalled();
       expect(prepareInstantTerrainResources).not.toHaveBeenCalled();
       expect(prefetchAllSceneBitmaps).not.toHaveBeenCalled();
-      expect(prewarmAlt).toHaveBeenCalledExactlyOnceWith(seed, prefix === 'daily' || dailyFlag, false);
+      expect(prewarmAlt).toHaveBeenCalledExactlyOnceWith(seed, prefix === 'daily' || dailyFlag, false, 'normal');
       if (metadata) {
         expect(initTelescope).not.toHaveBeenCalled();
         expect(generateDynamicMap).not.toHaveBeenCalled();
@@ -627,7 +668,7 @@ describe('dynamic seed URL identity', () => {
       await flushFrames();
       expect(prepareInstantTerrainResources).toHaveBeenCalledWith(live, expect.any(Function));
       expect(prefetchAllSceneBitmaps).toHaveBeenCalledOnce();
-      expect(prewarmAlt).toHaveBeenLastCalledWith(77, false, true);
+      expect(prewarmAlt).toHaveBeenLastCalledWith(77, false, true, 'normal');
     } finally { pipeline.clearDynamicMap(viewer); frame.mockRestore(); }
   });
 
@@ -653,7 +694,7 @@ describe('dynamic seed URL identity', () => {
     history.replaceState(null, '', '/?m=dy&x=7711&y=6847&z=1013&sr=1');
     updateURLWithSeed(previous, true); // The previous-daily button's URL path.
     const share = mainFunction('  const getShareUrl =', '  (window as any).getShareUrl', {
-      app: { getMap: () => 'dynamic-main-branch' }, getCurrentDynamicSeed: () => previous,
+      isDynamicMap, app: { getMap: () => 'dynamic-main-branch' }, getCurrentDynamicSeed: () => previous,
       getCurrentIsDaily: () => true, getEnabledOverlays: () => [], overlayToShort: (value: string) => value,
       getActiveDescriptor: () => 'all', reorderParams,
     }, 'getShareUrl');
@@ -685,9 +726,9 @@ describe('dynamic seed URL identity', () => {
     { query: '', expected: [99, true] },
   ])('uses explicit URL identity before saved session for $query', async ({ query, expected }) => {
     history.replaceState(null, '', `/${query}`);
-    const run = vi.fn(async () => {}), resolve = vi.fn(async () => {}), options = {};
+    const run = vi.fn(async () => {}), resolve = vi.fn(async () => {}), options = { gameMode: "normal" };
     const restore = mainFunction('  async function runDynamicMapWithPriority', '\n\n  createDynamicUI', {
-      parseURL, lastSessionSeed: 99, lastSessionIsDaily: true, dynamicOpts: options,
+      parseURL, sessionSeeds: new Map([["normal", { seed: 99, daily: true }]]), dynamicOpts: options,
       updateURLWithSeed, runDynamicMap: run, runDynamicMapFromURL: resolve,
     }, 'runDynamicMapWithPriority');
     await restore();

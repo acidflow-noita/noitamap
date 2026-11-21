@@ -149,6 +149,17 @@ it('closes partial artwork after a download failure and permits a clean retry', 
   expect(state.tiles).toHaveBeenCalledOnce();
 });
 
+it('uses the generated Nightmare mask and center independently of regular biome boundaries', async () => {
+  const { generatedBiomeBackgroundGeometry } = await import('../src/telescope/biome-background-layer');
+  const pixels = new Uint32Array(64 * 48);
+  pixels.fill(GENERATOR_CONFIG.coalmine.color, 17 * 64 + 30, 17 * 64 + 33);
+  const layer = generatedBiomeBackgroundGeometry(pixels, 64, 32, GENERATOR_CONFIG);
+  expect(layer.originX).toBe(-16384);
+  expect(layer.width).toBe(32768);
+  const coal = layer.regions.find(region => region.textureKey === BIOME_BACKGROUND_MAP.coalmine)!;
+  expect(coal.rings).toEqual([[{ x: -1024, y: 1536 }, { x: 512, y: 1536 }, { x: 512, y: 2048 }, { x: -1024, y: 2048 }]]);
+});
+
 it('places independently phased PW sources below subsequent terrain layers', async () => {
   const { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer } = await import('../src/telescope/biome-background-layer');
   const layer = await prepareBiomeBackgroundLayer();

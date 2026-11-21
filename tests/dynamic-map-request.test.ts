@@ -43,7 +43,7 @@ describe('dynamic map request invalidation before daily lookup', () => {
     const daily = pendingSeed(), onMapReplacementStart = vi.fn(), onLoadingChange = vi.fn();
     vi.mocked(fetchDailySeed).mockReturnValueOnce(daily.promise);
     const pending = runDynamicMap(42, false, { viewer: {}, onMapReplacementStart, onLoadingChange });
-    expect(beginAltSeed).toHaveBeenCalledWith(42);
+    expect(beginAltSeed).toHaveBeenCalledWith(42, 'normal');
     expect(vi.mocked(beginAltSeed).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(fetchDailySeed).mock.invocationCallOrder[0]);
     expect(onMapReplacementStart).toHaveBeenCalledOnce();

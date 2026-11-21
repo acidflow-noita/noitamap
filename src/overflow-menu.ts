@@ -14,7 +14,7 @@
  * original navbar position, so it can be restored exactly where it was.
  */
 
-const DYNAMIC_MAP_NAME = "dynamic-main-branch";
+import { isDynamicMap } from "./data_sources/tile_data";
 const NARROW_DESKTOP_QUERY = "(min-width: 1024px) and (max-width: 1279.98px)";
 
 // Navbar element ids to tuck into the more-menu on the dynamic map, in the
@@ -93,7 +93,7 @@ function toggleDivider(show: boolean): void {
  * toggles dynamic-map UI visibility (updateDynamicUIVisibility).
  */
 function syncOverflowMenu(): void {
-  if (activeMap === DYNAMIC_MAP_NAME || narrowDesktop?.matches) moveIntoMenu();
+  if (isDynamicMap(activeMap) || narrowDesktop?.matches) moveIntoMenu();
   else restoreToNavbar();
 }
 

@@ -1,4 +1,4 @@
-import { asMapName, type MapName } from './data_sources/tile_data';
+import { asMapName, isDynamicMap, type MapName } from './data_sources/tile_data';
 import { parseURL, reorderParams, type URLState } from './data_sources/url';
 import type { ZoomPos } from './app_osd';
 
@@ -11,7 +11,7 @@ export function parseModNavigation(href: string, origin: string): { url: URL; st
     if (url.origin !== origin || !['/', '/index.html'].includes(url.pathname) || url.searchParams.get('src') !== 'mod') return null;
     const state = parseURL(url.href);
     if (!state.map || !asMapName(state.map)) return null;
-    if (state.map === 'dynamic-main-branch' && (!/^\d{1,10}$/.test(url.searchParams.get('se') ?? '')
+    if (isDynamicMap(state.map) && (!/^\d{1,10}$/.test(url.searchParams.get('se') ?? '')
       || state.seed === undefined || state.seed < 0 || state.seed > 0xffffffff)) return null;
     const camera = [url.searchParams.get('x'), url.searchParams.get('y'), url.searchParams.get('z') ?? url.searchParams.get('zoom')];
     if (camera.some(v => v !== null) && (!state.pos || camera.some(v => !/^-?\d+$/.test(v ?? ''))
@@ -75,7 +75,7 @@ export function createModNavigation(options: ModNavigationOptions) {
         // request's game parameters while retaining current UI preferences.
         options.replaceURL(mergeModNavigation(new URL(options.href()), next));
         if (state.pos) options.goto(state.pos);
-        if (state.map === 'dynamic-main-branch' && gameChanged)
+        if (isDynamicMap(state.map) && gameChanged)
           void options.renderDynamic().catch(options.failed);
       };
       if (mapTransition || state.map !== options.getMap()) {

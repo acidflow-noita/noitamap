@@ -10,15 +10,16 @@ import {
 
 /** Exactly one seed/POI generation. Main and vertical terrain data are exported
  * read-only to all native renderer workers rather than regenerated per tile. */
-export async function prepareBake(seed: number) {
+export async function prepareBake(seed: number, mode: "regular" | "nightmare" | "ng-plus" = "regular") {
   // Offline baking must select the full generation fork explicitly. Browser
   // preferences (including old saved opt-ins) no longer control this mode.
   setFullPixelTerrainForBake(true);
   const { generateDynamicMap } = await import("./telescope-adapter");
   const generation = await generateDynamicMap({
     seed,
-    ngPlus: 0,
-    dailySeed: true,
+    gameMode: mode === "nightmare" ? "nightmare" : "normal",
+    ngPlus: mode === "ng-plus" ? 1 : 0,
+    dailySeed: mode !== "nightmare",
     unlocks: null,
     parallelWorlds: [0, -1, 1],
   });

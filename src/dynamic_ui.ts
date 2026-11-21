@@ -3,7 +3,7 @@ import * as bootstrap from "./bootstrap";
  * dynamic_ui.ts
  *
  * Builds and manages the dynamic map toolbar.
- * Shown only when the active map is 'dynamic-main-branch'.
+ * Shown on maps with seed generation.
  */
 
 import i18next from "i18next";
@@ -17,7 +17,7 @@ import { getDailyBakeStatus, getDailyBakeProgress, refreshDailyBakeProgress, sub
 import { localBakeTime, scheduledBakeReadyAt } from './telescope/daily-bake-progress';
 
 const NERD_MODE_URL = "https://lymm37.github.io/noita-telescope/";
-const DYNAMIC_MAP_NAME = "dynamic-main-branch";
+import { isDynamicMap, NIGHTMARE_DEFAULT_SEED } from "./data_sources/tile_data";
 
 // Noita seeds are 32-bit signed ints; valid range is 1 .. 2147483647.
 const MIN_SEED = 1;
@@ -298,9 +298,14 @@ export function roundVisibleOverlayGroupEdges(): void {
 
 export function updateDynamicUIVisibility(currentMap: string): void {
   if (!toolbarItems.length) return;
-  const isDynamic = currentMap === DYNAMIC_MAP_NAME;
+  const isDynamic = isDynamicMap(currentMap);
+  const nightmare = currentMap === "nightmare-dynamic-main-branch";
   if (!isDynamic) setDynamicUIBusy(false);
-  toolbarItems.forEach(el => { el.style.display = isDynamic ? "" : "none"; });
+  toolbarItems.forEach(el => {
+    const dailyOnly = el === dailySeedBtn || el === prevDailySeedBtn;
+    el.style.display = isDynamic && !(nightmare && dailyOnly) ? "" : "none";
+  });
+  document.getElementById("simplisticBackgroundPopover")?.classList.toggle("d-none", nightmare);
 
   // Toggle any dynamic-map-only controls outside the toolbar (e.g. light-mode switch in navbar)
   document.querySelectorAll(".dynamic-map-only").forEach((el) => {
@@ -426,12 +431,12 @@ async function onPrevDailySeedClick(): Promise<void> {
 async function onGenerateClick(): Promise<void> {
   if (isBusy || !dynamicOpts || !seedInput) return;
   const rawVal = seedInput.value.trim();
-  if (!rawVal) {
+  if (!rawVal && dynamicOpts.gameMode !== "nightmare") {
     finishSeedEntry();
     await onDailySeedClick();
     return;
   }
-  const seed = parseInt(rawVal, 10);
+  const seed = rawVal ? parseInt(rawVal, 10) : NIGHTMARE_DEFAULT_SEED;
   if (isNaN(seed) || seed < MIN_SEED || seed > MAX_SEED) {
     seedInput.classList.add("is-invalid");
     setTimeout(() => seedInput?.classList.remove("is-invalid"), 1500);
@@ -674,7 +679,7 @@ export function setDynamicUISeed(seed: number, _isDaily: boolean, preserveDraft 
  * changing generation mode. Historical ds=1 links aren't necessarily today. */
 function refreshSeedIdentity(): void {
   if (!seedInput || resolvedInputSeed === null || seedInput.value !== String(resolvedInputSeed)) return;
-  const identity = getCachedDailySeedIdentity(resolvedInputSeed);
+  const identity = dynamicOpts?.gameMode === "nightmare" ? null : getCachedDailySeedIdentity(resolvedInputSeed);
   seedInput.classList.toggle("seed-daily", identity === 'today');
   seedInput.classList.toggle("seed-prev-daily", identity === 'previous');
   const prefix = identity === 'today' ? 'daily' : identity === 'previous' ? 'previous-daily' : null;
@@ -710,7 +715,7 @@ function createSeedPopover(element: HTMLInputElement) {
 
 function updateSeedTooltip(_kind: SeedKind): void {
   if (!seedInput) return;
-  const identity = resolvedInputSeed !== null && seedInput.value === String(resolvedInputSeed)
+  const identity = dynamicOpts?.gameMode !== "nightmare" && resolvedInputSeed !== null && seedInput.value === String(resolvedInputSeed)
     ? getCachedDailySeedIdentity(resolvedInputSeed) : null;
   const prefix = identity === 'today' ? 'daily' : identity === 'previous' ? 'previous-daily' : null;
   const status = prefix && resolvedInputSeed !== null ? getDailyBakeStatus(prefix, resolvedInputSeed) : null;

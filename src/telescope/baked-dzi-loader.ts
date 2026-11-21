@@ -25,6 +25,7 @@ import { CAPTURED_FLUID_VERSION } from '../liquids/mask-codec';
 
 const WORLDS = ['left', 'middle', 'right'] as const;
 export type World = (typeof WORLDS)[number];
+export type BakedMapPrefix = 'daily' | 'previous-daily' | 'nightmare';
 
 declare const OpenSeadragon: any;
 
@@ -56,8 +57,9 @@ export interface BakedDziProbeOk {
   baked: true;
   /** "daily" or "previous-daily" — picked by the caller based on which seed
    *  we matched against. Useful for debugging. */
-  prefix: 'daily' | 'previous-daily';
+  prefix: BakedMapPrefix;
   placements: BakedDziPlacement[];
+  renderId?: string;
   /** True when the bake's pixels already include scenes + POI sprites (the
    *  node compositor alpha-blended decoration cells onto each region full
    *  before stitching). The live render can skip addPixelScenes() and the
@@ -87,6 +89,8 @@ interface PerWorldManifestRegion {
 }
 interface PerWorldManifest {
   seed: number;
+  gameMode?: string;
+  ngPlus?: number;
   generatedAt?: string;
   world: World;
   /** Set by build-daily-seed-images.cjs when the upscale step blended pixel
@@ -104,21 +108,21 @@ export function isLocalBakeView(): boolean {
   return import.meta.env.DEV && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('bake') === 'local';
 }
 
-export function originFor(prefix: 'daily' | 'previous-daily', world: World): string {
+export function originFor(prefix: BakedMapPrefix, world: World): string {
   if (isLocalBakeView()) return `/__local-bake/${world}`;
   return `https://${prefix}-${world}.acidflow.stream`;
 }
 
 async function fetchWorldManifest(
-  prefix: 'daily' | 'previous-daily',
+  prefix: BakedMapPrefix,
   world: World,
   signal?: AbortSignal
 ): Promise<PerWorldManifest | null> {
   try {
     const origin = originFor(prefix, world);
     const url = `${origin}/manifest.json`;
-    const initial = signal ? undefined : takeInitialDailyResponse(url);
-    const resp = await (initial ?? fetch(url, { signal: signal ?? AbortSignal.timeout(15000) }));
+    const initial = signal || prefix === 'nightmare' ? undefined : takeInitialDailyResponse(url);
+    const resp = await (initial ?? fetch(url, { signal: signal ?? AbortSignal.timeout(prefix === 'nightmare' ? 2500 : 15000) }));
     if (!resp.ok) return null;
     const m = (await resp.json()) as PerWorldManifest;
     if (!m || typeof m.seed !== 'number' || !Array.isArray(m.regions) || m.regions.length === 0) {
@@ -139,13 +143,13 @@ async function fetchWorldManifest(
  * returned for the seed being rendered.
  */
 export async function probeBakedDZIs(
-  prefix: 'daily' | 'previous-daily',
+  prefix: BakedMapPrefix,
   requestedSeed: number | Promise<number>,
   signal?: AbortSignal
 ): Promise<BakedDziProbeResult> {
   const pending = Promise.all(WORLDS.map(w => fetchWorldManifest(prefix, w, signal)));
   const seed = typeof requestedSeed === 'number' ? requestedSeed : await requestedSeed;
-  const report = isLocalBakeView() ? undefined : beginDailyBakeCheck(prefix, seed);
+  const report = prefix === 'nightmare' || isLocalBakeView() ? undefined : beginDailyBakeCheck(prefix, seed);
   const finish = (result: BakedDziProbeResult): BakedDziProbeResult => {
     report?.(signal?.aborted ? 'unknown' : result.baked ? 'ready' : 'unavailable');
     return result;
@@ -157,6 +161,18 @@ export async function probeBakedDZIs(
     if (!m) return finish({ baked: false, reason: `manifest missing/invalid for ${prefix}-${WORLDS[i]}` });
     if (isGLTerrainEnabled() && (m.terrainVersion !== TERRAIN_VERSION || m.complete !== true)) {
       return finish({ baked: false, reason: `${prefix}-${WORLDS[i]} is not a completed ${TERRAIN_VERSION} bake` });
+    }
+    if (prefix === 'nightmare') {
+      const pw = { left: -1, middle: 0, right: 1 }[WORLDS[i]];
+      const region = m.regions[0];
+      if (m.gameMode !== 'nightmare' || m.ngPlus !== 0 || !m.complete || !m.baked ||
+        m.terrainVersion !== TERRAIN_VERSION || !m.renderId || m.renderId !== manifests[0]?.renderId ||
+        m.world !== WORLDS[i] || m.regions.length !== 1 || region.pw !== pw || region.dzi !== 'map.dzi' ||
+        region.minX !== (pw * 64 - 32) * 512 || region.minY !== -62 * 512 ||
+        region.fullW !== 64 * 512 || region.fullH !== 144 * 512)
+        return finish({ baked: false, reason: 'Incomplete or mismatched Nightmare bake' });
+    } else if ((m.gameMode ?? 'normal') !== 'normal' || (m.ngPlus ?? 0) !== 0) {
+      return finish({ baked: false, reason: 'Incorrect Daily game mode' });
     }
     if (m.seed !== seed) {
       return finish({
@@ -202,7 +218,7 @@ export async function probeBakedDZIs(
     }
   }
   const fullPixelsBaked = manifests.every(m => m?.terrainVersion === TERRAIN_VERSION && m.complete === true);
-  return finish({ baked: true, prefix, placements, decorationsBaked, fullPixelsBaked });
+  return finish({ baked: true, prefix, placements, decorationsBaked, fullPixelsBaked, renderId: manifests[0]?.renderId });
 }
 
 /**

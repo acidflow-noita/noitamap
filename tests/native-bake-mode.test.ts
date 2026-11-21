@@ -39,6 +39,7 @@ describe("native bake explicitly selects final pixels, independently of the publ
     await expect(prepareBake(786433191)).rejects.toBe(stop);
     expect(generateDynamicMap).toHaveBeenCalledWith({
       seed: 786433191,
+      gameMode: "normal",
       ngPlus: 0,
       dailySeed: true,
       unlocks: null,

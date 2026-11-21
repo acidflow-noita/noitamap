@@ -43,6 +43,7 @@ interface CachedGeneration {
   cacheKey: string;
   seed: number;
   dailySeed?: boolean;
+  gameMode?: string;
   calendar?: { month: number; day: number };
   startingLoadoutVersion?: number;
   timestamp: number;
@@ -133,6 +134,7 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
       cacheKey,
       seed,
       dailySeed: result.dailySeed,
+      gameMode: result.gameMode,
       calendar: result.calendar,
       startingLoadoutVersion: result.startingLoadoutVersion,
       timestamp: Date.now(),
@@ -149,7 +151,7 @@ export async function cacheGeneration(cacheKey: string, seed: number, result: an
       biomeDataPixels: result.biomeData?.pixels
         ? new Uint32Array(result.biomeData.pixels).buffer
         : new ArrayBuffer(0),
-      biomeDataW: result.isNGP ? 72 : 70,
+      biomeDataW: result.worldSize,
       biomeDataH: 48,
       poisByPW: result.poisByPW,
       pixelScenesByPW,
@@ -191,8 +193,8 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
     let biomeData: any = { pixels: new Uint32Array(0), w: 0, h: 0 };
     if (entry.biomeDataPixels?.byteLength) {
       const pixels = new Uint32Array(entry.biomeDataPixels);
-      // Derive w/h from isNGP; fall back to stored values for forward compat
-      const w = (entry.biomeDataW > 0) ? entry.biomeDataW : (entry.isNGP ? 72 : 70);
+      // Older records may lack explicit biome dimensions.
+      const w = (entry.biomeDataW > 0) ? entry.biomeDataW : entry.worldSize;
       const h = (entry.biomeDataH > 0) ? entry.biomeDataH : 48;
       const heavenPixels = new Uint32Array(pixels.length);
       const hellPixels = new Uint32Array(pixels.length);
@@ -226,6 +228,7 @@ export async function getCachedGeneration(cacheKey: string): Promise<any | null>
       cacheKey: entry.cacheKey,
       seed: entry.seed,
       dailySeed: entry.dailySeed,
+      gameMode: entry.gameMode ?? "normal",
       calendar: entry.calendar,
       startingLoadoutVersion: entry.startingLoadoutVersion,
       ngPlus: entry.ngPlus,

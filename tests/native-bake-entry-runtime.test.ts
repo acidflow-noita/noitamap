@@ -58,7 +58,7 @@ it("prepares missing scene assets and the CI seed through the actual native bake
   const out = resolve(root, "bake");
   try {
     for (const path of ["package.json", "package-lock.json", "tsconfig.json", "vite.config.ts",
-      "src", "build_scripts", "public", "lib/noita-telescope", "lib/noita-telescope-vm"]) {
+      "src", "workers/noitamap-auth/src", "build_scripts", "public", "lib/noita-telescope", "lib/noita-telescope-vm"]) {
       // Real files preserve Vite's root-relative transforms; symlinked forks do not.
       await cp(resolve(source, path), resolve(root, path), { recursive: true, mode: constants.COPYFILE_FICLONE });
     }

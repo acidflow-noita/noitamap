@@ -40,25 +40,65 @@ export function biomeBackgroundGeometry(biomes: { filename: string; svg_map_path
   return { regions, originX: minX, originY: minY, width: maxX - minX, height: maxY - minY, phaseX, phaseY };
 }
 
-async function loadLayer() {
+/** Nightmare's generators paint different biome cells for every seed. Group adjacent
+ * cells with the same artwork, extending the edge rows into heaven and hell. */
+export function generatedBiomeBackgroundGeometry(pixels: Uint32Array, worldSize: number, worldCenter: number,
+  config: Record<string, { color: number }>) {
+  const phaseX = -worldCenter * 512;
+  const rowCount = pixels.length / worldSize;
+  if (rowCount * 512 !== WORLD_HEIGHT) throw new Error("Invalid generated biome dimensions");
+  const colors = new Map<number, string>();
+  for (const [name, texture] of Object.entries(BIOME_BACKGROUND_MAP)) {
+    if (config[name] && !STATIC_TERRAIN_BIOMES.has(name) && !CARVED_ROOM_BIOMES.has(name))
+      colors.set(config[name].color & 0xffffff, texture);
+  }
+  const groups = new Map<string, BiomeBackgroundRegion['rings']>();
+  for (let row = 0; row < rowCount; row++) {
+    const top = phaseY + (row === 0 ? -WORLD_HEIGHT : row * 512);
+    const bottom = phaseY + (row === rowCount - 1 ? 2 * WORLD_HEIGHT : (row + 1) * 512);
+    for (let col = 0; col < worldSize;) {
+      const start = col++;
+      const textureKey = colors.get(pixels[row * worldSize + start] & 0xffffff);
+      while (col < worldSize && colors.get(pixels[row * worldSize + col] & 0xffffff) === textureKey) col++;
+      if (!textureKey) continue;
+      const left = phaseX + start * 512, right = phaseX + col * 512;
+      const rings = groups.get(textureKey) ?? [];
+      groups.set(textureKey, rings);
+      rings.push([{ x: left, y: top }, { x: right, y: top },
+        { x: right, y: bottom }, { x: left, y: bottom }]);
+    }
+  }
+  const regions = [...groups].map(([textureKey, rings]) => ({ textureKey, rings }));
+  return { regions, originX: phaseX, originY: phaseY - WORLD_HEIGHT, width: worldSize * 512,
+    height: WORLD_HEIGHT * 3, phaseX, phaseY };
+}
+
+const decodedTextures = new Map<string, ImageBitmap>();
+async function loadTexture(path: string) {
+  const filename = path.split('/').pop()!;
+  const revision = biomeBackgroundRevisions[filename];
+  if (!revision) throw new Error("Missing biome background revision: " + filename);
+  const response = await immutableTelescopeAssets.fetch("biome-background/" + filename, revision,
+    () => fetch(revisionedAssetUrl("./biome_bg/" + filename, revision), { signal: AbortSignal.timeout(30_000) }));
+  if (!response.ok) throw new Error("Cannot load biome background " + filename + " (HTTP " + response.status + ")");
+  return createImageBitmap(await response.blob());
+}
+
+async function loadLayer(geometry: ReturnType<typeof biomeBackgroundGeometry>) {
   const started = performance.now();
-  const boundaries = (await import('../data/biome_boundries_py.json')).default;
-  const geometry = biomeBackgroundGeometry(boundaries.biomes);
   const textures = new Map<string, ImageBitmap>();
   const outcomes = await Promise.allSettled([...new Set(geometry.regions.map(region => region.textureKey))].map(async path => {
-    const filename = path.split('/').pop()!;
-    const revision = biomeBackgroundRevisions[filename];
-    if (!revision) throw new Error(`Missing biome background revision: ${filename}`);
-    const response = await immutableTelescopeAssets.fetch(`biome-background/${filename}`, revision,
-      () => fetch(revisionedAssetUrl(`./biome_bg/${filename}`, revision), { signal: AbortSignal.timeout(30_000) }));
-    if (!response.ok) throw new Error(`Cannot load biome background ${filename}: ${response.status}`);
-    textures.set(path, await createImageBitmap(await response.blob()));
+    textures.set(path, decodedTextures.get(path) ?? await loadTexture(path));
   }));
-  const failed = outcomes.find(result => result.status === 'rejected');
-  if (failed?.status === 'rejected') {
-    for (const bitmap of textures.values()) bitmap.close();
-    throw failed.reason;
+  const failed = outcomes.find(result => result.status === "rejected");
+  for (const [path, bitmap] of textures) {
+    const shared = decodedTextures.get(path);
+    if (bitmap === shared) continue;
+    if (failed || shared) bitmap.close();
+    if (shared) textures.set(path, shared);
+    else if (!failed) decodedTextures.set(path, bitmap);
   }
+  if (failed) throw failed.reason;
   const tiles = createBiomeBackgroundTiles({ ...geometry, textures });
   console.info(`[OSD Bridge] Native biome backgrounds ready in ${((performance.now() - started) / 1000).toFixed(2)} seconds`, {
     textures: textures.size,
@@ -71,7 +111,20 @@ async function loadLayer() {
 let ready: ReturnType<typeof loadLayer> | undefined;
 /** Original artwork and bounded rendered tiles are shared across seeds/PWs. */
 export function prepareBiomeBackgroundLayer() {
-  return ready ??= loadLayer().catch(error => { ready = undefined; throw error; });
+  return ready ??= import('../data/biome_boundries_py.json').then(({ default: boundaries }) =>
+    loadLayer(biomeBackgroundGeometry(boundaries.biomes))).catch(error => { ready = undefined; throw error; });
+}
+
+const generatedLayers = new WeakMap<Uint32Array, ReturnType<typeof loadLayer>>();
+export function prepareGeneratedBiomeBackground(pixels: Uint32Array, worldSize: number, worldCenter: number,
+  config: Record<string, { color: number }>) {
+  let layer = generatedLayers.get(pixels);
+  if (!layer) {
+    layer = loadLayer(generatedBiomeBackgroundGeometry(pixels, worldSize, worldCenter, config))
+      .catch(error => { generatedLayers.delete(pixels); throw error; });
+    generatedLayers.set(pixels, layer);
+  }
+  return layer;
 }
 
 type BackgroundAttachment = {

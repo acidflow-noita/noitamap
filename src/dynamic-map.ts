@@ -1,3 +1,4 @@
+import { NIGHTMARE_DEFAULT_SEED, type DynamicGameMode } from "./data_sources/tile_data";
 import { isInstantTerrainEnabled, shouldUseBakedTerrain } from "./renderer_settings";
 /**
  * dynamic-map.ts
@@ -43,6 +44,7 @@ import { gameTranslator } from "./game-translations/translator";
 // ─── Types & state ───────────────────────────────────────────────────────────
 
 export interface DynamicMapOptions {
+  gameMode?: DynamicGameMode;
   /** OSD viewer instance */
   viewer: any;
   /** Called with flat POI list so dynamic search can index it */
@@ -68,6 +70,7 @@ export interface DynamicPOI {
   [key: string]: any;
 }
 
+let currentGameMode: DynamicGameMode = "normal";
 let currentSeed: number | null = null;
 let currentIsDaily: boolean = false;
 let currentUnlocksKey: string | null = null;
@@ -100,11 +103,11 @@ export function getLastGenerationResult(): GenerationResult | null {
  *  the key the live daily render writes (including the light-mode suffix) so
  *  the seed-report comparison lookup hits. Dailies always render all-unlocked,
  *  so the unlock portion is always "all". */
-function generationCacheKey(seed: number, unlockKey: string, isDaily: boolean): string {
-  return `${seed}-${unlockKey}${isDaily ? "|daily-loadout-v1" : ""}`;
+function generationCacheKey(seed: number, unlockKey: string, isDaily: boolean, mode: DynamicGameMode): string {
+  return `${seed}-${unlockKey}${mode === "nightmare" ? "|nightmare" : ""}${isDaily ? "|daily-loadout-v1" : ""}`;
 }
 export function dailyCacheKey(seed: number): string {
-  return generationCacheKey(seed, `all${isLightMode() ? "|lm" : ""}|p-`, true);
+  return generationCacheKey(seed, `all${isLightMode() ? "|lm" : ""}|p-`, currentGameMode === "normal", currentGameMode);
 }
 
 // Dedupe concurrent requests for the same seed; serialize the heavy
@@ -121,7 +124,9 @@ let bgGenChain: Promise<unknown> = Promise.resolve();
  */
 export function ensureSeedCached(seed: number, isDaily: boolean): Promise<boolean> {
   const lightMode = isLightMode();
-  const key = generationCacheKey(seed, `all${lightMode ? "|lm" : ""}|p-`, isDaily);
+  const gameMode = currentGameMode;
+  const daily = isDaily && gameMode === "normal";
+  const key = generationCacheKey(seed, `all${lightMode ? "|lm" : ""}|p-`, daily, gameMode);
   const existing = pendingSeedCaches.get(key);
   if (existing) return existing;
 
@@ -137,7 +142,8 @@ export function ensureSeedCached(seed: number, isDaily: boolean): Promise<boolea
       return generateDynamicMap({
         seed,
         ngPlus: 0,
-        dailySeed: isDaily,
+        dailySeed: daily,
+        gameMode,
         unlocks: null,
         parallelWorlds: lightMode ? [0] : undefined,
       });
@@ -170,8 +176,13 @@ export function ensureSeedCached(seed: number, isDaily: boolean): Promise<boolea
  * - ?ds=1 without ?se → fetch today's seed and pin it in the URL
  * - Neither present → treat as daily seed (fetch + set both params)
  */
-export async function resolveSeed(isCurrent = () => true, requirePublishedDaily = false, startupSeed?: Promise<number>): Promise<{ seed: number; isDaily: boolean }> {
+export async function resolveSeed(isCurrent = () => true, requirePublishedDaily = false, startupSeed?: Promise<number>, gameMode: DynamicGameMode = "normal"): Promise<{ seed: number; isDaily: boolean }> {
   const urlState = parseURL();
+  if (gameMode === "nightmare") {
+    const seed = urlState.seed ?? NIGHTMARE_DEFAULT_SEED;
+    if (isCurrent()) updateURLWithSeed(seed, false);
+    return { seed, isDaily: false };
+  }
 
   if (urlState.seed !== undefined) {
     // Shared daily links must keep their explicit seed even after rollover.
@@ -219,21 +230,24 @@ async function runDynamicMapRequest(
   const runStarted = performance.now();
   scenePrefetchLifetime?.abort();
   scenePrefetchLifetime = undefined;
-  beginAltSeed(seed);
+  const gameMode = opts.gameMode ?? "normal";
+  if (gameMode === "nightmare" && parseURL().dailySeed) updateURLWithSeed(seed, false);
+  const modeChanged = currentGameMode !== gameMode;
+  beginAltSeed(seed, gameMode);
   opts.onMapReplacementStart?.();
   if (myToken !== generationToken) return null;
 
-  const noBaked = !shouldUseBakedTerrain(window.location.search);
+  const noBaked = !shouldUseBakedTerrain(window.location.search) || (gameMode === "nightmare" && seed !== NIGHTMARE_DEFAULT_SEED);
   // These changes already require replacement, before Daily detection can
   // await the network. Stop old cooking/late attachments, retain drawn frames.
-  const retiredEarly = seed !== currentSeed || currentAllowsBaked !== !noBaked || !dynamicRendered;
+  const retiredEarly = modeChanged || seed !== currentSeed || currentAllowsBaked !== !noBaked || !dynamicRendered;
   if (retiredEarly) {
     dynamicRendered = false; // returning to this seed must restart its stopped renderer
     cancelPendingDynamicTerrain();
   }
   if (noBaked && isInstantTerrainEnabled()) {
     prewarmInstantTerrain();
-    prewarmMapPresentation();
+    prewarmMapPresentation(gameMode);
     prewarmParallelWorlds(isLightMode() ? [0] : undefined);
   }
   // Explicit live GPU requests need these assets regardless of daily identity.
@@ -245,8 +259,8 @@ async function runDynamicMapRequest(
 
   // Auto-detect daily seed: if not explicitly daily, compare against today's daily.
   // This handles the mod sending ?se=<seed> without ds=1 when the player is on a daily run.
-  let isDaily = isDailyParam || isLocalBakeView();
-  if (!isDaily) {
+  let isDaily = gameMode === "normal" && (isDailyParam || isLocalBakeView());
+  if (!isDaily && gameMode === "normal") {
     try {
       const dailySeed = await fetchDailySeed();
       if (myToken !== generationToken) return null;
@@ -280,7 +294,7 @@ async function runDynamicMapRequest(
   // A daily button can leave a forced live preview of the very same seed.
   // Its baked/live route is part of presentation identity, not the geometry
   // cache key: the existing pixels must not suppress the baked-map probe.
-  if (seed === currentSeed && unlockKey === currentUnlocksKey && isDaily === currentIsDaily
+  if (!modeChanged && seed === currentSeed && unlockKey === currentUnlocksKey && isDaily === currentIsDaily
     && currentAllowsBaked === !noBaked && dynamicRendered && hasDynamicOverlays()) {
     console.log(`[DynamicMap] Seed ${seed} is already active with same unlocks, skipping redundant render.`);
     // Still re-emit POIs so search is populated (it may have been cleared)
@@ -307,7 +321,7 @@ async function runDynamicMapRequest(
   if (!retiredEarly) cancelPendingDynamicTerrain();
 
   // If unlocks changed for the same seed, we must regenerate (skip cache)
-  const forceRegenerate = seed === currentSeed && unlockKey !== currentUnlocksKey;
+  const forceRegenerate = !modeChanged && seed === currentSeed && unlockKey !== currentUnlocksKey;
 
   onLoadingChange?.(true);
 
@@ -329,8 +343,9 @@ async function runDynamicMapRequest(
       // cached (resolveSeed + the fast-path pre-warm), so this is usually free;
       // the previous-daily lookup (an extra request) only fires when the seed
       // isn't today's — keeping the common daily overlay off that RTT.
-      let prefix: "daily" | "previous-daily" | null = isLocalBakeView() ? "daily" : null;
-      const todayDaily = await (initialDaily?.today ?? fetchDailySeed()).catch(() => null);
+      let prefix: "daily" | "previous-daily" | "nightmare" | null =
+        gameMode === "nightmare" ? "nightmare" : isLocalBakeView() ? "daily" : null;
+      const todayDaily = prefix ? null : await (initialDaily?.today ?? fetchDailySeed()).catch(() => null);
       if (!prefix && todayDaily !== null && seed === todayDaily) {
         prefix = "daily";
       } else if (!prefix) {
@@ -338,6 +353,8 @@ async function runDynamicMapRequest(
         if (prevDaily !== null && seed === prevDaily) prefix = "previous-daily";
       }
       if (!prefix || myToken !== generationToken) return null;
+      // The fixed Nightmare bake contains the all-unlocked item pools and decorations.
+      if (gameMode === "nightmare" && (unlocks !== null || pillarFlags !== null)) return null;
       // Generation data (POIs, pixel scenes, biome map) rides on the same
       // workers as the DZIs. Fetch it in PARALLEL with the probe: once the
       // probe paints, OSD floods these same origins with hundreds of tile
@@ -346,7 +363,7 @@ async function runDynamicMapRequest(
       // the default all-unlocked state; restricted-unlock views keep the
       // baked DZIs but run telescope for their own POI pools.
       const generationPromise: Promise<GenerationResult | null> =
-        unlocks === null
+        unlocks === null && prefix !== "nightmare"
           ? (async () => {
               const { fetchBakedGeneration } = await import("./telescope/baked-generation");
               const worlds: ("left" | "middle" | "right")[] = isLightMode() ? ["middle"] : ["left", "middle", "right"];
@@ -357,6 +374,12 @@ async function runDynamicMapRequest(
       if (myToken !== generationToken) return null;
       const probe = initial ?? await probeBakedDZIs(prefix, seed);
       if (!probe.baked) return { probe, generation: null };
+      let nightmareGeneration: GenerationResult | null = null;
+      if (prefix === "nightmare") {
+        const { fetchBakedGeneration } = await import("./telescope/baked-generation");
+        nightmareGeneration = await fetchBakedGeneration(prefix, lightMode ? ["middle"] : ["left", "middle", "right"], seed, probe.renderId);
+        if (!nightmareGeneration || myToken !== generationToken) return null;
+      }
       if (myToken === generationToken) {
         if (!initial?.baked) {
           clearDynamicOverlays(viewer);
@@ -370,7 +393,7 @@ async function runDynamicMapRequest(
         } }));
         onLoadingChange?.(false);
       }
-      const generation = await generationPromise;
+      const generation = nightmareGeneration ?? await generationPromise;
       if (!generation && unlocks === null) console.log("[DynamicMap] No baked generation.json; falling back to telescope for POIs");
       return { probe, generation };
     } catch (e) {
@@ -383,11 +406,12 @@ async function runDynamicMapRequest(
   // join before presentation, and never attach it to a superseded map. A live
   // request needs no previous-daily lookup; the baked probe alone owns that.
   const backgroundReady = bakedProbePromise.then(async data => {
-    if (!data?.probe.baked && myToken === generationToken) {
+    if (gameMode === "normal" && !data?.probe.baked && myToken === generationToken) {
       await ensurePersistentBiomeBackgrounds(viewer, () => myToken === generationToken);
     }
   }).catch(error => console.warn("[DynamicMap] Biome background unavailable:", error));
 
+  currentGameMode = gameMode;
   currentSeed = seed;
   currentIsDaily = isDaily;
   currentUnlocksKey = unlockKey;
@@ -408,7 +432,7 @@ async function runDynamicMapRequest(
     // Resolve the baked route first: daily pixels must never trigger live work.
     if (!noBaked && !bakedData?.probe.baked && isInstantTerrainEnabled()) {
       prewarmInstantTerrain();
-      prewarmMapPresentation();
+      prewarmMapPresentation(gameMode);
     }
     // UI hooks (spoiler-free toggle) need to know when the view is served
     // from baked pyramids: identities are flattened into the pixels there,
@@ -423,12 +447,12 @@ async function runDynamicMapRequest(
     let restoreTerrain = false;
     // Daily equipment differs from a normal run of the same seed.
     // Keep old daily records out of this lookup without clearing terrain assets.
-    let cacheKey = generationCacheKey(seed, unlockKey, isDaily);
+    let cacheKey = generationCacheKey(seed, unlockKey, isDaily, gameMode);
 
     if (bakedData?.generation) {
       result = bakedData.generation;
       // Daily/previous-daily artifacts remain daily even when ds=1 was omitted.
-      cacheKey = generationCacheKey(seed, unlockKey, true);
+      cacheKey = generationCacheKey(seed, unlockKey, gameMode === "normal", gameMode);
       console.log(`[DynamicMap] Baked generation.json hit — reusing seed metadata`);
       // Seed the IDB cache so seed-report comparisons and tomorrow's
       // "previous daily" lookups work offline (fire-and-forget).
@@ -444,7 +468,7 @@ async function runDynamicMapRequest(
       : initTelescope();
     [result] = await Promise.all([cacheReady, assetsReady]);
     if (myToken !== generationToken) return null;
-    if (result && !result.tileLayers?.length) result = null; // baked metadata cannot render live terrain
+    if (result && (!result.tileLayers?.length || (result.gameMode ?? "normal") !== gameMode)) result = null; // baked metadata cannot render live terrain
     restoreTerrain = !!result;
     console.log(`[DynamicMap] Assets + cache: ${((performance.now() - t) / 1000).toFixed(2)}s (${result ? "HIT" : "MISS"})`);
 
@@ -452,7 +476,7 @@ async function runDynamicMapRequest(
       // 2. Generate with unlock state
       t = performance.now();
       console.log(`[DynamicMap] Generating seed ${seed} (unlocks: ${unlocks ? unlocks.length + "/" + UNLOCK_KEYS.length : "all"})...`);
-      result = await generateDynamicMap({ seed, ngPlus: 0, dailySeed: isDaily, unlocks, pillarFlags, parallelWorlds: lightMode ? [0] : undefined,
+      result = await generateDynamicMap({ seed, gameMode, ngPlus: 0, dailySeed: isDaily, unlocks, pillarFlags, parallelWorlds: lightMode ? [0] : undefined,
         onTerrainReady: isInstantTerrainEnabled() && !bakedData?.probe.baked ? terrain => {
           if (myToken !== generationToken) return;
           void prepareInstantTerrainResources(terrain, () => myToken === generationToken).catch(error =>
@@ -586,7 +610,7 @@ async function runDynamicMapRequest(
     // discard this intent if the user has already changed seeds.
     requestAnimationFrame(() => setTimeout(() => {
       if (myToken !== generationToken) return;
-      void prewarmAlt(seed, isDaily, !bakedData?.probe.baked).catch((e) =>
+      void prewarmAlt(seed, isDaily, !bakedData?.probe.baked, gameMode).catch((e) =>
         console.warn("[DynamicMap] alt-unlocks pre-warm failed:", e),
       );
     }, 0));
@@ -626,7 +650,7 @@ export async function runDynamicMapFromURL(opts: DynamicMapOptions, requirePubli
   try {
     opts.onRequestStateChange?.(true);
     if (!isCurrent()) return null;
-    const { seed, isDaily } = await resolveSeed(isCurrent, requirePublishedDaily, initialDaily?.today);
+    const { seed, isDaily } = await resolveSeed(isCurrent, requirePublishedDaily, initialDaily?.today, opts.gameMode);
     if (!isCurrent()) return null;
     return await runDynamicMapRequest(seed, isDaily, opts, token, initialDaily);
   } catch (error) {
@@ -648,11 +672,13 @@ export function clearDynamicMap(viewer: any): void {
   releaseInstantTerrainBackend();
   clearDynamicOverlays(viewer);
   resetPersistentBiomeBackgrounds();
+  currentGameMode = "normal";
   currentSeed = null;
   currentIsDaily = false;
   currentUnlocksKey = null;
   currentAllowsBaked = null;
   dynamicRendered = false;
+  lastResult = null;
   beginDynamicRequest();
   clearSeedParams();
   // Drop pre-warmed alt-unlocks POIs — they belong to the seed we just left.

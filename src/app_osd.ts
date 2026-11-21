@@ -1,4 +1,4 @@
-import { fetchMapVersions, getCachedMapVersions, getTileData, MapName } from './data_sources/tile_data';
+import { fetchMapVersions, getCachedMapVersions, getTileData, isDynamicMap, MapName } from './data_sources/tile_data';
 import { isLightMode } from './light-mode';
 import { isSimplisticBackground } from './simplistic-background';
 
@@ -96,7 +96,7 @@ export class AppOSD {
     installTileContinuity(this.viewer);
     installTerrainAdmission(this.viewer);
     installStaticBackgroundResidency(this.viewer);
-    installOffscreenRedrawGuard(this.viewer, () => this.mapName === 'dynamic-main-branch');
+    installOffscreenRedrawGuard(this.viewer, () => isDynamicMap(this.mapName));
 
     this.addHandler('canvas-key', (event: any) => {
       // Case-insensitive so Shift+R (key "R") is caught too — OSD binds r/R to
@@ -203,7 +203,7 @@ export class AppOSD {
   private static getTileSources(mapName: MapName): DziTileSource[] {
     let entries = getTileData(mapName);
     // Light mode on the dynamic map: skip left/right PW backgrounds, keep only middle.
-    if (mapName === 'dynamic-main-branch' && isLightMode()) {
+    if (isDynamicMap(mapName) && isLightMode()) {
       entries = entries.filter(({ url }) => !/-left\.|-right\./.test(url));
     }
     return entries.map(({ url, dziContent }) => {
@@ -235,7 +235,7 @@ export class AppOSD {
     const displayW = w * CHUNK_SIZE;
     let data = getTileData(mapName);
     // Match getTileSources light-mode parity: drop left/right PW backgrounds.
-    if (mapName === 'dynamic-main-branch' && isLightMode()) {
+    if (isDynamicMap(mapName) && isLightMode()) {
       data = data.filter(d => !/-left\.|-right\./.test(d.url));
     }
     return data.map(d => {
@@ -348,7 +348,7 @@ export class AppOSD {
           // "?v=undefined" that never changes across bakes -> stale tiles.
           if (version !== undefined) {
             source.queryParams = `?v=${encodeURIComponent(version)}`;
-            if (mapName === 'dynamic-main-branch') source.__staticBackground = true;
+            if (isDynamicMap(mapName)) source.__staticBackground = true;
           }
         } catch (e) {}
       }

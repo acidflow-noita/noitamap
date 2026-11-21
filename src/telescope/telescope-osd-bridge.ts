@@ -29,7 +29,7 @@ import { prepareInstantTerrain } from './instant-terrain-backend';
 import { clearTerrainPngEncoders } from './terrain-png-encoder';
 import { createScenePrefetch } from "./scene-prefetch";
 import { SceneBitmapCache } from './scene-bitmap-cache';
-import { prepareBiomeBackgroundLayer, attachBiomeBackgroundLayer, clearBiomeBackgroundLayers } from "./biome-background-layer";
+import { prepareBiomeBackgroundLayer, prepareGeneratedBiomeBackground, attachBiomeBackgroundLayer, clearBiomeBackgroundLayers } from "./biome-background-layer";
 
 const liveSceneBitmaps = new SceneBitmapCache();
 
@@ -434,9 +434,9 @@ export async function prepareInstantTerrainResources(
 }
 
 /** Start independent presentation downloads alongside generation. */
-export function prewarmMapPresentation(): Promise<PromiseSettledResult<unknown>[]> {
+export function prewarmMapPresentation(gameMode = "normal"): Promise<PromiseSettledResult<unknown>[]> {
   return Promise.allSettled([loadSpritesheetAndAtlas(), getScenePngIndex(),
-    prepareBiomeBackgroundLayer().then(layer => { _bgLayer = layer; }),
+    ...(gameMode === "normal" ? [prepareBiomeBackgroundLayer().then(layer => { _bgLayer = layer; })] : []),
     ...(useRenderPerfGeneration() ? [prepareScenePixelInputs()] : []),
     ...(isInstantTerrainEnabled() ? [loadInstantTerrain()] : [])]);
 }
@@ -597,14 +597,15 @@ export function resetPersistentBiomeBackgrounds(): void {
 }
 
 /** Keep shared artwork below outgoing and incoming seed layers. */
-export function addBiomeBgToOSD(viewer: any, isCurrent = () => true): void {
-  if (!_bgLayer) return;
+export function addBiomeBgToOSD(viewer: any, isCurrent = () => true, layer = _bgLayer,
+  worldSize = 70, worlds = isLightMode() ? [0] : [-1, 0, 1]): void {
+  if (!layer) return;
   const epoch = _bgEpoch;
   const world = viewer.world;
   let index = 0;
   while (index < world.getItemCount() && !isDynamicSeedItem(world.getItemAt(index))) index++;
-  attachBiomeBackgroundLayer(viewer, _bgLayer,
-    (isLightMode() ? [0] : [-1, 0, 1]).map(pw => pw * 70 * 512),
+  attachBiomeBackgroundLayer(viewer, layer,
+    worlds.map(pw => pw * worldSize * 512),
     () => epoch === _bgEpoch && isCurrent(),
     item => dynamicTiledImages.add(item), index);
 }
@@ -694,7 +695,7 @@ async function addBiomeLayersProgressively(
   }
 
   const { tileLayers, biomeData, isNGP, worldCenter, parallelWorlds } = result;
-  const w = isNGP ? 72 : 70;
+  const w = result.worldSize;
   const pwOffsetPixels = w * 512;
   const pws = parallelWorlds || [-1, 0, 1];
 
@@ -837,7 +838,7 @@ async function addBiomeLayersProgressively(
 
         // Render each vertical plane once. NG0 horizontal worlds reuse these
         // exact pixels above; scenes and POIs remain world-specific.
-        const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(biomeData, tileLayers, pw, pvt, isNGP);
+        const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(biomeData, tileLayers, pw, pvt, isNGP, result.gameMode);
 
         if (currentGenerationId !== generationId) return;
 
@@ -1150,7 +1151,7 @@ export async function exportBiomeRegionImages(result: GenerationResult): Promise
   await ensureTelescopeModules();
 
   const { tileLayers, biomeData, isNGP, worldCenter, parallelWorlds } = result;
-  const w = isNGP ? 72 : 70;
+  const w = result.worldSize;
   const pwOffsetPixels = w * 512;
   const pws = parallelWorlds || [-1, 0, 1];
   const pwOrder = [...pws].sort((a, b) => {
@@ -1246,7 +1247,7 @@ export async function exportBiomeRegionImages(result: GenerationResult): Promise
 
   for (const pw of pwOrder) {
     for (const pvt of pvtList) {
-      const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(biomeData, tileLayers, pw, pvt, isNGP);
+      const overlays: (OffscreenCanvas | null)[] = createTileOverlaysCheap(biomeData, tileLayers, pw, pvt, isNGP, result.gameMode);
 
       let minX = Infinity,
         minY = Infinity,
@@ -5009,7 +5010,8 @@ async function addOrbOverlays(
   isCurrent = () => currentGenerationId === generationId,
 ): Promise<void> {
   if (!isCurrent()) return;
-  const { worldCenter } = result;
+  // Nightmare orb markers use the seed-specific positions from Telescope.
+  if (result.gameMode === "nightmare") return;
 
   // Filter orbs for the dynamic map
   const dynamicOrbs = orbsData.filter((orb: any) => orb.maps && orb.maps.includes('dynamic-main-branch'));
@@ -5138,7 +5140,13 @@ export async function renderGenerationResult(
   // Skipped when baked DZIs will replace them — the baked tiles already
   // include the biome bgs and the placeholder would otherwise flash visibly
   // under them on every refresh.
-  if (keepBiomeBackgrounds) {
+  if (keepBiomeBackgrounds && result.gameMode === "nightmare") {
+    await ensureTelescopeModules();
+    if (currentGenerationId !== generationId) return;
+    const layer = await prepareGeneratedBiomeBackground(result.biomeData.pixels, result.worldSize, result.worldCenter, GENERATOR_CONFIG);
+    if (currentGenerationId !== generationId) return;
+    addBiomeBgToOSD(viewer, () => currentGenerationId === generationId, layer, result.worldSize, result.parallelWorlds);
+  } else if (keepBiomeBackgrounds) {
     addBiomeBgToOSD(viewer);
   }
   if (currentGenerationId !== generationId) return;
@@ -5256,7 +5264,7 @@ export async function renderGenerationResult(
   } else {
     // Adding biomes initializes the OSD viewport bounds.
     let instant = false;
-    if (isInstantTerrainEnabled() && !forceApproximateTerrain && !result.isNGP && result.worldSize === 70) {
+    if (isInstantTerrainEnabled() && !forceApproximateTerrain && !result.isNGP && (result.worldSize === 70 || result.gameMode === "nightmare")) {
       await ensureTelescopeModules();
       if (currentGenerationId !== generationId) return;
       const [{ addInstantTerrain }, masks] = await Promise.all([

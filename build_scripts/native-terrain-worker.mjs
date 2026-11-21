@@ -28,7 +28,7 @@ try {
   } else {
     const api = await import(pathToFileURL(workerData.entry).href);
     if (workerData.role === "prepare") {
-      const snapshot = await api.prepareBake(workerData.seed);
+      const snapshot = await api.prepareBake(workerData.seed, workerData.mode);
       await env.waitImages();
       env.restoreProcess();
       const decorDir = workerData.snapshot + ".decor";

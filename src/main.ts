@@ -14,7 +14,7 @@ import { telescopeSearchUrl } from './search/telescope-link';
 import i18next, { initializeTranslations, STARTUP_MESSAGES, SUPPORTED_LANGUAGES } from "./i18n";
 import { finishNavbarStartup, showStartupFailure } from './startup';
 import type { AppOSD } from './app_osd';
-import type { InitialDaily } from './initial-daily';
+import { beginDynamicRequest, type InitialDaily } from './initial-daily';
 import type { URLState } from './data_sources/url';
 import { setupDropOverlay } from "./drop-overlay";
 import { createProLoader } from "./pro-loader";
@@ -43,7 +43,7 @@ import {
   UnlockDescriptor,
   resetUnlocksForNavigation,
 } from "./unlocks-toggle";
-import { rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport, openTooltipForPOI, closePOICard, guardPOICardContext, resetPOICardContext, restorePOICardContext, getPOISpriteFirstFrame, applyHighValueOverlays } from "./telescope/telescope-osd-bridge";
+import { cancelPendingDynamicTerrain, rebuildAltLayers, getAllPOIsFlat, exportBiomeRegionImages, prepareDecorationExport, exportDecorationCell, releaseDecorationExport, openTooltipForPOI, closePOICard, guardPOICardContext, resetPOICardContext, restorePOICardContext, getPOISpriteFirstFrame, applyHighValueOverlays } from "./telescope/telescope-osd-bridge";
 import { getUnlocksFromURL } from "./unlocks";
 import { getSunUnlocks } from "./sun-unlocks";
 import { setSunUnlocks } from "./portals";
@@ -182,7 +182,7 @@ import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from "./data_sourc
 import { isMainPathBiome } from "./data_sources/main-path-biomes";
 import { overlayToShort } from "./data_sources/param-mappings";
 import { UnifiedSearch } from "./search/unifiedsearch";
-import { asMapName, MapName } from "./data_sources/tile_data";
+import { asMapName, dynamicGameMode, isDynamicMap, NIGHTMARE_DEFAULT_SEED, type DynamicGameMode, type MapName } from "./data_sources/tile_data";
 import { addEventListenerForId, assertElementById, debounce } from "./util";
 import { createMapLinks, createMapSelectorRenderer, refreshMapSelectorDate, updateMapLinkTranslations, NAV_LINK_IDENTIFIER } from "./nav";
 import { initMouseTracker } from "./mouse_tracker";
@@ -292,17 +292,17 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   i18next.on("languageChanged", _recomputePhaseMinWidth);
 
   window.addEventListener("dataZipProgress", ((e: CustomEvent) => {
-    if (app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
+    if (!isDynamicMap(app.getMap()) || bakedViewActive) return;
     loadingProgress.update('download', e.detail?.percentage);
   }) as EventListener);
 
   window.addEventListener("biomeGenerationProgress", ((e: CustomEvent) => {
-    if (app.getMap() !== "dynamic-main-branch" || bakedViewActive) return;
+    if (!isDynamicMap(app.getMap()) || bakedViewActive) return;
     loadingProgress.update('generation', e.detail?.percentage);
   }) as EventListener);
 
   window.addEventListener("itemsGenerationProgress", ((e: CustomEvent) => {
-    if (app.getMap() !== "dynamic-main-branch") return;
+    if (!isDynamicMap(app.getMap())) return;
     loadingProgress.update('items', e.detail?.percentage);
   }) as EventListener);
 
@@ -398,7 +398,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   }
 
   // Static map POI link sharing: pan to URL-encoded coordinates when map is not dynamic
-  if (initialTargetPoiId && urlState.map !== "dynamic-main-branch") {
+  if (initialTargetPoiId && !isDynamicMap(openedMap)) {
     const capturedStaticPoiId = initialTargetPoiId;
     const contextIsCurrent = guardPOICardContext();
     initialTargetPoiId = undefined;
@@ -506,8 +506,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   // ── Dynamic map setup ─────────────────────────────────────────────────────
   // Tracks seed from the last dynamic map session so returning to dynamic map
   // can restore it (priority: URL param > last session seed > daily).
-  let lastSessionSeed: number | null = null;
-  let lastSessionIsDaily: boolean = false;
+  const sessionSeeds = new Map<DynamicGameMode, { seed: number; daily: boolean }>();
   // Pending seed set via setSeedParams before the map has switched to dynamic
   let pendingDynamicSeed: number | null = null;
   let drawingDailyRequest: { run?: Promise<GenerationResult | null> } | undefined;
@@ -518,10 +517,12 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   let initialTargetSeedStarted = false;
   let spawnSharing: ReturnType<typeof createCreatureSpawnSharing> | undefined;
   app.osd.addHandler('map-change-start', (event: { mapName?: string }) => {
-    if (event.mapName !== 'dynamic-main-branch') {
-      setDynamicUIBusy(false);
-      loadingProgress.cancel();
+    if (isDynamicMap(app.getMap()) && event.mapName !== app.getMap()) {
+      beginDynamicRequest();
+      cancelPendingDynamicTerrain();
     }
+    setDynamicUIBusy(false);
+    loadingProgress.cancel();
     initialTargetPoiId = undefined;
     spawnSharing?.dismiss();
     poiContextReady = false;
@@ -531,6 +532,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
     resetPOICardContext(app.osd);
   });
   const dynamicOpts = {
+    get gameMode() { return dynamicGameMode(app.getMap()); },
     viewer: app.osd,
     onRequestStateChange: (pending: boolean) => {
       setDynamicUIBusy(pending);
@@ -569,8 +571,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
     onSeedResolved: (seed: number, isDaily: boolean) => {
       setDynamicUISeed(seed, isDaily, true);
       updateMapSelectorText(app.getMap());
-      lastSessionSeed = seed;
-      lastSessionIsDaily = isDaily;
+      sessionSeeds.set(dynamicOpts.gameMode, { seed, daily: isDaily });
     },
     onPOIsReady: (pois: DynamicPOI[]) => {
       restorePOICardContext(app.osd);
@@ -615,7 +616,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
           }
         };
         waitForSidebar().then(() => {
-          if (contextIsCurrent() && poiContextReady && app.getMap() === 'dynamic-main-branch')
+          if (contextIsCurrent() && poiContextReady && isDynamicMap(app.getMap()))
             openTooltipForPOI(capturedPoiId, app.osd, { owner: 'map' });
         });
       }
@@ -625,13 +626,14 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   /** Explicit seed/daily URL → last session seed → today's daily. */
   async function runDynamicMapWithPriority(): Promise<void> {
     const urlState = parseURL();
+    const saved = sessionSeeds.get(dynamicOpts.gameMode);
     if (urlState.seed !== undefined) {
       // Daily-mode share links are pinned to their explicit seed too.
       await runDynamicMap(urlState.seed, !!urlState.dailySeed, dynamicOpts);
-    } else if (!urlState.dailySeed && lastSessionSeed !== null) {
+    } else if (!urlState.dailySeed && saved) {
       // Restore the last seed the user was viewing
-      updateURLWithSeed(lastSessionSeed, lastSessionIsDaily);
-      await runDynamicMap(lastSessionSeed, lastSessionIsDaily, dynamicOpts);
+      updateURLWithSeed(saved.seed, saved.daily);
+      await runDynamicMap(saved.seed, saved.daily, dynamicOpts);
     } else {
       // Fall back to daily seed resolution
       await runDynamicMapFromURL(dynamicOpts);
@@ -639,8 +641,8 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   }
 
   createDynamicUI(dynamicOpts);
-  if (openedMap === 'dynamic-main-branch') {
-    const seed = urlState.seed ?? getCachedDailySeed();
+  if (isDynamicMap(openedMap)) {
+    const seed = urlState.seed ?? (dynamicOpts.gameMode === 'nightmare' ? NIGHTMARE_DEFAULT_SEED : getCachedDailySeed());
     if (seed !== null) setDynamicUISeed(seed, !!initialDaily || !!urlState.dailySeed);
   }
   updateDynamicUIVisibility(app.getMap());
@@ -729,10 +731,12 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
     getReportInventorySnapshot: () => getLastGenerationResult()?.reportInventory,
     getSeedParams: () => ({ seed: getCurrentDynamicSeed() ?? undefined, isDaily: getCurrentIsDaily() }),
     getDailyComparisonTarget: () => {
+      if (dynamicOpts.gameMode === "nightmare") return null;
       const seed = getCurrentDynamicSeed();
       return seed === null ? null : getCachedDailyComparisonTarget(seed);
     },
     getDailySeedIdentity: () => {
+      if (dynamicOpts.gameMode === "nightmare") return null;
       const seed = getCurrentDynamicSeed();
       // Daily generation mode also applies to historical seeds. Only the
       // current published pointers establish today's/previous identity.
@@ -744,9 +748,8 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
       setDynamicUISeed(seed, false);
       // Store as pending — may be used when map transitions to dynamic
       pendingDynamicSeed = seed;
-      lastSessionSeed = seed;
-      lastSessionIsDaily = false;
-      if (app.getMap() === "dynamic-main-branch") {
+      sessionSeeds.set(dynamicOpts.gameMode, { seed, daily: false });
+      if (isDynamicMap(app.getMap())) {
         runDynamicMap(seed, false, dynamicOpts).catch((e) => console.error("[Noitamap] Dynamic map rebuild failed:", e));
       }
     },
@@ -821,6 +824,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
       try {
         const cached = await getCachedGeneration(dailyCacheKey(seed));
         if (cached?.poisByPW) return getAllPOIsFlat({ poisByPW: cached.poisByPW } as any);
+        if (dynamicOpts.gameMode === "nightmare") return null;
         // The comparison target is ALWAYS a daily seed, whose POIs are already
         // baked + served as generation.json by the CI pipeline. Fetch them
         // directly (instant) instead of regenerating client-side. Try today's
@@ -875,7 +879,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
     },
     setReportHighlights: (targets, options) => {
       const state = authService.getState();
-      if (!poiContextReady || reportMapLoading || !state.authenticated || !state.isSubscriber || isSpoilerFree() || app.getMap() !== 'dynamic-main-branch') {
+      if (!poiContextReady || reportMapLoading || !state.authenticated || !state.isSubscriber || isSpoilerFree() || !isDynamicMap(app.getMap())) {
         targets = [];
         options = { ...options, restore: false };
       }
@@ -890,7 +894,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
         ? { x: center.x, y: center.y, zoom } : null;
     },
     restoreReportMapView: view => {
-      if (!poiContextReady || app.getMap() !== 'dynamic-main-branch') return;
+      if (!poiContextReady || !isDynamicMap(app.getMap())) return;
       reportHighlights ??= new ReportMapHighlights(app.osd.viewer);
       reportHighlights.restoreView(view);
     },
@@ -901,7 +905,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
     },
     closePOICard,
     openReportPOICard: (poiId, opts) => {
-      if (!poiContextReady || app.getMap() !== 'dynamic-main-branch') { opts.onClose(); return; }
+      if (!poiContextReady || !isDynamicMap(app.getMap())) { opts.onClose(); return; }
       if (!opts.preserveReportHighlights) reportHighlights?.clear(false);
       reportHighlights ??= new ReportMapHighlights(app.osd.viewer);
       try {
@@ -913,7 +917,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
       }
     },
     openPOIById: (poiId: string, opts?: { sidebarRightPx?: number; preserveReportHighlights?: boolean; fallbackX?: number; fallbackY?: number; fallbackPoi?: any; owner?: 'report' }) => {
-      if (!poiContextReady || app.getMap() !== 'dynamic-main-branch') return;
+      if (!poiContextReady || !isDynamicMap(app.getMap())) return;
       if (!opts?.preserveReportHighlights) reportHighlights?.clear(false);
       if (opts?.owner === 'report') reportHighlights ??= new ReportMapHighlights(app.osd.viewer);
       openTooltipForPOI(poiId, app.osd, { ...opts, owner: opts?.owner ?? 'map' });
@@ -1023,7 +1027,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
       // POI itself as fallback so the card opens even if markerData hasn't
       // indexed this id for the current unlocks variant.
       const poiId = result.id;
-      if (poiId && app.getMap() === "dynamic-main-branch") {
+      if (poiId && isDynamicMap(app.getMap())) {
         if (poiContextReady) {
           openTooltipForPOI(poiId, app.osd, {
             fallbackX: result.x,
@@ -1080,11 +1084,12 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
 
     // Clean up dynamic map state whenever we leave the dynamic map, regardless
     // of the trigger (nav click, pro-bundle import, setMap hook, etc.)
-    if (lastKnownMap === "dynamic-main-branch" && state.map !== "dynamic-main-branch") {
+    if (lastKnownMap !== state.map && isDynamicMap(lastKnownMap)) {
       clearDynamicMap(app.osd);
       unifiedSearch.setDynamicPOIs([]);
       unifiedSearch.setIndexingState('idle');
-    } else if (lastKnownMap !== "dynamic-main-branch" && state.map === "dynamic-main-branch" && !modMapTransition) {
+    }
+    if (lastKnownMap !== state.map && isDynamicMap(state.map) && !modMapTransition) {
       if (drawingDailyRequest) {
         const request = drawingDailyRequest;
         drawingDailyRequest = undefined;
@@ -1102,7 +1107,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
       }
     }
     lastKnownMap = state.map;
-    spawnSharing?.setMapReady(state.map !== 'dynamic-main-branch' || poiContextReady);
+    spawnSharing?.setMapReady(!isDynamicMap(state.map) || poiContextReady);
 
     // Camera frames still update URL/search above. Toolbar DOM and Bootstrap
     // instances only need work when the selected map actually changes.
@@ -1142,7 +1147,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
     goto: pos => { app.osd.cancelNavigation(); app.osd.setZoomPos(pos); },
     updateSeed: (seed, daily) => {
       pendingDynamicSeed = null;
-      lastSessionSeed = seed; lastSessionIsDaily = daily;
+      sessionSeeds.set(dynamicGameMode(parseURL().map), { seed, daily });
       setDynamicUISeed(seed, daily);
     },
     resetUnlocks: resetUnlocksForNavigation,
@@ -1161,7 +1166,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   // because OSD keeps emitting loading-change(true) as it lazily loads the
   // many biome tile images, which would keep the spinner stuck.
   app.osd.onLoading((isLoading) => {
-    if (app.getMap() === "dynamic-main-branch") return;
+    if (isDynamicMap(app.getMap())) return;
     loadingIndicator.style.display = isLoading ? "block" : "none";
   });
 
@@ -1298,7 +1303,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
     url.searchParams.delete("d");
 
     // Pin the seed even for daily mode: ds controls unlocks, not 'load today'.
-    if (app.getMap() === "dynamic-main-branch") {
+    if (isDynamicMap(app.getMap())) {
       const seed = getCurrentDynamicSeed();
       const isDaily = getCurrentIsDaily();
       if (seed !== null) {
@@ -1383,7 +1388,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   });
 
   const resolveSpawnRegions = (raw: string, mode: 'normal' | 'ng-plus' = 'normal') => {
-    const dynamic = app.getMap() === 'dynamic-main-branch';
+    const dynamic = isDynamicMap(app.getMap());
     const generation = dynamic ? getLastGenerationResult() : null;
     // The existing boundary overlay describes the normal world layout.
     // Never use it to claim an NG+ location or navigate during replacement.
@@ -1437,7 +1442,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
     writeRequest: updateURLWithCreatureSpawn,
     notice: status => spawnNotice.update(status),
   }, urlState.spawnCreatureId, !urlState.pos && !urlState.targetPoiId);
-  spawnSharing.setMapReady(app.getMap() !== 'dynamic-main-branch' || poiContextReady);
+  spawnSharing.setMapReady(!isDynamicMap(app.getMap()) || poiContextReady);
   // subscribe() does not replay the initial state. Wait for startup auth so a
   // returning subscriber never briefly gets the free-view notice or a fetch.
   let spawnAuthReady = false;
@@ -1641,7 +1646,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   }
 
   initKonamiCode();
-  if (app.getMap() === 'dynamic-main-branch') {
+  if (isDynamicMap(app.getMap())) {
     void runDynamicMapFromURL(dynamicOpts, false, initialDaily).catch(reportMapStartupFailure);
   }
   finishNavbarStartup();

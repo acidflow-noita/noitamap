@@ -8,6 +8,11 @@ export type TileData = {
 
 export type MapName = keyof typeof tileSources;
 export type DynamicMapName = 'dynamic-main-branch' | 'nightmare-dynamic-main-branch';
+export type DynamicGameMode = 'normal' | 'nightmare';
+export const NIGHTMARE_DEFAULT_SEED = 786433191;
+export const dynamicGameMode = (name?: string | null): DynamicGameMode =>
+  name === 'nightmare-dynamic-main-branch' ? 'nightmare' : 'normal';
+
 
 export const isDynamicMap = (name: string | null | undefined): name is DynamicMapName =>
   name === 'dynamic-main-branch' || name === 'nightmare-dynamic-main-branch';

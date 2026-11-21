@@ -37,6 +37,8 @@ const args = Object.fromEntries(
     return [k, v.length ? v.join("=") : true];
   }),
 );
+const mode = String(args.mode ?? "regular");
+if (!["regular", "nightmare", "ng-plus"].includes(mode)) throw new Error("Unsupported bake mode: " + mode);
 const backend = String(args.backend || "cpu");
 if (!["cpu", "gpu"].includes(backend)) throw new Error("backend must be cpu or gpu");
 let gpuInfo = null;
@@ -48,7 +50,7 @@ if (backend === "gpu") {
   probe.dispose();
 }
 const out = resolve(String(args.out || "optional_data/full-pixel-bake"));
-let seed = Number(args.seed);
+let seed = Number(args.seed ?? (mode === "nightmare" ? 786433191 : NaN));
 if (!Number.isInteger(seed))
   seed = Number(
     (
@@ -137,7 +139,7 @@ async function prepare() {
   log(`preparing seed ${seed} once (no browser/GPU)`);
   return new Promise((resolveResult, reject) => {
     const worker = new Worker(workerFile, {
-      workerData: { role: "prepare", root, bundle, entry, seed, snapshot },
+      workerData: { role: "prepare", root, bundle, entry, seed, mode, snapshot },
     });
     let settled = false;
     const fail = (error) => {
@@ -195,7 +197,7 @@ if (args.resume) {
       await readFile(resolve(out, "prepared.json"), "utf8"),
     );
     if (
-      prepared.seed !== seed ||
+      prepared.seed !== seed || (prepared.mode ?? "regular") !== mode ||
       prepared.codeHash !== codeHash ||
       !(await completeFile(snapshot))
     )
@@ -203,7 +205,7 @@ if (args.resume) {
   } catch {}
 }
 if (!prepared) {
-  prepared = { ...(await prepare()), codeHash };
+  prepared = { ...(await prepare()), mode, codeHash };
   await atomicWrite(
     resolve(out, "prepared.json"),
     JSON.stringify(prepared, null, 2),
@@ -214,7 +216,9 @@ log(
 );
 metrics.preparationMs = Date.now() - preparationStart;
 const data = deserialize(await readFile(snapshot));
-if (data.seed !== seed) throw new Error("Prepared generation seed mismatch");
+const gameMode = mode === "nightmare" ? "nightmare" : "normal", ngPlus = mode === "ng-plus" ? 1 : 0;
+if (data.seed !== seed || (data.metadata.gameMode ?? "normal") !== gameMode || data.metadata.ngPlus !== ngPlus)
+  throw new Error("Prepared generation mode or seed mismatch");
 // A checkpoint is usable only when its report metadata can be published for
 // every requested world. This also validates --prepare-only output.
 for (const world of ["left", "middle", "right"]) createBakedWorldMetadata(data.metadata, world, seed);
@@ -222,7 +226,7 @@ if (args["prepare-only"]) {
   await atomicWrite(resolve(out, "benchmark.json"), JSON.stringify({ ...metrics, seed, prepareOnly: true, elapsedMs: Date.now()-start }, null, 2));
   process.exit(0);
 }
-const renderId = `${seed}-${data.version}-${codeHash}-${backend}`;
+const renderId = `${mode}-${seed}-${data.version}-${codeHash}-${backend}`;
 const work = resolve(out, ".work", renderId),
   cores = resolve(work, "cores"),
   publish = resolve(work, "publish");
@@ -510,6 +514,8 @@ try {
     };
     const manifest = {
       seed,
+      gameMode,
+      ngPlus,
       world,
       renderId,
       baked: true,
@@ -527,7 +533,7 @@ try {
       resolve(publish, world, "map.dzi"),
       JSON.stringify(descriptor),
     );
-    await writeBakedWorldMetadata(publish, world, data.metadata, seed);
+    await writeBakedWorldMetadata(publish, world, { ...data.metadata, renderId }, seed);
     await atomicWrite(
       resolve(publish, world, "manifest.json"),
       JSON.stringify(manifest),
