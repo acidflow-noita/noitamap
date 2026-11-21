@@ -56,6 +56,7 @@
     "biomeMap": "Biomikartta",
     "biomeMapCaptured": "Biomikartta tallennettu",
     "mapTestPng": "Karttitesti PNG",
+    "dynamicNightmare": "Dynaaminen painajainen",
     "mapDynamic": "Dynaaminen kartta"
   },
   "badges": {

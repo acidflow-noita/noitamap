@@ -212,5 +212,14 @@
     "patchDate": "2026-07-29",
     "seed": "0",
     "tileSets": ["middle"]
+  },
+  {
+    "key": "nightmare-dynamic-main-branch",
+    "label": "Dynamic Nightmare",
+    "labelKey": "maps.dynamicNightmare",
+    "badges": [],
+    "patchDate": "2025-01-25",
+    "seed": "78633191",
+    "tileSets": ["middle", "left", "right"]
   }
 ]

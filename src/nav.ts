@@ -10,6 +10,7 @@ export const isNavLink = (el: HTMLElement) => el.classList.contains(NAV_LINK_IDE
 
 const TRANSLATABLE_LABEL_KEYS = [
   'maps.mapDynamic',
+  'maps.dynamicNightmare',
   'maps.regular',
   'maps.newGamePlus',
   'maps.nightmare',
