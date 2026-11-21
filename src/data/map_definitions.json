@@ -32,6 +32,22 @@
     "tileSets": ["middle", "left", "right"]
   },
   {
+    "key": "nightmare-dynamic-main-branch",
+    "label": "Dynamic Nightmare",
+    "labelKey": "maps.dynamicNightmare",
+    "badges": [
+      {
+        "label": "Magic",
+        "labelKey": "badges.magic",
+        "class": "theme-primary",
+        "icon": "bi bi-magic"
+      }
+    ],
+    "patchDate": "2025-01-25",
+    "seed": "78633191",
+    "tileSets": ["middle", "left", "right"]
+  },
+  {
     "key": "new-game-plus-main-branch",
     "label": "New Game+ map",
     "labelKey": "maps.newGamePlus",
@@ -212,14 +228,5 @@
     "patchDate": "2026-07-29",
     "seed": "0",
     "tileSets": ["middle"]
-  },
-  {
-    "key": "nightmare-dynamic-main-branch",
-    "label": "Dynamic Nightmare",
-    "labelKey": "maps.dynamicNightmare",
-    "badges": [],
-    "patchDate": "2025-01-25",
-    "seed": "78633191",
-    "tileSets": ["middle", "left", "right"]
   }
 ]

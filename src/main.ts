@@ -184,7 +184,7 @@ import { overlayToShort } from "./data_sources/param-mappings";
 import { UnifiedSearch } from "./search/unifiedsearch";
 import { asMapName, MapName } from "./data_sources/tile_data";
 import { addEventListenerForId, assertElementById, debounce } from "./util";
-import { createMapLinks, createMapSelectorRenderer, refreshMapSelectorDate, NAV_LINK_IDENTIFIER } from "./nav";
+import { createMapLinks, createMapSelectorRenderer, refreshMapSelectorDate, updateMapLinkTranslations, NAV_LINK_IDENTIFIER } from "./nav";
 import { initMouseTracker } from "./mouse_tracker";
 import { isSpoilerFree, setSpoilerFree, onSpoilerFreeChange, isBakedSeedView } from "./spoiler-free";
 import { isLightMode, setLightMode } from "./light-mode";
@@ -337,7 +337,10 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   const updateMapSelectorText = createMapSelectorRenderer(mapSelectorButton);
   // Set initial button text
   updateMapSelectorText(app.getMap());
-  refreshMapSelectorDate(() => updateMapSelectorText(app.getMap()));
+  refreshMapSelectorDate(() => {
+    updateMapSelectorText(app.getMap());
+    updateMapLinkTranslations();
+  });
   i18next.on('languageChanged', () => updateMapSelectorText(app.getMap()));
 
   // Chunk grid toggle

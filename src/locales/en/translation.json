@@ -637,6 +637,7 @@
     "bakeScheduleDescription": "Daily maps are normally ready around {{time}} (your local time), about 15 minutes after the daily update."
   },
   "badges": {
+    "magic": "Magic",
     "latest": "Latest",
     "mod": "Mod",
     "betaBranch": "β branch",

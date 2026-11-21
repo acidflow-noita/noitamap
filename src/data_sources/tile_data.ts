@@ -7,6 +7,10 @@ export type TileData = {
 };
 
 export type MapName = keyof typeof tileSources;
+export type DynamicMapName = 'dynamic-main-branch' | 'nightmare-dynamic-main-branch';
+
+export const isDynamicMap = (name: string | null | undefined): name is DynamicMapName =>
+  name === 'dynamic-main-branch' || name === 'nightmare-dynamic-main-branch';
 
 type TileSourceMap = Record<string, TileData[]>;
 

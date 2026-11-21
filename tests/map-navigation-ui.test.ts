@@ -66,19 +66,22 @@ describe('map navigation UI during camera movement', () => {
     createMapLinks(); expect(Popover.instances.size).toBe(0);
   });
 
-  it('refreshes the date at UTC midnight without any camera or map event', () => {
+  it.each(['dynamic-main-branch', 'nightmare-dynamic-main-branch'])('refreshes the date for %s at UTC midnight without a camera or map event', (map) => {
     vi.setSystemTime(new Date('2026-09-24T23:59:59.950Z'));
     const root = document.getElementById('selector')!, render = createMapSelectorRenderer(root);
-    render('dynamic-main-branch');
+    const menu = createMapLinks();
+    render(map);
     const oldBadge = root.lastElementChild!;
-    const refresh = vi.fn(() => render('dynamic-main-branch'));
+    expect(oldBadge.getAttribute('data-bs-title')).toBe('Sep 24, 2026');
+    const refresh = vi.fn(() => { render(map); updateMapLinkTranslations(); });
     const dispose = refreshMapSelectorDate(refresh);
     vi.advanceTimersByTime(49);
     expect(root.lastElementChild).toBe(oldBadge);
     vi.advanceTimersByTime(1);
     expect(refresh).toHaveBeenCalledOnce();
     expect(root.lastElementChild).not.toBe(oldBadge);
-    expect(root.lastElementChild!.getAttribute('data-bs-title')).not.toBe(oldBadge.getAttribute('data-bs-title'));
+    expect(root.lastElementChild!.getAttribute('data-bs-title')).toBe('Sep 25, 2026');
+    expect(menu.querySelector('[data-map-key="' + map + '"] .map-badge-date')?.textContent?.trim()).toBe('Sep 25, 2026');
     expect(Popover.getInstance(oldBadge)).toBeUndefined();
     vi.advanceTimersByTime(86400000);
     expect(refresh).toHaveBeenCalledTimes(2);

@@ -68,7 +68,7 @@ export const addEventListenerForId = <K extends keyof HTMLElementEventMap>(
 const INTL_LOCALE_MAP: Record<string, string> = { br: 'pt-BR', zh: 'zh-CN' };
 
 export const formatDate = (d: string, locale?: string) =>
-  new Intl.DateTimeFormat(locale ? (INTL_LOCALE_MAP[locale] || locale) : undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(d));
+  new Intl.DateTimeFormat(locale ? (INTL_LOCALE_MAP[locale] || locale) : undefined, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(d));
 
 export const getSpellAvailability = (spell: Spell, i18next: i18n): string => {
   if (!spell.isWandSpell && !spell.isPremadeWandSpell) {
