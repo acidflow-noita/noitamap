@@ -1,5 +1,6 @@
 import type OSD from 'openseadragon';
 import { readCameraMatrix } from '../geometry';
+import { RAF_ROUNDING_MS } from '../protocol';
 import { SUNS, SUN_FRAME_SIZE, SUN_REVISION, type SunEffect, type SunPlacement } from './placements';
 import { sunVisibility } from './visibility';
 import type { SunFrameStats, SunResponse, SunWorker } from './protocol';
@@ -126,7 +127,7 @@ export class SunOverlay {
     if (this.destroyed || this.inFlight || !this.ready || this.layer.hidden) return;
     const figure = this.figures.filter(item => item.active).sort((a, b) => a.lastRequest - b.lastRequest)[0];
     if (!figure) return;
-    if (figure.lastRequest && now - figure.lastRequest < this.pacing.intervalMS - .5) { this.wake(); return; }
+    if (figure.lastRequest && now - figure.lastRequest < this.pacing.intervalMS - RAF_ROUNDING_MS) { this.wake(); return; }
     // One request in flight across both figures, with no message/GPU queue.
     const elapsedMS = figure.lastRequest ? now - figure.lastRequest : 0;
     figure.lastRequest = now;

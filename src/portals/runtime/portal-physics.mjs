@@ -289,8 +289,9 @@ export function stepParticle(p, time, dt = DT, collisionField = null) {
   const distance = f(Math.sqrt(f(f(dx * dx) + f(dy * dy))));
   const tx = distance > 0 ? f(dx / distance) : 0,
     ty = distance > 0 ? f(dy / distance) : 0;
-  p.prevX = f(f(f(tx * speed) * dt) + p.x);
-  p.prevY = f(p.y + f(f(ty * speed) * dt));
+  const travel = f(speed * dt);
+  p.prevX = f(f(tx * travel) + p.x);
+  p.prevY = f(p.y + f(ty * travel));
   return p.life >= 0;
 }
 

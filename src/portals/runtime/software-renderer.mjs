@@ -290,7 +290,9 @@ export class SoftwareRenderer {
       );
     }
   }
-  addGlow(x, y, color, alpha) {
+  addGlow(left, top, color, alpha) {
+    // Convert quad edges to pixel centers only when stamping the software buffer.
+    const x = Math.ceil(left - 0.5), y = Math.ceil(top - 0.5);
     if (x >= this.width || y >= this.height || x + 24 <= 0 || y + 24 <= 0)
       return;
     if (!this.aggregateGlow) {
@@ -506,8 +508,8 @@ export class SoftwareRenderer {
             );
           } else
             this.addGlow(
-              Math.trunc(f(p.x + 0.5)) - 12 + Math.ceil(ox - 0.5),
-              Math.trunc(f(p.y + 0.5)) - 12 + Math.ceil(oy - 0.5),
+              Math.trunc(f(p.x + 0.5)) - 12 + ox,
+              Math.trunc(f(p.y + 0.5)) - 12 + oy,
               color,
               packed,
             );

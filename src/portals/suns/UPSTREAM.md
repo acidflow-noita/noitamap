@@ -1,11 +1,12 @@
 # Sun rendering source
 
-Dust: WUOTE/noita_particle_animations, revision `a2bda47983473785540c994c1e2818c85ad7efe3`.
-
-Runtime modules are copied unchanged from `dist/`. Only the Sun and Dark Sun
-definitions and their three textures are packaged. The game archive and studio
-UI are not included. Existing portal rendering is not replaced by this import.
-Map presentation, culling and worker budgets live outside `runtime/`.
+The Sun and Dark Sun use Dust’s `dist/` runtime from commit
+`a2bda47983473785540c994c1e2818c85ad7efe3`, with the two effect definitions
+and their three textures. Both renderers use the nearest-tick clock and the
+native trail and point-glow geometry from the November particle update.
+The map owns warm-up, visibility, adaptive cadence and the worker budget.
+[Dust commit 00dc4ed](https://github.com/WUOTE/dust/commit/00dc4ed2eaf304d5c50dbb5b9607d3f66bf0be74),
+[map playback measurements](../../../docs/experimental-gpu-portals.md#dust-playback-measurements)
 
 The two figures use the existing Moon and Dark Moon quest landmarks. The
 all-unlocked view shows both; the locked view shows neither. The mod view uses
@@ -54,7 +55,7 @@ permanently freeze animation. The hidden document suspends scheduling immediatel
 Textures and particle buffers measured 78,262,608 bytes for one warm Sun and
 89,796,944 for both. The worker budget is 128MiB; browser presentation copies and
 driver overhead are additional. It retains at most two full-frame bitmaps.
-The two initial stills total 206,522 bytes. No Sun GPU context exists at ordinary
+The two initial stills total 206,524 bytes. No Sun GPU context exists at ordinary
 surface view until the user visits a Sun.
 
 Local inspection:

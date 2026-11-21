@@ -4,7 +4,7 @@ import type OSD from 'openseadragon';
 declare const OpenSeadragon: typeof OSD;
 import { canvasResolution, MAX_ACTIVE_PORTALS, PORTAL_ENTER_PIXELS, PORTAL_EXIT_PIXELS,
   portalZoomActive, visiblePortals, readCameraMatrix, reprojectCamera, type CameraMatrix } from './geometry';
-import { FRAME_MS, PORTAL_RENDERER_REVISION, type PortalCamera, type PortalGPUStats,
+import { FRAME_MS, RAF_ROUNDING_MS, PORTAL_RENDERER_REVISION, type PortalCamera, type PortalGPUStats,
   type PortalWorker, type PortalWorkerResponse, type PortalWorkerOptions } from './protocol';
 import type { PortalPlacement } from './placements';
 export type { PortalGPUStats } from './protocol';
@@ -158,7 +158,7 @@ export class PortalGPUOverlay {
     if (this.destroyed || !this.running || this.inFlight || !this.camera || !this.worker) return;
     // Avoid zero-step redraws at 120/144Hz, but never impose extra idle time
     // after expensive work. Camera changes may redraw before the next step.
-    if (this.lastRequest && now - this.lastRequest < FRAME_MS - .5 &&
+    if (this.lastRequest && now - this.lastRequest < FRAME_MS - RAF_ROUNDING_MS &&
       this.lastSentCameraRevision === this.cameraRevision) { this.wake(); return; }
     const { matrix, width, height } = this.camera;
     if (width <= 0 || height <= 0 || !Object.values(matrix).every(Number.isFinite)) return;

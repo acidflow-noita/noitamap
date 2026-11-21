@@ -288,8 +288,9 @@ export function stepParticle(p, time, dt = DT) {
     ty = distance > 0 ? f(dy / distance) : 0;
   p.x = nx;
   p.y = ny;
-  p.prevX = f(f(f(tx * speed) * dt) + nx);
-  p.prevY = f(ny + f(f(ty * speed) * dt));
+  const travel = f(speed * dt);
+  p.prevX = f(f(tx * travel) + nx);
+  p.prevY = f(ny + f(ty * travel));
   return p.life >= 0;
 }
 

@@ -104,6 +104,23 @@ describe('worker-owned portal rendering', () => {
     const steps = r.renderer.renderMap.mock.calls.reduce((sum, call) => sum + call[4], 0);
     expect(steps).toBe(60);
   });
+  it.each([60, 120])('tracks rounded %i Hz timestamps and resumes at the same tick', async hz => {
+    const r = runtime(), renderer = new PortalFrameRenderer([portal(0)], 42, { minPixels: 1.5, limit: 192 }, r);
+    let previous = 0, total = 0;
+    for (let i = 1; i <= hz; i++) {
+      const timestamp = Math.round(i * 1000 / hz);
+      const { stats } = await renderer.frame(i, camera, timestamp - previous);
+      if (hz === 60) expect(stats.steps).toBe(1);
+      else expect(stats.steps).toBeLessThanOrEqual(1);
+      total += stats.steps;
+      previous = timestamp;
+    }
+    expect(total).toBe(60);
+    const offscreen = { ...camera, matrix: { ...camera.matrix, e: -100000 } };
+    expect((await renderer.frame(hz + 1, offscreen, 60000)).stats.steps).toBe(0);
+    expect((await renderer.frame(hz + 2, camera, 0)).stats.steps).toBe(0);
+    expect((await renderer.frame(hz + 3, camera, 16)).stats.steps).toBe(1);
+  });
   it('retains sub-frame elapsed time instead of rounding it away', async () => {
     const r = runtime(), renderer = new PortalFrameRenderer([portal(0)], 42, { minPixels: 1.5, limit: 192 }, r);
     for (let i = 0; i < 100; i++) await renderer.frame(i, camera, 10);

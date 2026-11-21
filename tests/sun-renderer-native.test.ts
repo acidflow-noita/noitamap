@@ -67,6 +67,16 @@ describe('Sun renderer with real GLES (no browser)', () => {
     expect(renderer.render(effect, x, y, 0, 512).steps).toBe(0);
     expect(renderer.render(effect, x, y, 60_000, 512).steps).toBe(2);
   });
+  it('advances once per rounded 60 Hz display timestamp after a pause', () => {
+    const { effect, x, y } = SUNS[0];
+    expect(renderer.render(effect, x, y, 0, 256).steps).toBe(0);
+    let previous = 0;
+    for (let frame = 1; frame <= 60; frame++) {
+      const timestamp = Math.round(frame * 1000 / 60);
+      expect(renderer.render(effect, x, y, timestamp - previous, 256).steps).toBe(1);
+      previous = timestamp;
+    }
+  }, 30_000);
   it('uses the upstream linear final sample instead of reintroducing nearest-neighbour edge blocks', () => {
     const { effect, x, y } = SUNS[1];
     renderer.render(effect, x, y, 0, 1000);

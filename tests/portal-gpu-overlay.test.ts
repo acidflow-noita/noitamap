@@ -77,6 +77,18 @@ describe('worker GPU map overlay', () => {
     expect(overlay!.canvas.style.imageRendering).toBe('pixelated');
   });
 
+  it('requests every rounded 60 Hz tick while skipping intermediate 120 Hz frames', () => {
+    const { w } = start();
+    w.reply();
+    for (let frame = 1; frame <= 60; frame++) {
+      tick(1 + Math.round((frame - .5) * 1000 / 60));
+      expect(w.requests()).toHaveLength(frame);
+      tick(1 + Math.round(frame * 1000 / 60));
+      expect(w.requests()).toHaveLength(frame + 1);
+      w.reply();
+    }
+  });
+
   it('world-anchors cropped worker bitmaps without relying on viewport-sized output', () => {
     const { v, w } = start();
     const request = w.requests()[0];

@@ -8,14 +8,11 @@ menu (speedometer icon; inside the “…” menu on the dynamic map) as
 the worker immediately and releases its GPU context. There is no on-screen
 diagnostics overlay; use `window.__portalOverlayStats()` in the console.
 
-This prototype vendors the experimental GPU-particle backend from
-`WUOTE/noita_particle_animations` commit
-`85d0740e7d592d9b65395fbdae68013f23c4acc7` (September 19, 2026,
-08:29 EDT, “Add full-gpu renderer (experimental)”). An isolated `git pull --ff-only`
-on September 19 confirmed that this is still GitHub main. There is no animation atlas,
-software renderer fallback, or CPU-physics renderer selection. The source repo
-was not modified; an isolated checkout is under `task/noita-particle-animations`.
-The earlier atlas experiment is parked under `task/portal-atlas-prototype`.
+The map vendors Dust’s experimental GPU-particle backend from commit
+`85d0740e7d592d9b65395fbdae68013f23c4acc7`. The Sun runtime has its own
+base revision. Both include the clock and geometry fixes from November 2026.
+[Portal runtime provenance](../src/portals/runtime/UPSTREAM.md),
+[Sun runtime provenance](../src/portals/suns/UPSTREAM.md)
 
 Map-local changes now implement native-backed cosmetic collision against the
 reviewed eye-room material program. The nine child trails collide; the two
@@ -23,6 +20,39 @@ parent emitters do not. Other portals and unknown terrain remain unchanged.
 See `docs/portal-collision-audit.md` for native fixtures, lifetime-reset handling,
 static-scene limitations and manual checks. Collision-mode particle counters
 are conservative upper bounds, identified by `particleCountsAreUpperBounds`.
+
+## Dust playback measurements
+
+A replay of 60 display timestamps rounded to milliseconds drove one second
+through each worker clock. On map revision `3cabf35`, each clock produced 20
+zero-step frames, 20 one-step frames and 20 two-step frames. With signed
+fractional time carried between frames, both produced 60 one-step frames.
+The presenters allow one millisecond for timestamp rounding when requesting
+work. The workers still cap normal catch-up at two ticks.
+
+The browser comparison used the built map overlays, their WebGL2 workers and
+OpenSeadragon on a 640 × 360 canvas with a plain background. The same baked
+metadata for regular seed `499625176` supplied all portal placements. The
+camera visited the Eye Room at (-3840, 5375), panned away and returned with a
+fractional offset, then visited the Sun and Dark Sun and returned to the Sun
+after another offscreen pause. Portal scale was 0.6 CSS pixels per world pixel
+and Sun scale was 0.3. Each build had one run per browser with 72 portal and
+52 Sun frame intervals sampled after warm-up.
+
+| VM browser and renderer | Overlay | Median interval before / after (ms) | 95th percentile before / after (ms) | Peak estimated GPU allocation before / after (MiB) |
+|---|---|---:|---:|---:|
+| Firefox 153, llvmpipe | Eye Room | 33.1 / 32.8 | 33.8 / 33.7 | 4.81 / 4.50 |
+| Firefox 153, llvmpipe | Both Suns | 66.7 / 66.7 | 83.4 / 83.5 | 82.64 / 82.64 |
+| Chromium 156, SwiftShader | Eye Room | 166.6 / 83.4 | 566.7 / 366.7 | 4.18 / 4.18 |
+| Chromium 156, SwiftShader | Both Suns | 1066.7 / 991.7 | 2349.8 / 3049.8 | 79.64 / 79.64 |
+
+Intervals use the display timestamps at which the overlay’s presented-frame
+counter advanced. Allocation comes from `estimatedGPUBytes` on
+`__portalOverlayStats()` and `__sunOverlayStats()`. It covers resources tracked
+by the renderer. Chromium’s median GPU timer was 178.2 / 118.7 ms for the Eye
+Room and 1074.6 / 1022.1 ms for the Suns. Firefox did not expose that timer.
+Both browsers used software WebGL in this VM. Chromium’s long Sun frames
+varied substantially between runs.
 
 ## What to check manually
 

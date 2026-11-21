@@ -30,6 +30,7 @@ export function nativePortalGL() {
     bindVertexArray: "void glBindVertexArray(uint array)",
     enableVertexAttribArray: "void glEnableVertexAttribArray(uint index)",
     vertexAttribDivisor: "void glVertexAttribDivisor(uint index,uint divisor)",
+    vertexAttrib4f: "void glVertexAttrib4f(uint index,float x,float y,float z,float w)",
     vertexAttribPointer:
       "void glVertexAttribPointer(uint index,int size,uint type,uint8 normalized,int stride,int64 offset)",
     bindTransformFeedback: "void glBindTransformFeedback(uint target,uint id)",

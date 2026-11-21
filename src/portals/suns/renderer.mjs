@@ -1,5 +1,6 @@
 import catalog from './effects.json' with { type: 'json' };
 import { decodeAssets, SourceSimulation } from './runtime/effect-simulation.mjs';
+import { FRAME_MS, playbackSteps } from '../runtime/playback-clock.mjs';
 import { GpuGridRenderer } from './runtime/gpu-grid-renderer.mjs';
 
 export const SUN_GPU_BUDGET = 128 * 1024 * 1024;
@@ -55,13 +56,11 @@ export class SunRenderer {
     const entry = this.entry(effect, x, y);
     const outputSize = entry.outputSize = outputSizeFor(pixels, entry.outputSize);
     const warm = entry.warm;
-    // No wall-clock catch-up after a pause. Resume the exact retained state.
-    // Preserve sub-frame time, but never replay the wall-clock gap of a pause.
-    if (elapsedMS === 0) entry.remainderMS = 0;
+    // A zero interval resumes the retained figure at its current tick.
     const elapsed = Math.max(0, Number.isFinite(elapsedMS) ? elapsedMS : 0);
-    const available = Math.min(1000 / 30, entry.remainderMS + elapsed);
-    const steps = warm ? 30 : Math.min(2, Math.floor(available / (1000 / 60) + 1e-6));
-    entry.remainderMS = warm ? 0 : Math.max(0, available - steps * (1000 / 60));
+    const available = elapsed ? Math.min(2 * FRAME_MS, entry.remainderMS + elapsed) : 0;
+    const steps = warm ? 30 : playbackSteps(available);
+    entry.remainderMS = warm ? 0 : available - steps * FRAME_MS;
     const ext = this.timer;
     if (ext) {
       const disjoint = gl.getParameter(ext.GPU_DISJOINT_EXT);

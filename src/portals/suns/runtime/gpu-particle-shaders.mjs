@@ -108,7 +108,7 @@ void main() {
   float distance=sqrt(delta.x*delta.x+delta.y*delta.y);
   vec2 direction=distance>0. ? delta/distance : vec2(0);
   nextMotion=vec4(position,velocity);
-  nextAppearance=vec4((direction*speed)*dt+position,alpha,nextAppearance.w);
+  nextAppearance=vec4(direction*(speed*dt)+position,alpha,nextAppearance.w);
 }`,
   updateFragment: `#version 300 es
 precision highp float;
@@ -143,7 +143,7 @@ void main() {
   if(!longParticle) {
     if(cosmeticGlow) {
       alpha=byteAlpha((appearance.z*min(appearance.w,1.)*.03)*((flags&16)!=0?50.:1.));
-      anchor=grid ? trunc(motion.xy+.5)-12.+ceil(origin-.5) : motion.xy-12.+origin;
+      anchor=(grid ? trunc(motion.xy+.5) : motion.xy)-12.+origin;
       local=uv*24.;
     } else {
       float width=wide?2.:1.;

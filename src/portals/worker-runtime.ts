@@ -4,7 +4,8 @@ import { COLLISION_RETENTION_STEPS } from './runtime/particle-collision.mjs';
 import { decodeAssets, makeSimulation } from './runtime/effect-simulation.mjs';
 import { MapGpuRenderer } from './gpu-renderer.mjs';
 import { MAX_GPU_BYTES, visiblePortals, portalFrameBounds, type CameraMatrix } from './geometry';
-import { FRAME_MS, PORTAL_RENDERER_REVISION, type PortalCamera, type PortalFrame,
+import { FRAME_MS, playbackSteps } from './runtime/playback-clock.mjs';
+import { PORTAL_RENDERER_REVISION, type PortalCamera, type PortalFrame,
   type PortalGPUStats, type PortalWorkerOptions } from './protocol';
 import type { PortalPlacement } from './placements';
 
@@ -101,11 +102,12 @@ export class PortalFrameRenderer {
     // The clock only advances while something is on screen, so it never runs
     // ahead of what has actually been simulated.
     const active = keys.size > 0;
-    this.pending += active ? Math.min(250, Math.max(0, elapsed)) : 0;
+    if (!active || elapsed === 0) this.pending = 0;
+    else this.pending += Math.min(250, Math.max(0, elapsed));
     const slow = active && this.pending > FRAME_MS * 3;
     if (slow) this.pending = FRAME_MS * 2 + this.pending % FRAME_MS;
-    const steps = active ? Math.min(2, Math.floor((this.pending + 1e-8) / FRAME_MS)) : 0;
-    this.pending = active ? Math.max(0, this.pending - steps * FRAME_MS) : 0;
+    const steps = playbackSteps(this.pending);
+    this.pending -= steps * FRAME_MS;
     this.clock += steps;
     this.advanceShadows();
     let changed = false;

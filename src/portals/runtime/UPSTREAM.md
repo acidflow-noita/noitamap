@@ -1,23 +1,19 @@
-# Isolated particle renderer snapshot
+# Portal particle runtime
 
-Source: WUOTE/noita_particle_animations, commit
-`85d0740e7d592d9b65395fbdae68013f23c4acc7` (2026-09-19 08:29 EDT).
-An isolated `git pull --ff-only` on 2026-09-19 confirmed GitHub main is unchanged.
-Copied from the isolated checkout `task/noita-particle-animations`, not linked to
-or edited inside the actively developed sibling repository.
+The portal runtime starts from Dust commit `85d0740e7d592d9b65395fbdae68013f23c4acc7`.
+The map passes its worker canvas into the renderer and reports its WebGL device.
+The Eye Room adds a material collision field to both the CPU reference and the
+GPU update shader. Its nine child trails use the velocity and position after
+collision to calculate their endpoints. [Eye Room collision fixtures](../../../docs/portal-collision-audit.md)
 
-Only `gpu-grid-renderer.mjs` is adapted: its constructor optionally accepts an
-existing canvas, and renderer diagnostics use the standard `RENDERER` query.
-The experimental GPU particle physics/shaders are unchanged.
-The map worker always calls `configureParticles(entries, true)`; it never selects the
-CPU/software or GPU-drawing/CPU-physics backends. The software renderer module is
-upstream's shared geometry helper, not a runtime raster fallback.
+Both particle workers use Dust’s shared `playback-clock.mjs`. The CPU and GPU
+paths round travel distance before projecting the trail endpoint, and add the
+fractional draw origin after snapping a point glow to the world grid. The
+software stamp converts the resulting quad edge to its first covered pixel.
+[Dust commit 00dc4ed](https://github.com/WUOTE/dust/commit/00dc4ed2eaf304d5c50dbb5b9607d3f66bf0be74)
 
-`../assets/effects.*` are extracted portal-only XML/sprite definitions using the
-isolated adaptation in `build_scripts/extract-portal-effects.py`. They contain
-32 portal definitions, not the entire game archive. World-space placement rules
-are separately sourced and documented in `../placements.json`.
-
-The map-specific worker, GPU-fence backpressure, bitmap presentation and camera
-reprojection live outside this vendored directory. The upstream shaders and
-particle physics are unchanged.
+The map worker calls `configureParticles(entries, true)` to run GPU physics and
+drawing. Shadow replay, backpressure, bitmap presentation and camera reprojection
+live in the map code. The 32 portal definitions in `../assets/effects.*` come from
+`build_scripts/extract-portal-effects.py`. World-space placement rules live in
+`../placements.json`. [Playback measurements](../../../docs/experimental-gpu-portals.md#dust-playback-measurements)

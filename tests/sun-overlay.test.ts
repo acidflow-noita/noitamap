@@ -156,6 +156,19 @@ describe('Sun transitions and resource lifetime', () => {
       expect(figure.querySelector('canvas')!.style.mixBlendMode).toBe('normal');
     } finally { delete (HTMLElement.prototype as any).animate; }
   });
+  it('requests each rounded 60 Hz tick and skips the intervening 120 Hz frames', () => {
+    const test = setup();
+    test.send({ type: 'ready', startupMS: 20 });
+    tick(1);
+    test.reply();
+    for (let frame = 1; frame <= 60; frame++) {
+      tick(1 + Math.round((frame - .5) * 1000 / 60));
+      expect(test.frames()).toHaveLength(frame);
+      tick(1 + Math.round(frame * 1000 / 60));
+      expect(test.frames()).toHaveLength(frame + 1);
+      test.reply();
+    }
+  });
   it('keeps animating at a lower cadence on slow devices instead of permanently freezing', () => {
     let clock = 1; vi.spyOn(performance, 'now').mockImplementation(() => clock);
     const test = setup(); test.send({ type: 'ready', startupMS: 20 }); tick(clock); clock += 60; test.reply();

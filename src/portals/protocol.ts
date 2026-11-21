@@ -1,8 +1,10 @@
 import type { CameraMatrix } from './geometry';
 import type { PortalPlacement } from './placements';
 
-export const PORTAL_RENDERER_REVISION = '85d0740-eye-collision-zoom-v2';
-export const FRAME_MS = 1000 / 60;
+export const PORTAL_RENDERER_REVISION = '85d0740-eye-collision-00dc4ed';
+export { FRAME_MS } from './runtime/playback-clock.mjs';
+// Two display timestamps rounded to milliseconds can shorten an interval by up to 1 ms.
+export const RAF_ROUNDING_MS = 1;
 export interface PortalCamera {
   matrix: CameraMatrix;
   width: number;
