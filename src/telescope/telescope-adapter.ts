@@ -1,3 +1,4 @@
+import { templeCrystals } from "./temple-crystals";
 import { captureWorlds } from "./world-coverage";
 import { finalizeGeneration } from "./finalize-generation";
 import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-elevator";
@@ -142,6 +143,8 @@ export interface GenerationResult {
   reportInventory?: import("../report-inventory").ReportInventorySnapshot;
   /** Per-world decoration revision, retained when loading old daily bakes. */
   bakedMimicSpritesVersionByPW?: Record<number, number>;
+  /** Marker positions that disagree with this bake’s original POI records. */
+  bakedTempleCrystalChanges?: Array<{ x: number; y: number }>;
   seed: number;
   dailySeed?: boolean;
   gameMode?: string;
@@ -1147,44 +1150,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
         "https://noita.wiki.gg/wiki/Meditation_Chamber",
       );
 
-      // Altar-sacrifice props (Pillar of Sacrifice & Transformation). These are
-      // game-side biome/structure props the telescope scanner never emits, so
-      // place them statically. Coords are pw-local + pwOffsetX. Sprites already
-      // baked into the atlas (enemy:physics_worm_deflector_crystal, etc.).
-
-      // Worm Crystal (worm deflector): one per Holy Mountain altar. The altar
-      // anchors are templeX/templeY (temple_generation.js, already noitamap world
-      // coords — the same values the shop/pacifist-chest POIs use). The deflector
-      // pixel sits at the altar centre, crystal at pixel + 5y (temple_altar.lua:219).
-      const HM_TEMPLE_X = [-32, -32, -32, -32, -32, -32, 2560];
-      const HM_TEMPLE_Y = [1410, 2946, 4994, 6530, 8578, 10626, 13181];
-      // Nudge to align the crystal/statue markers with the baked altar art.
-      const wormFix = { x: -280, y: 45 };
-      // The greed crystal floats above the HM statue, further left and higher
-      // than the worm deflector.
-      const greedFix = { x: wormFix.x - 450, y: wormFix.y - 48 - 70 };
-      for (let hm = 0; hm < HM_TEMPLE_X.length; hm++) {
-        poisByPW[pwKey].push({
-          type: "item",
-          item: "worm_crystal",
-          nameKey: "building_worm_deflector",
-          name: "Worm crystal",
-          x: HM_TEMPLE_X[hm] + pwOffsetX + wormFix.x,
-          y: HM_TEMPLE_Y[hm] + wormFix.y,
-          biome: "temple_altar",
-        } as any);
-        // Greed-Cursed Crystal: spawns at the HM statue when the greed curse is
-        // active (temple_altar_left.lua:233). Always shown here per design.
-        poisByPW[pwKey].push({
-          type: "item",
-          item: "greed_crystal",
-          nameKey: "item_greed_crystal",
-          name: "Greed-Cursed Crystal",
-          x: HM_TEMPLE_X[hm] + pwOffsetX + greedFix.x,
-          y: HM_TEMPLE_Y[hm] + greedFix.y,
-          biome: "temple_altar",
-        } as any);
-      }
+      poisByPW[pwKey].push(...templeCrystals(pixelScenesByPW[pwKey] ?? [], pw));
     }
 
     // Hand Statues (Munkki spawners): snowcave init() picks 8 positions seeded by

@@ -1,3 +1,4 @@
+import { reconcileTempleCrystals } from "./temple-crystals";
 import { bakedWorldMembers } from "./world-coverage";
 import { finalizeGeneration } from "./finalize-generation";
 import { getAllPOIsFlat } from "./poi-inventory";
@@ -35,6 +36,7 @@ export interface BakedGenerationFile {
   version: number;
   /** Absent in legacy bakes whose decoration pixels omitted some mimics. */
   mimicSpritesVersion?: number;
+  templeCrystalVersion?: number;
   /** Optional validated-by-consumer report snapshot; older bakes omit it. */
   sage?: unknown;
   /** Selected-seed counts, scoped to this file's horizontal worlds. */
@@ -80,6 +82,7 @@ function b64ToBuf(b64: string): ArrayBuffer {
 /** Browser-side (bake page): serialize the full generation result. */
 export function serializeGenerationForBake(result: GenerationResult): BakedGenerationFile | null {
   if (!result || !result.biomeData?.pixels) return null;
+  result = reconcileTempleCrystals(result);
   // Serializing old cached POIs is not evidence that their DZI pixels were
   // rebaked. Only preserve a revision already known for every included world.
   const knownMimicSprites = (result.parallelWorlds || [-1, 0, 1]).every(pw => {
@@ -173,6 +176,7 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[], daily = fal
     }
   }
 
+  const changedCrystals: Array<{ x: number; y: number }> = [];
   const result = finalizeGeneration({
     seed: base.seed,
     dailySeed: daily || base.dailySeed,
@@ -194,7 +198,8 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[], daily = fal
     poisByPW,
     pixelScenesByPW,
     eyes: undefined,
-  }) as GenerationResult;
+  }, changedCrystals) as GenerationResult;
+  result.bakedTempleCrystalChanges = changedCrystals;
   if (repairedLoadout) result.reportInventory = createReportInventorySnapshot(result.seed,
     getAllPOIsFlat(result), result.parallelWorlds);
   return result;

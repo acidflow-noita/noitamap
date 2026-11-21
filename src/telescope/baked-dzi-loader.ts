@@ -1,3 +1,4 @@
+import { TEMPLE_CRYSTAL_VERSION } from "./temple-crystals";
 import { bakedWorldSpan } from "./world-coverage";
 import { takeInitialDailyResponse } from '../data_sources/daily_seed';
 import { isGLTerrainEnabled } from "../renderer_settings";
@@ -63,6 +64,8 @@ export interface BakedDziProbeOk {
   renderId?: string;
   /** Old fixed bakes cover only three native worlds; new side pages include the capture margins. */
   includesNightmareEdges?: boolean;
+  /** All three pyramids baked their crystals from actual altar scenes. */
+  sceneBasedTempleCrystals?: boolean;
   /** True when the bake's pixels already include scenes + POI sprites (the
    *  node compositor alpha-blended decoration cells onto each region full
    *  before stitching). The live render can skip addPixelScenes() and the
@@ -101,6 +104,7 @@ interface PerWorldManifest {
   baked?: boolean;
   complete?: boolean;
   terrainVersion?: string;
+  templeCrystalVersion?: number;
   renderId?: string;
   liquidMask?: { version: number; capturedVersion?: number; path: string; bytes: number; sha256: string; seed: number; renderId: string };
   regions: PerWorldManifestRegion[];
@@ -225,7 +229,9 @@ export async function probeBakedDZIs(
     }
   }
   const fullPixelsBaked = manifests.every(m => m?.terrainVersion === TERRAIN_VERSION && m.complete === true);
-  return finish({ baked: true, prefix, placements, decorationsBaked, fullPixelsBaked, renderId: manifests[0]?.renderId, includesNightmareEdges });
+  const sceneBasedTempleCrystals = manifests.every(m => (m?.templeCrystalVersion ?? 0) >= TEMPLE_CRYSTAL_VERSION);
+  return finish({ baked: true, prefix, placements, decorationsBaked, fullPixelsBaked,
+    renderId: manifests[0]?.renderId, includesNightmareEdges, sceneBasedTempleCrystals });
 }
 
 /**

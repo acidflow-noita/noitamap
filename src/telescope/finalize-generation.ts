@@ -1,3 +1,4 @@
+import { reconcileTempleCrystals, type CrystalPoint } from "./temple-crystals";
 import type { GenerationResult } from "./telescope-adapter";
 import { completeGenerationBossPOIs } from "./boss-pois";
 import { normalizeScenePOIs } from "./scene-pois";
@@ -7,8 +8,8 @@ type WorldRecords = Pick<GenerationResult, "gameMode" | "worldSize" | "worldCent
 
 /** Repairs can add missing room bosses on live, cached and baked paths. Apply the
  * capture boundary afterwards so a reload cannot reintroduce an off-map POI. */
-export function finalizeGeneration<T extends WorldRecords>(input: T): T {
-  const result = normalizeScenePOIs(completeGenerationBossPOIs(input));
+export function finalizeGeneration<T extends WorldRecords>(input: T, changedCrystals?: CrystalPoint[]): T {
+  const result = reconcileTempleCrystals(normalizeScenePOIs(completeGenerationBossPOIs(input)), changedCrystals);
   if (result.gameMode !== "nightmare") return result;
   const poisByPW = { ...result.poisByPW };
   const pixelScenesByPW = { ...result.pixelScenesByPW };

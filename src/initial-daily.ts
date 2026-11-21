@@ -1,3 +1,4 @@
+import { lookingAtLegacyFinalCrystals } from "./telescope/temple-crystals";
 import type { AppOSD } from './app_osd';
 import type { MapName } from './data_sources/tile_data';
 import type { URLState } from './data_sources/url';
@@ -45,7 +46,12 @@ export function startInitialDaily(route: URLState, opening: Promise<{ osd: AppOS
     });
     const result = await probe;
     if (token !== generationToken) return null;
-    if (result?.baked) addBakedWorlds(osd, result, token);
+    if (result?.baked) {
+      if (route.pos && result.decorationsBaked && !result.sceneBasedTempleCrystals &&
+        lookingAtLegacyFinalCrystals(osd, "normal", isLightMode()))
+        return { baked: false, reason: "This view contains obsolete Holy Mountain crystals" } as const;
+      addBakedWorlds(osd, result, token);
+    }
     return result;
   }).catch(() => null);
   return { token, today, tiles };

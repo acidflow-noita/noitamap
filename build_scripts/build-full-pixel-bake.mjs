@@ -521,6 +521,7 @@ try {
       terrainVersion: data.version,
       renderBackend: backend,
       reportInventoryVersion: REPORT_INVENTORY_VERSION,
+      templeCrystalVersion: data.metadata.templeCrystalVersion,
       complete: true,
       tileCount: verified,
       generatedAt: new Date().toISOString(),

@@ -1,3 +1,4 @@
+import { TEMPLE_CRYSTAL_VERSION } from "./temple-crystals";
 import { captureWorlds } from "./world-coverage";
 import { serializeTileLayer, restoreTileLayer } from "./tile-layer-cache";
 import { setFullPixelTerrainForBake } from "../renderer_settings";
@@ -52,6 +53,7 @@ export async function prepareBake(seed: number, mode: "regular" | "nightmare" | 
     throw new Error("Required pixel-scene/POI decoration export is empty");
   // The revision describes newly exported decoration pixels, not merely POIs.
   metadata.mimicSpritesVersion = decor.mimicSpritesVersion;
+  metadata.templeCrystalVersion = TEMPLE_CRYSTAL_VERSION;
   return {
     seed,
     version: TERRAIN_VERSION,

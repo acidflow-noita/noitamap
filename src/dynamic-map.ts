@@ -1,3 +1,4 @@
+import { legacyCrystalChanges, lookingAtCrystalChange, lookingAtLegacyFinalCrystals, type CrystalPoint } from "./telescope/temple-crystals";
 import { NIGHTMARE_CAPTURE_LIMIT } from "./telescope/world-coverage";
 import { NIGHTMARE_DEFAULT_SEED, type DynamicGameMode } from "./data_sources/tile_data";
 import { isInstantTerrainEnabled, shouldUseBakedTerrain } from "./renderer_settings";
@@ -79,29 +80,35 @@ let currentAllowsBaked: boolean | null = null;
 let lastResult: GenerationResult | null = null;
 let dynamicRendered: boolean = false;
 let scenePrefetchLifetime: AbortController | undefined;
-let stopEdgeWatch: (() => void) | undefined;
+type LegacyBakeView = { nightmareEdge: boolean; crystals: CrystalPoint[] };
+let bakeWatch: { stop(): void; view: LegacyBakeView } | undefined;
 
-// During rollout, retain an older completed bake for the three worlds it covers.
-// Zooming into either missing strip switches once to the real Nightmare generator.
 function lookingAtUnbakedNightmareEdge(viewer: any): boolean {
   const center = (viewer.viewer ?? viewer).viewport?.getCenter?.(true);
   return !!center && center.x >= -NIGHTMARE_CAPTURE_LIMIT && center.x < NIGHTMARE_CAPTURE_LIMIT &&
     (center.x < -96 * 512 || center.x >= 96 * 512);
 }
 
-function watchNightmareEdges(seed: number, opts: DynamicMapOptions, token: number): void {
+function crystalChanges(result: GenerationResult, probe: { decorationsBaked: boolean; sceneBasedTempleCrystals?: boolean }) {
+  if (!probe.decorationsBaked || probe.sceneBasedTempleCrystals) return [];
+  return result.bakedTempleCrystalChanges ?? legacyCrystalChanges(result);
+}
+
+// Keep a completed bake until the user looks at pixels it cannot supply accurately.
+function watchLegacyBake(seed: number, daily: boolean, opts: DynamicMapOptions, token: number, view: LegacyBakeView): void {
+  if (!view.nightmareEdge && !view.crystals.length) return;
   const osd = opts.viewer.viewer ?? opts.viewer;
   if (!osd.addHandler || !osd.removeHandler) return;
   const check = () => {
-    if (token !== generationToken || !lookingAtUnbakedNightmareEdge(opts.viewer)) return;
-    stopEdgeWatch?.();
-    void runDynamicMap(seed, false, opts, true).catch(error => console.warn("[DynamicMap] Nightmare edge generation failed:", error));
+    if (token !== generationToken || !((view.nightmareEdge && lookingAtUnbakedNightmareEdge(osd)) ||
+      lookingAtCrystalChange(osd, view.crystals))) return;
+    bakeWatch?.stop();
+    void runDynamicMap(seed, daily, opts, true).catch(error => console.warn("[DynamicMap] Legacy bake repair failed:", error));
   };
   osd.addHandler("viewport-change", check);
-  stopEdgeWatch = () => { osd.removeHandler("viewport-change", check); stopEdgeWatch = undefined; };
+  bakeWatch = { view, stop() { osd.removeHandler("viewport-change", check); bakeWatch = undefined; } };
   queueMicrotask(check);
 }
-
 
 /** Get the seed currently displayed on the dynamic map */
 export function getCurrentDynamicSeed(): number | null {
@@ -252,8 +259,8 @@ async function runDynamicMapRequest(
   initialDaily?: InitialDaily,
   liveOnly = false,
 ): Promise<GenerationResult | null> {
-  const watchingOldBake = !!stopEdgeWatch;
-  stopEdgeWatch?.();
+  const oldView = bakeWatch?.view;
+  bakeWatch?.stop();
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
   const runStarted = performance.now();
   scenePrefetchLifetime?.abort();
@@ -325,7 +332,7 @@ async function runDynamicMapRequest(
   if (!modeChanged && seed === currentSeed && unlockKey === currentUnlocksKey && isDaily === currentIsDaily
     && currentAllowsBaked === !noBaked && dynamicRendered && hasDynamicOverlays()) {
     console.log(`[DynamicMap] Seed ${seed} is already active with same unlocks, skipping redundant render.`);
-    if (watchingOldBake) watchNightmareEdges(seed, opts, myToken);
+    if (oldView) watchLegacyBake(seed, isDaily, opts, myToken, oldView);
     // Still re-emit POIs so search is populated (it may have been cleared)
     if (onPOIsReady && lastResult) {
       const flat = getAllPOIsFlat(lastResult);
@@ -403,13 +410,16 @@ async function runDynamicMapRequest(
       if (myToken !== generationToken) return null;
       const probe = initial ?? await probeBakedDZIs(prefix, seed);
       if (!probe.baked) return { probe, generation: null };
+      if (probe.decorationsBaked && !probe.sceneBasedTempleCrystals && lookingAtLegacyFinalCrystals(viewer, gameMode, lightMode))
+        return null;
       let nightmareGeneration: GenerationResult | null = null;
       if (prefix === "nightmare") {
         const { fetchBakedGeneration } = await import("./telescope/baked-generation");
         if (!lightMode && probe.includesNightmareEdges === false && lookingAtUnbakedNightmareEdge(viewer)) return null;
         nightmareGeneration = await fetchBakedGeneration(prefix, lightMode ? ["middle"] : ["left", "middle", "right"],
           seed, probe.renderId, probe.includesNightmareEdges === true);
-        if (!nightmareGeneration || myToken !== generationToken) return null;
+        if (!nightmareGeneration || myToken !== generationToken ||
+          lookingAtCrystalChange(viewer, crystalChanges(nightmareGeneration, probe))) return null;
       }
       if (myToken === generationToken) {
         if (!initial?.baked) {
@@ -425,6 +435,7 @@ async function runDynamicMapRequest(
         onLoadingChange?.(false);
       }
       const generation = nightmareGeneration ?? await generationPromise;
+      if (!nightmareGeneration && generation && lookingAtCrystalChange(viewer, crystalChanges(generation, probe))) return null;
       if (!generation && unlocks === null) console.log("[DynamicMap] No baked generation.json; falling back to telescope for POIs");
       return { probe, generation };
     } catch (e) {
@@ -611,8 +622,10 @@ async function runDynamicMapRequest(
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;
     dynamicRendered = true;
-    if (!lightMode && bakedProbe?.baked && bakedProbe.includesNightmareEdges === false)
-      watchNightmareEdges(seed, opts, myToken);
+    if (bakedProbe?.baked) watchLegacyBake(seed, isDaily, opts, myToken, {
+      nightmareEdge: !lightMode && bakedProbe.includesNightmareEdges === false,
+      crystals: crystalChanges(result, bakedProbe),
+    });
 
     // Log summary of what was generated
     const allPois = Object.values(result.poisByPW).flat();
@@ -699,7 +712,7 @@ export async function runDynamicMapFromURL(opts: DynamicMapOptions, requirePubli
  * Clear all dynamic overlays from the viewer.
  */
 export function clearDynamicMap(viewer: any): void {
-  stopEdgeWatch?.();
+  bakeWatch?.stop();
   scenePrefetchLifetime?.abort();
   scenePrefetchLifetime = undefined;
   releaseParallelWorlds();

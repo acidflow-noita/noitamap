@@ -108,6 +108,62 @@ describe('URL seed request ownership', () => {
     } finally { pipeline.clearDynamicMap(osd); frame.mockRestore(); }
   });
 
+  it.each([
+    { mode: 'normal' as const, seed: today, x: -33797, crystalX: -33560 },
+    { mode: 'nightmare' as const, seed: 786433191, x: -30725, crystalX: -30488 },
+  ])('keeps the baked overview and repairs old $mode pixels at the phantom crystal', async ({ mode, seed, x, crystalX }) => {
+    const frame = livePipeline(), pipeline = await import('../src/dynamic-map');
+    vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
+    const daily = mode === 'normal', prefix = daily ? 'daily' : 'nightmare';
+    vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix, renderId: 'old', includesNightmareEdges: true,
+      placements: [], decorationsBaked: true, fullPixelsBaked: true, sceneBasedTempleCrystals: false });
+    vi.mocked(fetchBakedGeneration).mockResolvedValue({ seed, gameMode: mode, tileLayers: [], poisByPW: {}, pixelScenesByPW: {},
+      parallelWorlds: [-1,0,1], bakedTempleCrystalChanges: [{ x: crystalX, y: 13226 }] } as any);
+    let bounds = { x: -53760, y: -31744, width: 107520, height: 73728 };
+    const osd = { world: { removeItem: vi.fn() }, addHandler: vi.fn(), removeHandler: vi.fn(),
+      viewport: { getBounds: () => bounds, getContainerSize: () => ({ x: 1200, y: 800 }) } };
+    try {
+      await pipeline.runDynamicMap(seed, daily, { viewer: osd, gameMode: mode });
+      const watch = osd.addHandler.mock.calls.find(([name]) => name === 'viewport-change')![1];
+      watch();
+      expect(generateDynamicMap).not.toHaveBeenCalled();
+      bounds = { x: x - 440, y: 13159 - 280, width: 880, height: 560 };
+      watch();
+      await vi.waitFor(() => expect(generateDynamicMap).toHaveBeenCalledOnce());
+      expect(generateDynamicMap).toHaveBeenCalledWith(expect.objectContaining({ seed, gameMode: mode, dailySeed: daily }));
+      expect(probeBakedDZIs).toHaveBeenCalledOnce();
+      expect(osd.removeHandler).toHaveBeenCalledWith('viewport-change', watch);
+    } finally { pipeline.clearDynamicMap(osd); frame.mockRestore(); }
+  });
+
+  it('keeps the stale crystal pixels out of the first Daily paint at the reported west-world URL', async () => {
+    history.replaceState(null, '', '/?m=dy&se=' + today + '&ds=1&x=-33797&y=13162&z=973');
+    vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix: 'daily', placements: [],
+      decorationsBaked: true, fullPixelsBaked: true, sceneBasedTempleCrystals: false });
+    const osd = { addOnceHandler: vi.fn(), viewport: { getBounds: () => ({x:-34220, y:12860, width:850, height:600}),
+      getContainerSize: () => ({x:1200, y:800}) } } as any;
+    const { startInitialDaily } = await import('../src/initial-daily');
+    const opening = startInitialDaily(parseURL(), Promise.resolve({ osd, map: 'dynamic-main-branch' }))!;
+    expect(await opening.tiles).toMatchObject({ baked: false });
+    expect(addBakedDZIsToOSD).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])('opens a deep link on a crystal using the bake only when its pixels are current (%s)', async current => {
+    const frame = livePipeline(), pipeline = await import('../src/dynamic-map');
+    vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
+    vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix: 'daily', renderId: 'test', placements: [],
+      decorationsBaked: true, fullPixelsBaked: true, sceneBasedTempleCrystals: current });
+    vi.mocked(fetchBakedGeneration).mockResolvedValue({ seed: today, tileLayers: [], poisByPW: {}, pixelScenesByPW: {},
+      bakedTempleCrystalChanges: [{ x: -33560, y: 13226 }] } as any);
+    const viewer = { viewport: { getBounds: () => ({ x:-34200, y:12800, width:880, height:560 }),
+      getContainerSize: () => ({ x:1200, y:800 }) }, world: {} };
+    try {
+      await pipeline.runDynamicMap(today, true, { viewer });
+      expect(generateDynamicMap).toHaveBeenCalledTimes(current ? 0 : 1);
+      expect(vi.mocked(renderGenerationResult).mock.calls.at(-1)![6]).toEqual(current ? [] : null);
+    } finally { pipeline.clearDynamicMap(viewer); frame.mockRestore(); }
+  });
+
   it('keeps a completed narrow Nightmare bake until visiting the missing edge, then generates it live', async () => {
     const frame = livePipeline(), seed = 786433191, center = { x: 0, y: 0 };
     vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
