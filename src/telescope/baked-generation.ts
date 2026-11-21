@@ -208,7 +208,7 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[], daily = fal
 /**
  * Fetch + validate generation.json from each world worker. All-or-nothing,
  * mirroring the DZI probe: a partial POI set would render a half-empty map.
- * Returns null on any miss; caller falls back to client-side telescope.
+ * Return null on a miss so the caller can retry the published revision.
  */
 export async function fetchBakedGeneration(
   prefix: BakedMapPrefix,
@@ -221,7 +221,8 @@ export async function fetchBakedGeneration(
     const files = await Promise.all(
       worlds.map(async (w) => {
         const url = originFor(prefix, w) + "/generation.json";
-        const resp = renderId ? await fetch(url + "?v=" + encodeURIComponent(renderId), { signal: AbortSignal.timeout(10000) }) : await fetch(url);
+        const resp = await fetch(renderId ? url + "?v=" + encodeURIComponent(renderId) : url,
+          { signal: AbortSignal.timeout(prefix === "nightmare" ? 10000 : 30000) });
         if (!resp.ok) return null;
         const j = (await resp.json()) as BakedGenerationFile;
         if (!j || j.version !== BAKED_GENERATION_VERSION || j.seed !== seed || !j.biomeDataPixels) return null;

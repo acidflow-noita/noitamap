@@ -1,4 +1,4 @@
-import { TEMPLE_CRYSTAL_VERSION } from "./temple-crystals";
+import { legacyFinalCrystalGhosts, TEMPLE_CRYSTAL_VERSION, type CrystalPoint } from "./temple-crystals";
 import { bakedWorldSpan } from "./world-coverage";
 import { takeInitialDailyResponse } from '../data_sources/daily_seed';
 import { isGLTerrainEnabled } from "../renderer_settings";
@@ -43,6 +43,7 @@ export interface BakedDziPlacement {
   /** Absolute DZI URL on a CF worker, e.g.
    *  https://daily-middle.acidflow.stream/dynamic-daily-middle.dzi */
   dziUrl: string;
+  legacyCrystalGhosts?: CrystalPoint[];
   /** Top-left in OSD coords (seed-anchored world coords). */
   x: number;
   y: number;
@@ -129,7 +130,7 @@ async function fetchWorldManifest(
     const origin = originFor(prefix, world);
     const url = `${origin}/manifest.json`;
     const initial = signal || prefix === 'nightmare' ? undefined : takeInitialDailyResponse(url);
-    const resp = await (initial ?? fetch(url, { signal: signal ?? AbortSignal.timeout(prefix === 'nightmare' ? 2500 : 15000) }));
+    const resp = await (initial ?? fetch(url, { cache: signal ? 'no-cache' : 'default', signal: signal ?? AbortSignal.timeout(prefix === 'nightmare' ? 2500 : 15000) }));
     if (!resp.ok) return null;
     const m = (await resp.json()) as PerWorldManifest;
     if (!m || typeof m.seed !== 'number' || !Array.isArray(m.regions) || m.regions.length === 0) {
@@ -224,6 +225,8 @@ export async function probeBakedDZIs(
         y: r.minY,
         width: r.fullW,
         bust,
+        ...(prefix !== 'nightmare' && m.baked && (m.templeCrystalVersion ?? 0) < TEMPLE_CRYSTAL_VERSION && !r.pvt
+          ? { legacyCrystalGhosts: legacyFinalCrystalGhosts(r.pw, 70) } : {}),
         ...(liquidMask ? { liquidMask } : {}),
       });
     }
@@ -290,6 +293,18 @@ export function addBakedDZIsToOSD(
         try {
           event.item.source.hasTransparency = () => true;
         } catch {}
+        if (p.legacyCrystalGhosts?.length) {
+          const size = event.item.getContentSize(), scale = size.x / p.width;
+          const polygons = [[{ x: 0, y: 0 }, { x: size.x, y: 0 }, { x: size.x, y: size.y }, { x: 0, y: size.y }]];
+          for (const { x, y } of p.legacyCrystalGhosts) {
+            const left = (x - p.x - 4) * scale, top = (y - p.y - 7) * scale;
+            const right = left + 8 * scale, bottom = top + 14 * scale;
+            // Opposite winding cuts just the 8 x 14 burned-in sprite out of this DZI.
+            if (left >= 0 && top >= 0 && right <= size.x && bottom <= size.y)
+              polygons.push([{ x: left, y: top }, { x: left, y: bottom }, { x: right, y: bottom }, { x: right, y: top }]);
+          }
+          if (polygons.length > 1) event.item.setCroppingPolygons(polygons);
+        }
         // The clear above happens at the tile's exact (fractional) screen
         // position. Chrome anti-aliases both the clearRect and the drawImage
         // edge, so the boundary pixel column ends up ~80% covered, and the

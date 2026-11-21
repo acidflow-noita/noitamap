@@ -316,7 +316,8 @@ async function runDynamicMapRequest(
   // list — `none` means "render with nothing unlocked", `all` means default.
   let unlocks = getUnlocksFromURL();
   const urlKind = getUrlUnlockKind();
-  if (urlKind === "none") unlocks = [];
+  if (isDaily && !noBaked) unlocks = null;
+  else if (urlKind === "none") unlocks = [];
   // (urlKind === "all" → unlocks stays null → telescope's default = all)
   const lightMode = isLightMode();
   // Dedicated pillar achievement channel (`&p=`). Independent of `&u=`: it only
@@ -372,6 +373,9 @@ async function runDynamicMapRequest(
   // ?nb=1 disables the baked fast path entirely. The bake page uses it so a
   // re-bake of an already-deployed seed still runs a real local generation
   // (the export hooks need live tileLayers, which the baked path never has).
+  // A published Daily owns both terrain and POIs. A fetch failure must not turn
+  // navigation or a returning visitor's saved mod settings into a world build.
+  let dailyBakeOnly = false;
   const bakedProbePromise: Promise<{ probe: BakedDziProbeResult; generation: GenerationResult | null } | null> = (async () => {
     try {
       if (noBaked) return null;
@@ -387,31 +391,31 @@ async function runDynamicMapRequest(
       } else if (!prefix) {
         const prevDaily = await fetchPreviousDailySeed().catch(() => null);
         if (prevDaily !== null && seed === prevDaily) prefix = "previous-daily";
+        // An explicit historical seed may need generation after both bakes rotate.
+        // If identity lookups failed, the browser cannot establish that it rotated.
+        if (!prefix && isDaily && (todayDaily === null || prevDaily === null)) dailyBakeOnly = true;
       }
       if (!prefix || myToken !== generationToken) return null;
+      dailyBakeOnly = prefix !== "nightmare";
       // The fixed Nightmare bake contains the all-unlocked item pools and decorations.
       if (gameMode === "nightmare" && (unlocks !== null || pillarFlags !== null)) return null;
-      // Generation data (POIs, pixel scenes, biome map) rides on the same
-      // workers as the DZIs. Fetch it in PARALLEL with the probe: once the
-      // probe paints, OSD floods these same origins with hundreds of tile
-      // requests and a late generation.json queues behind all of them (the
-      // "POIs take forever" symptom). Baked with u=all, so only valid for
-      // the default all-unlocked state; restricted-unlock views keep the
-      // baked DZIs but run telescope for their own POI pools.
-      const generationPromise: Promise<GenerationResult | null> =
-        unlocks === null && prefix !== "nightmare"
-          ? (async () => {
-              const { fetchBakedGeneration } = await import("./telescope/baked-generation");
-              const worlds: ("left" | "middle" | "right")[] = isLightMode() ? ["middle"] : ["left", "middle", "right"];
-              return fetchBakedGeneration(prefix, worlds, seed);
-            })().catch(() => null)
-          : Promise.resolve(null);
+      // Start Daily metadata alongside manifests so tile downloads cannot queue it.
+      // Every ordinary Daily uses the published all-unlocked POIs.
+      const worlds: ("left" | "middle" | "right")[] = lightMode ? ["middle"] : ["left", "middle", "right"];
+      const readDailyMetadata = async (revision = String(seed)) => {
+        const { fetchBakedGeneration } = await import("./telescope/baked-generation");
+        return fetchBakedGeneration(prefix, worlds, seed, revision);
+      };
+      const generationPromise = dailyBakeOnly ? readDailyMetadata().catch(() => null) : Promise.resolve(null);
       const initial = prefix === "daily" ? await initialDaily?.tiles : null;
       if (myToken !== generationToken) return null;
-      const probe = initial ?? await probeBakedDZIs(prefix, seed);
+      let probe = initial ?? await probeBakedDZIs(prefix, seed);
+      if (dailyBakeOnly && !probe.baked && myToken === generationToken)
+        probe = await probeBakedDZIs(prefix, seed, AbortSignal.timeout(15000));
+      if (myToken !== generationToken) return null;
       if (!probe.baked) return { probe, generation: null };
-      if (probe.decorationsBaked && !probe.sceneBasedTempleCrystals && lookingAtLegacyFinalCrystals(viewer, gameMode, lightMode))
-        return null;
+      if (prefix === "nightmare" && probe.decorationsBaked && !probe.sceneBasedTempleCrystals &&
+        lookingAtLegacyFinalCrystals(viewer, gameMode, lightMode)) return null;
       let nightmareGeneration: GenerationResult | null = null;
       if (prefix === "nightmare") {
         const { fetchBakedGeneration } = await import("./telescope/baked-generation");
@@ -434,9 +438,12 @@ async function runDynamicMapRequest(
         } }));
         onLoadingChange?.(false);
       }
-      const generation = nightmareGeneration ?? await generationPromise;
-      if (!nightmareGeneration && generation && lookingAtCrystalChange(viewer, crystalChanges(generation, probe))) return null;
-      if (!generation && unlocks === null) console.log("[DynamicMap] No baked generation.json; falling back to telescope for POIs");
+      let generation = nightmareGeneration ?? await generationPromise;
+      if (dailyBakeOnly && !generation && myToken === generationToken) {
+        // A cached generation.json can belong to the previous publication.
+        const revision = probe.renderId || probe.placements[0]?.bust || String(seed);
+        generation = await readDailyMetadata(revision);
+      }
       return { probe, generation };
     } catch (e) {
       console.warn("[DynamicMap] baked-DZI probe threw:", e);
@@ -448,7 +455,7 @@ async function runDynamicMapRequest(
   // join before presentation, and never attach it to a superseded map. A live
   // request needs no previous-daily lookup; the baked probe alone owns that.
   const backgroundReady = bakedProbePromise.then(async data => {
-    if (gameMode === "normal" && !data?.probe.baked && myToken === generationToken) {
+    if (gameMode === "normal" && !dailyBakeOnly && !data?.probe.baked && myToken === generationToken) {
       await ensurePersistentBiomeBackgrounds(viewer, () => myToken === generationToken);
     }
   }).catch(error => console.warn("[DynamicMap] Biome background unavailable:", error));
@@ -468,6 +475,15 @@ async function runDynamicMapRequest(
     // Baked terrain needs no live renderer or speculative asset preparation.
     const bakedData = await bakedProbePromise;
     if (myToken !== generationToken) return null;
+    if (dailyBakeOnly && !bakedData?.generation) {
+      // Valid pyramids were attached above. Keep those tiles usable even if
+      // the matching POI files are unavailable. Selecting Daily again retries.
+      if (!bakedData?.probe.baked) clearDynamicOverlays(viewer);
+      lastResult = null;
+      opts.onPOIsReady?.([]);
+      console.warn("[DynamicMap] Published Daily unavailable or missing metadata", seed, bakedData?.probe);
+      return null;
+    }
     // Ordinary custom-seed links also need shader/artwork startup overlapped
     // with generation. Previously only the diagnostic ?nb link did this, so
     // normal cold loads initialized presentation after generation had finished.
@@ -494,7 +510,7 @@ async function runDynamicMapRequest(
     if (bakedData?.generation) {
       result = bakedData.generation;
       // Daily/previous-daily artifacts remain daily even when ds=1 was omitted.
-      cacheKey = generationCacheKey(seed, unlockKey, gameMode === "normal", gameMode);
+      cacheKey = dailyBakeOnly ? dailyCacheKey(seed) : generationCacheKey(seed, unlockKey, false, gameMode);
       console.log(`[DynamicMap] Baked generation.json hit — reusing seed metadata`);
       // Seed the IDB cache so seed-report comparisons and tomorrow's
       // "previous daily" lookups work offline (fire-and-forget).
@@ -622,7 +638,7 @@ async function runDynamicMapRequest(
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;
     dynamicRendered = true;
-    if (bakedProbe?.baked) watchLegacyBake(seed, isDaily, opts, myToken, {
+    if (bakedProbe?.baked && gameMode === "nightmare") watchLegacyBake(seed, isDaily, opts, myToken, {
       nightmareEdge: !lightMode && bakedProbe.includesNightmareEdges === false,
       crystals: crystalChanges(result, bakedProbe),
     });

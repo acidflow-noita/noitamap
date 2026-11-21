@@ -89,15 +89,17 @@ function oldCrystalPair(pw: number, width: number, altarY: number): [POI, POI] {
   return [{ ...worm, x: x - 280, y: altarY + 45 }, { ...greed, x: x - 730, y: altarY - 73 }];
 }
 
-/** These ghosts can be identified before loading generation.json. Avoid even a first
- * paint of the invalid ending-room pair when following a link directly to it. */
+/** The old baker stamped both final-altar sprites in every world. Only the main
+ * boss arena contains a deflector. All five obsolete footprints are transparent
+ * in the regular baked overlay, revealing the captured background beneath it. */
+export function legacyFinalCrystalGhosts(pw: number, width: number): CrystalPoint[] {
+  const [deflector, statue] = oldCrystalPair(pw, width, 13181);
+  return pw === 0 ? [statue] : [deflector, statue];
+}
+
 export function lookingAtLegacyFinalCrystals(viewer: any, gameMode: string, light: boolean): boolean {
   const width = gameMode === "nightmare" ? 64 : 70;
-  const points = (light ? [0] : [-1, 0, 1]).flatMap(pw => {
-    const [deflector, statue] = oldCrystalPair(pw, width, 13181);
-    return pw === 0 ? [statue] : [deflector, statue];
-  });
-  return lookingAtCrystalChange(viewer, points);
+  return lookingAtCrystalChange(viewer, (light ? [0] : [-1, 0, 1]).flatMap(pw => legacyFinalCrystalGhosts(pw, width)));
 }
 
 /** Older decorated WebPs painted seven fixed pairs in every world. Compare their pixels'

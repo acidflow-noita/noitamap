@@ -15,6 +15,33 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("baked DZI rendering", () => {
+  it.each([0, 1])('clips only obsolete final crystals in a regular bake with crystal version %i', async version => {
+    const worlds = ['left','middle','right'];
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      const pw = worlds.indexOf(new URL(url).hostname.split('-')[1].split('.')[0]) - 1;
+      return { ok: true, json: async () => ({ seed: 499625176, baked: true, templeCrystalVersion: version,
+        regions: [{ pw, dzi: 'map.dzi', minX: pw * 35840 - 17920, minY: -31744, fullW: 35840 }] }) };
+    }));
+    const result = await probeBakedDZIs('daily', 499625176);
+    if (!result.baked) throw Error(result.reason);
+    for (const placement of result.placements) {
+      const item = { source: {}, getContentSize: () => ({ x: 35840, y: 73728 }), setCroppingPolygons: vi.fn() };
+      addBakedDZIsToOSD({ addTiledImage: (args: any) => args.success({ item }) }, [placement]);
+      if (version) { expect(item.setCroppingPolygons).not.toHaveBeenCalled(); continue; }
+      const [outer, ...holes] = item.setCroppingPolygons.mock.calls[0][0];
+      expect(outer).toEqual([{x:0,y:0},{x:35840,y:0},{x:35840,y:73728},{x:0,y:73728}]);
+      expect(holes).toHaveLength(placement.pw === 0 ? 1 : 2);
+      for (const hole of holes) {
+        const [topLeft,bottomLeft,bottomRight,topRight] = hole;
+        expect(bottomRight.x - topLeft.x).toBe(8);
+        expect(bottomRight.y - topLeft.y).toBe(14);
+        expect(bottomLeft.x).toBe(topLeft.x); expect(topRight.y).toBe(topLeft.y);
+      }
+      expect(holes.map(([p]: [{x: number; y: number}]) => [p.x+4+placement.x,p.y+7+placement.y]))
+        .toEqual(placement.pw === 0 ? [[1830,13108]] : [[placement.pw*35840+2280,13226],[placement.pw*35840+1830,13108]]);
+    }
+  });
+
   it.each(['valid', 'preserved', 'absent', 'stale', 'missing-file-name', 'oversized'])(
     'keeps Daily usable with a %s optional liquid mask, without fetching masks on startup', async mode => {
       const sha256 = 'a'.repeat(64), renderId = 'seed-render-liquid1';
