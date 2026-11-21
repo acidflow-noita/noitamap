@@ -8,6 +8,8 @@ import { LIQUID_MASK_VERSION, CAPTURED_FLUID_VERSION, maskBlock, encodeLiquidMas
 
 export { LIQUID_MASK_VERSION };
 
+import { bakedWorldMembers } from "../src/telescope/world-coverage.ts";
+
 export const REPORT_INVENTORY_VERSION = 3;
 const worlds = { left: -1, middle: 0, right: 1 };
 const object = value => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -47,28 +49,33 @@ function assertInventory(inventory, seed, pw) {
 
 /** Verify a published file is exactly one horizontal world's metadata. */
 export function assertBakedWorldMetadata(metadata, world, seed) {
-  const pw = worldId(world);
+  const members = bakedWorldMembers(worldId(world), metadata?.gameMode);
   assertGeneration(metadata, seed);
-  assertInventory(metadata.reportInventory, seed, pw);
-  if (metadata.parallelWorlds.length !== 1 || metadata.parallelWorlds[0] !== pw
-    || Object.keys(metadata.reportInventory.worlds).length !== 1)
-    throw new Error(`Unexpected world scope in ${world} generation metadata`);
-  for (const field of ["poisByPW", "pixelScenesByPW"])
-    if (!Object.keys(metadata[field]).length || Object.keys(metadata[field]).some(key => Number(key.split(",")[0]) !== pw))
-      throw new Error(`Unexpected world scope in ${world} ${field}`);
+  for (const pw of members) assertInventory(metadata.reportInventory, seed, pw);
+  if (metadata.parallelWorlds.length !== members.length || !members.every(pw => metadata.parallelWorlds.includes(pw))
+    || Object.keys(metadata.reportInventory.worlds).length !== members.length)
+    throw new Error("Unexpected world scope in " + world + " generation metadata");
+  for (const field of ["poisByPW", "pixelScenesByPW"]) {
+    const keys = Object.keys(metadata[field]);
+    if (!keys.length || keys.some(key => !members.includes(Number(key.split(",")[0]))) ||
+      (members.length > 1 && members.some(pw => !Array.isArray(metadata[field][pw + ",0"]))))
+      throw new Error("Unexpected world scope in " + world + " " + field);
+  }
   return metadata;
 }
 
 export function createBakedWorldMetadata(metadata, world, seed) {
-  const pw = worldId(world);
+  const members = bakedWorldMembers(worldId(world), metadata?.gameMode);
   assertGeneration(metadata, seed);
-  if (!metadata.parallelWorlds.includes(pw)) throw new Error(`Missing ${world} generation metadata`);
-  assertInventory(metadata.reportInventory, seed, pw);
-  const slice = records => Object.fromEntries(Object.entries(records).filter(([key]) => Number(key.split(",")[0]) === pw));
+  for (const pw of members) {
+    if (!metadata.parallelWorlds.includes(pw)) throw new Error("Missing " + world + " generation metadata for PW " + pw);
+    assertInventory(metadata.reportInventory, seed, pw);
+  }
+  const slice = records => Object.fromEntries(Object.entries(records).filter(([key]) => members.includes(Number(key.split(",")[0]))));
   return assertBakedWorldMetadata({
     ...metadata,
-    parallelWorlds: [pw],
-    reportInventory: { ...metadata.reportInventory, worlds: { [pw]: metadata.reportInventory.worlds[pw] } },
+    parallelWorlds: members,
+    reportInventory: { ...metadata.reportInventory, worlds: slice(metadata.reportInventory.worlds) },
     poisByPW: slice(metadata.poisByPW),
     pixelScenesByPW: slice(metadata.pixelScenesByPW),
   }, world, seed);

@@ -1,3 +1,4 @@
+import { visibleWorldSpan } from "./world-coverage";
 import * as bootstrap from "../bootstrap";
 import { clearPortalAnimations, installPortalAnimations } from "../portals";
 import { getSunUnlocks } from "../sun-unlocks";
@@ -786,6 +787,7 @@ async function addBiomeLayersProgressively(
   try {
     for (let pwIdx = 0; pwIdx < pwOrder.length; pwIdx++) {
       const pw = pwOrder[pwIdx];
+      const span = visibleWorldSpan(pw, pwOffsetPixels, result.gameMode);
       if (currentGenerationId !== generationId) return;
 
       for (const pvt of pvtList) {
@@ -865,6 +867,8 @@ async function addBiomeLayersProgressively(
             const y = anchorY + layer.correctedY + pvt * 24576;
             const osdWidth = overlay.width * 10;
             const osdHeight = overlay.height * 10;
+            if (Math.abs(pw) === 2 && result.gameMode === "nightmare" &&
+              (x + osdWidth <= span.minX || x >= span.minX + span.width)) continue;
 
             minX = Math.min(minX, x);
             minY = Math.min(minY, y);

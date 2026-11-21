@@ -99,12 +99,35 @@ describe('URL seed request ownership', () => {
       expect(parseURL()).toMatchObject({ map: 'nightmare-dynamic-main-branch', seed });
       expect(parseURL().dailySeed).toBeUndefined();
       expect(probeBakedDZIs).toHaveBeenCalledExactlyOnceWith('nightmare', seed);
-      expect(fetchBakedGeneration).toHaveBeenCalledWith('nightmare', ['left', 'middle', 'right'], seed, 'revision');
+      expect(fetchBakedGeneration).toHaveBeenCalledWith('nightmare', ['left', 'middle', 'right'], seed, 'revision', false);
       expect(fetchDailySeed).not.toHaveBeenCalled();
       expect(fetchPreviousDailySeed).not.toHaveBeenCalled();
       expect(addBakedDZIsToOSD).toHaveBeenCalledTimes(hit ? 1 : 0);
       if (hit) expect(generateDynamicMap).not.toHaveBeenCalled();
       else expect(generateDynamicMap).toHaveBeenCalledWith(expect.objectContaining({ seed, gameMode: 'nightmare', dailySeed: false }));
+    } finally { pipeline.clearDynamicMap(osd); frame.mockRestore(); }
+  });
+
+  it('keeps a completed narrow Nightmare bake until visiting the missing edge, then generates it live', async () => {
+    const frame = livePipeline(), seed = 786433191, center = { x: 0, y: 0 };
+    vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
+    const osd = { viewport: { getCenter: () => center }, world: { removeItem: vi.fn() },
+      addHandler: vi.fn(), removeHandler: vi.fn() };
+    vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix: 'nightmare', renderId: 'previous', includesNightmareEdges: false,
+      placements: [], decorationsBaked: true, fullPixelsBaked: true });
+    vi.mocked(fetchBakedGeneration).mockResolvedValue({ seed, gameMode: 'nightmare', tileLayers: [], poisByPW: {}, pixelScenesByPW: {} } as any);
+    const pipeline = await import('../src/dynamic-map');
+    try {
+      await pipeline.runDynamicMap(seed, false, { gameMode: 'nightmare', viewer: osd });
+      expect(generateDynamicMap).not.toHaveBeenCalled();
+      const watch = osd.addHandler.mock.calls.find(([name]) => name === 'viewport-change')![1];
+      watch();
+      expect(generateDynamicMap).not.toHaveBeenCalled();
+      center.x = -100 * 512;
+      watch();
+      await vi.waitFor(() => expect(generateDynamicMap).toHaveBeenCalledOnce());
+      expect(osd.removeHandler).toHaveBeenCalledWith('viewport-change', watch);
+      expect(probeBakedDZIs).toHaveBeenCalledOnce();
     } finally { pipeline.clearDynamicMap(osd); frame.mockRestore(); }
   });
 

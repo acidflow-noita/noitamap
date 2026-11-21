@@ -30,6 +30,8 @@ import {
   atomicWrite,
 } from "./terrain-pyramid.mjs";
 
+import { bakedWorldSpan } from "../src/telescope/world-coverage.ts";
+
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -230,24 +232,21 @@ const renderId = `${mode}-${seed}-${data.version}-${codeHash}-${backend}`;
 const work = resolve(out, ".work", renderId),
   cores = resolve(work, "cores"),
   publish = resolve(work, "publish");
-const width = data.width,
-  height = data.height,
-  top = data.worldTop,
-  max = maxLevel(width, height);
-const worlds = [
-  ["middle", 0],
-  ["left", -1],
-  ["right", 1],
-];
-if (args.world && !worlds.some(([name]) => name === args.world))
+const height = data.height, top = data.worldTop;
+const worlds = Object.entries({ middle: 0, left: -1, right: 1 }).map(([world, pw]) => ({
+  world, pw, ...bakedWorldSpan(pw, data.width, gameMode),
+}));
+// Each world spans Heaven through Hell. That height sets the highest level for all three pages.
+const max = maxLevel(Math.max(...worlds.map(world => world.width)), height);
+if (args.world && !worlds.some(({ world }) => world === args.world))
   throw new Error("world must be middle, left or right");
-const selected = args.world
-  ? worlds.filter(([name]) => name === args.world)
-  : worlds;
+const selected = args.world ? worlds.filter(({ world }) => world === args.world) : worlds;
+for (const { world, minX, width } of selected)
+  log(world + " output X [" + minX + ", " + (minX + width) + "), " + width + " x " + height);
 let serial = 0;
 if (selected.length === 3) {
   const ready = await Promise.all(
-    selected.map(async ([world]) => {
+    selected.map(async ({ world }) => {
       try {
         const m = JSON.parse(
           await readFile(resolve(out, world, "manifest.json"), "utf8"),
@@ -261,9 +260,9 @@ if (selected.length === 3) {
     }),
   );
   if (ready.every(Boolean)) {
-    for (const [world] of selected) await readBakedWorldMetadata(out, world, seed);
+    for (const { world } of selected) await readBakedWorldMetadata(out, world, seed);
     let verified = 0;
-    for (const [world] of selected)
+    for (const { world, width } of selected)
       for (let level = 0; level <= max; level++) {
         const size = levelSize(width, height, max, level);
         for (let y = 0; y < Math.ceil(size.height / TILE); y++)
@@ -404,7 +403,7 @@ let pool = new Pool("render");
 try {
   await pool.start();
   const leafTasks = [];
-  for (const [world, pw] of selected)
+  for (const { world, pw, minX, width } of selected)
     for (let ty = 0; ty < Math.ceil(height / TILE); ty++)
       for (let tx = 0; tx < Math.ceil(width / TILE); tx++) {
         const shape = coreShape(width, height, tx, ty);
@@ -416,7 +415,7 @@ try {
           tx,
           ty,
           level: max,
-          x: -width / 2 + pw * width + tx * TILE,
+          x: minX + tx * TILE,
           y: top + ty * TILE,
           ...shape,
           path: corePath(cores, world, max, tx, ty),
@@ -430,10 +429,9 @@ try {
   pool = new Pool("pyramid");
   await pool.start();
   for (let level = max - 1; level >= 0; level--) {
-    const size = levelSize(width, height, max, level),
-      child = levelSize(width, height, max, level + 1),
-      tasks = [];
-    for (const [world] of selected)
+    const tasks = [];
+    for (const { world, width } of selected) {
+      const size = levelSize(width, height, max, level), child = levelSize(width, height, max, level + 1);
       for (let ty = 0; ty < Math.ceil(size.height / TILE); ty++)
         for (let tx = 0; tx < Math.ceil(size.width / TILE); tx++)
           tasks.push({
@@ -449,13 +447,14 @@ try {
             childHeight: child.height,
             path: corePath(cores, world, level, tx, ty),
           });
+    }
     await pool.run(`mip level ${level}`, await pending(tasks));
   }
   let totalFiles = 0;
   for (let level = max; level >= 0; level--) {
-    const size = levelSize(width, height, max, level),
-      tasks = [];
-    for (const [world] of selected)
+    const tasks = [];
+    for (const { world, width } of selected) {
+      const size = levelSize(width, height, max, level);
       for (let ty = 0; ty < Math.ceil(size.height / TILE); ty++)
         for (let tx = 0; tx < Math.ceil(size.width / TILE); tx++)
           tasks.push({
@@ -476,10 +475,11 @@ try {
               `${tx}_${ty}.webp`,
             ),
           });
+    }
     totalFiles += tasks.length;
     await pool.run(`lossless DZI level ${level}`, await pending(tasks));
   }
-  for (const [world, pw] of selected) {
+  for (const { world, pw, minX, width } of selected) {
     let verified = 0;
     for (let level = 0; level <= max; level++) {
       const size = levelSize(width, height, max, level);
@@ -500,7 +500,6 @@ try {
           verified++;
         }
     }
-    const minX = -width / 2 + pw * width;
     if (verified + 3 > 20000) throw new Error(`${world} exceeds the publication file budget`);
     const descriptor = {
       Image: {
@@ -540,7 +539,7 @@ try {
     );
   }
   // No deployable files are replaced until ALL requested tile trees validate.
-  for (const [world] of selected) {
+  for (const { world } of selected) {
     const target = resolve(out, world);
     await rm(target, { recursive: true, force: true });
     await rename(resolve(publish, world), target);

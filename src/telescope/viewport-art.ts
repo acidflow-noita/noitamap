@@ -63,13 +63,14 @@ export function drawViewportArt(
       x: (m.d * (x - m.e) - m.c * (y - m.f)) / determinant,
       y: (-m.b * (x - m.e) + m.a * (y - m.f)) / determinant,
     }));
-    const left = Math.max(0, Math.min(...corners.map((p) => p.x)));
-    const top = Math.max(0, Math.min(...corners.map((p) => p.y)));
-    const right = Math.min(width, Math.max(...corners.map((p) => p.x)));
-    const bottom = Math.min(height, Math.max(...corners.map((p) => p.y)));
+    const clip = item.getClip?.() ?? { x: 0, y: 0, width, height };
+    const left = Math.max(clip.x, 0, Math.min(...corners.map((p) => p.x)));
+    const top = Math.max(clip.y, 0, Math.min(...corners.map((p) => p.y)));
+    const right = Math.min(clip.x + clip.width, width, Math.max(...corners.map((p) => p.x)));
+    const bottom = Math.min(clip.y + clip.height, height, Math.max(...corners.map((p) => p.y)));
     if (right <= left || bottom <= top) return true;
     context.beginPath();
-    context.rect(0, 0, width, height);
+    context.rect(clip.x, clip.y, clip.width, clip.height);
     context.clip();
     context.globalCompositeOperation = "source-over";
     context.globalAlpha *= item.opacity ?? 1;

@@ -1,3 +1,4 @@
+import { NIGHTMARE_CAPTURE_LIMIT } from "./telescope/world-coverage";
 import { NIGHTMARE_DEFAULT_SEED, type DynamicGameMode } from "./data_sources/tile_data";
 import { isInstantTerrainEnabled, shouldUseBakedTerrain } from "./renderer_settings";
 /**
@@ -78,6 +79,29 @@ let currentAllowsBaked: boolean | null = null;
 let lastResult: GenerationResult | null = null;
 let dynamicRendered: boolean = false;
 let scenePrefetchLifetime: AbortController | undefined;
+let stopEdgeWatch: (() => void) | undefined;
+
+// During rollout, retain an older completed bake for the three worlds it covers.
+// Zooming into either missing strip switches once to the real Nightmare generator.
+function lookingAtUnbakedNightmareEdge(viewer: any): boolean {
+  const center = (viewer.viewer ?? viewer).viewport?.getCenter?.(true);
+  return !!center && center.x >= -NIGHTMARE_CAPTURE_LIMIT && center.x < NIGHTMARE_CAPTURE_LIMIT &&
+    (center.x < -96 * 512 || center.x >= 96 * 512);
+}
+
+function watchNightmareEdges(seed: number, opts: DynamicMapOptions, token: number): void {
+  const osd = opts.viewer.viewer ?? opts.viewer;
+  if (!osd.addHandler || !osd.removeHandler) return;
+  const check = () => {
+    if (token !== generationToken || !lookingAtUnbakedNightmareEdge(opts.viewer)) return;
+    stopEdgeWatch?.();
+    void runDynamicMap(seed, false, opts, true).catch(error => console.warn("[DynamicMap] Nightmare edge generation failed:", error));
+  };
+  osd.addHandler("viewport-change", check);
+  stopEdgeWatch = () => { osd.removeHandler("viewport-change", check); stopEdgeWatch = undefined; };
+  queueMicrotask(check);
+}
+
 
 /** Get the seed currently displayed on the dynamic map */
 export function getCurrentDynamicSeed(): number | null {
@@ -104,7 +128,7 @@ export function getLastGenerationResult(): GenerationResult | null {
  *  the seed-report comparison lookup hits. Dailies always render all-unlocked,
  *  so the unlock portion is always "all". */
 function generationCacheKey(seed: number, unlockKey: string, isDaily: boolean, mode: DynamicGameMode): string {
-  return `${seed}-${unlockKey}${mode === "nightmare" ? "|nightmare" : ""}${isDaily ? "|daily-loadout-v1" : ""}`;
+  return `${seed}-${unlockKey}${mode === "nightmare" ? "|nightmare-capture-v2" : ""}${isDaily ? "|daily-loadout-v1" : ""}`;
 }
 export function dailyCacheKey(seed: number): string {
   return generationCacheKey(seed, `all${isLightMode() ? "|lm" : ""}|p-`, currentGameMode === "normal", currentGameMode);
@@ -208,12 +232,13 @@ export async function runDynamicMap(
   seed: number,
   isDailyParam: boolean,
   opts: DynamicMapOptions,
+  liveOnly = false,
 ): Promise<GenerationResult | null> {
   const myToken = beginDynamicRequest();
   try {
     opts.onRequestStateChange?.(true);
     if (myToken !== generationToken) return null;
-    return await runDynamicMapRequest(seed, isDailyParam, opts, myToken);
+    return await runDynamicMapRequest(seed, isDailyParam, opts, myToken, undefined, liveOnly);
   } finally {
     if (myToken === generationToken) opts.onRequestStateChange?.(false);
   }
@@ -225,7 +250,10 @@ async function runDynamicMapRequest(
   opts: DynamicMapOptions,
   myToken: number,
   initialDaily?: InitialDaily,
+  liveOnly = false,
 ): Promise<GenerationResult | null> {
+  const watchingOldBake = !!stopEdgeWatch;
+  stopEdgeWatch?.();
   const { viewer, onLoadingChange, onPOIsReady, onSeedResolved } = opts;
   const runStarted = performance.now();
   scenePrefetchLifetime?.abort();
@@ -237,7 +265,7 @@ async function runDynamicMapRequest(
   opts.onMapReplacementStart?.();
   if (myToken !== generationToken) return null;
 
-  const noBaked = !shouldUseBakedTerrain(window.location.search) || (gameMode === "nightmare" && seed !== NIGHTMARE_DEFAULT_SEED);
+  const noBaked = liveOnly || !shouldUseBakedTerrain(window.location.search) || (gameMode === "nightmare" && seed !== NIGHTMARE_DEFAULT_SEED);
   // These changes already require replacement, before Daily detection can
   // await the network. Stop old cooking/late attachments, retain drawn frames.
   const retiredEarly = modeChanged || seed !== currentSeed || currentAllowsBaked !== !noBaked || !dynamicRendered;
@@ -297,6 +325,7 @@ async function runDynamicMapRequest(
   if (!modeChanged && seed === currentSeed && unlockKey === currentUnlocksKey && isDaily === currentIsDaily
     && currentAllowsBaked === !noBaked && dynamicRendered && hasDynamicOverlays()) {
     console.log(`[DynamicMap] Seed ${seed} is already active with same unlocks, skipping redundant render.`);
+    if (watchingOldBake) watchNightmareEdges(seed, opts, myToken);
     // Still re-emit POIs so search is populated (it may have been cleared)
     if (onPOIsReady && lastResult) {
       const flat = getAllPOIsFlat(lastResult);
@@ -377,7 +406,9 @@ async function runDynamicMapRequest(
       let nightmareGeneration: GenerationResult | null = null;
       if (prefix === "nightmare") {
         const { fetchBakedGeneration } = await import("./telescope/baked-generation");
-        nightmareGeneration = await fetchBakedGeneration(prefix, lightMode ? ["middle"] : ["left", "middle", "right"], seed, probe.renderId);
+        if (!lightMode && probe.includesNightmareEdges === false && lookingAtUnbakedNightmareEdge(viewer)) return null;
+        nightmareGeneration = await fetchBakedGeneration(prefix, lightMode ? ["middle"] : ["left", "middle", "right"],
+          seed, probe.renderId, probe.includesNightmareEdges === true);
         if (!nightmareGeneration || myToken !== generationToken) return null;
       }
       if (myToken === generationToken) {
@@ -580,6 +611,8 @@ async function runDynamicMapRequest(
     console.log(`[DynamicMap] Render: ${((performance.now() - t) / 1000).toFixed(2)}s`);
     lastResult = result;
     dynamicRendered = true;
+    if (!lightMode && bakedProbe?.baked && bakedProbe.includesNightmareEdges === false)
+      watchNightmareEdges(seed, opts, myToken);
 
     // Log summary of what was generated
     const allPois = Object.values(result.poisByPW).flat();
@@ -666,6 +699,7 @@ export async function runDynamicMapFromURL(opts: DynamicMapOptions, requirePubli
  * Clear all dynamic overlays from the viewer.
  */
 export function clearDynamicMap(viewer: any): void {
+  stopEdgeWatch?.();
   scenePrefetchLifetime?.abort();
   scenePrefetchLifetime = undefined;
   releaseParallelWorlds();

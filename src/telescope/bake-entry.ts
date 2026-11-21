@@ -1,3 +1,4 @@
+import { captureWorlds } from "./world-coverage";
 import { serializeTileLayer, restoreTileLayer } from "./tile-layer-cache";
 import { setFullPixelTerrainForBake } from "../renderer_settings";
 import { prepareTerrainPlane } from "./terrain-planes";
@@ -21,7 +22,7 @@ export async function prepareBake(seed: number, mode: "regular" | "nightmare" | 
     ngPlus: mode === "ng-plus" ? 1 : 0,
     dailySeed: mode !== "nightmare",
     unlocks: null,
-    parallelWorlds: [0, -1, 1],
+    parallelWorlds: mode === "nightmare" ? captureWorlds("nightmare") : [0, -1, 1],
   });
   const { serializeGenerationForBake } = await import("./baked-generation");
   const planes: Record<string, any> = {};

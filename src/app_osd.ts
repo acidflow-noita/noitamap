@@ -1,3 +1,4 @@
+import { NIGHTMARE_CAPTURE_LIMIT } from "./telescope/world-coverage";
 import { fetchMapVersions, getCachedMapVersions, getTileData, isDynamicMap, MapName } from './data_sources/tile_data';
 import { isLightMode } from './light-mode';
 import { isSimplisticBackground } from './simplistic-background';
@@ -337,6 +338,18 @@ export class AppOSD {
     const versions = getCachedMapVersions(mapName);
     this.cacheBustHandler = (event: any) => {
       const source = event.item.source as any;
+      if (mapName === "nightmare-dynamic-main-branch") {
+        // Some tiled artwork is shared at full PW size. Retain its sampling
+        // origin while clipping the two partial worlds to the captured frame.
+        const item = event.item, bounds = item.getBoundsNoRotate(true);
+        if (bounds.x < -NIGHTMARE_CAPTURE_LIMIT || bounds.x + bounds.width > NIGHTMARE_CAPTURE_LIMIT) {
+          const size = item.getContentSize(), scale = size.x / bounds.width;
+          const clip = item.getClip() ?? new OpenSeadragon.Rect(0, 0, size.x, size.y);
+          const left = Math.min(clip.x + clip.width, Math.max(clip.x, (-NIGHTMARE_CAPTURE_LIMIT - bounds.x) * scale));
+          const right = Math.min(clip.x + clip.width, (NIGHTMARE_CAPTURE_LIMIT - bounds.x) * scale);
+          item.setClip(new OpenSeadragon.Rect(left, clip.y, Math.max(0, right - left), clip.height));
+        }
+      }
       // Baked daily DZIs carry their own per-bake cache-bust (set in
       // addBakedDZIsToOSD from the manifest). Don't clobber it.
       if (source.__bakedDzi || source.__bakedBust) return;

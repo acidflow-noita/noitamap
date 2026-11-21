@@ -1,5 +1,5 @@
-import { completeGenerationBossPOIs } from "./boss-pois";
-import { normalizeScenePOIs } from "./scene-pois";
+import { bakedWorldMembers } from "./world-coverage";
+import { finalizeGeneration } from "./finalize-generation";
 import { getAllPOIsFlat } from "./poi-inventory";
 import { MIMIC_SPRITES_VERSION } from './poi-mimics';
 import { createReportInventorySnapshot, readReportInventorySnapshot, sliceReportInventorySnapshot, type ReportInventorySnapshot } from "../report-inventory";
@@ -103,7 +103,7 @@ export function serializeGenerationForBake(result: GenerationResult): BakedGener
     version: BAKED_GENERATION_VERSION,
     mimicSpritesVersion: knownMimicSprites ? MIMIC_SPRITES_VERSION : undefined,
     reportInventory: createReportInventorySnapshot(result.seed,
-      getAllPOIsFlat(normalizeScenePOIs(completeGenerationBossPOIs(result))), result.parallelWorlds),
+      getAllPOIsFlat(finalizeGeneration(result)), result.parallelWorlds),
     seed: result.seed,
     dailySeed: result.dailySeed,
     gameMode: result.gameMode,
@@ -173,7 +173,7 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[], daily = fal
     }
   }
 
-  const result = normalizeScenePOIs(completeGenerationBossPOIs({
+  const result = finalizeGeneration({
     seed: base.seed,
     dailySeed: daily || base.dailySeed,
     calendar: base.calendar,
@@ -194,7 +194,7 @@ export function hydrateBakedGeneration(files: BakedGenerationFile[], daily = fal
     poisByPW,
     pixelScenesByPW,
     eyes: undefined,
-  })) as GenerationResult;
+  }) as GenerationResult;
   if (repairedLoadout) result.reportInventory = createReportInventorySnapshot(result.seed,
     getAllPOIsFlat(result), result.parallelWorlds);
   return result;
@@ -210,6 +210,7 @@ export async function fetchBakedGeneration(
   worlds: World[],
   seed: number,
   renderId?: string,
+  includesNightmareEdges = false,
 ): Promise<GenerationResult | null> {
   try {
     const files = await Promise.all(
@@ -221,9 +222,12 @@ export async function fetchBakedGeneration(
         if (!j || j.version !== BAKED_GENERATION_VERSION || j.seed !== seed || !j.biomeDataPixels) return null;
         if (prefix === "nightmare") {
           const pw = { left: -1, middle: 0, right: 1 }[w];
+          const expected = bakedWorldMembers(pw, includesNightmareEdges ? "nightmare" : "normal");
           if (!renderId || j.renderId !== renderId || j.gameMode !== "nightmare" || j.ngPlus !== 0 ||
             j.dailySeed || j.worldSize !== 64 || j.worldCenter !== 32 || j.biomeDataW !== 64 || j.biomeDataH !== 48 ||
-            j.parallelWorlds?.length !== 1 || j.parallelWorlds[0] !== pw || !j.poisByPW?.[pw + ",0"]?.length) return null;
+            j.parallelWorlds?.length !== expected.length || !expected.every(id => j.parallelWorlds.includes(id) &&
+              Array.isArray(j.poisByPW?.[id + ",0"]) && Array.isArray(j.pixelScenesByPW?.[id + ",0"]))) return null;
+          if (!j.poisByPW?.[pw + ",0"]?.length) return null;
         } else if ((j.gameMode ?? "normal") !== "normal" || (j.ngPlus ?? 0) !== 0) return null;
         return j;
       }),

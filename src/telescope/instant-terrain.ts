@@ -1,3 +1,4 @@
+import { visibleWorldSpan } from "./world-coverage";
 import { createInstantClip } from "./instant-terrain-clip";
 import { createInstantTerrainViewport } from "./instant-terrain-viewport";
 import { createRetainedViewportRenderer } from "./retained-viewport-renderer";
@@ -724,10 +725,12 @@ export async function addInstantTerrain(
       for (const pw of [...(gen.parallelWorlds ?? [0, -1, 1])].sort(
         (a, b) => Math.abs(a) - Math.abs(b),
       )) {
+        const span = visibleWorldSpan(pw, width * 512, gen.gameMode);
+        if (!span.width) continue;
         const region = {
-          x: -width * 256 + pw * width * 512,
+          x: span.minX,
           y: WORLD_TOP + plane * WORLD_HEIGHT,
-          width: width * 512,
+          width: span.width,
           height: WORLD_HEIGHT,
           pw,
         };

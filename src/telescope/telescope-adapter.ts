@@ -1,5 +1,5 @@
-import { completeGenerationBossPOIs } from "./boss-pois";
-import { normalizeScenePOIs } from "./scene-pois";
+import { captureWorlds } from "./world-coverage";
+import { finalizeGeneration } from "./finalize-generation";
 import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-elevator";
 import { loadTelescopeModules } from "./load-telescope";
 import { restorePreparedScenePixels } from './prepared-scene-pixels';
@@ -445,7 +445,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   // Keep its original pool so disposal rejects late dispatch rather than
   // starting workers in the new pool after the dynamic map has closed.
   const workerPool = parallelWorldWorkerPool;
-  prewarmParallelWorlds(opts.parallelWorlds);
+  prewarmParallelWorlds(opts.parallelWorlds ?? captureWorlds(opts.gameMode));
   await initTelescope();
 
   return runGenerationTask(() => generatePreparedMap(opts, workerPool));
@@ -456,7 +456,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   const seed = opts.seed;
   const ngPlus = opts.ngPlus ?? 0;
   const dailySeed = opts.dailySeed ?? false;
-  const parallelWorlds = opts.parallelWorlds ?? [-1, 0, 1];
+  const parallelWorlds = opts.parallelWorlds ?? captureWorlds(opts.gameMode);
   const gameMode = opts.gameMode ?? "normal";
   const isNGP = ngPlus > 0;
 
@@ -1520,7 +1520,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   const t1 = performance.now();
   console.log(`[Telescope] Generation complete in ${((t1 - t0) / 1000).toFixed(2)}s`);
 
-  return normalizeScenePOIs(completeGenerationBossPOIs({
+  return finalizeGeneration({
     seed,
     gameMode,
     dailySeed,
@@ -1537,5 +1537,5 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
     pixelScenesByPW,
     eyes,
     parallelWorlds,
-  }));
+  });
 }

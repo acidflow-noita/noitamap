@@ -1,3 +1,4 @@
+import { bakedWorldSpan } from "./world-coverage";
 import { takeInitialDailyResponse } from '../data_sources/daily_seed';
 import { isGLTerrainEnabled } from "../renderer_settings";
 import { TERRAIN_VERSION } from "./terrain-policy";
@@ -60,6 +61,8 @@ export interface BakedDziProbeOk {
   prefix: BakedMapPrefix;
   placements: BakedDziPlacement[];
   renderId?: string;
+  /** Old fixed bakes cover only three native worlds; new side pages include the capture margins. */
+  includesNightmareEdges?: boolean;
   /** True when the bake's pixels already include scenes + POI sprites (the
    *  node compositor alpha-blended decoration cells onto each region full
    *  before stitching). The live render can skip addPixelScenes() and the
@@ -155,6 +158,9 @@ export async function probeBakedDZIs(
     return result;
   };
   const manifests = await pending;
+  const includesNightmareEdges = prefix === 'nightmare'
+    ? manifests[0]?.regions[0]?.fullW === bakedWorldSpan(-1, 64 * 512, 'nightmare').width
+    : undefined;
 
   for (let i = 0; i < WORLDS.length; i++) {
     const m = manifests[i];
@@ -165,11 +171,12 @@ export async function probeBakedDZIs(
     if (prefix === 'nightmare') {
       const pw = { left: -1, middle: 0, right: 1 }[WORLDS[i]];
       const region = m.regions[0];
+      const span = bakedWorldSpan(pw, 64 * 512, includesNightmareEdges ? "nightmare" : "normal");
       if (m.gameMode !== 'nightmare' || m.ngPlus !== 0 || !m.complete || !m.baked ||
         m.terrainVersion !== TERRAIN_VERSION || !m.renderId || m.renderId !== manifests[0]?.renderId ||
         m.world !== WORLDS[i] || m.regions.length !== 1 || region.pw !== pw || region.dzi !== 'map.dzi' ||
-        region.minX !== (pw * 64 - 32) * 512 || region.minY !== -62 * 512 ||
-        region.fullW !== 64 * 512 || region.fullH !== 144 * 512)
+        region.minX !== span.minX || region.minY !== -62 * 512 ||
+        region.fullW !== span.width || region.fullH !== 144 * 512)
         return finish({ baked: false, reason: 'Incomplete or mismatched Nightmare bake' });
     } else if ((m.gameMode ?? 'normal') !== 'normal' || (m.ngPlus ?? 0) !== 0) {
       return finish({ baked: false, reason: 'Incorrect Daily game mode' });
@@ -218,7 +225,7 @@ export async function probeBakedDZIs(
     }
   }
   const fullPixelsBaked = manifests.every(m => m?.terrainVersion === TERRAIN_VERSION && m.complete === true);
-  return finish({ baked: true, prefix, placements, decorationsBaked, fullPixelsBaked, renderId: manifests[0]?.renderId });
+  return finish({ baked: true, prefix, placements, decorationsBaked, fullPixelsBaked, renderId: manifests[0]?.renderId, includesNightmareEdges });
 }
 
 /**
