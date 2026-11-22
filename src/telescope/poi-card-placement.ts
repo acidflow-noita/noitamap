@@ -46,10 +46,11 @@ export function planPOICardPlacement(available: CardRect, marker: CardRect, card
 
 /** One event-driven positioner, owned and disposed by this particular card. */
 export function mountPOICardPlacement(card: HTMLElement, options: {
-  viewer: any; anchor: CardAnchor; isCurrent(): boolean;
+  viewer: any; anchor: CardAnchor; isCurrent(): boolean; scrollContainer?: HTMLElement;
 }): () => void {
   const { viewer, anchor, isCurrent } = options;
   const osd = viewer.viewer ?? viewer, canvas = viewer.canvas as HTMLElement;
+  const scroller = options.scrollContainer ?? card;
   const visual = window.visualViewport;
   let disposed = false, frame = 0, panels: HTMLElement[] = [];
   const rectOf = (r: DOMRect): CardRect => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
@@ -85,21 +86,20 @@ export function mountPOICardPlacement(card: HTMLElement, options: {
       left: Math.min(center.x - 18, ...corners.map(p => p.x)), right: Math.max(center.x + 18, ...corners.map(p => p.x)),
       top: Math.min(center.y - 18, ...corners.map(p => p.y)), bottom: Math.max(center.y + 18, ...corners.map(p => p.y)),
     };
-    // Measure natural content, not the previous capped height or sticky-header
-    // scroll overflow. Restore the user's scroll position before painting.
-    const scrollTop = card.scrollTop, scrollLeft = card.scrollLeft;
+    // Measure at the uncapped height and restore the body scroll before paint.
+    const scrollTop = scroller.scrollTop, scrollLeft = scroller.scrollLeft;
     card.style.width = '';
     card.style.maxWidth = `${width(available) - 24}px`;
     card.style.maxHeight = 'none';
-    card.scrollTop = 0;
+    scroller.scrollTop = 0;
     const measured = card.getBoundingClientRect();
     const plan = planPOICardPlacement(available, marker, measured.width, measured.height);
     card.style.width = `${plan.width}px`;
     card.style.left = `${plan.left}px`;
     card.style.top = `${plan.top}px`;
     card.style.maxHeight = `${plan.maxHeight}px`;
-    card.scrollTop = scrollTop;
-    card.scrollLeft = scrollLeft;
+    scroller.scrollTop = scrollTop;
+    scroller.scrollLeft = scrollLeft;
     card.style.visibility = '';
   };
   const schedule = () => { if (!disposed && !frame) frame = requestAnimationFrame(layout); };

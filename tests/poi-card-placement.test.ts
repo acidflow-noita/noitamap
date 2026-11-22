@@ -71,6 +71,8 @@ describe('card placement ownership and updates', () => {
 
   function mount() {
     const canvas = document.createElement('div'), card = document.createElement('div');
+    const body = document.createElement('div');
+    card.append(body);
     document.body.append(canvas, card);
     let canvasBounds = new DOMRect(0, 76, 1200, 724), naturalHeight = 530.625, current = true;
     canvas.getBoundingClientRect = () => canvasBounds;
@@ -78,7 +80,7 @@ describe('card placement ownership and updates', () => {
     Object.defineProperty(canvas, 'clientHeight', { get: () => canvasBounds.height });
     const measurements: Array<{ maxHeight: string; scrollTop: number }> = [];
     card.getBoundingClientRect = vi.fn(() => {
-      measurements.push({ maxHeight: card.style.maxHeight, scrollTop: card.scrollTop });
+      measurements.push({ maxHeight: card.style.maxHeight, scrollTop: body.scrollTop });
       return new DOMRect(parseFloat(card.style.left) || 0, parseFloat(card.style.top) || 0,
         Math.min(parseFloat(card.style.width) || 448, parseFloat(card.style.maxWidth) || Infinity),
         Math.min(naturalHeight, parseFloat(card.style.maxHeight) || Infinity));
@@ -94,9 +96,9 @@ describe('card placement ownership and updates', () => {
       addHandler: (name: string, cb: () => void) => { if (!handlers.has(name)) handlers.set(name, new Set()); handlers.get(name)!.add(cb); },
       removeHandler: (name: string, cb: () => void) => handlers.get(name)?.delete(cb),
     };
-    const cleanup = mountPOICardPlacement(card, { viewer, anchor: { x: 200, y: 280 }, isCurrent: () => current });
+    const cleanup = mountPOICardPlacement(card, { viewer, anchor: { x: 200, y: 280 }, isCurrent: () => current, scrollContainer: body });
     cleanups.push(cleanup);
-    return { canvas, card, visual, viewport, cleanup, measurements,
+    return { canvas, card, body, visual, viewport, cleanup, measurements,
       emit: (name: string) => { for (const cb of [...handlers.get(name) ?? []]) cb(); },
       invalidate: () => { current = false; },
       shrink: () => { canvasBounds = new DOMRect(0, 76, 390, 768); visual.width = 390; visual.height = 844; window.dispatchEvent(new Event('resize')); },
@@ -156,14 +158,13 @@ describe('card placement ownership and updates', () => {
   });
 
   it('keeps scroll position and stable geometry through repeated content and resize notifications', async () => {
-    const f = mount(); f.card.scrollTop = 137; f.grow(); await tick();
+    const f = mount(); f.body.scrollTop = 137; f.grow(); await tick();
     const initial = bounds(f.card);
     for (let i = 0; i < 8; i++) {
       resizeObservers[0].callback(); window.dispatchEvent(new Event('resize')); await tick();
-      expect(bounds(f.card).toJSON()).toEqual(initial.toJSON()); expect(f.card.scrollTop).toBe(137);
+      expect(bounds(f.card).toJSON()).toEqual(initial.toJSON()); expect(f.body.scrollTop).toBe(137);
     }
-    // Remove the explicit inspection reads: production measures only with
-    // its old cap removed and its displaced sticky header scrolled to zero.
+    // Natural-height measurements run with the body scrolled to its origin.
     expect(f.measurements.filter(m => m.maxHeight === 'none').every(m => m.scrollTop === 0)).toBe(true);
   });
 

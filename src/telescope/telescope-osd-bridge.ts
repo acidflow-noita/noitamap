@@ -2992,10 +2992,13 @@ function mountMarkerCard(card: HTMLElement, viewer: any, anchor: CardAnchor, req
     back.onclick = dismiss;
     controls.prepend(back);
   }
-  card.prepend(controls);
+  const body = document.createElement('div');
+  body.className = 'poi-card-body';
+  body.append(...card.childNodes);
+  card.append(controls, body);
   card.style.visibility = 'hidden';
   document.body.appendChild(card);
-  tooltipPlacementCleanup = mountPOICardPlacement(card, { viewer, anchor, isCurrent: request.isCurrent });
+  tooltipPlacementCleanup = mountPOICardPlacement(card, { viewer, anchor, isCurrent: request.isCurrent, scrollContainer: body });
   card.querySelector<HTMLButtonElement>('.poi-card-back')?.focus({ preventScroll: true });
 }
 

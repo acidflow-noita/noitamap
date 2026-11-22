@@ -7,11 +7,10 @@
   width: 28rem;
   max-width: calc(100vw - 24px);
   max-height: calc(100dvh - 24px);
-  overflow: auto;
-  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   pointer-events: auto;
-  padding-block: var(--panel-padding);
-  padding-inline: var(--bs-spacer-6);
   border: 1px solid var(--border);
   border-radius: var(--radius-panel);
   background: var(--surface-1);
@@ -23,17 +22,21 @@
 }
 .marker-tooltip img { flex-shrink: 0; }
 .poi-card-controls {
-  position: sticky;
-  top: calc(-1 * var(--panel-padding));
-  z-index: 3;
+  flex: none;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: var(--control-gap);
-  padding-block: var(--control-padding-y);
-  margin-bottom: var(--panel-padding);
-  background: var(--surface-1);
+  padding-block: var(--panel-padding);
+  padding-inline: var(--bs-spacer-6) var(--panel-padding);
+}
+.poi-card-body {
+  min-block-size: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-block: var(--panel-padding);
+  padding-inline: var(--bs-spacer-6);
 }
 .poi-card-controls > * { flex-shrink: 0; }
 .poi-card-controls .btn-group { flex-shrink: 1; }
