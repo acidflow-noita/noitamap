@@ -44,8 +44,16 @@ describe('streaming setup controls the actual schedule', () => {
       expect(acceptParallelGuess(record, guess(record, deadline - 1), deadline + 4000).status).toBe('accepted');
       tickParallel(record, deadline + 4999); expect(game.reveals).toHaveLength(i);
       tickParallel(record, deadline + 5000); expect(game.reveals).toHaveLength(i + 1);
-      expect(game.timing!.resultsUntil).toBe(deadline + 35000);
-      tickParallel(record, deadline + 35000);
+      if (i + 1 === count) {
+        expect(game.stage).toBe('complete');
+        expect(game.finishedAt).toBe(deadline + 5000);
+        expect(game.timing!.resultsUntil).toBeUndefined();
+      } else {
+        expect(game.timing!.resultsUntil).toBe(deadline + 13000);
+        tickParallel(record, deadline + 12999);
+        expect(game.stage).toBe('reveal');
+        tickParallel(record, deadline + 13000);
+      }
     }
     expect(game.stage).toBe('complete');
     expect(game.participants.every(p => p.guesses.length === count && p.guesses.every(Boolean))).toBe(true);

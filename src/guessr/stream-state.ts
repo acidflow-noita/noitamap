@@ -162,7 +162,10 @@ export function revealStreamRound(
     throw new Error("This reveal belongs to another round.");
   game.reveals[game.round] = reveal;
   game.stage = "reveal";
-  if (game.timing?.seconds) game.timing.resultsUntil = now + STREAM_RESULTS_HOLD_MS;
+  if (game.timing?.seconds) {
+    if (game.round + 1 === game.session.rounds.length) advanceStreamRound(game, now);
+    else game.timing.resultsUntil = now + STREAM_RESULTS_HOLD_MS;
+  }
 }
 export function advanceStreamRound(
   game: StreamGame,
@@ -173,6 +176,7 @@ export function advanceStreamRound(
   if (game.round + 1 === game.session.rounds.length) {
     game.stage = "complete";
     game.finishedAt = now;
+    if (game.timing) delete game.timing.resultsUntil;
   } else {
     game.round++;
     if (!game.timing) game.recentNonces = {};

@@ -1,6 +1,6 @@
 import { newStreamGame, acceptStreamGuess, closeStreamRound, revealStreamRound, advanceStreamRound, streamResult, type StreamChatMessage } from './stream-state';
 import { beginStreamTiming, startHostWindow, startStreamTiming, streamTick, shortenFinishedWindow,
-  STREAM_DELIVERY_GRACE_MS, STREAM_SUBMISSION_GRACE_MS, streamRevealAt } from './stream-timing';
+  STREAM_DELIVERY_GRACE_MS, STREAM_RESULTS_HOLD_MS, STREAM_SUBMISSION_GRACE_MS, streamRevealAt } from './stream-timing';
 import { emptyParallelMetrics, type ParallelInitialization, type ParallelMetrics, type ParallelSubmission } from './parallel-types';
 import type { StreamGame, StreamParticipant, StreamPlayer, StreamPublishedResult, StreamReveal } from './stream-types';
 import { STREAM_MAX_PLAYERS } from './stream-types';
@@ -154,7 +154,8 @@ export function beginParallel(record: ParallelRecord, id: string, now: number, o
     throw new ParallelActionError('Wait for your opponent to be ready.');
   if (record.game.pvp && record.game.timing!.phase === 'lobby') {
     const turns = record.game.session.rounds.length + (streamsAhead(record.game.session) ? 1 : 0);
-    record.game.session.expiresAt = now + (turns * (record.game.timing!.seconds + 8) + record.game.session.rounds.length * 30 + 900) * 1000;
+    const reviewTime = (record.game.session.rounds.length - 1) * STREAM_RESULTS_HOLD_MS;
+    record.game.session.expiresAt = now + (turns * (record.game.timing!.seconds + 8) + 900) * 1000 + reviewTime;
   }
   beginStreamTiming(record.game, now);
   record.hostCommands = [...record.hostCommands.slice(-31), id];
@@ -167,8 +168,10 @@ export function nextParallelAlarm(record: ParallelRecord, now: number): number |
   if (record.pendingRevealAt !== undefined) return Math.max(now + 1, record.pendingRevealAt);
   const { game } = record, timing = game.timing!;
   if (timing.phase === 'lobby' || timing.deadline === null) return game.session.expiresAt;
-  if (game.stage === 'reveal') return Math.max(now + 1, timing.resultsUntil ?? now,
-    game.round === game.session.rounds.length - 1 ? now : timing.deadline);
+  if (game.stage === 'reveal') {
+    if (game.round === game.session.rounds.length - 1) return now + 1;
+    return Math.max(now + 1, timing.resultsUntil ?? now, timing.deadline);
+  }
   return Math.max(now + 1, timing.deadline + (game.pvp && timing.early ? 0 : timing.phase === 'play' || game.pvp ? STREAM_DELIVERY_GRACE_MS : 0));
 }
 export function parallelResult(record: ParallelRecord): StreamPublishedResult {

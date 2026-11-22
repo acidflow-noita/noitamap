@@ -13,7 +13,8 @@ export function streamRoundResults(main: HTMLElement, game: StreamGame, index: n
 export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, data: StreamRoundView, actions: HTMLElement,
   options: { inline?: boolean; clue?: HTMLElement } = {}): () => void {
   const index = data.round - 1;
-  const grid = document.createElement('div'); grid.className = options.inline ? 'stream-review-grid' : 'game-grid stream-round-results-layout';
+  const grid = document.createElement('div'); grid.className = 'stream-review-grid';
+  if (!options.inline) grid.classList.add('stream-round-results-layout');
   const mapPanel = document.createElement('section'); mapPanel.className = 'game-panel';
   const mapTitle = document.createElement('div'); mapTitle.className = 'panel-bar';
   bindText(mapTitle, () => guessrGameTerm(data.label));

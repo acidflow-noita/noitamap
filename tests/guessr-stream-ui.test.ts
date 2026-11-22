@@ -1,3 +1,4 @@
+import { guessRouteUrl } from '../src/guessr/routes';
 import { gameLogo } from '../src/guessr/game-chrome';
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -558,7 +559,7 @@ it('keeps the between-round countdown and table visible while the coordinator re
   vi.useFakeTimers(); vi.setSystemTime(streamNow);
   const { game, hooks, service } = await fixture();
   game.session.transport = 'parallel';
-  startStreamTiming(game, 30, streamNow - 10000); startHostWindow(game, streamNow - 10000);
+  startStreamTiming(game, 30, streamNow - 33000); startHostWindow(game, streamNow - 33000);
   closeStreamRound(game, streamAnswer, streamNow);
   revealStreamRound(game, await service.reveal(game.session.rounds[0].token, streamHost, streamNow), streamNow);
   let connected = true;
@@ -566,11 +567,11 @@ it('keeps the between-round countdown and table visible while the coordinator re
   Object.assign(ui, { parallel: { connected: () => connected, state: () => connected ? 'connected' : 'retrying', now: () => Date.now(), dispose() {} } });
   ui.render(); const main = document.querySelector('main'), deadline = game.timing!.resultsUntil;
   const logo = gameLogo(() => {}); document.body.prepend(logo.element);
-  expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:30');
+  expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:08');
   connected = false; vi.setSystemTime(streamNow + 7000);
   (ui as unknown as { updateStatus(): void }).updateStatus();
   (ui as unknown as { updateTimer(): void }).updateTimer();
-  expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:23');
+  expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:01');
   expect(document.querySelector('.logo-status-trigger')!.getAttribute('aria-label')).toBe('Reconnecting…');
   expect(document.querySelector('main')).toBe(main);
   expect(game.timing!.resultsUntil).toBe(deadline);
@@ -617,7 +618,7 @@ it('recovers a failed publication from its result URL after a new game and F5, t
 });
 
 
-it('labels the streamer’s last round and gives its rendered score table 30 seconds, not the unused round timer', async () => {
+it('opens final standings as soon as the last timed round has been scored', async () => {
   vi.useFakeTimers(); vi.setSystemTime(streamNow);
   const { game, hooks, service } = await fixture();
   for (const round of game.session.rounds.slice(0, 9)) {
@@ -628,18 +629,14 @@ it('labels the streamer’s last round and gives its rendered score table 30 sec
   startStreamTiming(game, 90, streamNow - 4000); startHostWindow(game, streamNow - 4000);
   closeStreamRound(game, streamAnswer, streamNow);
   revealStreamRound(game, await service.reveal(game.session.rounds[9].token, streamHost, streamNow), streamNow);
-  mocks.roundView.mockImplementationOnce((main, _game, _index, actions) => { vi.setSystemTime(streamNow + 3000); main.append(actions); return () => {}; });
   history.replaceState(null, '', '/guess/stream/'); ui = new StreamUI(hooks); ui.game = game; ui.render();
-  expect(game.timing!.resultsUntil).toBe(streamNow + 30000);
-  expect(document.getElementById('stream-auto-next')!.textContent).toBe('Results available in: 00:27');
-  expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:27');
-  const progress = document.querySelector('.stream-toolbar-round [role="progressbar"]')!;
-  expect(progress.getAttribute('title')).toBe('Round 10 of 10');
-  expect(progress.getAttribute('aria-valuenow')).toBe('10');
-  expect(progress.children).toHaveLength(10);
-  expect(document.body.textContent).toContain('Chatters have finished all rounds.');
-  vi.setSystemTime(streamNow + 4000); ui.render();
-  expect(game.timing!.resultsUntil).toBe(streamNow + 30000); // Rendering again must not restart the timer.
+  expect(game.stage).toBe('complete');
+  expect(game.finishedAt).toBe(streamNow);
+  expect(game.timing!.resultsUntil).toBeUndefined();
+  expect(location.href).toBe(guessRouteUrl('stream-result', location.href, { result: game.session.id }).href);
+  expect(document.querySelector('.stream-results')).not.toBeNull();
+  expect(document.getElementById('stream-auto-next')).toBeNull();
+  expect(mocks.roundView).not.toHaveBeenCalled();
 });
 
 

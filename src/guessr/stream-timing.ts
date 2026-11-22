@@ -7,7 +7,7 @@ export const STREAM_START_COUNTDOWN_MS = 3000;
 // deadline never moves. Only Twitch's timestamp is used, never a claimed click time.
 export const STREAM_SUBMISSION_GRACE_MS = 2000;
 export const STREAM_DELIVERY_GRACE_MS = 5000;
-export const STREAM_RESULTS_HOLD_MS = 30000;
+export const STREAM_RESULTS_HOLD_MS = 8000;
 export const STREAM_EARLY_CLOSE_MS = 5000;
 
 export interface ChatRoundWindow { opensAt: number; closesAt: number | null; closed: boolean }
@@ -140,8 +140,8 @@ export function streamTick(game: StreamGame, now: number): StreamTick {
   // Closing chat's window and holding the host's results are separate events.
   if (timing.deadline !== null && now >= timing.deadline) closeChatWindow(game, timing.deadline);
   if (game.stage === 'closing') return null;
-  if (game.stage === 'reveal' && timing.resultsUntil && now < timing.resultsUntil) return null;
   if (game.stage === 'reveal' && game.round === game.session.rounds.length - 1) return 'finish';
+  if (game.stage === 'reveal' && timing.resultsUntil && now < timing.resultsUntil) return null;
   if (timing.deadline === null || now < timing.deadline) return null;
   if (timing.phase === 'warmup') return 'warmup-finished';
   if (game.stage === 'guess') return 'submit';

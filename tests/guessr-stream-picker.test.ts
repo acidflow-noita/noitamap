@@ -81,6 +81,36 @@ function mount(url: string, initial: Partial<TwitchViewerState> = {}) {
 }
 
 describe('shared channel guess picker', () => {
+  it('allows zoom and travel when each countdown ends on the same page', async () => {
+    vi.useFakeTimers();
+    const id = '11111111-1111-4111-8111-111111111111';
+    const f = mount(`/guess/wuote/${gameCode(id, 'parallel')}/`, { connected: true, login: 'viewer', userId: '123' });
+    for (const round of [1, 2]) {
+      const startsAt = Date.now() + 3000;
+      parallel.events!.state({ schema: 1, channel: 'wuote', gameId: id, hostId: '456', revision: round,
+        phase: 'guess', online: true, paused: false, round, totalRounds: 3, roundId: `round-${round}`,
+        clue: new URL(roundLink('/guess/?channel=wuote', round, true)).hash.slice(6), expiresAt: startsAt + 60000,
+        timing: { phase: 'play', startsAt, deadline: startsAt + 30000, seconds: 30, hostRound: round, chatRound: round } });
+      await flush();
+      const controls = f.main.querySelector<HTMLElement>('.clue-controls')!;
+      const zoom = controls.querySelector<HTMLButtonElement>('button[aria-keyshortcuts="Q"]')!;
+      const east = controls.querySelector<HTMLButtonElement>('button[data-direction="east"]')!;
+      expect(controls.inert).toBe(true);
+      const initialDraws = ui.show.mock.calls.length;
+      zoom.click();
+      expect(ui.show).toHaveBeenCalledTimes(initialDraws);
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(controls.inert).toBe(false);
+      expect(zoom.disabled).toBe(false);
+      zoom.click(); await flush();
+      expect(ui.show.mock.lastCall?.[0]).toMatchObject({ level: 1, dx: 0 });
+      expect(east.disabled).toBe(false);
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', code: 'KeyD', bubbles: true }));
+      await flush();
+      expect(ui.show.mock.lastCall?.[0]).toMatchObject({ level: 1, dx: 49 });
+    }
+  });
+
   it('shows early-close feedback outside the header and both map panels', () => {
     const id = '11111111-1111-4111-8111-111111111111';
     const f = mount(`/guess/wuote/${gameCode(id, 'parallel')}/`, { connected: true, login: 'viewer', userId: '123' });
@@ -341,15 +371,15 @@ describe('shared channel guess picker', () => {
     f.button('Back to round 2').click();
     expect(f.button('Send guess').disabled).toBe(false);
     now += 5000;
-    const closed: LiveRoomView = { ...state, phase: 'reveal', revision: 2, timing: { ...state.timing!, resultsUntil: now + 30000 } };
+    const closed: LiveRoomView = { ...state, phase: 'reveal', revision: 2, timing: { ...state.timing!, resultsUntil: now + 8000 } };
     parallel.events!.state(closed);
     expect(f.main.querySelector<HTMLElement>('.stream-shared-round')!.hidden).toBe(false);
-    expect(f.main.querySelector('.stream-round-timer')!.textContent).toBe('00:30');
+    expect(f.main.querySelector('.stream-round-timer')!.textContent).toBe('00:08');
     f.leave(); now += 7000;
     f = mount(url, { connected: true, login: 'chatter', userId: '123' });
     parallel.events!.state(closed);
     expect(f.main.querySelector<HTMLElement>('.stream-shared-round')!.hidden).toBe(false);
-    expect(f.main.querySelector('.stream-round-timer')!.textContent).toBe('00:23');
+    expect(f.main.querySelector('.stream-round-timer')!.textContent).toBe('00:01');
     expect(f.main.querySelectorAll('.stream-shared-round tbody tr')).toHaveLength(2);
   });
 

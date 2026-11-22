@@ -273,8 +273,6 @@
 .stream-shared-round { grid-column: 1 / -1; grid-row: 2 / -1; display: flex; flex-direction: column; min-inline-size: 0; min-block-size: 0; }
 .stream-shared-round > .page-back { align-self: start; margin-block-end: .5rem; }
 .stream-shared-round > .page-back[hidden], .stream-round-review-actions:not(:has(> :not([hidden]))) { display: none; }
-.stream-shared-round > .game-grid { flex: 1; min-block-size: 0; }
-.stream-shared-round .game-panel, .stream-shared-round .map-board { min-block-size: 0; }
 .stream-viewer-layout.show-round-results { grid-template-rows: auto minmax(0, 1fr); }
 .stream-viewer-layout.show-round-results > :is(.stream-viewer-clue, .stream-picker, .stream-viewer-results) { display: none; }
 .stream-round-review-actions { margin: 0; flex: none; position: static; padding: .5rem; border: 0; box-shadow: none; }
@@ -303,8 +301,12 @@
 .stream-review-grid .stream-round-score-scroll { max-block-size: 38rem; }
 .stream-review-grid .stream-round-preview { flex: none; inline-size: min(100%, 28rem); margin-inline: auto; aspect-ratio: 9 / 4; }
 .stream-review-grid .game-panel > .guess-map-controls { border-block: 1px solid var(--border); }
+.stream-round-results-layout { --round-review-height: clamp(10rem, 50svh, 38rem); align-items: start; }
+.stream-round-results-layout .map-board { flex: none; min-block-size: 0; block-size: var(--round-review-height); }
+.stream-round-results-layout .stream-round-score-scroll { flex: auto; max-block-size: var(--round-review-height); }
 @media (max-width: 48rem) {
   .stream-review-grid { grid-template-columns: minmax(0, 1fr); }
+  .stream-round-results-layout { --round-review-height: clamp(12rem, 32svh, 22rem); }
   .stream-result-reviews .accordion-body { padding: .5rem; }
   .stream-result-reviews .accordion-header { padding: .5rem; }
 }

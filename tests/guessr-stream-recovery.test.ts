@@ -65,7 +65,7 @@ it('runs ten rounds with a chatter ahead, reconstructs receipts and scores after
   closeStreamRound(game, streamAnswer, game.timing!.startsAt + 1000);
   const last = await service.reveal(session.rounds[9].token, streamHost, game.timing!.startsAt + 1000);
   revealStreamRound(game, last); await deliver({ type: 'reveal', round: 9, reveal: last });
-  advanceStreamRound(game, game.timing!.startsAt + 1000);
+  expect(game.stage).toBe('complete');
   personal = new StreamViewerHistory(session.config.bounds); personal.identify(session.id, '123');
   expect(personal.total()).toBe(50_000);
   expect(personal.recovery(1023)).toEqual({ missing: 0, receipts: [] });

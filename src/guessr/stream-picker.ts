@@ -506,9 +506,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       actions.append(sharedNext);
       clearShared = sharedRoundResults(sharedPanel, config, data, actions);
     }
-    const readyPhase = pvp && live?.phase === 'reveal';
+    const finalReveal = data.round === live?.totalRounds && !!live.timing?.seconds;
+    const readyPhase = pvp && live?.phase === 'reveal' && !finalReveal;
     sharedBack!.hidden = readyPhase || (!pvp && live?.phase !== 'guess' && live?.phase !== 'complete');
-    sharedNext!.hidden = live?.phase === 'guess' || live?.phase === 'complete';
+    sharedNext!.hidden = live?.phase === 'guess' || live?.phase === 'complete' || finalReveal;
     bindText(sharedBack!, live?.phase === 'complete' ? 'Back to results' : 'Back to round {{round}}', { round: formatGuessrNumber(live?.round ?? 1) });
     if (sharedReady) {
       sharedReady.hidden = !readyPhase;
@@ -518,13 +519,12 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     }
     if (live?.phase !== 'guess') {
       bindText(round, 'Round {{round}} results', { round: formatGuessrNumber(data.round) });
-      const until = live?.phase === 'complete' ? undefined : live?.timing?.resultsUntil;
+      const until = live?.phase === 'complete' || finalReveal ? undefined : live?.timing?.resultsUntil;
       if (until) {
         const seconds = Math.max(0, Math.ceil((Math.max(until, live?.timing?.deadline ?? 0) - gameNow()) / 1000));
         const text = `${formatGuessrNumber(Math.floor(seconds / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(seconds % 60, { minimumIntegerDigits: 2 })}`;
         timer.hidden = false; timer.textContent = text;
-        if (data.round === live?.totalRounds) bindText(sharedNext!, 'Results available in: {{time}}', { time: text });
-        else bindText(sharedNext!, 'Next round in {{time}}', { time: text });
+        bindText(sharedNext!, 'Next round in {{time}}', { time: text });
       } else bindText(sharedNext!, 'Waiting for the streamer');
     }
   };

@@ -53,7 +53,7 @@ it.each([3, 5, 10] as const)('plays %i simultaneous rounds with final locks and 
     const host = submit(record, streamHost.twitchUserId, i, now + 3);
     expect(host.response.status).toBe('accepted'); previousHostNonce = host.response.command!.nonce;
     tickParallel(record, now + 3);
-    expect(game.stage).toBe('reveal'); expect(game.reveals).toHaveLength(i + 1);
+    expect(game.stage).toBe(i + 1 === count ? 'complete' : 'reveal'); expect(game.reveals).toHaveLength(i + 1);
     expect(game.timing!.deadline).toBe(now + 3);
     record = JSON.parse(JSON.stringify(record));
     tickParallel(record, nextParallelAlarm(record, now + 3)!);
@@ -80,8 +80,9 @@ it.each([3, 5, 10] as const)('stages %i streamed rounds without exposing future 
       expect(submit(record, opponent.id, i + 1, now + 1).response.status).toBe('accepted');
       tickParallel(record, now + 1);
     }
-    expect(game.stage).toBe('reveal');
-    expect(pvpSnapshot(game, opponent.id, '/images').phase).toBe('reveal');
+    const phase = i + 1 === count ? 'complete' : 'reveal';
+    expect(game.stage).toBe(phase);
+    expect(pvpSnapshot(game, opponent.id, '/images').phase).toBe(phase);
     tickParallel(record, nextParallelAlarm(record, now + 1)!);
   }
   expect(game.stage).toBe('complete'); expect(game.reveals).toHaveLength(count);

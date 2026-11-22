@@ -743,7 +743,8 @@ export class StreamUI {
     // Connection status has its own indicator; it must not replace the clock.
     const now = game.paused ? timing.suspendedAt ?? timing.lastActiveAt : this.durable && this.parallel?.connected() ? this.parallel.now() : streamTime(game);
     const starting = Math.max(0, Math.ceil((timing.startsAt - now) / 1000));
-    const deadline = game.stage === 'reveal' ? Math.max(game.round === game.session.rounds.length - 1 ? now : timing.deadline ?? now, timing.resultsUntil ?? now)
+    const finalReveal = game.stage === 'reveal' && game.round + 1 === game.session.rounds.length;
+    const deadline = game.stage === 'reveal' ? Math.max(timing.deadline ?? now, timing.resultsUntil ?? now)
       : timing.deadline ?? now;
     const remaining = Math.max(0, Math.ceil((deadline - now) / 1000));
     const clock = `${formatGuessrNumber(Math.floor(remaining / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(remaining % 60, { minimumIntegerDigits: 2 })}`;
@@ -752,17 +753,11 @@ export class StreamUI {
     for (const timer of document.querySelectorAll<HTMLElement>('#stream-round-timer, #stream-start-countdown, #stream-waiting-timer'))
       { if (timer.textContent !== label) timer.textContent = label;
         timer.dataset.clock = String(!game.paused && !starting && timing.deadline !== null);
-        if (timer.id === 'stream-round-timer') timer.hidden = timing.phase !== 'play'; }
+        if (timer.id === 'stream-round-timer') timer.hidden = timing.phase !== 'play' || finalReveal; }
     const waitingTimer = document.getElementById('stream-waiting-timer');
     if (waitingTimer) waitingTimer.dataset.clock = String(!game.paused && !starting && timing.deadline !== null);
     const next = document.getElementById('stream-auto-next');
-    if (next) {
-      const final = game.round === game.session.rounds.length - 1;
-      const until = Math.max(final ? now : timing.deadline ?? now, timing.resultsUntil ?? now);
-      const seconds = Math.max(0, Math.ceil((until - now) / 1000));
-      const nextClock = `${formatGuessrNumber(Math.floor(seconds / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(seconds % 60, { minimumIntegerDigits: 2 })}`;
-      bindText(next, final ? 'Results available in: {{time}}' : 'Next round in {{time}}', { time: nextClock });
-    }
+    if (next) bindText(next, 'Next round in {{time}}', { time: clock });
     const first = document.getElementById('stream-first-round') as HTMLButtonElement | null;
     if (first) first.disabled = game.paused || !!starting;
     const start = document.getElementById('stream-start-game') as HTMLButtonElement | null;
@@ -1158,10 +1153,12 @@ export class StreamUI {
     if (game.timing && game.timing.phase !== 'play') { this.renderWarmup(main); this.updateTimer(); return; }
     if (game.timing && reveal) {
       const actions = el('div', '', 'game-actions stream-host-actions');
-      const next = action(index === game.session.rounds.length - 1 ? 'View results' : 'Next round',
-        () => this.nextRound(), 'primary');
-      if (game.timing.seconds) { next.id = 'stream-auto-next'; next.disabled = true; }
-      actions.append(next);
+      const final = index + 1 === game.session.rounds.length;
+      if (!final || !game.timing.seconds) {
+        const next = action(final ? 'View results' : 'Next round', () => this.nextRound(), 'primary');
+        if (game.timing.seconds) { next.id = 'stream-auto-next'; next.disabled = true; }
+        actions.append(next);
+      }
       this.hooks.cleanupClue(streamRoundResults(main, game, index, actions));
       this.updateTimer(); return;
     }
