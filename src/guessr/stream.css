@@ -301,22 +301,17 @@
   --review-max-height: clamp(14rem, 68svh, 48rem);
   /* Leave enough height to show the northernmost and southernmost pins at a scale that fills the map width. */
   grid-template-columns: minmax(0, min(calc((100% - var(--game-gutter)) / 2), max(16rem, calc((var(--review-max-height) - var(--review-pin-space)) * var(--review-world-aspect))))) minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  row-gap: 0;
+  align-items: start;
 }
-.stream-round-results-layout > .game-panel { display: grid; grid-row: span 2; grid-template-rows: subgrid; row-gap: 0; container-type: normal; }
 .review-map-body { container-type: inline-size; min-inline-size: 0; }
 .stream-round-results-layout .map-board {
   inline-size: 100%; min-block-size: 0;
   block-size: max(clamp(12rem, 66.667cqi, var(--review-max-height)), calc(100cqi / var(--review-world-aspect) + var(--review-pin-space)));
 }
-.stream-round-results-layout .stream-round-score-scroll { contain: size; min-inline-size: 0; max-block-size: none; }
+.stream-round-results-layout .stream-round-score-scroll { flex: 0 1 auto; min-inline-size: 0; max-block-size: var(--review-max-height); }
 @media (max-width: 48rem) {
   .stream-review-grid { grid-template-columns: minmax(0, 1fr); }
-  .stream-round-results-layout { grid-template-rows: auto; row-gap: var(--game-gutter); }
-  .stream-round-results-layout > .game-panel { display: flex; grid-row: auto; }
   .stream-round-results-layout .map-board { flex: none; }
-  .stream-round-results-layout .stream-round-score-scroll { contain: none; max-block-size: var(--review-max-height); }
   .stream-result-reviews .accordion-body { padding: .5rem; }
   .stream-result-reviews .accordion-header { padding: .5rem; }
 }
