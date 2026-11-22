@@ -67,11 +67,12 @@ describe('map navigation UI during camera movement', () => {
     createMapLinks(); expect(Popover.instances.size).toBe(0);
   });
 
-  it('puts Dynamic NG+ second and Dynamic Nightmare third with the same Magic badge as the Daily', () => {
+  it('hides Dynamic NG+ from the menu and keeps the Daily and Nightmare Magic badges', () => {
     const menu = createMapLinks();
-    const links = [...menu.querySelectorAll<HTMLAnchorElement>('[data-map-key]')].slice(0, 3);
+    expect(menu.querySelector('[data-map-key="new-game-plus-dynamic-main-branch"]')).toBeNull();
+    const links = [...menu.querySelectorAll<HTMLAnchorElement>('[data-map-key]')].slice(0, 2);
     expect(links.map(link => link.dataset.mapKey)).toEqual([
-      'dynamic-main-branch', 'new-game-plus-dynamic-main-branch', 'nightmare-dynamic-main-branch',
+      'dynamic-main-branch', 'nightmare-dynamic-main-branch',
     ]);
     for (const link of links) expect(link.querySelector('.badge.theme-primary .bi-magic')).not.toBeNull();
   });
@@ -91,7 +92,9 @@ describe('map navigation UI during camera movement', () => {
     expect(refresh).toHaveBeenCalledOnce();
     expect(root.lastElementChild).not.toBe(oldBadge);
     expect(root.lastElementChild!.getAttribute('data-bs-title')).toBe('Sep 25, 2026');
-    expect(menu.querySelector('[data-map-key="' + map + '"] .map-badge-date')?.textContent?.trim()).toBe('Sep 25, 2026');
+    const menuDate = menu.querySelector('[data-map-key="' + map + '"] .map-badge-date');
+    if (map === 'new-game-plus-dynamic-main-branch') expect(menuDate).toBeNull();
+    else expect(menuDate?.textContent?.trim()).toBe('Sep 25, 2026');
     expect(Popover.getInstance(oldBadge)).toBeUndefined();
     vi.advanceTimersByTime(86400000);
     expect(refresh).toHaveBeenCalledTimes(2);
