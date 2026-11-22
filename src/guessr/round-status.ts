@@ -60,12 +60,35 @@ export function maximumIndicator(): HTMLOutputElement {
   const value = document.createElement('output');
   value.className = 'badge round-points round-maximum'; value.dataset.clueMaximum = '';
   value.setAttribute('aria-live', 'polite');
+  const full = document.createElement('span'); full.className = 'maximum-label';
+  const compact = document.createElement('span'); compact.className = 'maximum-compact'; compact.setAttribute('aria-hidden', 'true');
+  value.append(full, compact);
   return value;
 }
+export function roundPanelHeader(...rows: HTMLElement[]): HTMLElement {
+  const header = document.createElement('header');
+  header.className = 'round-panel-header';
+  header.append(...rows);
+  return header;
+}
+
+export function clueTitleBar(maximum = maximumIndicator()): HTMLElement {
+  const row = document.createElement('div'); row.className = 'panel-bar clue-title-row';
+  const title = document.createElement('span'); title.className = 'panel-title';
+  bindText(title, 'Where is this spot?');
+  const details = document.createElement('div'); details.className = 'clue-details';
+  details.append(difficultyIndicator(), maximum);
+  row.append(title, details);
+  return row;
+}
+
 export function updateRoundIndicators(root: ParentNode, progress: ClueProgress, tier?: AreaDifficulty | null) {
   updateDifficultyIndicators(root, tier);
-  for (const value of root.querySelectorAll<HTMLOutputElement>('[data-clue-maximum]'))
-    updateLabel(value, () => tr('Up to {{points}} points', {
-      count: maximumScore(progress), points: formatGuessrNumber(maximumScore(progress)),
-    }));
+  for (const value of root.querySelectorAll<HTMLOutputElement>('[data-clue-maximum]')) {
+    const maximum = maximumScore(progress);
+    const description = () => tr('Up to {{points}} points', { count: maximum, points: formatGuessrNumber(maximum) });
+    updateLabel(value.querySelector<HTMLElement>('.maximum-label')!, description);
+    bindAttribute(value, 'title', description);
+    bindAttribute(value.querySelector('.maximum-compact')!, 'data-label', () => `≤ ${formatGuessrNumber(maximum)}`);
+  }
 }

@@ -557,7 +557,6 @@ header.page-heading {
   font-size: 0.9375rem;
   font-weight: 600;
 }
-.clue-heading { min-inline-size: 0; display: flex; flex-wrap: wrap; align-items: center; gap: .375rem .5rem; }
 .badge.clue-difficulty {
   --bs-badge-padding-x: .5em;
   --bs-badge-padding-y: .25em;
@@ -599,7 +598,6 @@ header.page-heading {
 .round-maximum[hidden] { display: none; }
 .map-bar--budget { justify-content: center; }
 .map-bar--budget > :is(.map-heading, .buttons):empty { display: none; }
-.stream-budget-bar { justify-content: center; }
 .guessr-map-pin { cursor: default; }
 .guessr-map-pin[data-player] { cursor: pointer; }
 .map-heading {

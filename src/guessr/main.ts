@@ -11,7 +11,7 @@ import Dialog from "bootstrap/js/dist/dialog.js";
 import { initializeGuessrChangelog, allowGuessrChangelog, showGuessrChangelog } from './changelog';
 import { bindText, bindAttribute, tr, initializeGuessrTranslations, guessrLocale, guessrGameTerm, formatGuessrNumber } from './i18n';
 import { createGuessrLanguagePicker, disposeGuessrLanguagePickers } from './language-picker';
-import { difficultyIndicator, maximumIndicator, updateDifficultyIndicators, updateRoundIndicators } from './round-status';
+import { clueTitleBar, roundPanelHeader, updateDifficultyIndicators, updateRoundIndicators } from './round-status';
 import { msg, setText, localizedDistance, localizedError, type LocalizedText } from './messages';
 import {
   GUESSR_CANONICAL_URL,
@@ -405,11 +405,8 @@ function makePlayPanels(
   const grid = node("div", "game-grid"),
     left = node("section", "game-panel"),
     right = node("section", "game-panel game-panel--map");
-  const bar = node("div", "panel-bar");
-  const clueHeading = node('div', 'clue-heading');
-  clueHeading.append(node("span", "panel-title", msg('Where is this spot?')), difficultyIndicator());
-  bar.append(clueHeading, maximumIndicator());
-  left.append(bar);
+  const bar = clueTitleBar();
+  left.append(roundPanelHeader(bar));
   const clue = node("div", "clue loading");
   clue.append(clueLoadingPlaceholder());
   bindAttribute(clue, 'data-loading-label', 'Loading clue map…');
@@ -420,7 +417,7 @@ function makePlayPanels(
   mapBar.append(mapHeading);
   const map = node("div", "map-board");
   map.id = "guess-map";
-  right.append(mapBar, map);
+  right.append(roundPanelHeader(mapBar), map);
   grid.append(left, right);
   main.append(grid);
   board = new MapBoard(

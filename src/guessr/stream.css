@@ -275,11 +275,8 @@
 .stream-shared-round > .page-back[hidden], .stream-round-review-actions:not(:has(> :not([hidden]))) { display: none; }
 .stream-viewer-layout.show-round-results { grid-template-rows: auto minmax(0, 1fr); }
 .stream-viewer-layout.show-round-results > :is(.stream-viewer-clue, .stream-picker, .stream-viewer-results) { display: none; }
-.stream-round-review-actions { margin: 0; flex: none; position: static; padding: .5rem; border: 0; box-shadow: none; }
+.stream-round-review-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .5rem; min-inline-size: 0; max-inline-size: 100%; }
 .stream-round-review-actions > [hidden] { display: none; }
-.stream-round-results-layout .game-actions { border-block-start: 0; border-block-end: 1px solid var(--border); }
-.pvp-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.pvp-actions > button { min-inline-size: 0; inline-size: 100%; block-size: 3.25rem; padding: .25rem .5rem; font-size: .8125rem; white-space: normal; }
 
 .stream-results-menu { display: flex; flex-wrap: wrap; align-items: center; gap: var(--game-gutter); margin-block: .75rem; }
 .stream-export-options { position: relative; }
@@ -300,12 +297,26 @@
 .stream-review-grid .map-board { flex: 1; min-block-size: 18rem; block-size: 22rem; }
 .stream-review-grid .stream-round-score-scroll { max-block-size: 38rem; }
 .stream-review-grid .stream-round-preview { flex: none; inline-size: min(100%, 28rem); margin-inline: auto; aspect-ratio: 9 / 4; }
-.stream-round-results-layout { --round-review-height: clamp(10rem, 50svh, 38rem); align-items: start; }
-.stream-round-results-layout .map-board { flex: none; min-block-size: 0; block-size: var(--round-review-height); }
-.stream-round-results-layout .stream-round-score-scroll { flex: auto; max-block-size: var(--round-review-height); }
+.stream-round-results-layout {
+  --review-max-height: clamp(14rem, 68svh, 48rem);
+  /* Leave enough height to show the northernmost and southernmost pins at a scale that fills the map width. */
+  grid-template-columns: minmax(0, min(calc((100% - var(--game-gutter)) / 2), max(16rem, calc((var(--review-max-height) - var(--review-pin-space)) * var(--review-world-aspect))))) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  row-gap: 0;
+}
+.stream-round-results-layout > .game-panel { display: grid; grid-row: span 2; grid-template-rows: subgrid; row-gap: 0; container-type: normal; }
+.review-map-body { container-type: inline-size; min-inline-size: 0; }
+.stream-round-results-layout .map-board {
+  inline-size: 100%; min-block-size: 0;
+  block-size: max(clamp(12rem, 66.667cqi, var(--review-max-height)), calc(100cqi / var(--review-world-aspect) + var(--review-pin-space)));
+}
+.stream-round-results-layout .stream-round-score-scroll { contain: size; min-inline-size: 0; max-block-size: none; }
 @media (max-width: 48rem) {
   .stream-review-grid { grid-template-columns: minmax(0, 1fr); }
-  .stream-round-results-layout { --round-review-height: clamp(12rem, 32svh, 22rem); }
+  .stream-round-results-layout { grid-template-rows: auto; row-gap: var(--game-gutter); }
+  .stream-round-results-layout > .game-panel { display: flex; grid-row: auto; }
+  .stream-round-results-layout .map-board { flex: none; }
+  .stream-round-results-layout .stream-round-score-scroll { contain: none; max-block-size: var(--review-max-height); }
   .stream-result-reviews .accordion-body { padding: .5rem; }
   .stream-result-reviews .accordion-header { padding: .5rem; }
 }

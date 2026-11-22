@@ -143,8 +143,9 @@ export class MapBoard {
     if (this.fittedMarkers) {
       this.view = frameMarkers(
         this.fittedMarkers,
-        this.element.clientWidth,
-        this.element.clientHeight,
+        width,
+        height,
+        this.bounds,
       );
     } else {
       if (this.atHome) this.view = frameMap(this.bounds, width, height, this.homeFit);
@@ -219,7 +220,7 @@ export class MapBoard {
     const aspect = this.view.width / this.view.height;
     // Result padding can exceed the world bounds; zoom-out must not shrink it.
     const resultWidth = this.resultMarkers
-      ? frameMarkers(this.resultMarkers, this.element.clientWidth, this.element.clientHeight).width : 0;
+      ? frameMarkers(this.resultMarkers, this.element.clientWidth, this.element.clientHeight, this.bounds).width : 0;
     const width = Math.max(
       Math.min(
         this.element.clientWidth / 70,

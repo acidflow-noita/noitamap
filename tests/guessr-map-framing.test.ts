@@ -35,6 +35,20 @@ describe("starting map framing", () => {
 });
 
 describe("revealed result framing", () => {
+  it("fills the Gourd Cave result panel with terrain while keeping the answer and both guesses visible", () => {
+    const world = { x: -17920, y: -31744, width: 36352, height: 73728 };
+    const pins = [{ x: -16100, y: -6100 }, { x: -6400, y: 6100 }, { x: 13100, y: 11600 }];
+    const width = 904, height = 603;
+    const frame = frameMarkers(pins, width, height, world);
+    expect(frame.x).toBeGreaterThanOrEqual(world.x);
+    expect(frame.x + frame.width).toBeLessThanOrEqual(world.x + world.width);
+    expect(frame.width / frame.height).toBeCloseTo(width / height);
+    for (const pin of pins) {
+      const x = (pin.x - frame.x) * width / frame.width, y = (pin.y - frame.y) * height / frame.height;
+      expect(Math.min(x, width - x)).toBeGreaterThan(30);
+      expect(Math.min(y, height - y)).toBeGreaterThan(48);
+    }
+  });
   it.each([
     [1000, 600],
     [340, 550],

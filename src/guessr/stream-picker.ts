@@ -11,7 +11,7 @@ import { mapControls } from './map-controls';
 import { ClueViewport } from './clue-viewport';
 import { fitClueToPanel } from './clue-stage';
 import { attachClueControls } from './clue-view';
-import { difficultyIndicator, formatRoundTime, maximumIndicator, showRoundTime, updateRoundIndicators } from './round-status';
+import { clueTitleBar, formatRoundTime, maximumIndicator, roundPanelHeader, showRoundTime, updateRoundIndicators } from './round-status';
 import type { ImageGameConfig } from './image-game';
 import { MapBoard } from './map-board';
 import { maximumScore, newClueProgress, within, type Point, type ClueProgress } from './rules';
@@ -173,8 +173,6 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const signInError = node('p', 'stream-signin-error'); signInError.setAttribute('role', 'status');
   signIn.append(connect, signInError);
   const budget = maximumIndicator(); budget.classList.add('stream-maximum'); budget.hidden = true;
-  const budgetBar = node('div', 'panel-bar stream-budget-bar'); budgetBar.hidden = true;
-  budgetBar.append(budget);
   const roomStatus = node('span', 'stream-room-status'); roomStatus.setAttribute('role', 'status');
   const retry = button('Reconnect', () => room?.retry(), 'small secondary'); retry.hidden = true;
   const delivery = node('span', 'stream-delivery'); delivery.setAttribute('role', 'status');
@@ -241,7 +239,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const sendHelp = hoverHelp(sendControl, () => tr(sendReason), send);
   const secondaryActions = node('div', 'stream-secondary-actions');
   secondaryActions.append(result, retry);
-  actions.append(sendControl); mapPanel.append(revealBar, actions, secondaryActions, signIn, map); layout.append(mapPanel);
+  actions.append(sendControl); mapPanel.append(roundPanelHeader(revealBar, actions, secondaryActions), signIn, map); layout.append(mapPanel);
   const resultsPanel = node('section', 'stream-viewer-results'); resultsPanel.hidden = true;
   layout.append(resultsPanel);
   const sharedPanel = node('section', 'stream-shared-round'); sharedPanel.hidden = true; layout.append(sharedPanel);
@@ -299,9 +297,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         visited: [...new Set(['0,0', `${snapshot.camera.dx},${snapshot.camera.dy}`])] };
       restoreProgress();
       bindAttribute(cluePanel, 'aria-label', () => tr('Round {{round}} clue', { round: formatGuessrNumber(snapshot!.round) }));
-      const clueBar = node('div', 'panel-bar'), heading = node('div', 'clue-heading');
-      heading.append(node('span', 'panel-title', 'Where is this spot?'), difficultyIndicator()); clueBar.append(heading, budget);
-      const clue = node('div', 'clue loading'); cluePanel.replaceChildren(clueBar, clue);
+      const clue = node('div', 'clue loading');
+      cluePanel.replaceChildren(roundPanelHeader(clueTitleBar(budget)), clue);
       if (progress) clearControls = attachClueControls(clue, snapshot.source, progress, 256, () => { saveProgress(); refresh(); },
         { compact: true, difficultyTier: () => live?.difficultyTier,
           onExplore: () => { if (live?.roundId) feed?.explored(live.roundId); } });
@@ -493,8 +490,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     const signature = `${requestedGame}/${data.round}`;
     if (signature !== sharedSignature) {
       clearShared?.(); sharedPanel.replaceChildren(); sharedSignature = signature;
-      const actions = node('div', 'game-actions stream-round-review-actions');
-      actions.classList.toggle('pvp-actions', pvp);
+      const actions = node('div', 'stream-round-review-actions');
       sharedBack = pageBack(button('Back', () => {
         sharedRound = null; refresh(); previousResult.focus({ preventScroll: true });
       }, 'secondary'));
@@ -552,8 +548,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     const reviewSeconds = showSharedResults();
     if (progress) updateRoundIndicators(layout, progress,
       reviewedRound === null ? live?.difficultyTier : personal.round(reviewedRound).reveal?.area.difficultyTier);
-    budgetBar.hidden = !progress || reviewedRound !== null || !revealBar.hidden;
-    budget.hidden = budgetBar.hidden;
+    budget.hidden = !progress || reviewedRound !== null || !revealBar.hidden;
     account.textContent = state.connected ? tr('Playing as {{player}}', { player: state.login! }) : '';
     connect.hidden = state.connected && !needsAuthorization; connect.disabled = state.connecting;
     bindText(connect, state.restoring ? 'Restoring Twitch…' : state.connecting ? 'Signing in…' : 'Sign in with Twitch');

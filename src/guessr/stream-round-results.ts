@@ -6,31 +6,47 @@ import type { StreamGame } from './stream-types';
 import { bindText, formatGuessrNumber, guessrGameTerm, guessrLocale, onGuessrLanguageChanged, tr } from './i18n';
 import { playerColor } from './player-color';
 import { networkReviewView } from './network-review-view';
+import { RESULT_PIN_PADDING_Y } from './map-framing';
+import { within } from './rules';
+
+function reviewHeader(label: string | (() => string), controls: HTMLElement) {
+  const header = document.createElement('header'); header.className = 'panel-bar review-header';
+  const title = document.createElement('h2'); title.className = 'panel-title';
+  bindText(title, label); header.append(title, controls);
+  return header;
+}
 
 export function streamRoundResults(main: HTMLElement, game: StreamGame, index: number, actions: HTMLElement): () => void {
   return sharedRoundResults(main, game.session.config, streamRoundData(game, index), actions);
 }
 export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, data: StreamRoundView, actions: HTMLElement,
   options: { inline?: boolean; clue?: HTMLElement } = {}): () => void {
-  const index = data.round - 1;
   const grid = document.createElement('div'); grid.className = 'stream-review-grid';
-  if (!options.inline) grid.classList.add('stream-round-results-layout');
+  if (!options.inline) {
+    grid.classList.add('stream-round-results-layout');
+    const ys = [data.answer.y];
+    for (const { guess } of data.players) if (guess && within(guess, config.bounds)) ys.push(guess.y);
+    const spread = Math.max(...ys) - Math.min(...ys);
+    grid.style.setProperty('--review-world-aspect', String(config.bounds.width / Math.max(1, spread)));
+    grid.style.setProperty('--review-pin-space', `${2 * RESULT_PIN_PADDING_Y}px`);
+  }
   const mapPanel = document.createElement('section'); mapPanel.className = 'game-panel';
-  const mapTitle = document.createElement('div'); mapTitle.className = 'panel-bar';
-  bindText(mapTitle, () => guessrGameTerm(data.label));
   const map = document.createElement('div'); map.className = 'map-board';
-  mapPanel.append(mapTitle, map);
-  if (options.clue) mapTitle.after(options.clue);
+  if (options.inline) {
+    if (options.clue) mapPanel.append(options.clue);
+    mapPanel.append(map);
+  } else {
+    const body = document.createElement('div'); body.className = 'review-map-body';
+    body.append(map); mapPanel.append(body);
+  }
   const scores = document.createElement('section'); scores.className = 'game-panel';
-  const heading = document.createElement('div'); heading.className = 'panel-bar';
-  bindText(heading, 'Round {{round}} results', { round: formatGuessrNumber(index + 1) });
+  const heading = reviewHeader(() => tr('Round {{round}} results', { round: formatGuessrNumber(data.round) }), actions);
   const wrap = document.createElement('div'); wrap.className = 'stream-round-score-scroll';
   const table = document.createElement('table'); table.className = 'table stream-score-table stream-round-score-table';
   const head = document.createElement('thead'), header = document.createElement('tr'), body = document.createElement('tbody');
-  head.append(header); table.append(head, body); wrap.append(table); scores.append(heading, actions, wrap); grid.append(mapPanel, scores); main.append(grid);
+  head.append(header); table.append(head, body); wrap.append(table); scores.append(heading, wrap); grid.append(mapPanel, scores); main.append(grid);
   const board = new MapBoard(map, config.bounds, config.overview, () => {}, config.map); board.setLocked(true);
-  const toolbar = document.createElement('div'); toolbar.className = 'guess-map-toolbar';
-  toolbar.append(mapControls(board, { readOnly: true })); map.before(toolbar);
+  mapPanel.prepend(reviewHeader(() => guessrGameTerm(data.label), mapControls(board, { readOnly: true })));
   const rows = new Map<string, HTMLTableRowElement>();
   let selected: string | undefined;
   const select = (id: string) => {

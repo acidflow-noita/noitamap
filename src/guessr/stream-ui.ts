@@ -1153,7 +1153,7 @@ export class StreamUI {
     this.updateStatus();
     if (game.timing && game.timing.phase !== 'play') { this.renderWarmup(main); this.updateTimer(); return; }
     if (game.timing && reveal) {
-      const actions = el('div', '', 'game-actions stream-host-actions');
+      const actions = el('div', '', 'stream-round-review-actions');
       const final = index + 1 === game.session.rounds.length;
       if (!final || !game.timing.seconds) {
         const next = action(final ? 'View results' : 'Next round', () => this.nextRound(), 'primary');

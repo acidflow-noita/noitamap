@@ -44,6 +44,7 @@ export function fitGameFrame(grid: HTMLElement): () => void {
     if (legend) inputs.push(legend);
     if (parent.parentElement) inputs.push(...parent.parentElement.querySelectorAll(':scope > .site-header, :scope > .guessr-poll-bar'));
     if (left && right) inputs.push(...[...left.children, ...right.children].filter(child => child !== clue && child !== map));
+    inputs.push(...grid.querySelectorAll('.round-panel-header > *'));
     watch(inputs);
     const style = getComputedStyle(parent);
     const width = parent.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
@@ -68,8 +69,10 @@ export function fitGameFrame(grid: HTMLElement): () => void {
     }
     grid.style.removeProperty('--round-map-height');
     if (grid.dataset.roundFrame !== 'split') grid.dataset.roundFrame = 'split';
+    // Measure intrinsic header rows before giving both sides their shared height.
+    grid.style.removeProperty('--round-head-height');
     const head = (viewport: HTMLElement, panel: HTMLElement) =>
-      viewport.getBoundingClientRect().top - panel.getBoundingClientRect().top - (parseFloat(getComputedStyle(viewport).marginTop) || 0);
+      viewport.getBoundingClientRect().top - panel.getBoundingClientRect().top;
     const mapMinimum = Math.max(shortLandscape ? 308 : 384, Math.min(512, width * .36));
     const gap = parseFloat(getComputedStyle(grid).columnGap) || 16;
     const maxWidth = Math.floor(width - gap - mapMinimum);
@@ -90,8 +93,7 @@ export function fitGameFrame(grid: HTMLElement): () => void {
       const footer = Math.max(heightAfter(clue), heightAfter(map));
       const fitsWidth = Math.max(minWidth, Math.floor((room - top - footer) * 2.25));
       if (fitsWidth >= clueWidth) {
-        setSize('--clue-head-gap', top - clueHead);
-        setSize('--map-head-gap', top - mapHead);
+        setSize('--round-head-height', top);
         break;
       }
       clueWidth = fitsWidth;

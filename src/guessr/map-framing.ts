@@ -1,6 +1,9 @@
 import type { Bounds, Point } from "./rules";
 import { ANSWER_PIN_HEIGHT, GUESS_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT } from './map-pin';
 
+export const RESULT_PIN_PADDING_Y = Math.max(GUESS_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT, ANSWER_PIN_HEIGHT / 2) + 6;
+const RESULT_PIN_PADDING_X = Math.max(HIGHLIGHT_PIN_HEIGHT / 2, ANSWER_PIN_HEIGHT / 2) + 8;
+
 /** Fill the panel on entry, or contain the entire world when explicitly asked. */
 export function frameMap(
   bounds: Bounds,
@@ -22,12 +25,12 @@ export function frameMap(
   };
 }
 
-/** Fit a revealed result with padding. A minimum terrain context avoids
- * extreme zoom for perfect guesses; an empty margin at world edges is fine. */
+/** Keep the pins visible and prefer captured terrain for the surrounding context. */
 export function frameMarkers(
   points: readonly Point[],
   width: number,
   height: number,
+  bounds?: Bounds,
 ): Bounds {
   if (
     !points.length ||
@@ -47,12 +50,24 @@ export function frameMarkers(
   if (w / h < aspect) w = h * aspect;
   else h = w / aspect;
   // Pins extend above their tips; the solution target extends around its centre.
-  const verticalPadding = Math.max(GUESS_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT, ANSWER_PIN_HEIGHT / 2) + 6;
-  const sidePadding = Math.max(HIGHLIGHT_PIN_HEIGHT / 2, ANSWER_PIN_HEIGHT / 2) + 6;
-  if (width > sidePadding * 2 && height > verticalPadding * 2) {
-    const unit = Math.max(w / width, h / height,
-      (right - left) / (width - sidePadding * 2), (bottom - top) / (height - verticalPadding * 2));
+  if (width > RESULT_PIN_PADDING_X * 2 && height > RESULT_PIN_PADDING_Y * 2) {
+    const context = Math.max(w / width, h / height);
+    const fill = bounds ? Math.min(bounds.width / width, bounds.height / height) : context;
+    const unit = Math.max(Math.min(context, fill),
+      (right - left) / (width - 2 * RESULT_PIN_PADDING_X), (bottom - top) / (height - 2 * RESULT_PIN_PADDING_Y));
     w = unit * width; h = unit * height;
+    if (bounds) {
+      const origin = (first: number, last: number, size: number, start: number, extent: number, inset: number) => {
+        const centered = (first + last - size) / 2;
+        const terrain = size <= extent ? Math.max(start, Math.min(start + extent - size, centered)) : start + (extent - size) / 2;
+        return Math.max(last + inset - size, Math.min(first - inset, terrain));
+      };
+      return {
+        x: origin(left, right, w, bounds.x, bounds.width, RESULT_PIN_PADDING_X * unit),
+        y: origin(top, bottom, h, bounds.y, bounds.height, RESULT_PIN_PADDING_Y * unit),
+        width: w, height: h,
+      };
+    }
   }
   return {
     x: (left + right - w) / 2,
