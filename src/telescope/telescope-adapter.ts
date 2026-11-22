@@ -2,6 +2,7 @@ import { nightmarePitScenes, pitPart, pitBackground, loadPitMaterials } from "./
 import { templeCrystals } from "./temple-crystals";
 import { captureWorlds } from "./world-coverage";
 import { finalizeGeneration } from "./finalize-generation";
+import { missingNightmareDragons } from "./boss-pois";
 import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-elevator";
 import { loadTelescopeModules } from "./load-telescope";
 import { restorePreparedScenePixels } from './prepared-scene-pixels';
@@ -660,7 +661,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   opts.signal?.throwIfAborted();
   const { NollaPrng } = telescopeMods.nollaPrngMod;
   const { GUN_NAMES } = telescopeMods.wandConfigMod;
-  const { getPitBossDrops } = telescopeMods.miscGenMod;
+  const { getPitBossDrops, getDragonDrops } = telescopeMods.miscGenMod;
 
   // Split parallel worlds into main (0) and background (-1, 1, etc)
   const mainWorlds = parallelWorlds.filter((w) => w === 0);
@@ -886,41 +887,48 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
         fixed: true,
       } as any);
 
-      // Add Syväolento (Leviathan / Levi boss). No body sprite exists in the
-      // atlas (only eye/orb parts), so the eye (last open frame) IS the boss
-      // marker. Placed at the eye's in-world position; clicking it opens the
-      // Syväolento card.
-      combinedPois.push({
-        type: "boss_fish",
-        name: "Syväolento",
-        x: -13967,
-        y: 10029,
-        biome: "lake",
-        items: [
-          { type: "item", item: "full_heal", name: "Full Health Regeneration" },
-          { type: "item", item: "great_chest", nameKey: "item_chest_treasure_super", name: "Great Treasure Chest" },
-        ],
-      } as any);
+      if (gameMode === "nightmare") {
+        for (const dragon of missingNightmareDragons(combinedPois, pixelScenesByPW[pwKey])) {
+          if (dragon.locationSource === "static-nightmare") combinedPois.push(dragon);
+          else combinedPois.push({ ...dragon, ...getDragonDrops(seed, ngPlus, dragon.biome, dragon.x, dragon.y, perks, gameMode) });
+        }
+      } else {
+        // Add Syväolento (Leviathan / Levi boss). No body sprite exists in the
+        // atlas (only eye/orb parts), so the eye (last open frame) IS the boss
+        // marker. Placed at the eye's in-world position; clicking it opens the
+        // Syväolento card.
+        combinedPois.push({
+          type: "boss_fish",
+          name: "Syväolento",
+          x: -13967,
+          y: 10029,
+          biome: "lake",
+          items: [
+            { type: "item", item: "full_heal", name: "Full Health Regeneration" },
+            { type: "item", item: "great_chest", nameKey: "item_chest_treasure_super", name: "Great Treasure Chest" },
+          ],
+        } as any);
 
-      // Add Squidward / Pit Boss (Sauvojen tuntija). Telescope computes the two
-      // wands (Tier 5 unshuffle + Tier 6); the two spells (Matosade/Worm Rain,
-      // Meteorisade/Meteor Rain) and the first-kill Full Health Regeneration are
-      // fixed drops, not RNG, so they're appended here. full_heal -> item:heart
-      // (the plain, no-extra-HP heart sprite).
-      const pitDrops = getPitBossDrops(seed, ngPlus, "orb_room_bridge", 3750, 1100, perks);
-      combinedPois.push({
-        type: "boss_pit",
-        name: "Sauvojen tuntija",
-        x: 3750,
-        y: 1100,
-        biome: "orb_room_bridge",
-        items: [
-          ...pitDrops.items,
-          { type: "item", item: "spell", spell: "WORM_RAIN", x: 3726, y: 1140 },
-          { type: "item", item: "spell", spell: "METEOR_RAIN", x: 3774, y: 1140 },
-          { type: "item", item: "full_heal", name: "Full Heal (On first kill)", x: 3750, y: 1160 },
-        ],
-      } as any);
+        // Add Squidward / Pit Boss (Sauvojen tuntija). Telescope computes the two
+        // wands (Tier 5 unshuffle + Tier 6); the two spells (Matosade/Worm Rain,
+        // Meteorisade/Meteor Rain) and the first-kill Full Health Regeneration are
+        // fixed drops, not RNG, so they're appended here. full_heal -> item:heart
+        // (the plain, no-extra-HP heart sprite).
+        const pitDrops = getPitBossDrops(seed, ngPlus, "orb_room_bridge", 3750, 1100, perks);
+        combinedPois.push({
+          type: "boss_pit",
+          name: "Sauvojen tuntija",
+          x: 3750,
+          y: 1100,
+          biome: "orb_room_bridge",
+          items: [
+            ...pitDrops.items,
+            { type: "item", item: "spell", spell: "WORM_RAIN", x: 3726, y: 1140 },
+            { type: "item", item: "spell", spell: "METEOR_RAIN", x: 3774, y: 1140 },
+            { type: "item", item: "full_heal", name: "Full Heal (On first kill)", x: 3750, y: 1160 },
+          ],
+        } as any);
+      }
 
       // Telescope's addStaticPixelScenes already emits the Tiny / Limatoukka
       // (Slime Maggot) drop POI natively (static_spawns.js, type "tiny" at

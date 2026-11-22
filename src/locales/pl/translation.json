@@ -5143,6 +5143,7 @@
     "no": "NIE"
   },
   "poi": {
+    "staticNightmareReference": "Pozycja odniesienia ze statycznej mapy Koszmaru",
     "amount": "Kwota",
     "contains": "Zawiera",
     "drops": "Łup",

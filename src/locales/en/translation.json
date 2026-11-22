@@ -5604,6 +5604,7 @@
     "no": "No"
   },
   "poi": {
+    "staticNightmareReference": "Reference position from the static Nightmare map",
     "amount": "Amount",
     "contains": "Contains",
     "drops": "Drops",

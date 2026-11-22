@@ -5143,6 +5143,7 @@
     "no": "不"
   },
   "poi": {
+    "staticNightmareReference": "静态噩梦地图上的参考位置",
     "amount": "数量",
     "contains": "包含",
     "drops": "掉落物",

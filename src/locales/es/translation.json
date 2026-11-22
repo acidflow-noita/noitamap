@@ -5143,6 +5143,7 @@
     "no": "No"
   },
   "poi": {
+    "staticNightmareReference": "Posición de referencia del mapa estático de Pesadilla",
     "amount": "Cantidad",
     "contains": "Contiene",
     "drops": "Botín",

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { completeBossPOIs } from "../src/telescope/boss-pois";
 import { hydrateBakedGeneration, serializeGenerationForBake } from "../src/telescope/baked-generation";
 import type { POI } from "../src/telescope/telescope-adapter";
+import bosses from "../src/data/bosses.json";
 
 function world(pw = 0, size = 70, center = 35) {
   const pixels = new Uint32Array(size * 48);
@@ -16,6 +17,44 @@ function world(pw = 0, size = 70, center = 35) {
 const poi = (type: string, extra = {}): POI => ({ type, x: 10, y: 20, ...extra });
 
 describe("boss availability shared by main-thread and PW generation", () => {
+  it("uses the five boss types displayed by the production static Nightmare overlay", () => {
+    const expected = ["boss_sky", "pyramid_boss", "dragon", "boss_centipede", "islandspirit"];
+    expect(bosses.filter(b => b.maps.includes("nightmare-main-branch")).map(b => b.bossType)).toEqual(expected);
+    const w = { ...world(0, 64, 32), gameMode: "nightmare" };
+    const input = bosses.filter(b => b.bossType !== "dragon").map(b => poi(b.bossType));
+    input.push(poi("pit_boss"), poi("entity", { entity: "fish_giga" }), poi("entity", { entity: "boss_pit" }));
+    const result = completeBossPOIs(input, w);
+    expect(result.map(p => p.type).sort()).toEqual([...expected].sort());
+    expect(result.find(p => p.type === "dragon")).toMatchObject({ x: 2347, y: 7444, locationSource: "static-nightmare" });
+    expect(completeBossPOIs(result, w)).toEqual(result);
+  });
+
+  it("preserves a seed's dragon and loot, uses the material trigger in a moved scene, and never copies the static pin to a parallel world", () => {
+    const w = { ...world(0, 64, 32), gameMode: "nightmare" };
+    const reference = completeBossPOIs([], w)[0];
+    const cave = { name: "dragoncave", x: -2048, y: 9216 };
+    const generated = poi("dragon", { x: 38, y: 9201, items: [poi("wand")] });
+    expect(completeBossPOIs([reference, generated], w)).toEqual([generated]);
+    expect(completeBossPOIs([reference], { ...w, scenes: [cave, cave] })).toEqual([
+      expect.objectContaining({ type: "dragon", x: -1752, y: 9521, biome: "dragoncave" }),
+    ]);
+    const shadows = [poi("entity", { entity: "parallel_tentacles" }), poi("entity", { entity: "parallel_alchemist" })];
+    expect(completeBossPOIs([reference, ...shadows], { ...w, pw: 1 })).toEqual(shadows);
+  });
+
+  it("repairs a legacy Nightmare bake before search and discards counts from the removed loot", () => {
+    const w = world(0, 64, 32);
+    const baked = serializeGenerationForBake({ seed: 42, gameMode: "nightmare", ngPlus: 0, isNGP: false, worldSize: 64, worldCenter: 32,
+      parallelWorlds: [0], biomeData: w.biomeData, tileLayers: [], poisByPW: { "0,0": [] }, pixelScenesByPW: { "0,0": [] },
+    } as any)!;
+    const stale = [poi("boss_fish"), poi("boss_pit", { items: [poi("wand")] })];
+    baked.poisByPW = { "0,0": stale, "0,1": [poi("entity", { entity: "boss_pit" })] };
+    const hydrated = hydrateBakedGeneration([baked]);
+    expect(hydrated.poisByPW["0,0"].map(p => p.type)).toEqual(["dragon"]);
+    expect(hydrated.poisByPW["0,1"]).toEqual([]);
+    expect(hydrated.reportInventory).toBeUndefined();
+    expect(baked.poisByPW["0,0"]).toBe(stale);
+  });
   it.each([-2, -1, 0, 1, 2])("adds the four room bosses and inhabited Toveri cave in world %i", (pw) => {
     const input = world(pw);
     const bosses = completeBossPOIs([], input);

@@ -5143,6 +5143,7 @@
     "no": "Inga"
   },
   "poi": {
+    "staticNightmareReference": "Referensposition från den statiska mardrömskartan",
     "amount": "Belopp",
     "contains": "Innehåller",
     "drops": "Byte",

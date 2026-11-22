@@ -4209,6 +4209,14 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       rawName.replace(/_/g, ' ');
     title.textContent = baseName;
     titleCol.appendChild(wrapWithWikiLink(title, poi));
+    if (poi.locationSource === 'static-nightmare') {
+      const reference = document.createElement('a');
+      reference.className = 'small text-body-secondary';
+      reference.href = `https://noitamap.com/?map=nightmare-main-branch&x=${poi.x}&y=${poi.y}&zoom=917`;
+      reference.target = '_blank'; reference.rel = 'noopener noreferrer';
+      reference.textContent = i18next.t('poi.staticNightmareReference', 'Reference position from the static Nightmare map');
+      titleCol.append(reference);
+    }
     // Subtitle shows alternate names so players can cross-reference. Matches
     // the search-results UX: in non-English locales we surface the official
     // Finnish name; the English alias is always shown when it differs.

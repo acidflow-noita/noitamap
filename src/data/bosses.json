@@ -1,6 +1,7 @@
 [
   {
     "name": "Kivi",
+    "bossType": "boss_sky",
     "aliases": ["Rock Boss", "Stone Boss", "Sky Boss"],
     "x": 7375,
     "y": -4539,
@@ -17,6 +18,7 @@
   },
   {
     "name": "Kolmisilmän Koipi",
+    "bossType": "pyramid_boss",
     "aliases": ["Pyramid Boss", "Three-Eye's Legs"],
     "x": 9984,
     "y": -786,
@@ -27,6 +29,7 @@
   },
   {
     "name": "Syväolento",
+    "bossType": "boss_fish",
     "aliases": ["Leviathan", "Creature of the Deep"],
     "x": -14024,
     "y": 9994,
@@ -37,6 +40,7 @@
   },
   {
     "name": "Veska, Molari, Mokke, Seula",
+    "bossType": "triangle_boss",
     "aliases": ["Door boss", "Gate Guardian", "Triangle boss"],
     "x": 2837,
     "y": 11562,
@@ -47,6 +51,7 @@
   },
   {
     "name": "Suomuhauki",
+    "bossType": "dragon",
     "aliases": ["Dragon", "Scale Pike"],
     "x": 2347,
     "y": 7444,
@@ -57,6 +62,7 @@
   },
   {
     "name": "Limatoukka",
+    "bossType": "tiny",
     "aliases": ["Tiny", "Slime Maggot", "Slime Caterpillar"],
     "x": 14904,
     "y": 16428,
@@ -67,6 +73,7 @@
   },
   {
     "name": "Kolmisilmän sydän",
+    "bossType": "boss_meat",
     "aliases": ["Meat Boss", "Three-Eye's Heart"],
     "x": 6667,
     "y": 8448,
@@ -77,6 +84,7 @@
   },
   {
     "name": "Ylialkemisti",
+    "bossType": "alchemist_boss",
     "aliases": ["Alchemist Boss", "High Alchemist"],
     "x": -4840,
     "y": 851,
@@ -87,6 +95,7 @@
   },
   {
     "name": "Kolmisilmä",
+    "bossType": "boss_centipede",
     "aliases": ["Kolmi", "Three-Eye"],
     "x": 3556,
     "y": 13026,
@@ -103,6 +112,7 @@
   },
   {
     "name": "Kolmisilmän silmä",
+    "bossType": "boss_robot",
     "aliases": ["Mecha Kolmi", "Three-Eye's Eye"],
     "x": 13987,
     "y": 11123,
@@ -113,6 +123,7 @@
   },
   {
     "name": "Toveri",
+    "bossType": "friend",
     "aliases": ["Friend Boss", "Friend"],
     "x": 25360,
     "y": 4341,
@@ -123,6 +134,7 @@
   },
   {
     "name": "Toveri",
+    "bossType": "friend",
     "aliases": ["Friend Boss", "Friend"],
     "x": 8454,
     "y": 5971,
@@ -133,6 +145,7 @@
   },
   {
     "name": "Mestarien mestari",
+    "bossType": "boss_wizard",
     "aliases": ["The Master of Masters", "Grand Master", "Wizard Boss"],
     "x": 12573,
     "y": 15178,
@@ -143,6 +156,7 @@
   },
   {
     "name": "Unohdettu",
+    "bossType": "boss_ghost",
     "aliases": ["The Forgotten", "Ghost Boss"],
     "x": -11515,
     "y": 13123,
@@ -153,6 +167,7 @@
   },
   {
     "name": "Sauvojen tuntija",
+    "bossType": "boss_pit",
     "aliases": ["Bridge Boss", "Connoisseur of Wands", "Squid Boss", "Pit Boss", "Wand Boss"],
     "x": 4165,
     "y": 889,
@@ -163,6 +178,7 @@
   },
   {
     "name": "Tapion vasalli",
+    "bossType": "islandspirit",
     "aliases": ["Deer Boss", "Tapio's Vassal", "Island Boss"],
     "x": -13670,
     "y": 134,

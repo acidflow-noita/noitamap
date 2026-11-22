@@ -5143,6 +5143,7 @@
     "no": "Žádný"
   },
   "poi": {
+    "staticNightmareReference": "Referenční poloha ze statické mapy Noční můry",
     "amount": "Množství",
     "contains": "Obsahuje",
     "drops": "Kořist",

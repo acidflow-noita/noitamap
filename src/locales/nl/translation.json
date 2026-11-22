@@ -5143,6 +5143,7 @@
     "no": "Nee"
   },
   "poi": {
+    "staticNightmareReference": "Referentiepositie op de statische Nachtmerriekaart",
     "amount": "Hoeveelheid",
     "contains": "Bevat",
     "drops": "Buit",

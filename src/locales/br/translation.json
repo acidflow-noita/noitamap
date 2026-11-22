@@ -5143,6 +5143,7 @@
     "no": "Não"
   },
   "poi": {
+    "staticNightmareReference": "Posição de referência do mapa estático do Pesadelo",
     "amount": "Quantia",
     "contains": "Contém",
     "drops": "Espólio",

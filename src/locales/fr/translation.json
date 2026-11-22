@@ -5143,6 +5143,7 @@
     "no": "Non"
   },
   "poi": {
+    "staticNightmareReference": "Position de référence sur la carte statique du mode Cauchemar",
     "amount": "Montant",
     "contains": "Contient",
     "drops": "Butin",

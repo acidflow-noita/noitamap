@@ -5143,6 +5143,7 @@
     "no": "いいえ"
   },
   "poi": {
+    "staticNightmareReference": "静的なナイトメアマップに基づく参考位置",
     "amount": "額",
     "contains": "含まれています",
     "drops": "ドロップ",

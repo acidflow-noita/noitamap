@@ -5143,6 +5143,7 @@
     "no": "TIDAK"
   },
   "poi": {
+    "staticNightmareReference": "Posisi acuan dari peta statis mode Mimpi Buruk",
     "amount": "Jumlah",
     "contains": "Berisi",
     "drops": "Jatuhan",

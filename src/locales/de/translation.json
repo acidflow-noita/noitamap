@@ -5143,6 +5143,7 @@
     "no": "NEIN"
   },
   "poi": {
+    "staticNightmareReference": "Referenzposition aus der statischen Alptraumkarte",
     "amount": "Menge",
     "contains": "Enthält",
     "drops": "Beute",

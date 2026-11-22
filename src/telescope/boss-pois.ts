@@ -1,8 +1,10 @@
 import type { GenerationResult, POI } from "./telescope-adapter";
+import bosses from "../data/bosses.json";
 
-type Scene = { name: string; x: number; y: number };
+type Scene = { name: string; key?: string; x: number; y: number };
 type World = {
   pw: number;
+  gameMode?: string;
   worldSize: number;
   worldCenter: number;
   biomeData: { pixels: ArrayLike<number>; w?: number };
@@ -35,12 +37,37 @@ const BOSS_TYPES: Record<string, string> = {
   boss_meat: "boss_meat",
   boss_sky: "boss_sky",
   boss_pit: "boss_pit",
+  pit_boss: "boss_pit",
   boss_centipede: "boss_centipede",
 };
 const MAIN_ONLY = new Set([
   "tiny", "pyramid_boss", "boss_pit", "boss_fish", "boss_sky", "islandspirit", "boss_centipede",
 ]);
 const bossType = (poi: POI) => BOSS_TYPES[poi.type === "entity" ? String(poi.entity) : poi.type];
+
+const nightmareBosses = bosses.filter(b => b.maps.includes("nightmare-main-branch"));
+const NIGHTMARE_ROSTER = new Set(nightmareBosses.map(b => b.bossType));
+const dragonReference = nightmareBosses.find(b => b.bossType === "dragon");
+const availableInNightmare = (poi: POI) => {
+  const type = bossType(poi);
+  return !type || NIGHTMARE_ROSTER.has(type);
+};
+const seededDragon = (p: POI) => bossType(p) === "dragon" && p.locationSource !== "static-nightmare";
+const dragonCave = (s: Scene) => s.name === "dragoncave" || s.key === "general/dragoncave";
+
+/** A native spawn wins. A placed Dragoncave contains the trigger at material
+ * pixel (296, 305). Otherwise the static overlay supplies a labelled reference. */
+export function missingNightmareDragons(pois: POI[], scenes: Scene[]): POI[] {
+  if (!dragonReference || pois.some(seededDragon)) return [];
+  const dragon = { type: "dragon", name: dragonReference.name, nameKey: "animal_boss_dragon" };
+  const spots = new Map<string, POI>();
+  for (const scene of scenes) if (dragonCave(scene)) {
+    spots.set(`${scene.x},${scene.y}`, { ...dragon, x: scene.x + 296, y: scene.y + 305, biome: "dragoncave" });
+  }
+  if (spots.size) return [...spots.values()];
+  if (pois.some(p => p.locationSource === "static-nightmare" && bossType(p) === "dragon")) return [];
+  return [{ ...dragon, x: dragonReference.x, y: dragonReference.y, locationSource: "static-nightmare" }];
+}
 
 // These biome scripts EntityLoad their boss without a PW guard:
 // data/scripts/biomes/{mestari_secret,ghost_secret,roboroom,meatroom}.lua.
@@ -85,13 +112,16 @@ const ROOM_BOSSES = [
 export function completeBossPOIs(pois: POI[], world: World): POI[] {
   const result: POI[] = [];
   const seen = new Map<string, number>();
+  const dropReference = world.gameMode === "nightmare" &&
+    (world.pw !== 0 || pois.some(seededDragon) || world.scenes.some(dragonCave));
   for (let poi of pois) {
+    if (dropReference && poi.locationSource === "static-nightmare") continue;
     const type = bossType(poi);
     if (!type) {
       result.push(poi);
       continue;
     }
-    if (world.pw !== 0 && MAIN_ONLY.has(type)) continue;
+    if ((world.pw !== 0 && MAIN_ONLY.has(type)) || (world.gameMode === "nightmare" && !NIGHTMARE_ROSTER.has(type))) continue;
     if (type === "boss_robot") {
       poi = { ...poi, name: "Kolmisilmän silmä", nameKey: "animal_boss_robot" };
     }
@@ -105,6 +135,11 @@ export function completeBossPOIs(pois: POI[], world: World): POI[] {
     } else if (result[index].type !== type && poi.type === type) {
       result[index] = poi; // Prefer the native loot-bearing boss over an entity alias.
     }
+  }
+
+  if (world.gameMode === "nightmare") {
+    if (world.pw === 0) result.push(...missingNightmareDragons(result, world.scenes));
+    return result;
   }
 
   const add = (poi: POI) => {
@@ -163,15 +198,20 @@ export function completeBossPOIs(pois: POI[], world: World): POI[] {
 }
 
 /** Repair previously baked POIs too; terrain pixels themselves have not changed. */
-export function completeGenerationBossPOIs<T extends Pick<GenerationResult, "poisByPW" | "pixelScenesByPW" | "worldSize" | "worldCenter" | "biomeData">>(result: T): T {
+export function completeGenerationBossPOIs<T extends Pick<GenerationResult, "gameMode" | "reportInventory" | "poisByPW" | "pixelScenesByPW" | "worldSize" | "worldCenter" | "biomeData">>(result: T): T {
   const poisByPW = { ...result.poisByPW };
+  let staleInventory = false;
   for (const [key, pois] of Object.entries(poisByPW)) {
     const [pw, vertical] = key.split(",").map(Number);
-    if (vertical !== 0) continue;
-    poisByPW[key] = completeBossPOIs(pois, {
-      pw, worldSize: result.worldSize, worldCenter: result.worldCenter,
+    const nightmare = result.gameMode === "nightmare";
+    if (vertical !== 0 && !nightmare) continue;
+    const repaired = vertical === 0 ? completeBossPOIs(pois, {
+      pw, gameMode: result.gameMode, worldSize: result.worldSize, worldCenter: result.worldCenter,
       biomeData: result.biomeData, scenes: result.pixelScenesByPW?.[key] ?? [],
-    });
+    }) : pois.filter(availableInNightmare);
+    poisByPW[key] = repaired;
+    if (nightmare && result.reportInventory && (repaired.length !== pois.length || repaired.some((p, i) => p !== pois[i])))
+      staleInventory = true;
   }
-  return { ...result, poisByPW };
+  return { ...result, poisByPW, ...(staleInventory && { reportInventory: undefined }) };
 }

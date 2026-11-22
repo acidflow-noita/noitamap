@@ -1,5 +1,5 @@
-import { reconcileTempleCrystals } from "./temple-crystals";
 import { bakedWorldMembers } from "./world-coverage";
+import { reconcileTempleCrystals } from "./temple-crystals";
 import { finalizeGeneration } from "./finalize-generation";
 import { getAllPOIsFlat } from "./poi-inventory";
 import { MIMIC_SPRITES_VERSION } from './poi-mimics';
@@ -82,7 +82,8 @@ function b64ToBuf(b64: string): ArrayBuffer {
 /** Browser-side (bake page): serialize the full generation result. */
 export function serializeGenerationForBake(result: GenerationResult): BakedGenerationFile | null {
   if (!result || !result.biomeData?.pixels) return null;
-  result = reconcileTempleCrystals(result);
+  const completed = finalizeGeneration(result);
+  result = result.gameMode === "nightmare" ? completed : reconcileTempleCrystals(result);
   // Serializing old cached POIs is not evidence that their DZI pixels were
   // rebaked. Only preserve a revision already known for every included world.
   const knownMimicSprites = (result.parallelWorlds || [-1, 0, 1]).every(pw => {
@@ -106,7 +107,7 @@ export function serializeGenerationForBake(result: GenerationResult): BakedGener
     version: BAKED_GENERATION_VERSION,
     mimicSpritesVersion: knownMimicSprites ? MIMIC_SPRITES_VERSION : undefined,
     reportInventory: createReportInventorySnapshot(result.seed,
-      getAllPOIsFlat(finalizeGeneration(result)), result.parallelWorlds),
+      getAllPOIsFlat(completed), result.parallelWorlds),
     seed: result.seed,
     dailySeed: result.dailySeed,
     gameMode: result.gameMode,

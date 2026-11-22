@@ -5143,6 +5143,7 @@
     "no": "Ei"
   },
   "poi": {
+    "staticNightmareReference": "Vertailusijainti staattiselta Painajainen-kartalta",
     "amount": "Määrä",
     "contains": "Sisältää",
     "drops": "Pudotukset",
