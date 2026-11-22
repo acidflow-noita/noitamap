@@ -11,7 +11,7 @@ import { mapControls } from './map-controls';
 import { ClueViewport } from './clue-viewport';
 import { fitClueToPanel } from './clue-stage';
 import { attachClueControls } from './clue-view';
-import { difficultyIndicator, maximumIndicator, updateRoundIndicators } from './round-status';
+import { difficultyIndicator, formatRoundTime, maximumIndicator, showRoundTime, updateRoundIndicators } from './round-status';
 import type { ImageGameConfig } from './image-game';
 import { MapBoard } from './map-board';
 import { maximumScore, newClueProgress, within, type Point, type ClueProgress } from './rules';
@@ -179,6 +179,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const retry = button('Reconnect', () => room?.retry(), 'small secondary'); retry.hidden = true;
   const delivery = node('span', 'stream-delivery'); delivery.setAttribute('role', 'status');
   const timer = node('span', 'stream-round-timer');
+  timer.setAttribute('role', 'timer'); timer.hidden = true;
   const previousResult = button('View results', () => {
     if (!live) return;
     const latest = Math.max(0, ...sharedRounds?.rounds.keys() ?? []);
@@ -524,9 +525,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       const until = live?.phase === 'complete' || finalReveal ? undefined : live?.timing?.resultsUntil;
       if (until) {
         const seconds = Math.max(0, Math.ceil((Math.max(until, live?.timing?.deadline ?? 0) - gameNow()) / 1000));
-        const text = `${formatGuessrNumber(Math.floor(seconds / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(seconds % 60, { minimumIntegerDigits: 2 })}`;
-        timer.hidden = false; timer.textContent = text;
-        bindText(sharedNext!, 'Next round in {{time}}', { time: text });
+        bindText(sharedNext!, 'Next round in {{time}}', { time: formatRoundTime(seconds) });
+        return seconds;
       } else bindText(sharedNext!, 'Waiting for the streamer');
     }
   };
@@ -549,6 +549,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (snapshot && live?.phase !== 'complete' && reviewedRound === null && sharedRound === null)
       showRoundProgress(round, live?.totalRounds ?? STREAM_ROUNDS, snapshot.round);
     showPersonalOutcome();
+    const reviewSeconds = showSharedResults();
     if (progress) updateRoundIndicators(layout, progress,
       reviewedRound === null ? live?.difficultyTier : personal.round(reviewedRound).reveal?.area.difficultyTier);
     budgetBar.hidden = !progress || reviewedRound !== null || !revealBar.hidden;
@@ -592,18 +593,17 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (live?.timing) {
       const timing = live.timing, now = gameNow(), starting = Math.max(0, Math.ceil((timing.startsAt - now) / 1000));
       const remaining = Math.max(0, Math.ceil(((timing.deadline ?? now) - now) / 1000));
-      timer.textContent = live.ended ? tr('Game ended') : live.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started')
-        : live.phase !== 'guess' ? tr('Round closed') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) }) : timing.deadline === null ? tr('Manual timing')
-        : `${formatGuessrNumber(Math.floor(remaining / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(remaining % 60, { minimumIntegerDigits: 2 })}`;
-      timer.hidden = unavailableGame || timing.phase === 'lobby' || live.phase !== 'guess';
-      timer.dataset.clock = String(!live.ended && !live.paused && !starting && live.phase === 'guess' && timing.deadline !== null);
+      const value = reviewSeconds ?? (live.ended ? tr('Game ended') : live.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started')
+        : live.phase !== 'guess' ? tr('Round closed') : starting || (timing.deadline === null ? tr('Manual timing') : remaining));
+      const label = showRoundTime(timer, value, reviewSeconds === undefined && starting > 0);
+      timer.hidden = unavailableGame || timing.phase === 'lobby' || (live.phase !== 'guess' && reviewSeconds === undefined);
       board.setLocked(!canGuess() || reviewedRound !== null);
       let countdown = cluePanel.querySelector<HTMLElement>('.stream-countdown');
       if (starting && live.phase === 'guess' && !live.paused) {
         if (!countdown) { countdown = node('div', 'stream-countdown'); cluePanel.append(countdown); }
-        countdown.textContent = timer.textContent;
+        countdown.textContent = label;
       } else countdown?.remove();
-    }
+    } else timer.hidden = true;
     const disabledReason = live?.ended ? 'The streamer ended this game.' : !state.connected ? 'Sign in with Twitch'
       : pvp && live?.pvp?.locked ? 'Your guess is locked. Waiting for the other players.'
       : !joined ? 'Connecting to the NoitaGuessr game…' : isHost() ? 'You are the streamer. Submit your guess in the streamer tab.' : !channel ? 'Open the game link shared by your streamer.'
@@ -635,7 +635,6 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     result.hidden = !live?.resultId && !(unavailableGame && requestedGame);
     const resultId = live?.resultId ?? (unavailableGame ? requestedGame : undefined);
     if (resultId) result.href = guessRouteUrl('stream-result', location.origin, { result: resultId }).href;
-    showSharedResults();
     const onRound = live?.phase === 'guess' && !live.ended && resultsPanel.hidden && sharedPanel.hidden && reviewedRound === null;
     const latestShared = Math.max(0, ...sharedRounds?.rounds.keys() ?? []);
     let latestPersonal = -1;

@@ -2,6 +2,26 @@ import { bindAttribute, bindText, formatGuessrNumber, tr } from './i18n';
 import { maximumScore, type ClueProgress } from './rules';
 import type { AreaDifficulty } from './area-rules';
 
+export function formatRoundTime(seconds: number): string {
+  const twoDigits = { minimumIntegerDigits: 2 };
+  return `${formatGuessrNumber(Math.floor(seconds / 60), twoDigits)}:${formatGuessrNumber(seconds % 60, twoDigits)}`;
+}
+
+/** Numeric headers use the same clock face for both players. The overlay and
+ * accessible name retain the translated count-in message. */
+export function showRoundTime(timer: HTMLElement | null, value: number | string, countingIn = false): string {
+  const numeric = typeof value === 'number';
+  const text = numeric ? (countingIn ? formatGuessrNumber(value) : formatRoundTime(value)) : value;
+  const label = numeric && countingIn ? tr('Starting in {{seconds}}', { seconds: text }) : text;
+  if (timer) {
+    if (timer.textContent !== text) timer.textContent = text;
+    if (timer.dataset.clock !== String(numeric)) timer.dataset.clock = String(numeric);
+    if (label !== text) timer.setAttribute('aria-label', label);
+    else timer.removeAttribute('aria-label');
+  }
+  return label;
+}
+
 const liveLabels = new WeakMap<HTMLElement, { render: () => string }>();
 function updateLabel(node: HTMLElement, render: () => string) {
   let binding = liveLabels.get(node);

@@ -568,6 +568,7 @@ it('keeps the between-round countdown and table visible while the coordinator re
   ui.render(); const main = document.querySelector('main'), deadline = game.timing!.resultsUntil;
   const logo = gameLogo(() => {}); document.body.prepend(logo.element);
   expect(document.getElementById('stream-round-timer')!.textContent).toBe('00:08');
+  expect(document.getElementById('stream-round-timer')!.dataset.clock).toBe('true');
   connected = false; vi.setSystemTime(streamNow + 7000);
   (ui as unknown as { updateStatus(): void }).updateStatus();
   (ui as unknown as { updateTimer(): void }).updateTimer();

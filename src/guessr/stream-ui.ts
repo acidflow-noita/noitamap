@@ -13,7 +13,7 @@ import { attachClueControls } from "./clue-view";
 import { ClueViewport } from "./clue-viewport";
 import { fitClueToPanel } from './clue-stage';
 import { allowGuessrChangelog } from './changelog';
-import { updateRoundIndicators } from './round-status';
+import { formatRoundTime, showRoundTime, updateRoundIndicators } from './round-status';
 import { supportedCamera } from "./clue-camera";
 import type { ImageGameConfig } from "./image-game";
 import type { Point } from "./rules";
@@ -747,17 +747,17 @@ export class StreamUI {
     const deadline = game.stage === 'reveal' ? Math.max(timing.deadline ?? now, timing.resultsUntil ?? now)
       : timing.deadline ?? now;
     const remaining = Math.max(0, Math.ceil((deadline - now) / 1000));
-    const clock = `${formatGuessrNumber(Math.floor(remaining / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(remaining % 60, { minimumIntegerDigits: 2 })}`;
-    const label = game.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started') : starting ? tr('Starting in {{seconds}}', { seconds: formatGuessrNumber(starting) })
-      : timing.deadline === null ? tr('Manual timing') : clock;
-    for (const timer of document.querySelectorAll<HTMLElement>('#stream-round-timer, #stream-start-countdown, #stream-waiting-timer'))
-      { if (timer.textContent !== label) timer.textContent = label;
-        timer.dataset.clock = String(!game.paused && !starting && timing.deadline !== null);
-        if (timer.id === 'stream-round-timer') timer.hidden = timing.phase !== 'play' || finalReveal; }
-    const waitingTimer = document.getElementById('stream-waiting-timer');
-    if (waitingTimer) waitingTimer.dataset.clock = String(!game.paused && !starting && timing.deadline !== null);
+    const value = game.paused ? tr('Reconnecting…') : timing.phase === 'lobby' ? tr('Not started')
+      : starting || (timing.deadline === null ? tr('Manual timing') : remaining);
+    const timer = document.getElementById('stream-round-timer');
+    const label = showRoundTime(timer, value, starting > 0);
+    if (timer) timer.hidden = timing.phase !== 'play' || finalReveal;
+    for (const overlay of document.querySelectorAll<HTMLElement>('#stream-start-countdown, #stream-waiting-timer')) {
+      if (overlay.textContent !== label) overlay.textContent = label;
+      overlay.dataset.clock = String(typeof value === 'number' && !starting);
+    }
     const next = document.getElementById('stream-auto-next');
-    if (next) bindText(next, 'Next round in {{time}}', { time: clock });
+    if (next) bindText(next, 'Next round in {{time}}', { time: formatRoundTime(remaining) });
     const first = document.getElementById('stream-first-round') as HTMLButtonElement | null;
     if (first) first.disabled = game.paused || !!starting;
     const start = document.getElementById('stream-start-game') as HTMLButtonElement | null;
@@ -1117,6 +1117,7 @@ export class StreamUI {
       phase.append(roundIndicator);
     }
     const timer = el('span', '', 'stream-round-timer'); timer.id = 'stream-round-timer'; timer.hidden = !game.timing;
+    timer.setAttribute('role', 'timer');
     const commands = el('div', '', 'stream-toolbar-actions');
     phase.append(commands); banner.append(navigation, timer, phase);
     const count = el("span", '', 'stream-guess-count');

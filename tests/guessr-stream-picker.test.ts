@@ -95,11 +95,18 @@ describe('shared channel guess picker', () => {
       const controls = f.main.querySelector<HTMLElement>('.clue-controls')!;
       const zoom = controls.querySelector<HTMLButtonElement>('button[aria-keyshortcuts="Q"]')!;
       const east = controls.querySelector<HTMLButtonElement>('button[data-direction="east"]')!;
+      const timer = f.main.querySelector<HTMLElement>('[role="timer"]')!;
+      expect(timer.dataset.clock).toBe('true');
+      expect(timer.textContent).toBe('3');
+      expect(timer.getAttribute('aria-label')).toBe('Starting in 3');
+      expect(f.main.querySelector('.stream-countdown')!.textContent).toBe('Starting in 3');
       expect(controls.inert).toBe(true);
       const initialDraws = ui.show.mock.calls.length;
       zoom.click();
       expect(ui.show).toHaveBeenCalledTimes(initialDraws);
       await vi.advanceTimersByTimeAsync(3000);
+      expect(timer.textContent).toBe('00:30');
+      expect(timer.hasAttribute('aria-label')).toBe(false);
       expect(controls.inert).toBe(false);
       expect(zoom.disabled).toBe(false);
       zoom.click(); await flush();
@@ -380,11 +387,13 @@ describe('shared channel guess picker', () => {
     parallel.events!.state(closed);
     expect(f.main.querySelector<HTMLElement>('.stream-shared-round')!.hidden).toBe(false);
     expect(f.main.querySelector('.stream-round-timer')!.textContent).toBe('00:08');
+    expect(f.main.querySelector<HTMLElement>('.stream-round-timer')!.dataset.clock).toBe('true');
     f.leave(); now += 7000;
     f = mount(url, { connected: true, login: 'chatter', userId: '123' });
     parallel.events!.state(closed);
     expect(f.main.querySelector<HTMLElement>('.stream-shared-round')!.hidden).toBe(false);
     expect(f.main.querySelector('.stream-round-timer')!.textContent).toBe('00:01');
+    expect(f.main.querySelector<HTMLElement>('.stream-round-timer')!.dataset.clock).toBe('true');
     expect(f.main.querySelectorAll('.stream-shared-round tbody tr')).toHaveLength(2);
   });
 
