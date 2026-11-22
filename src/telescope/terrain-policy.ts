@@ -77,7 +77,7 @@ export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   lavalake: "data/weather_gfx/background_cave_04_alt.png",
   temple_altar: "data/weather_gfx/background_cave_02.png",
   secret_lab: "data/weather_gfx/background_snowcave.png",
-  winter_caves: "data/weather_gfx/background_snowcave.png",
+  winter_caves: "data/weather_gfx/background_cave_04_alt.png",
   // Tower floors (top to bottom = main biomes in reverse)
   solid_wall_tower_9: "data/weather_gfx/background_the_end.png",
   solid_wall_tower_8: "data/weather_gfx/background_crypt.png",
@@ -113,6 +113,8 @@ export function sceneBiomeNames(scene: { key: string; variantKey?: string }): st
 }
 
 export const TERRAIN_VERSION = "full-pixel-v21-instant-gold-cavern";
+// Local pixel caches include artwork changes even while a compatible older DZI is published.
+export const TERRAIN_PIXEL_REVISION = "snowy-chasm-v1";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
 export type VerticalPlane = -1 | 0 | 1;

@@ -77,3 +77,40 @@ it.each(["published", "wide", "mixed"])("handles %s Nightmare manifest geometry 
     if (probe.baked) expect(probe.includesNightmareEdges).toBe(kind === "wide");
   } finally { vi.unstubAllGlobals(); }
 });
+
+it('gives the five overlapping Snowy Chasm chunks to the first Wang rectangle without resizing the later one', async () => {
+  const { assignOverlappingWangChunks } = await import('../src/telescope/wang-region-ownership');
+  const overlap: [number, number][] = [[8,8],[8,9],[7,9],[6,9],[5,9]];
+  const regions: [number, number][][] = [[[4,6],[6,6],[14,9]], [...overlap,[8,10]]];
+  const bounds: [number, number, number, number][] = [[4,5,14,9],[5,8,8,10]];
+  assignOverlappingWangChunks(regions, bounds);
+  expect(regions[0]).toEqual([[4,6],[6,6],[14,9],...overlap]);
+  expect(regions[1]).toEqual([[8,10]]);
+  expect(bounds[1]).toEqual([5,8,8,10]);
+});
+
+it('uses the three game material slices at their own biome and world coordinates', async () => {
+  const { nightmarePitScenes, pitMaterialSlice } = await import('../src/telescope/nightmare-lava-pit');
+  const { BIOME_BACKGROUND_MAP } = await import('../src/telescope/terrain-policy');
+  const colors = new Uint32Array(64 * 48);
+  colors.set([0xff77a5bd,0xff006c42,0xff3d3d3d],20 * 64 + 37);
+  const scenes = nightmarePitScenes(colors,64,32,{0x77a5bd:'winter_caves',0x006c42:'wandcave',0x3d3d3d:'solid_wall'});
+  expect(scenes.map(s => [s.x,s.y,s.width,s.height,s.variantKey])).toEqual([
+    [2560,3072,512,512,'biome=winter_caves'],[3072,3072,512,512,'biome=wandcave'],[3584,3072,512,512,'biome=solid_wall'],
+  ]);
+  const sharp = (await import('sharp')).default;
+  const file = new URL('../lib/noita-telescope-vm/data/pixel_scenes/spliced/lavalake_pit_bottom.png', import.meta.url);
+  const { data,info } = await sharp(file.pathname).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  // The original image has only white density pixels and untouched black pixels.
+  const counts = scenes.map((_, i) => {
+    const rgba = pitMaterialSlice({data,width:info.width,height:info.height},i);
+    let painted = 0;
+    for(let j=0;j<rgba.length;j+=4) {
+      if (rgba[j] !== rgba[j+3]) throw Error('Unexpected material alpha in lava pit splice');
+      if(rgba[j+3]) painted++;
+    }
+    return painted;
+  });
+  expect(counts).toEqual([25253,35145,36194]);
+  expect(BIOME_BACKGROUND_MAP.winter_caves).toBe('data/weather_gfx/background_cave_04_alt.png');
+});

@@ -38,8 +38,8 @@ export async function browserTelescopeSource(code: string, id: string) {
     source = source.replace(pattern, replacement);
   };
   if (id.endsWith('/tile_generator.js')) {
-    // Preserve the pinned algorithms and their ordering. Only the host's
-    // serialized main-thread generator opts into cooperative scheduling.
+    // Audit both pinned generators before inserting the host scheduling points
+    // and the capture-verified Snowy Chasm rectangle choice.
     const pattern = /export async function generateBiomeTiles\([\s\S]*?\n\}/;
     const original = source.match(pattern)?.[0];
     const audited = new Set([
@@ -54,7 +54,11 @@ export async function browserTelescopeSource(code: string, id: string) {
       .replace('for (let biomeName of Object.keys(biomeConfig)) {', '$&' + checkpoint)
       .replace('for (let i = 0; i < regions.length; i++) {', '$&' + checkpoint)
       .replace('while (!valid && attempts < MAX_PATHFINDING_ATTEMPTS) {', '$&' + checkpoint);
-    source = source.replace(original, scheduled);
+    const groups = 'const { regions, bboxes } = findBiomeRegions(biomePixels, width, height, conf.color);';
+    if (!scheduled.includes(groups)) throw new Error(`Review changed Telescope Wang region collection: ${id}`);
+    const mapped = scheduled.replace(groups, groups + '\n        if (gameMode === "nightmare" && biomeName === "winter_caves") assignOverlappingWangChunks(regions, bboxes);');
+    source = `import { assignOverlappingWangChunks } from ${JSON.stringify(resolve(import.meta.dirname, '../src/telescope/wang-region-ownership.ts'))};\n` +
+      source.replace(original, mapped);
   }
   if (id.endsWith('/poi_scanner.js')) {
     const pattern = /export function prescanSpawnFunctions\([\s\S]*?\n\}/;

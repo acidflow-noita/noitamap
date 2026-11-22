@@ -1,3 +1,4 @@
+import { pitPart, pitBackground } from "./nightmare-lava-pit";
 import { visibleWorldSpan } from "./world-coverage";
 import * as bootstrap from "../bootstrap";
 import { clearPortalAnimations, installPortalAnimations } from "../portals";
@@ -2042,6 +2043,7 @@ function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y
     const mid = layers?.mid ?? pixelSceneConfig.layers.mid;
     return `${scene.key}|watercave-edges-v2|${seed}|${vk || 'biome=watercave'}|${scene.x ?? 0},${scene.y ?? 0}|${+background},${+mid}`;
   }
+  if (pitPart(scene.key) >= 0) return `${scene.key}|${seed}|${vk}`;
   const mat = vk.split('&').filter(p => p && !p.startsWith('biome='));
   const key = mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
   if (scene.key === 'general/the_end_shop') {
@@ -2145,8 +2147,10 @@ async function compositeSceneBitmap(
   const wantMid = override?.mid ?? pixelSceneConfig.layers.mid;
   const wantVis = override?.visual ?? pixelSceneConfig.layers.visual;
 
-  const visualPath = wantVis && !waterCave ? resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, key) : undefined;
-  const bgPath = skipBg || !wantBg ? undefined : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, key);
+  const part = pitPart(key);
+  const visualPath = wantVis && !waterCave && part < 0 ? resolveScenePath(idx.visualByPath, idx.visualByName, biome, name, key) : undefined;
+  const bgPath = skipBg || !wantBg ? undefined : part >= 0 ? pitBackground(part)
+    : resolveScenePath(idx.bgByPath, idx.bgByName, biome, name, key);
 
   const zip = await getDataZip();
   let bgData: ImageData | null = null;

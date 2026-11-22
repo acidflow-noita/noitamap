@@ -1,3 +1,4 @@
+import { nightmarePitScenes, pitPart, pitBackground, loadPitMaterials } from "./nightmare-lava-pit";
 import { templeCrystals } from "./temple-crystals";
 import { captureWorlds } from "./world-coverage";
 import { finalizeGeneration } from "./finalize-generation";
@@ -60,6 +61,14 @@ export async function ensurePixelSceneData(
   key: string,
   options: { art?: boolean } = {},
 ): Promise<any | null> {
+  const part = pitPart(key);
+  if (part >= 0) {
+    const existing = getPixelSceneData(key);
+    if (existing) return existing;
+    const materials = await loadPitMaterials();
+    return PIXEL_SCENE_DATA[key] = { width: 512, height: 512, imgElement: materials[part],
+      backgroundArt: pitBackground(part) };
+  }
   const data = getPixelSceneData(key);
   if (data && ensureScenePixels && useRenderPerfGeneration() && !ArrayBuffer.isView(data.imgElement)) {
     restorePreparedScenePixels(key, data);
@@ -696,6 +705,8 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
     if (staticResults && staticResults.pixelScenes) {
       pixelScenesByPW[pwKey] = pixelScenesByPW[pwKey].concat(staticResults.pixelScenes);
     }
+    if (gameMode === "nightmare" && !isNGP && pw === 0)
+      pixelScenesByPW[pwKey].push(...nightmarePitScenes(biomeData.pixels, worldSize, worldCenter, telescopeMods.genConfigMod.BIOME_COLOR_TO_NAME));
     await yieldGenerationTask(opts.signal);
 
     // Also generate for heaven (pwVertical=-1) and hell (pwVertical=+1)

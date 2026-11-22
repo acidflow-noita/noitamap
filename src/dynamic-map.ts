@@ -103,7 +103,7 @@ export function getLastGenerationResult(): GenerationResult | null {
  *  the seed-report comparison lookup hits. Dailies always render all-unlocked,
  *  so the unlock portion is always "all". */
 function generationCacheKey(seed: number, unlockKey: string, isDaily: boolean, mode: DynamicGameMode): string {
-  return `${seed}-${unlockKey}${mode === "nightmare" ? "|nightmare-capture-v2" : ""}${isDaily ? "|daily-loadout-v1" : ""}`;
+  return `${seed}-${unlockKey}${mode === "nightmare" ? "|nightmare-wang-v3" : ""}${isDaily ? "|daily-loadout-v1" : ""}`;
 }
 export function dailyCacheKey(seed: number): string {
   return generationCacheKey(seed, `all${isLightMode() ? "|lm" : ""}|p-`, currentGameMode === "normal", currentGameMode);

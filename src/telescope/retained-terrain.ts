@@ -1,5 +1,5 @@
 import { OptionalCacheDatabase } from "./cache-storage";
-import { TERRAIN_VERSION } from "./terrain-policy";
+import { TERRAIN_VERSION, TERRAIN_PIXEL_REVISION } from "./terrain-policy";
 import type { GLTerrainGeneration } from "./gl-terrain-tile-source";
 import type { StaticTerrainMask } from "./static-terrain-mask";
 import { createGenerationCheckpoint } from "./generation-task";
@@ -10,7 +10,7 @@ import {
 } from "./retained-terrain-codec";
 
 const SIZE = 256;
-const REVISION = `${TERRAIN_VERSION}/retained-hd-v3-level-pools-229a7eb`;
+const REVISION = `${TERRAIN_VERSION}/retained-hd-v3-level-pools-229a7eb/${TERRAIN_PIXEL_REVISION}`;
 export interface RetainedTile {
   level: number;
   x: number;

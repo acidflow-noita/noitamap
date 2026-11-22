@@ -1,8 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { retainedTerrainIdentity, retainedTerrainIdentityAsync } from '../src/telescope/retained-terrain';
-import { TERRAIN_VERSION } from '../src/telescope/terrain-policy';
+import { TERRAIN_VERSION, TERRAIN_PIXEL_REVISION } from '../src/telescope/terrain-policy';
 
-const prefix = `${TERRAIN_VERSION}/retained-hd-v3-level-pools-229a7eb`;
+const prefix = `${TERRAIN_VERSION}/retained-hd-v3-level-pools-229a7eb/${TERRAIN_PIXEL_REVISION}`;
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 function generation(buffer: ArrayBufferView): any {
   return { seed: 42, isNGP: false, gameMode: 'normal',
