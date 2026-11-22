@@ -2969,18 +2969,30 @@ function wrapWithWikiLink(el: HTMLElement, poi: any): HTMLElement {
   return a;
 }
 
-function mountMarkerCard(card: HTMLElement, viewer: any, anchor: CardAnchor, request: POICardRequest): void {
-  (card as HTMLElement & { __close?: () => void }).__close = () => {
+function mountMarkerCard(card: HTMLElement, viewer: any, anchor: CardAnchor, request: POICardRequest,
+  controls = document.createElement('div')): void {
+  const closeCard = () => {
     if (tooltipEl === card && request.isCurrent()) hideMarkerTooltip();
   };
+  (card as HTMLElement & { __close?: () => void }).__close = closeCard;
+  const dismiss = (event: MouseEvent) => { event.stopPropagation(); closeCard(); };
+
+  controls.className = 'poi-card-controls';
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'btn-close';
+  close.setAttribute('aria-label', i18next.t('seedReport.close', 'Close'));
+  close.onclick = dismiss;
+  controls.append(close);
   if (reportCardReturn) {
     const back = document.createElement('button');
     back.type = 'button';
     back.className = 'btn btn-sm btn-outline theme-secondary poi-card-back';
     back.textContent = i18next.t('seedReport.v3.backToReport', reportCardReturn.label);
-    back.onclick = event => { event.stopPropagation(); (card as any).__close?.(); };
-    card.querySelector('.poi-card-controls')?.prepend(back);
+    back.onclick = dismiss;
+    controls.prepend(back);
   }
+  card.prepend(controls);
   card.style.visibility = 'hidden';
   document.body.appendChild(card);
   tooltipPlacementCleanup = mountPOICardPlacement(card, { viewer, anchor, isCurrent: request.isCurrent });
@@ -3014,7 +3026,6 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
 
   // Top controls container — in normal flow, pushed to right
   const topBar = document.createElement('div');
-  topBar.className = 'poi-card-controls';
 
   const shareBtn = document.createElement('button');
   shareBtn.type = 'button';
@@ -3224,17 +3235,6 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     }
   }
 
-  const closeBtn = document.createElement('button');
-  closeBtn.type = 'button';
-  closeBtn.className = 'btn btn-sm btn-outline theme-secondary poi-card-icon-button';
-  closeBtn.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
-  closeBtn.setAttribute('aria-label', i18next.t('seedReport.close', 'Close'));
-
-  closeBtn.onclick = e => {
-    e.stopPropagation();
-    hideMarkerTooltip();
-  };
-
   // "Pillar" button: any POI tied to an achievement segment (bosses, essences,
   // orbs, crystal-key chests, ...) gets a button that flies to its pillar
   // column. Skipped on the pillar segments themselves. Association is derived
@@ -3280,8 +3280,6 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
 
   if (lockBtn) topBar.appendChild(lockBtn);
   topBar.appendChild(shareBtn);
-  topBar.appendChild(closeBtn);
-  tooltipEl.appendChild(topBar);
 
   // Resolve the effective POI for rendering: when the user has cycled the
   // unlocks toggle to a non-primary descriptor AND that variant is
@@ -3331,7 +3329,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     }
     tooltipEl.appendChild(footer);
 
-    mountMarkerCard(tooltipEl, viewer, anchor, request);
+    mountMarkerCard(tooltipEl, viewer, anchor, request, topBar);
     return;
   }
 
@@ -4611,7 +4609,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
   }
   tooltipEl.appendChild(footer);
 
-  mountMarkerCard(tooltipEl, viewer, anchor, request);
+  mountMarkerCard(tooltipEl, viewer, anchor, request, topBar);
 }
 
 function removeMarkerTooltip(): void {
@@ -4935,20 +4933,6 @@ function showOrbTooltip(
   tooltipEl = document.createElement('div');
   (tooltipEl as any).__rebuild = () => showOrbTooltip(orb, iconUrl, viewer, anchor, request);
   tooltipEl.className = 'marker-tooltip';
-  const controls = document.createElement('div');
-  controls.className = 'poi-card-controls';
-  const closeBtn = document.createElement('button');
-  closeBtn.type = 'button';
-  closeBtn.className = 'btn btn-sm btn-outline theme-secondary poi-card-icon-button';
-  closeBtn.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
-  closeBtn.setAttribute('aria-label', i18next.t('seedReport.close', 'Close'));
-  closeBtn.onclick = e => {
-    e.stopPropagation();
-    hideMarkerTooltip();
-  };
-  controls.appendChild(closeBtn);
-  tooltipEl.appendChild(controls);
-
   const header = document.createElement('div');
   header.style.cssText = 'display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em';
   const spriteImg = document.createElement('img');

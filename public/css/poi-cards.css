@@ -9,9 +9,9 @@
   max-height: calc(100dvh - 24px);
   overflow: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
   pointer-events: auto;
-  padding: var(--panel-padding);
+  padding-block: var(--panel-padding);
+  padding-inline: var(--bs-spacer-6);
   border: 1px solid var(--border);
   border-radius: var(--radius-panel);
   background: var(--surface-1);
@@ -21,7 +21,6 @@
   font-size: var(--control-font-size);
   line-height: 1.5;
 }
-.marker-tooltip *, .marker-tooltip *::before, .marker-tooltip *::after { box-sizing: border-box; }
 .marker-tooltip img { flex-shrink: 0; }
 .poi-card-controls {
   position: sticky;
