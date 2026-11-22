@@ -15,6 +15,7 @@ export type MapDefinition = {
   labelKey?: string;
   badges: Badge[];
   patchDate: string;
+  showCurrentDate?: boolean;
   seed: string;
   tileSets: ('middle' | 'left' | 'right')[];
 };

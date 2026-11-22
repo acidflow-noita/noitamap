@@ -1,5 +1,4 @@
 import { getAllMapDefinitions } from './data_sources/map_definitions';
-import { isDynamicMap } from './data_sources/tile_data';
 import { assertElementById, formatDate } from './util';
 import type { Badge, MapDefinition } from './data_sources/map_definitions';
 import i18next from './i18n';
@@ -11,6 +10,7 @@ export const isNavLink = (el: HTMLElement) => el.classList.contains(NAV_LINK_IDE
 
 const TRANSLATABLE_LABEL_KEYS = [
   'maps.mapDynamic',
+  'maps.dynamicNewGamePlus',
   'maps.dynamicNightmare',
   'maps.regular',
   'maps.newGamePlus',
@@ -27,7 +27,7 @@ export const getMapLabel = (def: MapDefinition): string => {
 /** Build the full badge list for a map def, including the synthetic date badge. */
 const getMapBadges = (def: MapDefinition, iconOnly: boolean): { badges: Badge[]; isDynamic: boolean; dateBadgeIndex: number } => {
   const badges = [...def.badges];
-  const isDynamic = isDynamicMap(def.key);
+  const isDynamic = def.showCurrentDate === true;
   const dateStr = isDynamic ? new Date().toISOString().slice(0, 10) : def.patchDate;
   badges.push({
     label: formatDate(dateStr, i18next.language),
@@ -120,7 +120,7 @@ export const createMapSelectorRenderer = (root: HTMLElement) => {
     const def = getAllMapDefinitions().find(([key]) => key === mapName)?.[1];
     if (!def) return;
     const identity = JSON.stringify([def, i18next.language, getMapLabel(def),
-      isDynamicMap(def.key) ? new Date().toISOString().slice(0, 10) : null]);
+      def.showCurrentDate ? new Date().toISOString().slice(0, 10) : null]);
     if (identity === previous) return;
     previous = identity;
     disposeBadgePopovers(root);

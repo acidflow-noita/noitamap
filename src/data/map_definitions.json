@@ -11,6 +11,41 @@
         "icon": "bi bi-magic"
       }
     ],
+    "showCurrentDate": true,
+    "patchDate": "2025-01-25",
+    "seed": "78633191",
+    "tileSets": ["middle", "left", "right"]
+  },
+  {
+    "key": "new-game-plus-dynamic-main-branch",
+    "label": "Dynamic NG+",
+    "labelKey": "maps.dynamicNewGamePlus",
+    "badges": [
+      {
+        "label": "Magic",
+        "labelKey": "badges.magic",
+        "class": "theme-primary",
+        "icon": "bi bi-magic"
+      }
+    ],
+    "showCurrentDate": true,
+    "patchDate": "2025-01-25",
+    "seed": "78633191",
+    "tileSets": ["middle", "left", "right"]
+  },
+  {
+    "key": "nightmare-dynamic-main-branch",
+    "label": "Dynamic Nightmare",
+    "labelKey": "maps.dynamicNightmare",
+    "badges": [
+      {
+        "label": "Magic",
+        "labelKey": "badges.magic",
+        "class": "theme-primary",
+        "icon": "bi bi-magic"
+      }
+    ],
+    "showCurrentDate": true,
     "patchDate": "2025-01-25",
     "seed": "78633191",
     "tileSets": ["middle", "left", "right"]
@@ -28,22 +63,6 @@
       }
     ],
     "patchDate": "2024-08-12",
-    "seed": "78633191",
-    "tileSets": ["middle", "left", "right"]
-  },
-  {
-    "key": "nightmare-dynamic-main-branch",
-    "label": "Dynamic Nightmare",
-    "labelKey": "maps.dynamicNightmare",
-    "badges": [
-      {
-        "label": "Magic",
-        "labelKey": "badges.magic",
-        "class": "theme-primary",
-        "icon": "bi bi-magic"
-      }
-    ],
-    "patchDate": "2025-01-25",
     "seed": "78633191",
     "tileSets": ["middle", "left", "right"]
   },

@@ -155,6 +155,20 @@
       "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"png\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"3072\",\"Height\":\"2048\"},\"TopLeft\":{\"X\":\"-2560\",\"Y\":\"-1024\"}}}\n"
     }
   ],
+  "new-game-plus-dynamic-main-branch": [
+    {
+      "url": "https://new-game-plus-dynamic-main-branch-middle.acidflow.stream/maps/new-game-plus-dynamic-main-branch-middle/new-game-plus-dynamic-main-branch-middle-2025-01-25-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"36352\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-17920\",\"Y\":\"-31744\"}}}\n"
+    },
+    {
+      "url": "https://new-game-plus-dynamic-main-branch-left.acidflow.stream/maps/new-game-plus-dynamic-main-branch-left/new-game-plus-dynamic-main-branch-left-2025-01-25-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"36352\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"-53760\",\"Y\":\"-31744\"}}}\n"
+    },
+    {
+      "url": "https://new-game-plus-dynamic-main-branch-right.acidflow.stream/maps/new-game-plus-dynamic-main-branch-right/new-game-plus-dynamic-main-branch-right-2025-01-25-78633191.dzi",
+      "dziContent": "{\"Image\":{\"xmlns\":\"http://schemas.microsoft.com/deepzoom/2008\",\"Format\":\"webp\",\"Overlap\":\"2\",\"TileSize\":\"512\",\"Size\":{\"Width\":\"35840\",\"Height\":\"73728\"},\"TopLeft\":{\"X\":\"17920\",\"Y\":\"-31744\"}}}\n"
+    }
+  ],
   "nightmare-dynamic-main-branch": [
     {
       "url": "https://nightmare-dynamic-main-branch-middle.acidflow.stream/maps/nightmare-dynamic-main-branch-middle/nightmare-dynamic-main-branch-middle-2025-01-25-78633191.dzi",

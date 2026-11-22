@@ -46,6 +46,7 @@ const MAP_SHORT_TO_FULL: Record<string, MapName> = {
   br: 'biomemaprendered-main-branch',
   mt: 'maptestdev',
   dy: 'dynamic-main-branch',
+  dngp: 'new-game-plus-dynamic-main-branch',
   dn: 'nightmare-dynamic-main-branch',
   up: 'ups-main',
   // Overlay-only: layered over ups-main by the sideworld toggle rather than
@@ -71,6 +72,7 @@ const MAP_FULL_TO_SHORT: Record<MapName, string> = {
   'biomemaprendered-main-branch': 'br',
   'maptestdev': 'mt',
   'dynamic-main-branch': 'dy',
+  'new-game-plus-dynamic-main-branch': 'dngp',
   'nightmare-dynamic-main-branch': 'dn',
   'ups-main': 'up',
   'qlc-sideworld': 'qs',

@@ -67,7 +67,16 @@ describe('map navigation UI during camera movement', () => {
     createMapLinks(); expect(Popover.instances.size).toBe(0);
   });
 
-  it.each(['dynamic-main-branch', 'nightmare-dynamic-main-branch'])('refreshes the date for %s at UTC midnight without a camera or map event', (map) => {
+  it('puts Dynamic NG+ second and Dynamic Nightmare third with the same Magic badge as the Daily', () => {
+    const menu = createMapLinks();
+    const links = [...menu.querySelectorAll<HTMLAnchorElement>('[data-map-key]')].slice(0, 3);
+    expect(links.map(link => link.dataset.mapKey)).toEqual([
+      'dynamic-main-branch', 'new-game-plus-dynamic-main-branch', 'nightmare-dynamic-main-branch',
+    ]);
+    for (const link of links) expect(link.querySelector('.badge.theme-primary .bi-magic')).not.toBeNull();
+  });
+
+  it.each(['dynamic-main-branch', 'new-game-plus-dynamic-main-branch', 'nightmare-dynamic-main-branch'])('refreshes the date for %s at UTC midnight without a camera or map event', (map) => {
     vi.setSystemTime(new Date('2026-09-24T23:59:59.950Z'));
     const root = document.getElementById('selector')!, render = createMapSelectorRenderer(root);
     const menu = createMapLinks();
