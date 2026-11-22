@@ -29,7 +29,8 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
   const head = document.createElement('thead'), header = document.createElement('tr'), body = document.createElement('tbody');
   head.append(header); table.append(head, body); wrap.append(table); scores.append(heading, actions, wrap); grid.append(mapPanel, scores); main.append(grid);
   const board = new MapBoard(map, config.bounds, config.overview, () => {}, config.map); board.setLocked(true);
-  mapPanel.insertBefore(mapControls(board, { readOnly: true }), map);
+  const toolbar = document.createElement('div'); toolbar.className = 'guess-map-toolbar';
+  toolbar.append(mapControls(board, { readOnly: true })); map.before(toolbar);
   const rows = new Map<string, HTMLTableRowElement>();
   let selected: string | undefined;
   const select = (id: string) => {

@@ -1,7 +1,10 @@
 function heightAfter(viewport: HTMLElement): number {
   let height = 0;
   for (let item = viewport.nextElementSibling; item; item = item.nextElementSibling) {
-    if (getComputedStyle(item).display !== 'none') height += item.getBoundingClientRect().height;
+    const { display, position } = getComputedStyle(item);
+    if (display !== 'none' && position !== 'absolute' && position !== 'fixed') {
+      height += item.getBoundingClientRect().height;
+    }
   }
   return height;
 }

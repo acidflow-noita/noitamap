@@ -80,7 +80,6 @@ export function viewerChatPanel(viewer: TwitchViewer, initialChannel: string, on
       historyLink.href = guessRouteUrl('history', location.origin, { channel }).href;
       bindAttribute(historyLink, 'aria-label', '{{player}}’s results', { player: channel });
     } else renderPlayers();
-    actions.hidden = gift.hidden;
     paint();
   };
   const unsubscribe = viewer.subscribe(refresh), unsubscribeLanguage = onGuessrLanguageChanged(refresh);

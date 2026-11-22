@@ -50,6 +50,20 @@ it('does not enlarge the clue because the page was scrolled', async () => {
   scroll = 240; vi.stubGlobal('scrollY', scroll); window.dispatchEvent(new Event('resize')); await tick();
   expect(grid.style.getPropertyValue('--round-clue-width')).toBe(before);
 });
+it('keeps the fitted panels in place when a countdown covers the clue and then ends', async () => {
+  width = 1904;
+  await tick();
+  const grid = document.querySelector<HTMLElement>('.stream-viewer-layout')!;
+  const before = grid.getAttribute('style');
+  const countdown = document.createElement('div');
+  countdown.style.position = 'absolute';
+  countdown.getBoundingClientRect = () => new DOMRect(0, 100, 900, 600);
+  grid.querySelector('.stream-viewer-clue')!.append(countdown);
+  await tick();
+  expect(grid.getAttribute('style')).toBe(before);
+  countdown.remove(); await tick();
+  expect(grid.getAttribute('style')).toBe(before);
+});
 it('settles before paint when fitting the clue wraps its controls at an intermediate width', async () => {
   vi.stubGlobal('innerHeight', 582);
   const grid = document.querySelector<HTMLElement>('.stream-viewer-layout')!;

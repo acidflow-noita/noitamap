@@ -361,8 +361,13 @@ describe('shared channel guess picker', () => {
       { id: '123', login: 'chatter', name: 'Chatter', guess: null, score: 0, total: 0 },
     ] });
     expect(f.main.querySelector<HTMLElement>('.stream-shared-round')!.hidden).toBe(true);
-    f.button('Round 1 results').click();
+    const previous = f.button('Round 1 results');
+    expect(previous.closest('.stream-toolbar-round')).not.toBeNull();
+    expect(f.main.querySelector('.stream-picker')!.contains(previous)).toBe(false);
+    previous.click();
     expect(f.main.querySelector<HTMLElement>('.stream-shared-round')!.hidden).toBe(false);
+    expect(previous.hidden).toBe(true);
+    expect(f.main.querySelector('.stream-shared-round .guess-map-toolbar > .guess-map-controls')).not.toBeNull();
     expect(f.main.querySelector('.stream-shared-round > .page-back:first-child')).toBe(f.button('Back to round 2'));
     expect(f.button('Back to round 2').classList.contains('theme-secondary')).toBe(true);
     expect(f.main.querySelectorAll('.stream-shared-round tbody tr')).toHaveLength(2);

@@ -182,10 +182,16 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const previousResult = button('View results', () => {
     if (!live) return;
     const latest = Math.max(0, ...sharedRounds?.rounds.keys() ?? []);
-    if (latest) { sharedRound = latest; refresh(); return; }
-    for (let i = 9; i >= 0; i--) if (personal.round(i).reveal) { reviewedRound = i; drawnOutcome = ''; refresh(); break; }
-  }, 'small secondary'); previousResult.hidden = true;
-  const returnToRound = button('Back', () => { reviewedRound = null; drawnOutcome = ''; board.setMarkers(point); refresh(); }, 'small secondary');
+    if (latest) { sharedRound = latest; refresh(); sharedBack?.focus({ preventScroll: true }); return; }
+    for (let i = (live.totalRounds ?? STREAM_ROUNDS) - 1; i >= 0; i--) {
+      if (personal.round(i).reveal) {
+        reviewedRound = i; drawnOutcome = ''; refresh(); returnToRound.focus({ preventScroll: true }); break;
+      }
+    }
+  }, 'small secondary stream-previous-result'); previousResult.hidden = true;
+  const returnToRound = button('Back', () => {
+    reviewedRound = null; drawnOutcome = ''; board.setMarkers(point); refresh(); previousResult.focus({ preventScroll: true });
+  }, 'small secondary');
   returnToRound.hidden = true; revealBar.prepend(returnToRound);
   const result = node('a', 'small secondary', 'View results'); result.hidden = true;
   const isHost = () => !pvp && !!live?.hostId && live.hostId === viewer.getState().userId;
@@ -233,7 +239,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const sendControl = node('span', 'stream-send-control'); sendControl.append(send);
   const sendHelp = hoverHelp(sendControl, () => tr(sendReason), send);
   const secondaryActions = node('div', 'stream-secondary-actions');
-  secondaryActions.append(previousResult, result, retry);
+  secondaryActions.append(result, retry);
   actions.append(sendControl); mapPanel.append(revealBar, actions, secondaryActions, signIn, map); layout.append(mapPanel);
   const resultsPanel = node('section', 'stream-viewer-results'); resultsPanel.hidden = true;
   layout.append(resultsPanel);
@@ -245,7 +251,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   if (exit) moveGameExit(main, exit);
   toolbar.querySelector('.stream-chat-heading')?.classList.add('stream-toolbar-navigation');
   const commands = toolbar.querySelector<HTMLElement>('.stream-chat-actions')!; commands.classList.add('stream-toolbar-actions');
-  const phase = node('div', 'stream-toolbar-round'); phase.append(round, commands); toolbar.append(timer, phase);
+  commands.prepend(previousResult);
+  const phase = node('div', 'stream-toolbar-round'); phase.append(commands, round); toolbar.append(timer, phase);
   const activity = node('div', 'stream-activity stream-viewer-activity');
   activity.hidden = true; activity.append(roomStatus, delivery);
   layout.prepend(chat.panel); main.append(layout, activity);
@@ -351,13 +358,6 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       if (drawnOutcome !== key) { drawnOutcome = key; board.setMarkers(own.received?.point ?? null, own.reveal.answer); }
       board.setLocked(true);
     } else board.setLocked(!canGuess());
-    let latest = -1;
-    for (let i = 0; i < (live?.totalRounds ?? STREAM_ROUNDS); i++) if (personal.round(i).reveal) latest = i;
-    previousResult.hidden = latest < 0 || reviewedRound !== null;
-    if (latest >= 0) {
-      const latestResult = personal.round(latest);
-      bindText(previousResult, () => `${tr('Round {{round}}', { round: formatGuessrNumber(latest + 1) })}: ${latestResult.pending ? '…' : formatGuessrNumber(latestResult.score?.score ?? 0)}`);
-    }
     if (live.phase === 'complete') {
       if (live.resultId && channel) rememberPublishedStream(live.resultId, channel);
       const signature = `${viewer.getState().userId ?? viewer.getState().savedUserId}/${viewer.getState().connected}/${sharedRounds?.rounds.size}/`
@@ -494,7 +494,9 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       clearShared?.(); sharedPanel.replaceChildren(); sharedSignature = signature;
       const actions = node('div', 'game-actions stream-round-review-actions');
       actions.classList.toggle('pvp-actions', pvp);
-      sharedBack = pageBack(button('Back', () => { sharedRound = null; refresh(); }, 'secondary'));
+      sharedBack = pageBack(button('Back', () => {
+        sharedRound = null; refresh(); previousResult.focus({ preventScroll: true });
+      }, 'secondary'));
       sharedPanel.append(sharedBack);
       if (pvp) {
         sharedReady = button('Ready to continue', () => void pvpCommand({
@@ -585,10 +587,6 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     bindText(delivery, () => actionError || (previousDelivery ? `${tr('Round {{round}}', { round: formatGuessrNumber(deliveryRound! + 1) })}: ` : '') + tr(receiptStatus));
     delivery.dataset.state = actionError || deliveryOwn?.lastStatus === 'rejected' ? 'error' : deliveryOwn?.received && !deliveryOwn.pending ? 'received' : 'waiting';
     delivery.hidden = !actionError && !previousDelivery && deliveryOwn?.lastStatus !== 'rejected';
-    const latestShared = Math.max(0, ...sharedRounds?.rounds.keys() ?? []);
-    if (latestShared && live?.phase !== 'complete') {
-      previousResult.hidden = false; bindText(previousResult, 'Round {{round}} results', { round: formatGuessrNumber(latestShared) });
-    }
     const controls = cluePanel.querySelector<HTMLElement>('.clue-controls');
     if (controls) controls.inert = !canGuess();
     if (live?.timing) {
@@ -638,6 +636,21 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     const resultId = live?.resultId ?? (unavailableGame ? requestedGame : undefined);
     if (resultId) result.href = guessRouteUrl('stream-result', location.origin, { result: resultId }).href;
     showSharedResults();
+    const onRound = live?.phase === 'guess' && !live.ended && resultsPanel.hidden && sharedPanel.hidden && reviewedRound === null;
+    const latestShared = Math.max(0, ...sharedRounds?.rounds.keys() ?? []);
+    let latestPersonal = -1;
+    if (onRound && !latestShared) {
+      for (let i = 0; i < (live?.totalRounds ?? STREAM_ROUNDS); i++) if (personal.round(i).reveal) latestPersonal = i;
+    }
+    previousResult.hidden = !onRound;
+    previousResult.disabled = !latestShared && latestPersonal < 0;
+    if (onRound) {
+      if (latestShared || latestPersonal < 0) bindText(previousResult, 'Round {{round}} results', { round: formatGuessrNumber(latestShared || 1) });
+      else {
+        const outcome = personal.round(latestPersonal);
+        bindText(previousResult, () => `${tr('Round {{round}}', { round: formatGuessrNumber(latestPersonal + 1) })}: ${outcome.pending ? '…' : formatGuessrNumber(outcome.score?.score ?? 0)}`);
+      }
+    }
     if (pvp) {
       const waiting = !unavailableGame && !!live?.pvp && (live.ended || live.timing?.phase === 'lobby' || live.phase === 'waiting');
       pvpLobby.hidden = !waiting; layout.classList.toggle('show-pvp-lobby', waiting);

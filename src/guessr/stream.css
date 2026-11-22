@@ -300,7 +300,6 @@
 .stream-review-grid .map-board { flex: 1; min-block-size: 18rem; block-size: 22rem; }
 .stream-review-grid .stream-round-score-scroll { max-block-size: 38rem; }
 .stream-review-grid .stream-round-preview { flex: none; inline-size: min(100%, 28rem); margin-inline: auto; aspect-ratio: 9 / 4; }
-.stream-review-grid .game-panel > .guess-map-controls { border-block: 1px solid var(--border); }
 .stream-round-results-layout { --round-review-height: clamp(10rem, 50svh, 38rem); align-items: start; }
 .stream-round-results-layout .map-board { flex: none; min-block-size: 0; block-size: var(--round-review-height); }
 .stream-round-results-layout .stream-round-score-scroll { flex: auto; max-block-size: var(--round-review-height); }
