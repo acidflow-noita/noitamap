@@ -1,6 +1,6 @@
 /** Compact, private build products for Workers Free. Eligibility is computed
  * offline; requests only sample a weighted strip and select existing images. */
-import { isHolyMountainArea, type AreaDefinition } from "./area-rules";
+import { eligibleForNewRound, isHolyMountainArea, type AreaDefinition } from "./area-rules";
 import { cameraRect, type PreparedFrame } from "./clue-camera";
 import type { ImageGameConfig } from "./image-game";
 import type { Point } from "./rules";
@@ -275,13 +275,14 @@ export function createPreparedRoundSource(
         native = await loadGrid(data.capture);
       const grouped = new Map<string, PreparedGameCatalog['areas']>();
       for (const area of data.areas) {
+        // Deployed and cached catalogs can still contain Hard variants and shards.
+        if (!eligibleForNewRound(area.definition)) continue;
         const group = grouped.get(area.definition.id) ?? [];
         group.push(area); grouped.set(area.definition.id, group);
       }
-      let holyMountainUsed = false, featurelessUsed = false;
-      const eligible = (area: PreparedGameCatalog['areas'][number]) =>
-        (!holyMountainUsed || !isHolyMountainArea(area.definition)) && (!featurelessUsed || !area.definition.viewDifficulty);
-      const refill = () => [...grouped.values()].map(group => group.filter(eligible)).filter(group => group.length);
+      let holyMountainUsed = false;
+      const available = (group: PreparedGameCatalog['areas']) => !holyMountainUsed || !isHolyMountainArea(group[0].definition);
+      const refill = () => [...grouped.values()].filter(available);
       let pool = refill();
       const result: PreparedRound[] = [];
       for (let n = 0; n < count; n++) {
@@ -303,9 +304,8 @@ export function createPreparedRoundSource(
         });
         if (isHolyMountainArea(area.definition)) {
           holyMountainUsed = true;
+          pool = pool.filter(available);
         }
-        if (area.definition.viewDifficulty) featurelessUsed = true;
-        pool = pool.map(group => group.filter(eligible)).filter(group => group.length);
       }
       return result;
     },

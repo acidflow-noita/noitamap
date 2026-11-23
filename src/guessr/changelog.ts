@@ -1,16 +1,15 @@
 import Dialog from 'bootstrap/js/dist/dialog.js';
 import { bindAttribute, bindText, guessrLocale, tr } from './i18n';
 import { readGuessRoute } from './routes';
-import hardPollWindow from '../../public/guessr/polls/hard-puzzles-v1/window.json';
 
 const isMainPage = () => readGuessRoute(new URL(location.href)).pane === 'home';
 
 // One announcement per release day. Editing hotfix notes must not reopen it.
 export const GUESSR_CHANGELOG = {
-  id: '2026-11-18-round-layout',
-  date: '2026-11-20',
+  id: '2026-11-23-hard-puzzle-vote',
+  date: '2026-11-23',
   notes: [
-    ...(hardPollWindow.opensAt ? ['The hard-puzzle poll runs for three days and covers all four game modes.'] : []),
+    'Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.',
     'The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.',
     'In round reviews, {{backToResults}} is at the top left.',
     'You can now quit an unfinished game from the {{dailyMode}} page.',

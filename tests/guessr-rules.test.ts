@@ -38,6 +38,15 @@ const pack: Pack = {
   })),
 };
 describe("NoitaGuessr rules", () => {
+  it("replaces Hard places in a new fixed demo and restores the original order in a saved demo", () => {
+    const settings = { ...DEFAULT_SETTINGS, mode: 'demo' as const };
+    const mixed = { ...pack, demo: ['p0', 'p1', 'p2'],
+      places: pack.places.map(p => ({ ...p, hard: p.id === 'p0' })) };
+    const session = newSession(mixed, settings, 'demo');
+    expect(session.order).toEqual(['p1', 'p2', 'p3']);
+    const old = { ...session, order: mixed.demo };
+    expect(restorePractice(JSON.stringify(old), mixed)?.order).toEqual(old.order);
+  });
   const placeWithViews = {
     ...pack.places[0],
     views: Object.fromEntries(

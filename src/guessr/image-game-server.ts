@@ -1,6 +1,6 @@
 /** Server-only image selection and scoring. No image decoder, cropper, encoder
  * or filesystem dependency: all round images already exist in the dataset. */
-import { isHolyMountainArea, scoreAreaGuess, type AreaDefinition, type AreaDifficulty, type AreaScoring, type ViewDifficulty } from "./area-rules.ts";
+import { eligibleForNewRound, isHolyMountainArea, scoreAreaGuess, type AreaDefinition, type AreaDifficulty, type AreaScoring, type ViewDifficulty } from "./area-rules.ts";
 import { cameraRect, type PreparedFrame } from "./clue-camera.ts";
 import { within, type Bounds, type Point } from "./rules.ts";
 import {
@@ -167,16 +167,17 @@ export class ImageGameService {
     }
     return starts;
   }
-  private areaVariants(area: AreaDefinition, excludeFeatureless = false) {
+  private areaVariants(area: AreaDefinition) {
     let variants = this.variants.get(area.id);
     if (!variants) {
-      variants = areaStartVariants(this.index, area, this.areaStarts(area)).filter(v => v.sampler.pixels > 0);
+      variants = areaStartVariants(this.index, area, this.areaStarts(area))
+        .filter(v => v.sampler.pixels > 0 && eligibleForNewRound(v.definition));
       this.variants.set(area.id, variants);
     }
-    return variants.filter(v => !excludeFeatureless || !v.definition.viewDifficulty);
+    return variants;
   }
-  private createRound(area: AreaDefinition, excludeFeatureless = false): PrivateRound | null {
-    const variants = this.areaVariants(area, excludeFeatureless);
+  private createRound(area: AreaDefinition): PrivateRound | null {
+    const variants = this.areaVariants(area);
     if (!variants.length) return null;
     let selected = variants[0];
     if (variants.length > 1) {
@@ -199,7 +200,6 @@ export class ImageGameService {
   }
   selectRounds(count: number, previous: readonly PrivateRound[] = []): PrivateRound[] {
     let holyMountainUsed = previous.some(r => isHolyMountainArea({ id: r.areaId }));
-    let featurelessUsed = previous.some(r => r.difficulty?.view);
     let selection = this.areas.filter(area => !holyMountainUsed || !isHolyMountainArea(area));
     const rounds: PrivateRound[] = [];
     while (rounds.length < count) {
@@ -209,17 +209,16 @@ export class ImageGameService {
           throw new Error(
             "No starting views contain terrain in the reviewed areas.",
           );
-        selection = eligible.filter(area => (!holyMountainUsed || !isHolyMountainArea(area)) && this.areaVariants(area, featurelessUsed).length > 0);
+        selection = eligible.filter(area => (!holyMountainUsed || !isHolyMountainArea(area)) && this.areaVariants(area).length > 0);
         if (!selection.length) throw new Error('Not enough eligible puzzle areas.');
       }
       const area = selection.splice(
         Math.floor(this.random() * selection.length),
         1,
       )[0];
-      const round = this.createRound(area, featurelessUsed);
+      const round = this.createRound(area);
       if (round) {
         rounds.push(round);
-        if (round.difficulty?.view) featurelessUsed = true;
         if (isHolyMountainArea(area)) {
           holyMountainUsed = true;
           selection = selection.filter(candidate => !isHolyMountainArea(candidate));
@@ -284,7 +283,7 @@ export class ImageGameService {
       if (area && this.areaStarts(area).contains(round.answer)) continue;
       const otherRounds = game.rounds.filter((_, n) => n !== i);
       game.rounds[i] =
-        (area && this.createRound(area, otherRounds.some(r => r.difficulty?.view))) || this.selectRounds(1, otherRounds)[0];
+        (area && this.createRound(area)) || this.selectRounds(1, otherRounds)[0];
       repaired = true;
     }
     if (repaired) await this.store.put(game);

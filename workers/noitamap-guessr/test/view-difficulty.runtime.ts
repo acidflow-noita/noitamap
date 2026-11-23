@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { createPreparedRoundSource, type PreparedGameCatalog } from '../../../src/guessr/prepared-rounds';
 import { scoreAreaGuess, type AreaDefinition } from '../../../src/guessr/area-rules';
 
-it('selects one featureless view across EDR/Hell and keeps its score rules in the Workers runtime', async () => {
+it('excludes both Hard views from new games and can still score an archived Hard round in the Workers runtime', async () => {
   const base: AreaDefinition = { id: 'terrain/edr', label: 'EDR', originY: 0,
     runs: [[0, 0, 4], [1, 0, 4]], bounds: { x: -17920, y: 0, width: 2048, height: 1024 }, cells: 8,
     difficultyTier: 'hard', viewDifficulty: 'featureless-edr', scoring: { area: 1000, position: 4000, maximum: 5000 } };
@@ -25,11 +25,12 @@ it('selects one featureless view across EDR/Hell and keeps its score rules in th
     if (path.endsWith('catalog.json')) return Response.json(catalog);
     return new Response(path.endsWith('native-grid.bin') ? grid : starts);
   }, 'https://images.test', 'https://reference.test', () => 0);
-  const rounds = await source.sampleRounds(10);
-  expect(rounds).toHaveLength(10);
-  expect(rounds.filter(r => r.area.viewDifficulty)).toHaveLength(1);
-  expect(rounds[0].area.id).toBe('terrain/edr');
-  expect(scoreAreaGuess(rounds[0].area, rounds[0].answer, rounds[0].answer)).toMatchObject({ difficultyTier: 'hard', areaScore: 1000, positionScore: 4000, score: 5000 });
-  expect(rounds.slice(1).every(r => r.area.id === 'biome/other')).toBe(true);
+  for (const count of [3, 5, 10]) {
+    const rounds = await source.sampleRounds(count);
+    expect(rounds).toHaveLength(count);
+    expect(rounds.every(r => r.area.id === 'biome/other' && r.area.difficultyTier === 'normal')).toBe(true);
+  }
+  const answer = { x: -16896, y: 512 };
+  expect(scoreAreaGuess(base, answer, answer)).toMatchObject({ difficultyTier: 'hard', areaScore: 1000, positionScore: 4000, score: 5000 });
   const warmed = reads; await source.sampleRounds(10); expect(reads).toBe(warmed);
 });

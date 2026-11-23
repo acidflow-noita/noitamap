@@ -765,5 +765,6 @@
   "Closed {{when}}": "Suljettu {{when}}",
   "Voting closed before your vote was recorded. {{yes}} in favor, {{no}} against.": "Äänestys päättyi ennen kuin äänesi ehdittiin kirjata. {{yes}} puolesta, {{no}} vastaan.",
   "The hard-puzzle poll runs for three days and covers all four game modes.": "Vaikeiden pulmapelien kysely kestää kolme päivää ja kattaa kaikki neljä pelitilaa.",
+  "Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.": "Pelaajat äänestivät 8–2 vaikeiden pulmien poistamisen puolesta. Tämä koskee kaikkien neljän pelimuodon uusia pelejä.",
   "Hard puzzles?": "Vaikeita pulmia?"
 }

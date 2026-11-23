@@ -774,5 +774,6 @@
   "Closed {{when}}": "Chiuso {{when}}",
   "Voting closed before your vote was recorded. {{yes}} in favor, {{no}} against.": "La votazione si è conclusa prima che il tuo voto fosse registrato. {{yes}} a favore, {{no}} contrario.",
   "The hard-puzzle poll runs for three days and covers all four game modes.": "Il sondaggio \"Hard-Puzzle\" dura tre giorni e riguarda tutte e quattro le modalità di gioco.",
+  "Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.": "I giocatori hanno votato 8 a 2 a favore dell'esclusione degli enigmi troppo difficili. Questa decisione si applica ai nuovi giochi in tutte e quattro le modalità.",
   "Hard puzzles?": "Enigmi difficili?"
 }

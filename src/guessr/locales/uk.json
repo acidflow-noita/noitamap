@@ -783,5 +783,6 @@
   "Closed {{when}}": "Закрито {{when}}",
   "Voting closed before your vote was recorded. {{yes}} in favor, {{no}} against.": "Голосування завершилося до того, як ваш голос було зафіксовано. {{yes}} — «за», {{no}} — «проти».",
   "The hard-puzzle poll runs for three days and covers all four game modes.": "Опитування щодо складних головоломок триває три дні й охоплює всі чотири режими гри.",
+  "Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.": "Гравці проголосували 8 проти 2 за виключення складних головоломок. Це стосується нових ігор у всіх чотирьох режимах.",
   "Hard puzzles?": "Складні головоломки?"
 }

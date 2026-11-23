@@ -258,10 +258,12 @@ export function partitionStarts(source: readonly Bounds[], mask: readonly Bounds
 
 export function areaStartVariants(index: PrivateImageSet, area: AreaDefinition, starts = prepareAreaStarts(index, area)) {
   const evidence = index.viewDifficulty;
-  if (!evidence || !featurelessKind(area)) return [{ definition: area, sampler: starts }];
+  if (!featurelessKind(area)) return [{ definition: area, sampler: starts }];
+  if (!evidence) return [];
   if (evidence.schemaVersion !== 1 || evidence.imageVersion !== index.version || evidence.cellSize !== 32)
     throw new Error('View difficulty does not match the prepared images.');
-  const mask = evidence.areas[area.id] ?? [];
+  const mask = evidence.areas[area.id];
+  if (!mask) return [];
   if (mask.some(r => ![r.x, r.y, r.width, r.height].every(Number.isSafeInteger) || r.width <= 0 || r.height <= 0))
     throw new Error('Invalid view-difficulty mask.');
   const { inside, outside } = partitionStarts(starts.rectangles, mask);

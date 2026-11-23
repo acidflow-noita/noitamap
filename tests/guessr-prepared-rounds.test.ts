@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { prepareWorkerData } from "../build_scripts/guessr/prepare-worker-data.mts";
-import { createPreparedRoundSource } from "../src/guessr/prepared-rounds";
+import { createPreparedRoundSource, type PreparedGameCatalog } from "../src/guessr/prepared-rounds";
 import {
   framesForPoint,
   type PrivateImageSet,
@@ -38,6 +38,8 @@ async function fixture(areaIds = ['private-area-0', 'private-area-1'], random = 
   const index: PrivateImageSet = {
     schemaVersion: 1,
     version: "fixture-version",
+    viewDifficulty: { schemaVersion: 1, imageVersion: 'fixture-version', cellSize: 32,
+      areas: { 'terrain/edr': [], 'biome/the-work-hell': [] } },
     images,
     levels: { 11: { images: grid } },
     capture: {
@@ -101,20 +103,28 @@ async function fixture(areaIds = ['private-area-0', 'private-area-1'], random = 
 }
 
 describe("prepared private Worker rounds", () => {
-  it('caps EDR and Hell featureless views together without changing area IDs or adding asset reads on warm draws', async () => {
+  it('omits featureless EDR and Hell from new catalogs and never draws a Hard entry from an older catalog', async () => {
     const f = await fixture(['terrain/edr', 'biome/the-work-hell', 'biome/other'], () => 0);
     f.index.viewDifficulty = { schemaVersion: 1, imageVersion: f.index.version, cellSize: 32,
       areas: Object.fromEntries(f.areas.slice(0, 2).map(area => [area.id, [area.bounds!]])) };
     await writeFile(f.options.indexPath, JSON.stringify(f.index));
     const report = await prepareWorkerData(f.options);
     expect(report.featurelessVariants).toBe(2);
-    expect(report.areas).toBe(3);
+    expect(report.areas).toBe(1);
+    const path = join(f.options.outputDirectory, 'game-data/catalog.json');
+    const catalog = JSON.parse(await readFile(path, 'utf8')) as PreparedGameCatalog;
+    expect(catalog.areas.map(a => a.definition.id)).toEqual(['biome/other']);
+    const normal = catalog.areas[0];
+    const hard = (id: string, viewDifficulty?: AreaDefinition['viewDifficulty']) => ({
+      ...normal, starts: 'f'.repeat(32) + '.bin',
+      definition: { ...normal.definition, id, difficultyTier: 'hard' as const, viewDifficulty },
+    });
+    catalog.areas.unshift(hard('terrain/edr', 'featureless-edr'), hard('biome/the-work-hell', 'hell-background-only'), hard('legacy/plain'));
+    await writeFile(path, JSON.stringify(catalog));
     for (let game = 0; game < 2; game++) {
       const rounds = await f.source.sampleRounds(10);
-      expect(rounds.filter(r => r.area.viewDifficulty)).toHaveLength(1);
-      expect(rounds[0].area).toMatchObject({ id: 'terrain/edr', difficultyTier: 'hard', viewDifficulty: 'featureless-edr',
-        scoring: { area: 1000, position: 4000, maximum: 5000 } });
-      expect(rounds.slice(1).every(r => r.area.id === 'biome/other')).toBe(true);
+      expect(rounds).toHaveLength(10);
+      expect(rounds.every(r => r.area.id === 'biome/other' && r.area.difficultyTier === 'normal')).toBe(true);
     }
     const reads = [...f.requests];
     await f.source.sampleRounds(10); expect(f.requests).toEqual(reads);
@@ -130,7 +140,7 @@ describe("prepared private Worker rounds", () => {
     await writeFile(f.options.indexPath, JSON.stringify(f.index));
     const report = await prepareWorkerData(f.options);
     expect(report.areas).toBe(2); expect(report.featurelessVariants).toBe(1);
-    expect(report.positions).toBe(f.report.positions);
+    expect(report.positions + report.featurelessPositions).toBe(f.report.positions);
     const rounds = await f.source.sampleRounds(2);
     expect(rounds.map(r => r.area.id)).toEqual(['terrain/edr', 'biome/other']);
     expect(rounds[0].area.difficultyTier).toBe('normal');

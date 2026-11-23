@@ -765,5 +765,6 @@
   "Closed {{when}}": "Gesloten {{when}}",
   "Voting closed before your vote was recorded. {{yes}} in favor, {{no}} against.": "De stemming werd gesloten voordat uw stem was geregistreerd. {{yes}} voor, {{no}} tegen.",
   "The hard-puzzle poll runs for three days and covers all four game modes.": "De enquête met moeilijke puzzels duurt drie dagen en omvat alle vier de spelmodi.",
+  "Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.": "De spelers hebben met 8 tegen 2 gestemd om moeilijke puzzels uit te sluiten. Dit geldt voor nieuwe spellen in alle vier de spelmodi.",
   "Hard puzzles?": "Moeilijke puzzels?"
 }

@@ -7,7 +7,7 @@ import {
   type ImageGameStore,
 } from "../src/guessr/image-game-server";
 import { cameraRect, intersection, planView } from "../src/guessr/clue-camera";
-import type { AreaDefinition } from "../src/guessr/area-rules";
+import { featurelessDifficulty, type AreaDefinition } from "../src/guessr/area-rules";
 
 function fixture() {
   const width = 2048,
@@ -83,8 +83,11 @@ describe("reusable-image rounds", () => {
     f.index.viewDifficulty = { schemaVersion: 1, imageVersion: f.index.version, cellSize: 32, areas: { [id]: [area.bounds!] } };
     const service = new ImageGameService(f.index, [area, other], f.store, '/images', '/reference', () => 0);
     const state = await service.start(), game = await service.load(state.id);
-    expect(state.current?.difficultyTier).toBe('hard');
-    expect(game.rounds.filter(r => r.difficulty?.view)).toHaveLength(1);
+    expect(game.rounds.every(round => round.areaId === other.id && round.difficulty?.tier === 'normal')).toBe(true);
+    // Restore a round selected before the vote at the same valid camera position.
+    const archived = featurelessDifficulty(area);
+    game.rounds[0] = { ...game.rounds[0], areaId: id, difficulty: { tier: 'hard', scoring: archived.scoring!, view: archived.viewDifficulty } };
+    await f.store.put(game);
     expect(service.roundArea(game.rounds[0])).toMatchObject({ id, difficultyTier: 'hard' });
     expect(JSON.stringify(state)).not.toMatch(/viewDifficulty|featureless|hell-background|areaId/);
     f.index.viewDifficulty.areas = {};

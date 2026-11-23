@@ -193,15 +193,16 @@ export function pickPlaces(
   pack: Pack,
   settings: Settings,
   seed: string,
+  replayArchivedOrder = false,
 ): Place[] {
-  if (settings.mode === "demo")
-    return pack.demo
-      ? pack.demo
-          .map((id) => pack.places.find((p) => p.id === id)!)
-          .filter(Boolean)
-          .slice(0, 3)
-      : pack.places.slice(0, 3);
-  const pool = pack.places.filter(
+  const places = replayArchivedOrder ? pack.places : pack.places.filter(p => !p.hard);
+  if (settings.mode === "demo") {
+    if (!pack.demo) return places.slice(0, 3);
+    const fixed = pack.demo.map(id => pack.places.find(p => p.id === id)!).filter(Boolean);
+    const eligible = replayArchivedOrder ? fixed : fixed.filter(p => !p.hard);
+    return [...eligible, ...places.filter(p => !eligible.includes(p))].slice(0, Math.min(3, fixed.length));
+  }
+  const pool = places.filter(
     (p) => settings.theme === "all" || p.theme === settings.theme,
   );
   return shuffled(pool, `${pack.version}:${seed}`).slice(

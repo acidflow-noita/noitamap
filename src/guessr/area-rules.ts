@@ -31,6 +31,11 @@ export interface AreaDefinition {
   viewDifficulty?: ViewDifficulty;
 }
 
+/** New games draw reviewed Easy and Normal views. Saved rounds keep their original tier. */
+export function eligibleForNewRound(area: AreaDefinition): boolean {
+  return !area.viewDifficulty && (area.difficultyTier === 'easy' || area.difficultyTier === 'normal');
+}
+
 /** Each curated mountain includes its altar, basins and brickwork walls.
  * Depths remain separate scoring areas but share one slot in a new game. */
 export function isHolyMountainArea(area: Pick<AreaDefinition, 'id'>): boolean {

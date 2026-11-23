@@ -78,6 +78,8 @@ describe('complete-view difficulty evidence', () => {
       viewDifficulty: { schemaVersion: 1, imageVersion: 'fixture', cellSize: 32,
         areas: { [area.id]: [{ x: 0, y: 0, width: 40, height: 50 }] } } };
     const variants = areaStartVariants(index, area, starts);
+    expect(areaStartVariants({ ...index, viewDifficulty: undefined }, area, starts)).toEqual([]);
+    expect(areaStartVariants({ ...index, viewDifficulty: { ...index.viewDifficulty!, areas: {} } }, area, starts)).toEqual([]);
     expect(variants.map(v => [v.definition.difficultyTier, v.sampler.pixels])).toEqual([['normal', 3000], ['hard', 2000]]);
     expect(variants[1].definition).toMatchObject({ id: area.id, scoring: area.scoring, viewDifficulty: 'featureless-edr' });
     expect(area.difficultyTier).toBe('normal');

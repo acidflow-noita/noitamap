@@ -5,7 +5,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { privateOutput } from "./private-output.mjs";
 import { areaStartVariants } from "../../src/guessr/starting-view.ts";
-import type { AreaDefinition } from "../../src/guessr/area-rules.ts";
+import { eligibleForNewRound, type AreaDefinition } from "../../src/guessr/area-rules.ts";
 import type { PrivateImageSet } from "../../src/guessr/image-game-server.ts";
 import {
   preparedGameConfig,
@@ -83,6 +83,7 @@ export async function prepareWorkerData(
   };
   let samplerBytes = 0,
     positions = 0;
+  let featurelessVariants = 0, featurelessPositions = 0;
   const excluded: string[] = [];
   for (const area of inventory.puzzleAreas) {
     try {
@@ -95,12 +96,15 @@ export async function prepareWorkerData(
         excluded.push(area.id);
         continue;
       }
-      const variants = areaStartVariants(index, area).filter(variant => variant.sampler.pixels > 0);
-      if (!variants.length) {
-        excluded.push(area.id);
-        continue;
-      }
-      for (const { definition: selected, sampler } of variants) {
+      let included = false;
+      for (const { definition: selected, sampler } of areaStartVariants(index, area)) {
+        if (!sampler.pixels) continue;
+        if (selected.viewDifficulty) {
+          featurelessVariants++;
+          featurelessPositions += sampler.pixels;
+        }
+        if (!eligibleForNewRound(selected)) continue;
+        included = true;
         if (sampler.pixels > 0xffffffff)
           throw new Error(
             `Area ${area.id} exceeds the sampler's native-pixel limit.`,
@@ -119,7 +123,7 @@ export async function prepareWorkerData(
           data.writeUInt32LE(total, offset + 16);
         });
         const filename =
-          createHash("sha256").update(area.id + (selected.viewDifficulty ? ':' + selected.viewDifficulty : '')).digest("hex").slice(0, 32) + ".bin";
+          createHash("sha256").update(area.id).digest("hex").slice(0, 32) + ".bin";
         await write(resolve(output, "game-data/starts", filename), data);
         const definition: AreaDefinition = {
           id: area.id,
@@ -130,12 +134,12 @@ export async function prepareWorkerData(
           cells: area.cells,
           difficultyTier: selected.difficultyTier,
           scoring: selected.scoring,
-          ...(selected.viewDifficulty ? { viewDifficulty: selected.viewDifficulty } : {}),
         };
         catalog.areas.push({ definition, starts: filename, positions: total });
         samplerBytes += data.byteLength;
         positions += total;
       }
+      if (!included) excluded.push(area.id);
     } finally { options.onProgress?.(); }
   }
   if (!catalog.areas.length)
@@ -155,8 +159,7 @@ export async function prepareWorkerData(
   return {
     directory: output,
     areas: new Set(catalog.areas.map(area => area.definition.id)).size,
-    featurelessVariants: catalog.areas.filter(area => area.definition.viewDifficulty).length,
-    featurelessPositions: catalog.areas.filter(area => area.definition.viewDifficulty).reduce((n, area) => n + area.positions, 0),
+    featurelessVariants, featurelessPositions,
     positions,
     excluded,
     catalogBytes: Buffer.byteLength(text),

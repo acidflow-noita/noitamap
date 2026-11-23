@@ -765,5 +765,6 @@
   "Closed {{when}}": "Ditutup {{when}}",
   "Voting closed before your vote was recorded. {{yes}} in favor, {{no}} against.": "Pemungutan suara ditutup sebelum suara Anda tercatat. {{yes}} setuju, {{no}} tidak setuju.",
   "The hard-puzzle poll runs for three days and covers all four game modes.": "Jajak pendapat teka-teki sulit ini berlangsung selama tiga hari dan mencakup keempat mode permainan.",
+  "Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.": "Para pemain memilih dengan perbandingan 8 banding 2 untuk tidak memasukkan teka-teki yang sulit. Hal ini berlaku untuk permainan baru di keempat mode tersebut.",
   "Hard puzzles?": "Teka-teki yang sulit?"
 }

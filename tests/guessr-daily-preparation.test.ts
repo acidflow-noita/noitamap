@@ -110,7 +110,7 @@ it('prepares a reusable whole-world image set and publishes its matching private
   } finally { database.close(); }
 });
 
-it('classifies final composed Daily images privately and limits featureless views across the ten-round selection', async () => {
+it('classifies final composed Daily images privately and excludes every Hard view from all ten rounds', async () => {
   const input = await fixture({ r: 39, g: 22, b: 18, alpha: 1 });
   const recipe = JSON.parse(await readFile(input.areasPath, 'utf8'));
   recipe.areas[0].id = 'terrain/edr';
@@ -121,10 +121,7 @@ it('classifies final composed Daily images privately and limits featureless view
   expect(report.featurelessPositions).toBeGreaterThan(0);
   const daily = JSON.parse(await readFile(join(input.outputDirectory, 'private/daily.json'), 'utf8'));
   expect(daily.rounds).toHaveLength(10);
-  const hard = daily.rounds.filter((r: any) => r.area.viewDifficulty);
-  expect(hard.length).toBeLessThanOrEqual(1);
-  for (const round of hard) expect(round.area).toMatchObject({ id: 'terrain/edr', difficultyTier: 'hard',
-    scoring: { area: 1000, position: 4000, maximum: 5000 } });
+  expect(daily.rounds.every((r: any) => ['easy', 'normal'].includes(r.area.difficultyTier) && !r.area.viewDifficulty)).toBe(true);
   const publicData = await readFile(join(input.outputDirectory, 'clues/dataset.json'), 'utf8');
   expect(publicData).not.toMatch(/viewDifficulty|featureless|terrain\/edr/);
 });

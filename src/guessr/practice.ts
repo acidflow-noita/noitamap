@@ -186,8 +186,8 @@ export function restorePractice(
       })
     )
       return null;
-    const expected = pickPlaces(pack, s.settings, s.seed).map((p) => p.id);
-    if (JSON.stringify(s.order) !== JSON.stringify(expected)) return null;
+    const matchesOrder = (places: Place[]) => places.length === s.order.length && places.every((p, i) => p.id === s.order[i]);
+    if (!matchesOrder(pickPlaces(pack, s.settings, s.seed)) && !matchesOrder(pickPlaces(pack, s.settings, s.seed, true))) return null;
     if (s.stage === "guess" && s.results.length >= s.order.length) return null;
     if (s.stage !== "guess" && !s.results.length) return null;
     for (const [i, result] of s.results.entries()) {

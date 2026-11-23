@@ -1,6 +1,6 @@
 import type { Database } from './index';
 import { DAILY_PUBLISH_LIMIT, DAILY_ROUNDS, type DailyImagePack } from '../../../src/guessr/daily-pack';
-import { scoreAreaGuess } from '../../../src/guessr/area-rules';
+import { eligibleForNewRound, scoreAreaGuess } from '../../../src/guessr/area-rules';
 import { within } from '../../../src/guessr/rules';
 import { supportedCamera } from '../../../src/guessr/clue-camera';
 import { validatePreparedSourcePackage } from '../../../src/guessr/prepared-source-package';
@@ -110,6 +110,7 @@ export async function publishDaily(request: Request, env: PublisherEnv, now: num
   if (previous?.publication_created_at && previous.publication_created_at > created) return response({ error: 'A newer daily bake is already published.' }, 409);
   const used = previous && await env.DB.prepare('SELECT id FROM attempts WHERE challenge_id=? LIMIT 1').bind(previous.id).first();
   if (used || previous && previous.id !== id) return response({ error: 'This daily already has players. Its images and answers cannot be replaced.' }, 409);
+  if (!pack.rounds.every(round => eligibleForNewRound(round.area))) return response({ error: 'New Daily rounds must be Easy or Normal.' }, 400);
   const statements = [env.DB.prepare(`INSERT INTO challenges(id,day,title,opens_at,closes_at,reveal_at,bounds_json,round_seconds,enabled,image_config_json,dataset_version,publication_hash,publication_created_at)
     VALUES(?,?,?,?,?,?,?,600,1,?,?,?,?) ON CONFLICT(day) DO UPDATE SET title=excluded.title,opens_at=excluded.opens_at,closes_at=excluded.closes_at,reveal_at=excluded.reveal_at,
     bounds_json=excluded.bounds_json,image_config_json=excluded.image_config_json,dataset_version=excluded.dataset_version,publication_hash=excluded.publication_hash,publication_created_at=excluded.publication_created_at,enabled=1

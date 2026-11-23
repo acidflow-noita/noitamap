@@ -765,5 +765,6 @@
   "Closed {{when}}": "{{when}}に閉鎖されました",
   "Voting closed before your vote was recorded. {{yes}} in favor, {{no}} against.": "投票が締め切られたため、あなたの投票は記録されませんでした。賛成は {{yes}}、反対は {{no}}。",
   "The hard-puzzle poll runs for three days and covers all four game modes.": "この難解なパズルクイズは3日間開催され、4つのゲームモードすべてを対象としています。",
+  "Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.": "プレイヤーによる投票の結果、8対2で難解なパズルを排除することが決定しました。これは、4つのモードすべてにおける新規ゲームに適用されます。",
   "Hard puzzles?": "難しいパズル？"
 }

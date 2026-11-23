@@ -765,5 +765,6 @@
   "Closed {{when}}": "Closed {{when}}",
   "Voting closed before your vote was recorded. {{yes}} in favor, {{no}} against.": "Voting closed before your vote was recorded. {{yes}} in favor, {{no}} against.",
   "The hard-puzzle poll runs for three days and covers all four game modes.": "The hard-puzzle poll runs for three days and covers all four game modes.",
+  "Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.": "Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.",
   "Hard puzzles?": "Hard puzzles?"
 }

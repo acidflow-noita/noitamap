@@ -765,5 +765,6 @@
   "Closed {{when}}": "已关闭 {{when}}",
   "Voting closed before your vote was recorded. {{yes}} in favor, {{no}} against.": "在您的投票被记录之前，投票已结束。{{yes}} 赞成，{{no}} 反对。",
   "The hard-puzzle poll runs for three days and covers all four game modes.": "这项高难度谜题投票活动将持续三天，涵盖全部四种游戏模式。",
+  "Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.": "玩家以8票对2票的投票结果决定排除高难度谜题。此规定适用于所有四种模式中的新游戏。",
   "Hard puzzles?": "难题？"
 }

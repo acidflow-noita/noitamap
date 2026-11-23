@@ -783,5 +783,6 @@
   "Closed {{when}}": "Zavřeno {{when}}",
   "Voting closed before your vote was recorded. {{yes}} in favor, {{no}} against.": "Hlasování bylo ukončeno dříve, než byl váš hlas zaznamenán. {{yes}} pro, {{no}} proti.",
   "The hard-puzzle poll runs for three days and covers all four game modes.": "Anketa s obtížnými hádankami trvá tři dny a zahrnuje všechny čtyři herní režimy.",
+  "Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.": "Hráči hlasovali v poměru 8 ku 2 pro vyloučení obtížných hádanek. To se týká nových her ve všech čtyřech režimech.",
   "Hard puzzles?": "Těžké hádanky?"
 }

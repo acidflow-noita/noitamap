@@ -58,11 +58,14 @@ describe('prepared Daily publication and gameplay', () => {
     expect(stored.preparedSource.files).toEqual(next.preparedSource.files); expect(stored).not.toHaveProperty('rounds');
     next.generatedAt = new Date(now - 2000).toISOString(); expect((await f.publish(next)).status).toBe(409);
   });
-  it('plays all ten rounds through the API, allows the final image, and caps the total at 50,000', async () => {
+  it('rejects a new Hard Daily and still plays, scores and reviews all ten rounds of a previously published Daily', async () => {
     const f = await fixture(), p = pack();
-    p.rounds[0] = { ...p.rounds[0], area: { ...p.rounds[0].area, id: 'terrain/edr',
-      difficultyTier: 'hard', viewDifficulty: 'featureless-edr' } };
-    await f.publish(p);
+    const oldPack = structuredClone(p);
+    oldPack.rounds[0].area = { ...p.rounds[0].area, id: 'terrain/edr', difficultyTier: 'hard', viewDifficulty: 'featureless-edr' };
+    expect((await f.publish(oldPack)).status).toBe(400);
+    expect(f.sqlite.prepare('SELECT COUNT(*) AS n FROM challenges').get()?.n).toBe(0);
+    expect((await f.publish(p)).status).toBe(200);
+    f.sqlite.prepare('UPDATE questions SET area_json=? WHERE ordinal=0').run(JSON.stringify(oldPack.rounds[0].area));
     f.env.ASSETS.fetch = async () => new Response('image', { headers: { 'Content-Type': 'image/webp' } });
     const ticket = await signGameTicket('twitch:ten', 'Ten rounds', gameSecret, now);
     const call = (path: string, body?: unknown) => handle(new Request('https://guessr-api.sage-data.xyz' + path, {

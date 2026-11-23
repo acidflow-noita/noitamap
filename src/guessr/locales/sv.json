@@ -765,5 +765,6 @@
   "Closed {{when}}": "Stängt {{when}}",
   "Voting closed before your vote was recorded. {{yes}} in favor, {{no}} against.": "Omröstningen avslutades innan din röst hann registreras. {{yes}} för, {{no}} emot.",
   "The hard-puzzle poll runs for three days and covers all four game modes.": "Omröstningen om de svåra pusslen pågår i tre dagar och omfattar alla fyra spellägena.",
+  "Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.": "Spelarna röstade med 8 mot 2 för att utesluta svåra pussel. Detta gäller nya spel i alla fyra lägena.",
   "Hard puzzles?": "Svåra pussel?"
 }
