@@ -39,6 +39,25 @@ it('displays the invitation without a poll request and dismisses it for the sess
   expect(banner.hidden).toBe(true); expect(createPollBanner(vi.fn(), start).hidden).toBe(true);
 });
 
+it('hides the strip at closing in an open tab and on return from sign-in', () => {
+  vi.useFakeTimers();
+  try {
+    const start = 1_795_152_480, close = (start + 259200) * 1000;
+    vi.setSystemTime(close - 1000);
+    const banner = createPollBanner(vi.fn(), start);
+    document.body.append(banner);
+    expect(banner.hidden).toBe(false);
+    vi.advanceTimersByTime(1000);
+    expect(banner.hidden).toBe(true);
+
+    sessionStorage.setItem('guessr-hard-poll-return-v1', JSON.stringify({ path: location.pathname, choice: 'no', at: close - 1000 }));
+    const returned = createPollBanner(vi.fn(), start);
+    expect(returned.hidden).toBe(true);
+    expect(returned.childElementCount).toBe(0);
+    expect(fixture.auth).not.toHaveBeenCalled();
+  } finally { vi.useRealTimers(); }
+});
+
 it('requires an explicit choice and confirms the receipt returned by the server', async () => {
   open(); await vi.waitFor(() => expect(textButton('Cast vote')?.disabled).toBe(true));
   document.querySelector<HTMLInputElement>('input[value=yes]')!.click();

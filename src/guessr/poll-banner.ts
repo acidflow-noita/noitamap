@@ -9,7 +9,10 @@ const receiptKey = 'guessr-hard-poll-receipt-v1';
 export function createPollBanner(beforeLogin: () => void, opensAt: number | null = windowConfig.opensAt): HTMLElement {
   const bar = document.createElement('aside');
   bar.className = 'guessr-poll-bar';
-  if (!opensAt || !Number.isSafeInteger(opensAt)) { bar.hidden = true; return bar; }
+  if (!opensAt || !Number.isSafeInteger(opensAt) || Date.now() / 1000 >= opensAt + HARD_PUZZLE_POLL_SECONDS) {
+    bar.hidden = true;
+    return bar;
+  }
   const closesAt = opensAt + HARD_PUZZLE_POLL_SECONDS;
   const invite = document.createElement('button');
   invite.type = 'button';
@@ -38,9 +41,10 @@ export function createPollBanner(beforeLogin: () => void, opensAt: number | null
   };
   const updateWindow = () => {
     const now = Date.now() / 1000;
-    const before = now < opensAt, closed = now >= closesAt;
-    bindText(deadline, closed ? 'Closed {{when}}' : 'Closes {{when}}', () => ({ when: formatPollDate(closesAt) }));
-    if (closed || before) bindText(action, 'View poll');
+    if (now >= closesAt) { bar.hidden = true; return; }
+    const before = now < opensAt;
+    bindText(deadline, 'Closes {{when}}', () => ({ when: formatPollDate(closesAt) }));
+    if (before) bindText(action, 'View poll');
     else {
       try { bindText(action, sessionStorage.getItem(receiptKey) === '1' ? 'View poll' : 'Vote'); }
       catch { bindText(action, 'Vote'); }
@@ -48,10 +52,9 @@ export function createPollBanner(beforeLogin: () => void, opensAt: number | null
     const next = before ? opensAt : closesAt;
     if (now < next) window.setTimeout(updateWindow, Math.min(2147483647, Math.ceil((next - now) * 1000)));
   };
-  updateWindow();
   const open = async (choice: PollChoice | null = null, returning = false) => {
     const { openHardPoll } = await import('./hard-poll');
-    if (!bar.isConnected) return;
+    if (!bar.isConnected || bar.hidden || Date.now() / 1000 >= closesAt) return;
     const other = document.querySelector('dialog[open]');
     if (returning && other) {
       other.addEventListener('close', () => void open(choice, true), { once: true }); return;
@@ -76,5 +79,6 @@ export function createPollBanner(beforeLogin: () => void, opensAt: number | null
       void open(saved.choice, true);
     }
   } catch { /* The poll is usable when storage is unavailable. */ }
+  updateWindow();
   return bar;
 }
