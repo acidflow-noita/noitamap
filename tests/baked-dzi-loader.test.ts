@@ -15,6 +15,32 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("baked DZI rendering", () => {
+  it('allows live NG+1 before publication and keeps partial or previously seen bakes out of the generator', async () => {
+    const seed = 117, missing = { ok: false };
+    const fetcher = vi.fn(async (_url: string): Promise<any> => missing);
+    vi.stubGlobal('fetch', fetcher);
+    const probe = () => probeBakedDZIs('ng-plus-daily', seed);
+    expect(await probe()).toMatchObject({ baked: false, unpublishedNGPlus: true });
+    const manifest = (url: string) => {
+      const world = new URL(url).hostname.split('.')[0].split('-').at(-1)!;
+      const pw = ['left', 'middle', 'right'].indexOf(world) - 1;
+      return { ok: true, json: async () => ({ seed, world, gameMode: 'normal', ngPlus: 1,
+        complete: true, baked: true, renderId: 'first-ng-plus', terrainVersion: TERRAIN_VERSION,
+        regions: [{ pw, dzi: 'map.dzi', minX: [-53760, -16384, 16384][pw + 1], minY: -31744,
+          fullW: pw ? 37376 : 32768, fullH: 73728 }] }) };
+    };
+    fetcher.mockImplementation(async url => url.includes('middle') ? manifest(url) : missing);
+    expect(await probe()).toEqual({ baked: false, reason: expect.any(String) });
+    fetcher.mockImplementation(async url => manifest(url));
+    const ready = await probe();
+    expect(ready).toMatchObject({ baked: true, prefix: 'ng-plus-daily', placements: [
+      { x: -53760, width: 37376 }, { x: -16384, width: 32768 }, { x: 16384, width: 37376 },
+    ] });
+    fetcher.mockResolvedValue(missing);
+    expect(await probe()).toEqual({ baked: false, reason: expect.any(String) });
+    expect(await probeBakedDZIs('ng-plus-daily', seed + 1)).toMatchObject({ baked: false, unpublishedNGPlus: true });
+  });
+
   it.each([0, 1])('clips only obsolete final crystals in a regular bake with crystal version %i', async version => {
     const worlds = ['left','middle','right'];
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {

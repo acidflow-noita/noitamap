@@ -456,7 +456,7 @@ export async function generateDynamicMap(opts: GenerateOptions): Promise<Generat
   // Keep its original pool so disposal rejects late dispatch rather than
   // starting workers in the new pool after the dynamic map has closed.
   const workerPool = parallelWorldWorkerPool;
-  prewarmParallelWorlds(opts.parallelWorlds ?? captureWorlds(opts.gameMode));
+  prewarmParallelWorlds(opts.parallelWorlds ?? captureWorlds(opts.gameMode, (opts.ngPlus ?? 0) > 0));
   await initTelescope();
 
   return runGenerationTask(() => generatePreparedMap(opts, workerPool));
@@ -467,7 +467,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
   const seed = opts.seed;
   const ngPlus = opts.ngPlus ?? 0;
   const dailySeed = opts.dailySeed ?? false;
-  const parallelWorlds = opts.parallelWorlds ?? captureWorlds(opts.gameMode);
+  const parallelWorlds = opts.parallelWorlds ?? captureWorlds(opts.gameMode, (opts.ngPlus ?? 0) > 0);
   const gameMode = opts.gameMode ?? "normal";
   const isNGP = ngPlus > 0;
 

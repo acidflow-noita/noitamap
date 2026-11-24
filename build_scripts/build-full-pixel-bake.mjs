@@ -234,7 +234,7 @@ const work = resolve(out, ".work", renderId),
   publish = resolve(work, "publish");
 const height = data.height, top = data.worldTop;
 const worlds = Object.entries({ middle: 0, left: -1, right: 1 }).map(([world, pw]) => ({
-  world, pw, ...bakedWorldSpan(pw, data.width, gameMode),
+  world, pw, ...bakedWorldSpan(pw, data.width, gameMode, ngPlus > 0),
 }));
 // Each world spans Heaven through Hell. That height sets the highest level for all three pages.
 const max = maxLevel(Math.max(...worlds.map(world => world.width)), height);

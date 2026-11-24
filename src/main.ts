@@ -27,6 +27,7 @@ import {
   clearDynamicMap,
   getCurrentDynamicSeed,
   getCurrentIsDaily,
+  getCurrentNGPlus,
   getLastGenerationResult,
   buildPOIName,
   dailyCacheKey,
@@ -172,6 +173,7 @@ import {
   updateURLWithSeedReport,
   updateURLWithCanvas,
   updateURLWithSeed,
+  updateURLWithNGPlus,
   updateURLWithSearch,
   reorderParams,
   clearTargetPoiId,
@@ -182,7 +184,7 @@ import { asOverlayKey, showOverlay, selectSpell, OverlayKey } from "./data_sourc
 import { isMainPathBiome } from "./data_sources/main-path-biomes";
 import { overlayToShort } from "./data_sources/param-mappings";
 import { UnifiedSearch } from "./search/unifiedsearch";
-import { asMapName, dynamicGameMode, isDynamicMap, NIGHTMARE_DEFAULT_SEED, type DynamicGameMode, type MapName } from "./data_sources/tile_data";
+import { asMapName, dynamicGameMode, isDynamicMap, NG_PLUS_MAP, ngPlusForMap, NIGHTMARE_DEFAULT_SEED, type MapName } from "./data_sources/tile_data";
 import { addEventListenerForId, assertElementById, debounce } from "./util";
 import { createMapLinks, createMapSelectorRenderer, refreshMapSelectorDate, updateMapLinkTranslations, NAV_LINK_IDENTIFIER } from "./nav";
 import { initMouseTracker } from "./mouse_tracker";
@@ -506,7 +508,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   // ── Dynamic map setup ─────────────────────────────────────────────────────
   // Tracks seed from the last dynamic map session so returning to dynamic map
   // can restore it (priority: URL param > last session seed > daily).
-  const sessionSeeds = new Map<DynamicGameMode, { seed: number; daily: boolean }>();
+  const sessionSeeds = new Map<MapName, { seed: number; daily: boolean; ngPlus: number }>();
   // Pending seed set via setSeedParams before the map has switched to dynamic
   let pendingDynamicSeed: number | null = null;
   let drawingDailyRequest: { run?: Promise<GenerationResult | null> } | undefined;
@@ -533,6 +535,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   });
   const dynamicOpts = {
     get gameMode() { return dynamicGameMode(app.getMap()); },
+    get ngPlus() { return ngPlusForMap(app.getMap(), new URLSearchParams(location.search).get("ng")); },
     viewer: app.osd,
     onRequestStateChange: (pending: boolean) => {
       setDynamicUIBusy(pending);
@@ -571,7 +574,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
     onSeedResolved: (seed: number, isDaily: boolean) => {
       setDynamicUISeed(seed, isDaily, true);
       updateMapSelectorText(app.getMap());
-      sessionSeeds.set(dynamicOpts.gameMode, { seed, daily: isDaily });
+      sessionSeeds.set(app.getMap(), { seed, daily: isDaily, ngPlus: dynamicOpts.ngPlus });
     },
     onPOIsReady: (pois: DynamicPOI[]) => {
       restorePOICardContext(app.osd);
@@ -626,12 +629,13 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
   /** Explicit seed/daily URL → last session seed → today's daily. */
   async function runDynamicMapWithPriority(): Promise<void> {
     const urlState = parseURL();
-    const saved = sessionSeeds.get(dynamicOpts.gameMode);
+    const saved = sessionSeeds.get(app.getMap());
     if (urlState.seed !== undefined) {
       // Daily-mode share links are pinned to their explicit seed too.
       await runDynamicMap(urlState.seed, !!urlState.dailySeed, dynamicOpts);
     } else if (!urlState.dailySeed && saved) {
       // Restore the last seed the user was viewing
+      if (app.getMap() === NG_PLUS_MAP && !new URLSearchParams(location.search).has("ng")) updateURLWithNGPlus(saved.ngPlus);
       updateURLWithSeed(saved.seed, saved.daily);
       await runDynamicMap(saved.seed, saved.daily, dynamicOpts);
     } else {
@@ -748,7 +752,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
       setDynamicUISeed(seed, false);
       // Store as pending — may be used when map transitions to dynamic
       pendingDynamicSeed = seed;
-      sessionSeeds.set(dynamicOpts.gameMode, { seed, daily: false });
+      sessionSeeds.set(app.getMap(), { seed, daily: false, ngPlus: dynamicOpts.ngPlus });
       if (isDynamicMap(app.getMap())) {
         runDynamicMap(seed, false, dynamicOpts).catch((e) => console.error("[Noitamap] Dynamic map rebuild failed:", e));
       }
@@ -824,7 +828,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
       try {
         const cached = await getCachedGeneration(dailyCacheKey(seed));
         if (cached?.poisByPW) return getAllPOIsFlat({ poisByPW: cached.poisByPW } as any);
-        if (dynamicOpts.gameMode === "nightmare") return null;
+        if (dynamicOpts.gameMode === "nightmare" || getCurrentNGPlus() > 1) return null;
         // The comparison target is ALWAYS a daily seed, whose POIs are already
         // baked + served as generation.json by the CI pipeline. Fetch them
         // directly (instant) instead of regenerating client-side. Try today's
@@ -832,8 +836,16 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
         // seed, so a mismatch just falls through.
         const { fetchBakedGeneration } = await import("./telescope/baked-generation");
         const worlds: ("left" | "middle" | "right")[] = isLightMode() ? ["middle"] : ["left", "middle", "right"];
-        for (const prefix of ["daily", "previous-daily"] as const) {
-          const gen = await fetchBakedGeneration(prefix, worlds, seed).catch(() => null);
+        const prefixes = getCurrentNGPlus() === 1 ? ['ng-plus-daily','ng-plus-previous-daily'] as const : ['daily','previous-daily'] as const;
+        for (const prefix of prefixes) {
+          let revision: string | undefined;
+          if (getCurrentNGPlus() === 1) {
+            const { probeBakedDZIs } = await import('./telescope/baked-dzi-loader');
+            const probe = await probeBakedDZIs(prefix, seed);
+            if (!probe.baked) continue;
+            revision = probe.renderId;
+          }
+          const gen = await fetchBakedGeneration(prefix, worlds, seed, revision, getCurrentNGPlus() === 1).catch(() => null);
           if (gen?.poisByPW) return getAllPOIsFlat({ poisByPW: gen.poisByPW } as any);
         }
         return null;
@@ -1147,7 +1159,8 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
     goto: pos => { app.osd.cancelNavigation(); app.osd.setZoomPos(pos); },
     updateSeed: (seed, daily) => {
       pendingDynamicSeed = null;
-      sessionSeeds.set(dynamicGameMode(parseURL().map), { seed, daily });
+      const state = parseURL();
+      if (state.map) sessionSeeds.set(state.map, { seed, daily, ngPlus: state.ngPlus ?? 0 });
       setDynamicUISeed(seed, daily);
     },
     resetUnlocks: resetUnlocksForNavigation,
@@ -1308,6 +1321,7 @@ export async function initializeMapUI(osd: AppOSD, openedMap: MapName, urlState:
       const isDaily = getCurrentIsDaily();
       if (seed !== null) {
         url.searchParams.set("se", String(seed));
+        if (app.getMap() === NG_PLUS_MAP) url.searchParams.set("ng", String(getCurrentNGPlus()));
         if (isDaily) url.searchParams.set("ds", "1");
         else url.searchParams.delete("ds");
       }

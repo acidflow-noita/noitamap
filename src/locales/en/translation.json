@@ -600,6 +600,7 @@
     "mapDynamic": "Dynamic map"
   },
   "dynamicMap": {
+    "ngPlusLevel": "NG+ level",
     "generate": {
       "label": "Generate",
       "alreadyGeneratedTitle": "Seed active",

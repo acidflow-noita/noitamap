@@ -114,7 +114,7 @@ export function sceneBiomeNames(scene: { key: string; variantKey?: string }): st
 
 export const TERRAIN_VERSION = "full-pixel-v21-instant-gold-cavern";
 // Local pixel caches include artwork changes even while a compatible older DZI is published.
-export const TERRAIN_PIXEL_REVISION = "snowy-chasm-v1";
+export const TERRAIN_PIXEL_REVISION = "wang-ownership-628d14c";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
 export type VerticalPlane = -1 | 0 | 1;

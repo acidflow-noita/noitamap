@@ -725,7 +725,7 @@ export async function addInstantTerrain(
       for (const pw of [...(gen.parallelWorlds ?? [0, -1, 1])].sort(
         (a, b) => Math.abs(a) - Math.abs(b),
       )) {
-        const span = visibleWorldSpan(pw, width * 512, gen.gameMode);
+        const span = visibleWorldSpan(pw, width * 512, gen.gameMode, gen.isNGP);
         if (!span.width) continue;
         const region = {
           x: span.minX,

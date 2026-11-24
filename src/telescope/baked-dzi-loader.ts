@@ -3,7 +3,7 @@ import { bakedWorldSpan } from "./world-coverage";
 import { takeInitialDailyResponse } from '../data_sources/daily_seed';
 import { isGLTerrainEnabled } from "../renderer_settings";
 import { TERRAIN_VERSION } from "./terrain-policy";
-import { beginDailyBakeCheck } from './daily-bake-status';
+import { beginDailyBakeCheck, type DailyMapPrefix } from './daily-bake-status';
 import { CAPTURED_FLUID_VERSION } from '../liquids/mask-codec';
 /**
  * baked-dzi-loader.ts
@@ -13,21 +13,16 @@ import { CAPTURED_FLUID_VERSION } from '../liquids/mask-codec';
  * their DZI pyramids to OSD as a drop-in replacement for the live biome
  * composite phase.
  *
- * All-or-nothing: if any world's manifest is missing, the wrong seed, or
- * 404s, this returns { baked: false } and the caller falls back to the live
- * dynamic biome composite for the entire map. Per-world fallback would
- * produce a half-rendered map and is intentionally not supported.
- *
- * Wire-in: src/dynamic-map.ts kicks the probe off in parallel with telescope
- * generation. When the probe wins with a baked hit, renderGenerationResult is
- * called with skipBiomeComposite=true so addBiomeLayersProgressively is
- * short-circuited. POIs, pixel scenes, drawing, etc. still come from
- * telescope as before — only the biome composite is replaced.
+ * All three worlds must match before any baked layer is attached. If NG+1
+ * has no publication for this seed yet, the caller may generate it locally.
  */
 
 const WORLDS = ['left', 'middle', 'right'] as const;
 export type World = (typeof WORLDS)[number];
-export type BakedMapPrefix = 'daily' | 'previous-daily' | 'nightmare';
+export type BakedMapPrefix = DailyMapPrefix | 'nightmare';
+
+// Remember a publication across map switches if its origin temporarily goes offline.
+const publishedNGPlus = new Map<BakedMapPrefix, number>();
 
 declare const OpenSeadragon: any;
 
@@ -81,6 +76,7 @@ export interface BakedDziProbeMiss {
   baked: false;
   /** Reason captured for logs/telemetry — never user-facing. */
   reason: string;
+  unpublishedNGPlus?: true;
 }
 export type BakedDziProbeResult = BakedDziProbeOk | BakedDziProbeMiss;
 
@@ -130,7 +126,7 @@ async function fetchWorldManifest(
     const origin = originFor(prefix, world);
     const url = `${origin}/manifest.json`;
     const initial = signal || prefix === 'nightmare' ? undefined : takeInitialDailyResponse(url);
-    const resp = await (initial ?? fetch(url, { cache: signal ? 'no-cache' : 'default', signal: signal ?? AbortSignal.timeout(prefix === 'nightmare' ? 2500 : 15000) }));
+    const resp = await (initial ?? fetch(url, { cache: signal ? 'no-cache' : 'default', signal: signal ?? AbortSignal.timeout(prefix === 'nightmare' || prefix.startsWith('ng-plus-') ? 2500 : 15000) }));
     if (!resp.ok) return null;
     const m = (await resp.json()) as PerWorldManifest;
     if (!m || typeof m.seed !== 'number' || !Array.isArray(m.regions) || m.regions.length === 0) {
@@ -163,6 +159,18 @@ export async function probeBakedDZIs(
     return result;
   };
   const manifests = await pending;
+  const ngPlus = prefix.startsWith('ng-plus-');
+  const publicationKey = `noitamap-published-seed:${prefix}`;
+  if (ngPlus && !publishedNGPlus.has(prefix)) {
+    try {
+      const stored = localStorage.getItem(publicationKey);
+      if (stored !== null) publishedNGPlus.set(prefix, Number(stored));
+    } catch { /* Storage is optional. */ }
+  }
+  if (ngPlus && !signal?.aborted && publishedNGPlus.get(prefix) !== seed &&
+    !manifests.some(m => m?.seed === seed && m.gameMode === 'normal' && m.ngPlus === 1)) {
+    return finish({ baked: false, unpublishedNGPlus: true, reason: `No NG+1 publication for ${prefix} seed ${seed}` });
+  }
   const includesNightmareEdges = prefix === 'nightmare'
     ? manifests[0]?.regions[0]?.fullW === bakedWorldSpan(-1, 64 * 512, 'nightmare').width
     : undefined;
@@ -173,16 +181,16 @@ export async function probeBakedDZIs(
     if (isGLTerrainEnabled() && (m.terrainVersion !== TERRAIN_VERSION || m.complete !== true)) {
       return finish({ baked: false, reason: `${prefix}-${WORLDS[i]} is not a completed ${TERRAIN_VERSION} bake` });
     }
-    if (prefix === 'nightmare') {
+    if (prefix === 'nightmare' || ngPlus) {
       const pw = { left: -1, middle: 0, right: 1 }[WORLDS[i]];
       const region = m.regions[0];
-      const span = bakedWorldSpan(pw, 64 * 512, includesNightmareEdges ? "nightmare" : "normal");
-      if (m.gameMode !== 'nightmare' || m.ngPlus !== 0 || !m.complete || !m.baked ||
+      const span = bakedWorldSpan(pw, 64 * 512, includesNightmareEdges ? "nightmare" : "normal", ngPlus);
+      if (m.gameMode !== (ngPlus ? 'normal' : 'nightmare') || m.ngPlus !== (ngPlus ? 1 : 0) || !m.complete || !m.baked ||
         m.terrainVersion !== TERRAIN_VERSION || !m.renderId || m.renderId !== manifests[0]?.renderId ||
         m.world !== WORLDS[i] || m.regions.length !== 1 || region.pw !== pw || region.dzi !== 'map.dzi' ||
         region.minX !== span.minX || region.minY !== -62 * 512 ||
         region.fullW !== span.width || region.fullH !== 144 * 512)
-        return finish({ baked: false, reason: 'Incomplete or mismatched Nightmare bake' });
+        return finish({ baked: false, reason: `Incomplete or mismatched ${ngPlus ? 'NG+1' : 'Nightmare'} bake` });
     } else if ((m.gameMode ?? 'normal') !== 'normal' || (m.ngPlus ?? 0) !== 0) {
       return finish({ baked: false, reason: 'Incorrect Daily game mode' });
     }
@@ -225,7 +233,7 @@ export async function probeBakedDZIs(
         y: r.minY,
         width: r.fullW,
         bust,
-        ...(prefix !== 'nightmare' && m.baked && (m.templeCrystalVersion ?? 0) < TEMPLE_CRYSTAL_VERSION && !r.pvt
+        ...(!ngPlus && prefix !== 'nightmare' && m.baked && (m.templeCrystalVersion ?? 0) < TEMPLE_CRYSTAL_VERSION && !r.pvt
           ? { legacyCrystalGhosts: legacyFinalCrystalGhosts(r.pw, 70) } : {}),
         ...(liquidMask ? { liquidMask } : {}),
       });
@@ -233,6 +241,10 @@ export async function probeBakedDZIs(
   }
   const fullPixelsBaked = manifests.every(m => m?.terrainVersion === TERRAIN_VERSION && m.complete === true);
   const sceneBasedTempleCrystals = manifests.every(m => (m?.templeCrystalVersion ?? 0) >= TEMPLE_CRYSTAL_VERSION);
+  if (ngPlus) {
+    publishedNGPlus.set(prefix, seed);
+    try { localStorage.setItem(publicationKey, String(seed)); } catch { /* Storage is optional. */ }
+  }
   return finish({ baked: true, prefix, placements, decorationsBaked, fullPixelsBaked,
     renderId: manifests[0]?.renderId, includesNightmareEdges, sceneBasedTempleCrystals });
 }

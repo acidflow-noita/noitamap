@@ -68,6 +68,21 @@ describe('in-page mod navigation', () => {
     f.accept(link()); await flush();
     expect(f.setMap).toHaveBeenCalledWith('dynamic-main-branch'); expect(f.renderDynamic).toHaveBeenCalledOnce();
   });
+  it('keeps the chosen NG+ level on position updates and regenerates once on a level change', async () => {
+    const f = setup(), url = base + '/?m=dngp&se=91&src=mod';
+    f.accept(url + '&ng=2&ds=1'); await flush();
+    expect(f.getMap()).toBe('new-game-plus-dynamic-main-branch');
+    expect(f.renderDynamic).toHaveBeenCalledTimes(1);
+    f.accept(url + '&ng=2&x=100&y=20&z=900');
+    expect(new URL(f.href()).searchParams.get('ds')).toBe('1');
+    expect(f.renderDynamic).toHaveBeenCalledTimes(1);
+    f.accept(url + '&ng=3');
+    expect(new URL(f.href()).searchParams.get('ng')).toBe('3');
+    expect(f.renderDynamic).toHaveBeenCalledTimes(2);
+    f.accept(link()); await flush();
+    expect(new URL(f.href()).searchParams.has('ng')).toBe(false);
+  });
+
   it('rejects invalid map, origin, path, seed or camera before touching the running app', () => {
     for (const url of [link().replace(base, 'https://other.test'), link().replace('/?', '/auth/?'),
       link().replace('m=dy', 'm=invalid'), link().replace('se=91', 'se=91junk'),

@@ -49,7 +49,7 @@ function assertInventory(inventory, seed, pw) {
 
 /** Verify a published file is exactly one horizontal world's metadata. */
 export function assertBakedWorldMetadata(metadata, world, seed) {
-  const members = bakedWorldMembers(worldId(world), metadata?.gameMode);
+  const members = bakedWorldMembers(worldId(world), metadata?.gameMode, metadata?.ngPlus > 0);
   assertGeneration(metadata, seed);
   for (const pw of members) assertInventory(metadata.reportInventory, seed, pw);
   if (metadata.parallelWorlds.length !== members.length || !members.every(pw => metadata.parallelWorlds.includes(pw))
@@ -65,7 +65,7 @@ export function assertBakedWorldMetadata(metadata, world, seed) {
 }
 
 export function createBakedWorldMetadata(metadata, world, seed) {
-  const members = bakedWorldMembers(worldId(world), metadata?.gameMode);
+  const members = bakedWorldMembers(worldId(world), metadata?.gameMode, metadata?.ngPlus > 0);
   assertGeneration(metadata, seed);
   for (const pw of members) {
     if (!metadata.parallelWorlds.includes(pw)) throw new Error("Missing " + world + " generation metadata for PW " + pw);

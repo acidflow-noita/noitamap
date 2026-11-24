@@ -4815,6 +4815,7 @@
     }
   },
   "dynamicMap": {
+    "ngPlusLevel": "NG+ 等级",
     "generate": {
       "0": "G",
       "1": "e",

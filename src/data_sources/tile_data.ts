@@ -7,7 +7,16 @@ export type TileData = {
 };
 
 export type MapName = keyof typeof tileSources;
-export type DynamicMapName = 'dynamic-main-branch' | 'nightmare-dynamic-main-branch';
+export const NG_PLUS_MAP = 'new-game-plus-dynamic-main-branch';
+export const MAX_NG_PLUS = 28;
+export type DynamicMapName = 'dynamic-main-branch' | 'nightmare-dynamic-main-branch' | typeof NG_PLUS_MAP;
+
+/** The level range matches the pinned Telescope engines' NG+ selector. */
+export function ngPlusForMap(name: string | null | undefined, value: string | null): number {
+  if (name !== NG_PLUS_MAP) return 0;
+  const level = value && /^\d+$/.test(value) ? Number(value) : 1;
+  return Number.isInteger(level) && level >= 1 && level <= MAX_NG_PLUS ? level : 1;
+}
 export type DynamicGameMode = 'normal' | 'nightmare';
 export const NIGHTMARE_DEFAULT_SEED = 786433191;
 export const dynamicGameMode = (name?: string | null): DynamicGameMode =>
@@ -15,7 +24,7 @@ export const dynamicGameMode = (name?: string | null): DynamicGameMode =>
 
 
 export const isDynamicMap = (name: string | null | undefined): name is DynamicMapName =>
-  name === 'dynamic-main-branch' || name === 'nightmare-dynamic-main-branch';
+  name === 'dynamic-main-branch' || name === 'nightmare-dynamic-main-branch' || name === NG_PLUS_MAP;
 
 type TileSourceMap = Record<string, TileData[]>;
 

@@ -4815,6 +4815,7 @@
     }
   },
   "dynamicMap": {
+    "ngPlusLevel": "Livello NG+",
     "generate": {
       "0": "G",
       "1": "e",

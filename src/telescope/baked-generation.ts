@@ -214,7 +214,7 @@ export async function fetchBakedGeneration(
   worlds: World[],
   seed: number,
   renderId?: string,
-  includesNightmareEdges = false,
+  includesCaptureEdges = false,
 ): Promise<GenerationResult | null> {
   try {
     const files = await Promise.all(
@@ -225,11 +225,12 @@ export async function fetchBakedGeneration(
         if (!resp.ok) return null;
         const j = (await resp.json()) as BakedGenerationFile;
         if (!j || j.version !== BAKED_GENERATION_VERSION || j.seed !== seed || !j.biomeDataPixels) return null;
-        if (prefix === "nightmare") {
+        const ngPlus = prefix.startsWith("ng-plus-");
+        if (prefix === "nightmare" || ngPlus) {
           const pw = { left: -1, middle: 0, right: 1 }[w];
-          const expected = bakedWorldMembers(pw, includesNightmareEdges ? "nightmare" : "normal");
-          if (!renderId || j.renderId !== renderId || j.gameMode !== "nightmare" || j.ngPlus !== 0 ||
-            j.dailySeed || j.worldSize !== 64 || j.worldCenter !== 32 || j.biomeDataW !== 64 || j.biomeDataH !== 48 ||
+          const expected = bakedWorldMembers(pw, includesCaptureEdges ? "nightmare" : "normal", ngPlus);
+          if (!renderId || j.renderId !== renderId || j.gameMode !== (ngPlus ? "normal" : "nightmare") || j.ngPlus !== (ngPlus ? 1 : 0) ||
+            !!j.isNGP !== ngPlus || !!j.dailySeed !== ngPlus || j.worldSize !== 64 || j.worldCenter !== 32 || j.biomeDataW !== 64 || j.biomeDataH !== 48 ||
             j.parallelWorlds?.length !== expected.length || !expected.every(id => j.parallelWorlds.includes(id) &&
               Array.isArray(j.poisByPW?.[id + ",0"]) && Array.isArray(j.pixelScenesByPW?.[id + ",0"]))) return null;
           if (!j.poisByPW?.[pw + ",0"]?.length) return null;

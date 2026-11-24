@@ -466,7 +466,7 @@ function isDynamicSeedItem(item: any): boolean {
   // Baked DZIs come from the daily-{left,middle,right}.acidflow.stream and
   // previous-daily-{left,middle,right}.acidflow.stream workers. Anything from
   // those origins is seed-content and must be removable on reseed.
-  return /^https:\/\/(?:previous-)?daily-(?:left|middle|right)\.acidflow\.stream\//.test(url);
+  return /^https:\/\/(?:(?:ng-plus-)?(?:previous-)?daily|nightmare)-(?:left|middle|right)\.acidflow\.stream\//.test(url);
 }
 
 const dynamicTiledImages: Set<any> = new Set();
@@ -788,7 +788,7 @@ async function addBiomeLayersProgressively(
   try {
     for (let pwIdx = 0; pwIdx < pwOrder.length; pwIdx++) {
       const pw = pwOrder[pwIdx];
-      const span = visibleWorldSpan(pw, pwOffsetPixels, result.gameMode);
+      const span = visibleWorldSpan(pw, pwOffsetPixels, result.gameMode, result.isNGP);
       if (currentGenerationId !== generationId) return;
 
       for (const pvt of pvtList) {
@@ -868,7 +868,7 @@ async function addBiomeLayersProgressively(
             const y = anchorY + layer.correctedY + pvt * 24576;
             const osdWidth = overlay.width * 10;
             const osdHeight = overlay.height * 10;
-            if (Math.abs(pw) === 2 && result.gameMode === "nightmare" &&
+            if (Math.abs(pw) === 2 && (result.gameMode === "nightmare" || result.isNGP) &&
               (x + osdWidth <= span.minX || x >= span.minX + span.width)) continue;
 
             minX = Math.min(minX, x);
@@ -5014,7 +5014,7 @@ async function addOrbOverlays(
 ): Promise<void> {
   if (!isCurrent()) return;
   // Nightmare orb markers use the seed-specific positions from Telescope.
-  if (result.gameMode === "nightmare") return;
+  if (result.gameMode === "nightmare" || result.isNGP) return;
 
   // Filter orbs for the dynamic map
   const dynamicOrbs = orbsData.filter((orb: any) => orb.maps && orb.maps.includes('dynamic-main-branch'));
@@ -5143,7 +5143,7 @@ export async function renderGenerationResult(
   // Skipped when baked DZIs will replace them — the baked tiles already
   // include the biome bgs and the placeholder would otherwise flash visibly
   // under them on every refresh.
-  if (keepBiomeBackgrounds && result.gameMode === "nightmare") {
+  if (keepBiomeBackgrounds && (result.gameMode === "nightmare" || result.isNGP)) {
     await ensureTelescopeModules();
     if (currentGenerationId !== generationId) return;
     const layer = await prepareGeneratedBiomeBackground(result.biomeData.pixels, result.worldSize, result.worldCenter, GENERATOR_CONFIG);
@@ -5267,7 +5267,7 @@ export async function renderGenerationResult(
   } else {
     // Adding biomes initializes the OSD viewport bounds.
     let instant = false;
-    if (isInstantTerrainEnabled() && !forceApproximateTerrain && !result.isNGP && (result.worldSize === 70 || result.gameMode === "nightmare")) {
+    if (isInstantTerrainEnabled() && !forceApproximateTerrain && (result.worldSize === 70 || result.isNGP || result.gameMode === "nightmare")) {
       await ensureTelescopeModules();
       if (currentGenerationId !== generationId) return;
       const [{ addInstantTerrain }, masks] = await Promise.all([

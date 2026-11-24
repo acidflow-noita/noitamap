@@ -26,7 +26,7 @@ vi.mock('../src/telescope/perk-i18n', () => ({ perkNameKey: vi.fn() }));
 vi.mock('../src/game-translations/translator', () => ({ gameTranslator: {} }));
 
 import { fetchDailySeed, fetchPreviousDailySeed } from '../src/data_sources/daily_seed';
-import { isDynamicMap } from "../src/data_sources/tile_data";
+import { isDynamicMap, NG_PLUS_MAP } from "../src/data_sources/tile_data";
 import { parseURL, reorderParams, updateURLWithSeed } from '../src/data_sources/url';
 import { shouldUseBakedTerrain, isInstantTerrainEnabled } from '../src/renderer_settings';
 import { initTelescope, generateDynamicMap, prewarmParallelWorlds } from '../src/telescope/telescope-adapter';
@@ -75,8 +75,8 @@ describe('URL seed request ownership', () => {
     vi.mocked(initTelescope).mockResolvedValue();
     vi.mocked(getCachedGeneration).mockResolvedValue(null);
     vi.mocked(cacheGeneration).mockResolvedValue();
-    vi.mocked(generateDynamicMap).mockImplementation(async ({ seed }) => ({ seed, ngPlus: 0,
-      isNGP: false, worldSize: 70, worldCenter: 35, tileLayers: [{}], biomeData: {},
+    vi.mocked(generateDynamicMap).mockImplementation(async ({ seed, ngPlus = 0 }) => ({ seed, ngPlus,
+      isNGP: ngPlus > 0, worldSize: ngPlus ? 64 : 70, worldCenter: ngPlus ? 32 : 35, tileLayers: [{}], biomeData: {},
       poisByPW: {}, pixelScenesByPW: {}, parallelWorlds: [0] } as any));
     vi.mocked(renderGenerationResult).mockResolvedValue();
     vi.mocked(prefetchAllSceneBitmaps).mockResolvedValue();
@@ -84,6 +84,43 @@ describe('URL seed request ownership', () => {
     vi.mocked(hasDynamicOverlays).mockReturnValue(false);
     return vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
   }
+
+  it.each([
+    [today, 1, 'ng-plus-daily'], [previous, 1, 'ng-plus-previous-daily'],
+    [today, 2, null], [91, 1, null], [91, 28, null],
+  ] as const)('generates NG+ seed %i level %i when unpublished or custom', async (seed, level, slot) => {
+    history.replaceState(null, '', `/?m=dngp&se=${seed}&ng=${level}`);
+    const frame = livePipeline(), pipeline = await import('../src/dynamic-map');
+    vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
+    vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: false, reason: 'no publication', unpublishedNGPlus: true });
+    try {
+      const route = parseURL();
+      expect(route).toMatchObject({ map: NG_PLUS_MAP, seed, ngPlus: level });
+      const result = await pipeline.runDynamicMapFromURL({ viewer: {}, ngPlus: route.ngPlus });
+      expect(result).toMatchObject({ seed, ngPlus: level, isNGP: true, worldSize: 64 });
+      expect(generateDynamicMap).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ seed, gameMode: 'normal', ngPlus: level }));
+      expect(getCachedGeneration).toHaveBeenCalledWith(expect.stringContaining(`|ng-plus-${level}`));
+      if (slot) expect(probeBakedDZIs).toHaveBeenCalledExactlyOnceWith(slot, seed);
+      else expect(probeBakedDZIs).not.toHaveBeenCalled();
+    } finally { pipeline.clearDynamicMap({}); frame.mockRestore(); }
+  });
+
+  it.each([today, previous])('keeps published NG+1 terrain when POIs are unavailable for seed %i', async seed => {
+    history.replaceState(null, '', `/?m=dngp&se=${seed}&ds=1`);
+    const frame = livePipeline(), pipeline = await import('../src/dynamic-map');
+    const slot = seed === today ? 'ng-plus-daily' : 'ng-plus-previous-daily';
+    vi.mocked(shouldUseBakedTerrain).mockReturnValue(true);
+    vi.mocked(probeBakedDZIs).mockResolvedValue({ baked: true, prefix: slot, renderId: 'ng1', placements: [],
+      decorationsBaked: true, fullPixelsBaked: true });
+    vi.mocked(fetchBakedGeneration).mockResolvedValue(null);
+    try {
+      await pipeline.runDynamicMapFromURL({ viewer: {}, ngPlus: parseURL().ngPlus });
+      expect(probeBakedDZIs).toHaveBeenCalledExactlyOnceWith(slot, seed);
+      expect(fetchBakedGeneration).toHaveBeenCalledWith(slot, ['left', 'middle', 'right'], seed, 'ng1', true);
+      expect(addBakedDZIsToOSD).toHaveBeenCalledOnce();
+      expect(generateDynamicMap).not.toHaveBeenCalled();
+    } finally { pipeline.clearDynamicMap({}); frame.mockRestore(); }
+  });
 
   it.each([true, false])('keeps the fixed Nightmare tiles even when published POIs are missing (hit=%s)', async hit => {
     history.replaceState(null, '', '/?m=dn');
@@ -757,7 +794,7 @@ describe('dynamic seed URL identity', () => {
       if (metadata) {
         expect(result).toMatchObject({ seed });
         expect(vi.mocked(renderGenerationResult).mock.calls[0].slice(6, 9)).toEqual([placements, true, true]);
-        expect(prewarmAlt).toHaveBeenCalledExactlyOnceWith(seed, prefix === 'daily' || dailyFlag, false, 'normal');
+        expect(prewarmAlt).toHaveBeenCalledExactlyOnceWith(seed, prefix === 'daily' || dailyFlag, false, 'normal', 0);
         vi.mocked(hasDynamicOverlays).mockReturnValue(true);
         expect(await pipeline.runDynamicMapFromURL({ viewer })).toBe(result);
         expect(renderGenerationResult).toHaveBeenCalledOnce();
@@ -774,7 +811,7 @@ describe('dynamic seed URL identity', () => {
       await flushFrames();
       expect(prepareInstantTerrainResources).toHaveBeenCalledWith(live, expect.any(Function));
       expect(prefetchAllSceneBitmaps).toHaveBeenCalledOnce();
-      expect(prewarmAlt).toHaveBeenLastCalledWith(77, false, true, 'normal');
+      expect(prewarmAlt).toHaveBeenLastCalledWith(77, false, true, 'normal', 0);
     } finally { pipeline.clearDynamicMap(viewer); frame.mockRestore(); }
   });
 
@@ -800,7 +837,7 @@ describe('dynamic seed URL identity', () => {
     history.replaceState(null, '', '/?m=dy&x=7711&y=6847&z=1013&sr=1');
     updateURLWithSeed(previous, true); // The previous-daily button's URL path.
     const share = mainFunction('  const getShareUrl =', '  (window as any).getShareUrl', {
-      isDynamicMap, app: { getMap: () => 'dynamic-main-branch' }, getCurrentDynamicSeed: () => previous,
+      isDynamicMap, NG_PLUS_MAP, app: { getMap: () => 'dynamic-main-branch' }, getCurrentDynamicSeed: () => previous,
       getCurrentIsDaily: () => true, getEnabledOverlays: () => [], overlayToShort: (value: string) => value,
       getActiveDescriptor: () => 'all', reorderParams,
     }, 'getShareUrl');
@@ -834,7 +871,8 @@ describe('dynamic seed URL identity', () => {
     history.replaceState(null, '', `/${query}`);
     const run = vi.fn(async () => {}), resolve = vi.fn(async () => {}), options = { gameMode: "normal" };
     const restore = mainFunction('  async function runDynamicMapWithPriority', '\n\n  createDynamicUI', {
-      parseURL, sessionSeeds: new Map([["normal", { seed: 99, daily: true }]]), dynamicOpts: options,
+      parseURL, NG_PLUS_MAP, app: { getMap: () => "dynamic-main-branch" },
+      sessionSeeds: new Map([["dynamic-main-branch", { seed: 99, daily: true, ngPlus: 0 }]]), dynamicOpts: options,
       updateURLWithSeed, runDynamicMap: run, runDynamicMapFromURL: resolve,
     }, 'runDynamicMapWithPriority');
     await restore();

@@ -1,5 +1,6 @@
 import type { AppOSD } from './app_osd';
-import type { MapName } from './data_sources/tile_data';
+import { NG_PLUS_MAP, type MapName } from './data_sources/tile_data';
+import { dailyMapPrefix } from './telescope/daily-bake-status';
 import type { URLState } from './data_sources/url';
 import { fetchDailySeed } from './data_sources/daily_seed';
 import { isLightMode } from './light-mode';
@@ -27,19 +28,21 @@ export interface InitialDaily {
 }
 
 export function startInitialDaily(route: URLState, opening: Promise<{ osd: AppOSD; map: MapName }>): InitialDaily | undefined {
-  if ((route.map && route.map !== 'dynamic-main-branch') || (route.seed !== undefined && !route.dailySeed)
+  const mapName = route.map ?? 'dynamic-main-branch';
+  if ((mapName !== 'dynamic-main-branch' && mapName !== NG_PLUS_MAP) || (route.ngPlus ?? 1) > 1 || (route.seed !== undefined && !route.dailySeed)
     || !shouldUseBakedTerrain(window.location.search)) return;
 
   const token = beginDynamicRequest();
   const today = fetchDailySeed();
+  const prefix = dailyMapPrefix('daily', mapName === NG_PLUS_MAP ? 1 : 0);
   // An unpinned URL needs today's three manifests regardless of the seed value.
   // A pinned Daily URL may refer to yesterday. Check its identity first.
   const probe = (route.seed === undefined
-    ? probeBakedDZIs('daily', today)
-    : today.then(seed => seed === route.seed ? probeBakedDZIs('daily', seed) : null)
+    ? probeBakedDZIs(prefix, today)
+    : today.then(seed => seed === route.seed ? probeBakedDZIs(prefix, seed) : null)
   ).catch(() => null);
   const tiles = opening.then(async ({ osd, map }) => {
-    if (map !== 'dynamic-main-branch' || token !== generationToken) return null;
+    if (map !== mapName || token !== generationToken) return null;
     osd.addOnceHandler('map-change-start', () => {
       if (token === generationToken) beginDynamicRequest();
     });

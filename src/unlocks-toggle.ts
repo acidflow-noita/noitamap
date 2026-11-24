@@ -50,14 +50,16 @@ let viewListeners: Array<(v: UnlockDescriptor) => void> = [];
 
 let lastSeedSeen: number | null = null;
 let lastMode: DynamicGameMode = "normal";
+let lastNGPlus = 0;
 
 /** Bind speculative work to the requested seed before any network lookup or
  * primary generation wait. A completed same-seed variant remains reusable. */
-export function beginAltSeed(seed: number, gameMode: DynamicGameMode = "normal"): void {
-  if (lastSeedSeen === seed && lastMode === gameMode) return;
+export function beginAltSeed(seed: number, gameMode: DynamicGameMode = "normal", ngPlus = 0): void {
+  if (lastSeedSeen === seed && lastMode === gameMode && lastNGPlus === ngPlus) return;
   if (lastSeedSeen !== null) resetAltCache();
   lastSeedSeen = seed;
   lastMode = gameMode;
+  lastNGPlus = ngPlus;
 }
 
 /** True if the page was opened with a `?u=<base64>` URL parameter — i.e. the
@@ -231,7 +233,7 @@ function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescriptor): 
   const lifetime = altLifetime;
   const input = {
     seed,
-    ngPlus: 0,
+    ngPlus: lastNGPlus,
     gameMode: lastMode,
     dailySeed: isDaily,
     unlocks: descriptorToUnlocks(desc),
@@ -282,8 +284,8 @@ function ensureVariant(seed: number, isDaily: boolean, desc: UnlockDescriptor): 
 /** Background pre-warm of every non-primary variant. Called after the
  *  primary render completes; fires the generations sequentially so we
  *  don't thrash telescope's PRNG / cache. */
-export async function prewarmAlt(seed: number, isDaily: boolean, generate = true, gameMode: DynamicGameMode = "normal"): Promise<void> {
-  beginAltSeed(seed, gameMode);
+export async function prewarmAlt(seed: number, isDaily: boolean, generate = true, gameMode: DynamicGameMode = "normal", ngPlus = 0): Promise<void> {
+  beginAltSeed(seed, gameMode, ngPlus);
   if (!generate) return; // Baked maps generate an alternate only when explicitly requested.
   const lifetime = altLifetime;
   const primary = primaryDescriptor();

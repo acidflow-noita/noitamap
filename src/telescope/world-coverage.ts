@@ -1,24 +1,24 @@
-/** Nightmare uses a 64-chunk world. Its captured background extends to ±105 chunks. */
-export const NIGHTMARE_CAPTURE_LIMIT = 105 * 512;
+/** The three captured backgrounds cover 105 chunks on each side of world zero. */
+export const CAPTURE_X_LIMIT = 105 * 512;
 
-export function captureWorlds(gameMode?: string): number[] {
-  return gameMode === "nightmare" ? [0, -1, 1, -2, 2] : [-1, 0, 1];
+export function captureWorlds(gameMode?: string, isNGP = false): number[] {
+  return isNGP || gameMode === "nightmare" ? [0, -1, 1, -2, 2] : [-1, 0, 1];
 }
 
-export function visibleWorldSpan(pw: number, worldWidth: number, gameMode?: string) {
+export function visibleWorldSpan(pw: number, worldWidth: number, gameMode?: string, isNGP = false) {
   const origin = (pw - 0.5) * worldWidth;
-  if (gameMode !== "nightmare") return { minX: origin, width: worldWidth };
-  const minX = Math.max(-NIGHTMARE_CAPTURE_LIMIT, origin);
-  return { minX, width: Math.max(0, Math.min(NIGHTMARE_CAPTURE_LIMIT, origin + worldWidth) - minX) };
+  if (!isNGP && gameMode !== "nightmare") return { minX: origin, width: worldWidth };
+  const minX = Math.max(-CAPTURE_X_LIMIT, origin);
+  return { minX, width: Math.max(0, Math.min(CAPTURE_X_LIMIT, origin + worldWidth) - minX) };
 }
 
-/** A side deployment contains its full native world and the visible strip of its next neighbour. */
-export function bakedWorldMembers(pw: number, gameMode?: string): number[] {
-  return gameMode === "nightmare" && pw !== 0 ? [pw, 2 * pw] : [pw];
+/** A side deployment includes the captured strip of its next neighbour on 64-chunk maps. */
+export function bakedWorldMembers(pw: number, gameMode?: string, isNGP = false): number[] {
+  return (isNGP || gameMode === "nightmare") && pw !== 0 ? [pw, 2 * pw] : [pw];
 }
 
-export function bakedWorldSpan(pw: number, worldWidth: number, gameMode?: string) {
-  const slices = bakedWorldMembers(pw, gameMode).map(world => visibleWorldSpan(world, worldWidth, gameMode));
+export function bakedWorldSpan(pw: number, worldWidth: number, gameMode?: string, isNGP = false) {
+  const slices = bakedWorldMembers(pw, gameMode, isNGP).map(world => visibleWorldSpan(world, worldWidth, gameMode, isNGP));
   const minX = Math.min(...slices.map(slice => slice.minX));
   return { minX, width: Math.max(...slices.map(slice => slice.minX + slice.width)) - minX };
 }

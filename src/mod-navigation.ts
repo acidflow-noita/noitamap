@@ -1,8 +1,8 @@
-import { asMapName, isDynamicMap, type MapName } from './data_sources/tile_data';
+import { asMapName, isDynamicMap, NG_PLUS_MAP, type MapName } from './data_sources/tile_data';
 import { parseURL, reorderParams, type URLState } from './data_sources/url';
 import type { ZoomPos } from './app_osd';
 
-const GAME_PARAMS = ['m', 'se', 'ds', 'u', 'p', 'sun'] as const;
+const GAME_PARAMS = ['m', 'se', 'ds', 'ng', 'u', 'p', 'sun'] as const;
 const OWNED_PARAMS = [...GAME_PARAMS, 'x', 'y', 'z'] as const;
 
 export function parseModNavigation(href: string, origin: string): { url: URL; state: URLState & { map: MapName } } | null {
@@ -33,8 +33,10 @@ export function mergeModNavigation(current: URL, target: URL): URL {
   }
   // Daily identity is auto-detected by the app; a position update for the same
   // seed must not discard that resolved identity just because Lua omits ds.
+  const targetMap = parseURL(target.href).map;
   if (!target.searchParams.has('ds') && target.searchParams.get('se') === current.searchParams.get('se')
-    && target.searchParams.get('m') === 'dynamic-main-branch' && current.searchParams.has('ds'))
+    && (targetMap === 'dynamic-main-branch' || targetMap === NG_PLUS_MAP)
+    && parseURL(current.href).map === targetMap && current.searchParams.has('ds'))
     result.searchParams.set('ds', current.searchParams.get('ds')!);
   for (const key of ['src', 'map', 'zoom', 'poi', 'pid', 'targetPoiId', 'spawn']) result.searchParams.delete(key);
   reorderParams(result);
@@ -63,6 +65,7 @@ export function createModNavigation(options: ModNavigationOptions) {
       const { url, state } = parsed, next = mergeModNavigation(current, url), request = ++epoch;
       const previousState = parseURL(current.href);
       const gameChanged = state.map !== options.getMap() || state.seed !== previousState.seed
+        || state.ngPlus !== previousState.ngPlus
         || ['u', 'p', 'sun', 'ds'].some(k => current.searchParams.get(k) !== next.searchParams.get(k));
       const unlocksChanged = ['u', 'p', 'sun'].some(k => current.searchParams.get(k) !== next.searchParams.get(k));
       options.closeCard();

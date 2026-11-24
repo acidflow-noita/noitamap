@@ -1,6 +1,6 @@
 import type { AppState } from '../app';
 
-import { asMapName, type MapName } from './tile_data';
+import { asMapName, NG_PLUS_MAP, ngPlusForMap, type MapName } from './tile_data';
 import type { OverlayKey } from './overlays';
 import {
   overlayToShort,
@@ -29,6 +29,7 @@ export interface URLState extends Partial<AppState> {
   seed?: number;
   /** Daily generation mode. Without an explicit seed, resolve today's daily. */
   dailySeed?: boolean;
+  ngPlus?: number;
   /** Search query string */
   query?: string;
   filters?: string[];
@@ -41,7 +42,7 @@ export interface URLState extends Partial<AppState> {
  * Desired URL param order: x, y, z (zoom), m (map), se (seed), ds (daily seed), o (overlays), s (sidebar), c (canvas), poi (targetPoiId), q (search), f (filters), sr (seed report), u (unlocks descriptor / mod payload)
  * Short params used for encoding, decoder accepts both short and long names
  */
-const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'o', 's', 'c', 'poi', 'spawn', 'q', 'f', 'sr', 'u', 'p', 'sun'];
+const PARAM_ORDER = ['x', 'y', 'z', 'm', 'se', 'ds', 'ng', 'o', 's', 'c', 'poi', 'spawn', 'q', 'f', 'sr', 'u', 'p', 'sun'];
 
 /** Only local creature IDs belong in this parameter, never paths or URLs. */
 export function normalizeSpawnCreatureId(value: string | null | undefined): string | undefined {
@@ -201,7 +202,8 @@ export function parseURL(href = window.location.toString()): URLState {
   const seedReportParam = getParam(url, 'sr', 'seedReport');
   const seedReportOpen = seedReportParam === '1' || seedReportParam === 'true';
 
-  return { pos, map, overlays, sidebarOpen, canvas, seed, dailySeed, query, filters, targetPoiId, spawnCreatureId, seedReportOpen };
+  const ngPlus = map === NG_PLUS_MAP ? ngPlusForMap(map, url.searchParams.get('ng')) : undefined;
+  return { pos, map, overlays, sidebarOpen, canvas, seed, dailySeed, ngPlus, query, filters, targetPoiId, spawnCreatureId, seedReportOpen };
 }
 
 /** Set or clear a requested creature spawn overlay without changing other state. */
@@ -248,6 +250,7 @@ export function updateURL(data: AppState) {
   url.searchParams.set('y', data.pos.y.toFixed(0));
   url.searchParams.set('z', logZoomFromZoom(data.pos.zoom).toFixed(0));
   url.searchParams.set('m', mapToShort(data.map as MapName));
+  if (data.map !== NG_PLUS_MAP) url.searchParams.delete('ng');
   // Note: we don't dynamically update the URL with the search query character by character
   // If we wanted to, we would set 'q' param here. Let's just leave it out from AppState updates.
   reorderParams(url);
@@ -405,13 +408,20 @@ export function updateURLWithSeed(seed: number, isDailySeed: boolean) {
   window.history.replaceState(null, '', url.toString());
 }
 
-/**
- * Clear seed params from the URL
- */
+/** Level one is the default for Dynamic NG+. */
+export function updateURLWithNGPlus(level: number): void {
+  const url = new URL(window.location.href);
+  if (level > 1) url.searchParams.set('ng', String(level));
+  else url.searchParams.delete('ng');
+  reorderParams(url);
+  window.history.replaceState(window.history.state, '', url.toString());
+}
+
 export function clearSeedParams() {
   const url = new URL(window.location.toString());
   url.searchParams.delete('se');
   url.searchParams.delete('ds');
+  url.searchParams.delete('ng');
   reorderParams(url);
   window.history.replaceState(null, '', url.toString());
 }

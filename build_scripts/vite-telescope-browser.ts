@@ -38,27 +38,35 @@ export async function browserTelescopeSource(code: string, id: string) {
     source = source.replace(pattern, replacement);
   };
   if (id.endsWith('/tile_generator.js')) {
-    // Audit both pinned generators before inserting the host scheduling points
-    // and the capture-verified Snowy Chasm rectangle choice.
+    // Preserve upstream generation order when inserting cooperative yield points.
     const pattern = /export async function generateBiomeTiles\([\s\S]*?\n\}/;
     const original = source.match(pattern)?.[0];
-    const audited = new Set([
-      'b1e3f2999d60ab9a7c6f7aeb9e9168db1d05daee67e443380e8ffe0327c67040',
-      'f7e4e9ad9c7727faa0b0de1f4d89cd7c956cece22e8bfacf15abd23fd392b9ef',
-    ]);
-    if (!original || !audited.has(createHash('sha256').update(original.replace(/\r\n/g, '\n')).digest('hex')))
+    const upstreamHash = '3ea653eb501e9070e438552bec8c75c734e120b15bb3f6b00a328cbb4b96792b';
+    const fullDetailHash = 'f7e4e9ad9c7727faa0b0de1f4d89cd7c956cece22e8bfacf15abd23fd392b9ef';
+    const fingerprint = (body: string) => createHash('sha256').update(body.replace(/\r\n/g, '\n')).digest('hex');
+    const hash = original && fingerprint(original);
+    if (!original || (hash !== upstreamHash && hash !== fullDetailHash))
       throw new Error(`Review changed Telescope tile generation scheduling: ${id}`);
+    let generator = original;
+    if (hash === fullDetailHash) {
+      // render-perf still masks each connected component separately. Use the
+      // pinned upstream fix (628d14c) at the same successful-layer boundary.
+      const canonical = await readFile(resolve(import.meta.dirname, '../lib/noita-telescope/js/tile_generator.js'), 'utf8');
+      const upstream = canonical.match(pattern)?.[0];
+      const claims = upstream?.match(/const \[bx0, by0, bx1, by1\] = bboxes\[i\];[\s\S]*?paintedBoxes\.push\(bboxes\[i\]\);/)?.[0];
+      if (!upstream || fingerprint(upstream) !== upstreamHash || !claims)
+        throw new Error('Review upstream Telescope Wang rectangle ownership');
+      const groups = 'const { regions, bboxes } = findBiomeRegions(biomePixels, width, height, conf.color);';
+      generator = generator.replace(groups, '$&\n        const paintedBoxes = [];')
+        .replace('const validChunks = new Set(regions[i].map(p => `${p[0]},${p[1]}`));', () => claims);
+    }
     const checkpoint = '\n            const resume = yieldControl?.(); if (resume) await resume;';
-    const scheduled = original
+    const scheduled = generator
       .replace("gameMode = 'normal') {", "gameMode = 'normal', yieldControl = null) {")
       .replace('for (let biomeName of Object.keys(biomeConfig)) {', '$&' + checkpoint)
       .replace('for (let i = 0; i < regions.length; i++) {', '$&' + checkpoint)
       .replace('while (!valid && attempts < MAX_PATHFINDING_ATTEMPTS) {', '$&' + checkpoint);
-    const groups = 'const { regions, bboxes } = findBiomeRegions(biomePixels, width, height, conf.color);';
-    if (!scheduled.includes(groups)) throw new Error(`Review changed Telescope Wang region collection: ${id}`);
-    const mapped = scheduled.replace(groups, groups + '\n        if (gameMode === "nightmare" && biomeName === "winter_caves") assignOverlappingWangChunks(regions, bboxes);');
-    source = `import { assignOverlappingWangChunks } from ${JSON.stringify(resolve(import.meta.dirname, '../src/telescope/wang-region-ownership.ts'))};\n` +
-      source.replace(original, mapped);
+    source = source.replace(original, () => scheduled);
   }
   if (id.endsWith('/poi_scanner.js')) {
     const pattern = /export function prescanSpawnFunctions\([\s\S]*?\n\}/;

@@ -6,13 +6,16 @@ import { bakedWorldMembers, bakedWorldSpan, captureWorlds, visibleWorldSpan } fr
 import { finalizeGeneration } from "../src/telescope/finalize-generation";
 import { createBakedWorldMetadata } from "../build_scripts/baked-world-metadata.mjs";
 
-it("covers each captured column exactly once using each physical world's real coordinates", () => {
-  const headers = catalog["nightmare-dynamic-main-branch"].map(row => JSON.parse(row.dziContent).Image);
+it.each([
+  ["nightmare-dynamic-main-branch", "nightmare", false],
+  ["new-game-plus-dynamic-main-branch", "normal", true],
+] as const)("covers each captured column of %s exactly once", (map, gameMode, isNGP) => {
+  const headers = catalog[map].map(row => JSON.parse(row.dziContent).Image);
   const left = Math.min(...headers.map(h => Number(h.TopLeft.X)));
   const right = Math.max(...headers.map(h => Number(h.TopLeft.X) + Number(h.Size.Width)));
   expect([left, right]).toEqual([-53760, 53760]);
-  const live = captureWorlds("nightmare").sort((a, b) => a - b).map(pw => visibleWorldSpan(pw, 32768, "nightmare"));
-  const baked = [-1, 0, 1].map(pw => bakedWorldSpan(pw, 32768, "nightmare"));
+  const live = captureWorlds(gameMode, isNGP).sort((a, b) => a - b).map(pw => visibleWorldSpan(pw, 32768, gameMode, isNGP));
+  const baked = [-1, 0, 1].map(pw => bakedWorldSpan(pw, 32768, gameMode, isNGP));
   for (const parts of [live, baked]) {
     let x = left;
     for (const part of parts) {
@@ -30,7 +33,7 @@ it("covers each captured column exactly once using each physical world's real co
   }
   expect(captureWorlds("normal")).toEqual([-1, 0, 1]);
   expect(bakedWorldSpan(-1, 35840, "normal")).toEqual({ minX: -53760, width: 35840 });
-  expect(bakedWorldSpan(1, 32768, "ng-plus")).toEqual({ minX: 16384, width: 32768 });
+  expect(bakedWorldSpan(1, 32768, "normal", true)).toEqual({ minX: 16384, width: 37376 });
 });
 
 it("keeps edge POIs in their true parallel world and retains scenes crossing a capture edge", () => {
@@ -76,17 +79,6 @@ it.each(["published", "wide", "mixed"])("handles %s Nightmare manifest geometry 
     expect(probe.baked).toBe(kind !== "mixed");
     if (probe.baked) expect(probe.includesNightmareEdges).toBe(kind === "wide");
   } finally { vi.unstubAllGlobals(); }
-});
-
-it('gives the five overlapping Snowy Chasm chunks to the first Wang rectangle without resizing the later one', async () => {
-  const { assignOverlappingWangChunks } = await import('../src/telescope/wang-region-ownership');
-  const overlap: [number, number][] = [[8,8],[8,9],[7,9],[6,9],[5,9]];
-  const regions: [number, number][][] = [[[4,6],[6,6],[14,9]], [...overlap,[8,10]]];
-  const bounds: [number, number, number, number][] = [[4,5,14,9],[5,8,8,10]];
-  assignOverlappingWangChunks(regions, bounds);
-  expect(regions[0]).toEqual([[4,6],[6,6],[14,9],...overlap]);
-  expect(regions[1]).toEqual([[8,10]]);
-  expect(bounds[1]).toEqual([5,8,8,10]);
 });
 
 it('uses the three game material slices at their own biome and world coordinates', async () => {

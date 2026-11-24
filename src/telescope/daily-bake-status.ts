@@ -10,7 +10,12 @@ interface Check {
 
 // Only the two published daily slots are retained. A newer check owns its
 // slot so late/aborted requests cannot overwrite a successful retry.
-const checks = new Map<DailyBakePrefix, Check>();
+export type DailyMapPrefix = DailyBakePrefix | `ng-plus-${DailyBakePrefix}`;
+export function dailyMapPrefix(slot: DailyBakePrefix, ngPlus = 0): DailyMapPrefix {
+  return ngPlus > 0 ? `ng-plus-${slot}` : slot;
+}
+
+const checks = new Map<DailyMapPrefix, Check>();
 const listeners = new Set<() => void>();
 let progress: BakeProgress[] = [];
 let fetchedAt = -Infinity;
@@ -38,7 +43,7 @@ export function refreshDailyBakeProgress(): Promise<void> {
   return pending;
 }
 
-export function getDailyBakeStatus(prefix: DailyBakePrefix, seed: number): DailyBakeStatus | null {
+export function getDailyBakeStatus(prefix: DailyMapPrefix, seed: number): DailyBakeStatus | null {
   const check = checks.get(prefix);
   return check?.seed === seed ? check.status : null;
 }
@@ -55,7 +60,7 @@ function notify(): void {
   }
 }
 
-export function beginDailyBakeCheck(prefix: DailyBakePrefix, seed: number): (status: DailyBakeStatus) => void {
+export function beginDailyBakeCheck(prefix: DailyMapPrefix, seed: number): (status: DailyBakeStatus) => void {
   const check: Check = { seed, status: 'checking' };
   checks.set(prefix, check);
   notify();
@@ -63,6 +68,6 @@ export function beginDailyBakeCheck(prefix: DailyBakePrefix, seed: number): (sta
     if (checks.get(prefix) !== check) return;
     check.status = status;
     notify();
-    if (status === 'unavailable') void refreshDailyBakeProgress();
+    if (status === 'unavailable' && !prefix.startsWith('ng-plus-')) void refreshDailyBakeProgress();
   };
 }

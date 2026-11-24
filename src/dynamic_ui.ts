@@ -8,16 +8,16 @@ import * as bootstrap from "./bootstrap";
 
 import i18next from "i18next";
 import { fetchDailySeed, fetchPreviousDailySeed, getCachedDailySeedIdentity, subscribeDailySeedIdentity } from "./data_sources/daily_seed";
-import { updateURLWithSeed } from "./data_sources/url";
-import { getCurrentDynamicSeed, getCompletedDynamicSeed, runDynamicMap } from "./dynamic-map";
+import { updateURLWithSeed, updateURLWithNGPlus } from "./data_sources/url";
+import { getCurrentDynamicSeed, getCompletedDynamicSeed, runDynamicMap, runDynamicMapFromURL } from "./dynamic-map";
 import type { DynamicMapOptions } from "./dynamic-map";
 import { isSpoilerFree } from "./spoiler-free";
 import { updateOverflowMenu } from "./overflow-menu";
-import { getDailyBakeStatus, getDailyBakeProgress, refreshDailyBakeProgress, subscribeDailyBakeStatus } from './telescope/daily-bake-status';
+import { dailyMapPrefix, getDailyBakeStatus, getDailyBakeProgress, refreshDailyBakeProgress, subscribeDailyBakeStatus } from './telescope/daily-bake-status';
 import { localBakeTime, scheduledBakeReadyAt } from './telescope/daily-bake-progress';
 
 const NERD_MODE_URL = "https://lymm37.github.io/noita-telescope/";
-import { isDynamicMap, NIGHTMARE_DEFAULT_SEED } from "./data_sources/tile_data";
+import { isDynamicMap, NG_PLUS_MAP, MAX_NG_PLUS, NIGHTMARE_DEFAULT_SEED } from "./data_sources/tile_data";
 
 // Noita seeds are 32-bit signed ints; valid range is 1 .. 2147483647.
 const MIN_SEED = 1;
@@ -33,6 +33,7 @@ export type SeedKind = "daily" | "previousDaily" | "custom";
 let toolbarEl: HTMLElement | null = null;
 let toolbarItems: HTMLElement[] = [];
 let seedInput: HTMLInputElement | null = null;
+let ngPlusSelect: HTMLSelectElement | null = null;
 let generateBtn: HTMLButtonElement | null = null;
 let dailySeedBtn: HTMLButtonElement | null = null;
 let prevDailySeedBtn: HTMLButtonElement | null = null;
@@ -149,6 +150,18 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   });
   toolbarItems.push(seedInput);
 
+  ngPlusSelect = document.createElement("select");
+  ngPlusSelect.id = "dynamicNGPlusLevel";
+  ngPlusSelect.className = "form-select form-select-sm w-auto";
+  ngPlusSelect.setAttribute("aria-label", i18next.t("dynamicMap.ngPlusLevel"));
+  for (let level = 1; level <= MAX_NG_PLUS; level++) ngPlusSelect.add(new Option(`NG+${level}`, String(level)));
+  ngPlusSelect.addEventListener("change", () => {
+    if (!dynamicOpts || isBusy || !ngPlusSelect) return;
+    updateURLWithNGPlus(Number(ngPlusSelect.value));
+    void runDynamicMapFromURL(dynamicOpts).catch(error => console.error("[DynamicUI] NG+ level change failed", error));
+  });
+  toolbarItems.push(ngPlusSelect);
+
   // Wrapper span so popover works even when button is disabled (Bootstrap requirement)
   const generateWrapper = document.createElement("span");
   generateWrapper.id = "dynamicGenerateWrapper";
@@ -180,7 +193,11 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   nerdBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i><span class="d-none xl:d-inline" data-i18n="dynamicMap.nerdMode.label">${i18next.t("dynamicMap.nerdMode.label")}</span>`;
   nerdBtn.addEventListener("click", () => {
     const seed = new URLSearchParams(window.location.search).get("se");
-    nerdBtn.href = seed ? `${NERD_MODE_URL}?seed=${encodeURIComponent(seed)}` : NERD_MODE_URL;
+    const url = new URL(NERD_MODE_URL);
+    if (seed) url.searchParams.set("seed", seed);
+    if (dynamicOpts?.ngPlus) url.searchParams.set("ng", String(dynamicOpts.ngPlus));
+    if (dynamicOpts?.gameMode === "nightmare") url.searchParams.set("gamemode", "nightmare");
+    nerdBtn.href = url.href;
   });
   toolbarItems.push(nerdBtn);
 
@@ -234,6 +251,7 @@ function refreshDynamicUITranslations(): void {
     prevDailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.previousDailyDescription"));
   }
 
+  ngPlusSelect?.setAttribute("aria-label", i18next.t("dynamicMap.ngPlusLevel"));
   // Keep an active daily-bake warning when the language changes.
   if (seedInput) {
     seedInput.placeholder = i18next.t("dynamicMap.placeholder");
@@ -300,12 +318,14 @@ export function updateDynamicUIVisibility(currentMap: string): void {
   if (!toolbarItems.length) return;
   const isDynamic = isDynamicMap(currentMap);
   const nightmare = currentMap === "nightmare-dynamic-main-branch";
+  const ngPlus = currentMap === NG_PLUS_MAP;
+  if (ngPlusSelect && ngPlus) ngPlusSelect.value = String(dynamicOpts?.ngPlus || 1);
   if (!isDynamic) setDynamicUIBusy(false);
   toolbarItems.forEach(el => {
     const dailyOnly = el === dailySeedBtn || el === prevDailySeedBtn;
-    el.style.display = isDynamic && !(nightmare && dailyOnly) ? "" : "none";
+    el.style.display = isDynamic && !(nightmare && dailyOnly) && (el !== ngPlusSelect || ngPlus) ? "" : "none";
   });
-  document.getElementById("simplisticBackgroundPopover")?.classList.toggle("d-none", nightmare);
+  document.getElementById("simplisticBackgroundPopover")?.classList.toggle("d-none", nightmare || ngPlus);
 
   // Toggle any dynamic-map-only controls outside the toolbar (e.g. light-mode switch in navbar)
   document.querySelectorAll(".dynamic-map-only").forEach((el) => {
@@ -490,6 +510,7 @@ function setBusy(busy: boolean): void {
   }
   if (dailySeedBtn) dailySeedBtn.disabled = busy;
   if (prevDailySeedBtn) prevDailySeedBtn.disabled = busy;
+  if (ngPlusSelect) ngPlusSelect.disabled = busy;
 }
 
 function updateGenerateButtonState(): void {
@@ -663,6 +684,7 @@ export function finishLoadingStrip(): void {
 /** Resolution callbacks preserve text edited during loading. Explicit seed
  * selections replace that draft; repeating its value preserves the caret. */
 export function setDynamicUISeed(seed: number, _isDaily: boolean, preserveDraft = false): void {
+  if (ngPlusSelect && dynamicOpts?.ngPlus) ngPlusSelect.value = String(dynamicOpts.ngPlus);
   if (preserveDraft && seedInputEdited) return;
   if (seedInput) {
     const value = String(seed);
@@ -682,9 +704,11 @@ function refreshSeedIdentity(): void {
   const identity = dynamicOpts?.gameMode === "nightmare" ? null : getCachedDailySeedIdentity(resolvedInputSeed);
   seedInput.classList.toggle("seed-daily", identity === 'today');
   seedInput.classList.toggle("seed-prev-daily", identity === 'previous');
-  const prefix = identity === 'today' ? 'daily' : identity === 'previous' ? 'previous-daily' : null;
+  const slot = identity === 'today' ? 'daily' : identity === 'previous' ? 'previous-daily' : null;
+  const level = dynamicOpts?.ngPlus ?? 0;
+  const prefix = slot && level <= 1 ? dailyMapPrefix(slot, level) : null;
   seedInput.classList.toggle("seed-bake-unavailable", !!prefix && getDailyBakeStatus(prefix, resolvedInputSeed) === 'unavailable');
-  const progress = getDailyBakeProgress(resolvedInputSeed);
+  const progress = level ? null : getDailyBakeProgress(resolvedInputSeed);
   seedInput.classList.toggle('seed-bake-pending', seedInput.classList.contains('seed-bake-unavailable')
     && !!progress && ['running', 'waiting', 'publishing'].includes(progress.phase));
   updateSeedTooltip("custom");
@@ -700,7 +724,7 @@ function createSeedPopover(element: HTMLInputElement) {
     bakePopoverHosts.add(element);
     element.addEventListener('show.bs.popover', () => {
       refreshSeedIdentity();
-      if (element.classList.contains('seed-bake-unavailable')) {
+      if (!dynamicOpts?.ngPlus && element.classList.contains('seed-bake-unavailable')) {
         void refreshDailyBakeProgress();
       }
     });
@@ -717,16 +741,18 @@ function updateSeedTooltip(_kind: SeedKind): void {
   if (!seedInput) return;
   const identity = dynamicOpts?.gameMode !== "nightmare" && resolvedInputSeed !== null && seedInput.value === String(resolvedInputSeed)
     ? getCachedDailySeedIdentity(resolvedInputSeed) : null;
-  const prefix = identity === 'today' ? 'daily' : identity === 'previous' ? 'previous-daily' : null;
+  const slot = identity === 'today' ? 'daily' : identity === 'previous' ? 'previous-daily' : null;
+  const level = dynamicOpts?.ngPlus ?? 0;
+  const prefix = slot && level <= 1 ? dailyMapPrefix(slot, level) : null;
   const status = prefix && resolvedInputSeed !== null ? getDailyBakeStatus(prefix, resolvedInputSeed) : null;
   const unavailable = status === 'unavailable';
-  const progress = unavailable && resolvedInputSeed !== null ? getDailyBakeProgress(resolvedInputSeed) : null;
+  const progress = !level && unavailable && resolvedInputSeed !== null ? getDailyBakeProgress(resolvedInputSeed) : null;
   const phase = progress?.phase;
   const statusTitle = phase && phase !== 'ready' ? `dynamicMap.bake${phase[0].toUpperCase()}${phase.slice(1)}Title` : 'dynamicMap.bakeUnavailableTitle';
   const title = i18next.t(!prefix ? 'dynamicMap.placeholder' : unavailable ? statusTitle
     : status === 'ready' ? 'dynamicMap.bakeReadyTitle' : 'dynamicMap.daily');
   const channel = '<a href="https://discord.com/channels/815275910478692402/1292529534423535666" target="_blank" rel="noopener noreferrer">#noitamap-discussion</a>';
-  const expected = progress?.expectedReadyAt ?? scheduledBakeReadyAt(prefix ?? 'daily');
+  const expected = progress?.expectedReadyAt ?? scheduledBakeReadyAt(slot ?? 'daily');
   const time = localBakeTime(expected, i18next.language);
   const description = phase === 'running' && Date.parse(expected) < Date.now() ? 'dynamicMap.bakeDelayedDescription'
     : phase ? `dynamicMap.bake${phase[0].toUpperCase()}${phase.slice(1)}Description` : 'dynamicMap.bakeUnavailableDescription';
@@ -734,6 +760,12 @@ function updateSeedTooltip(_kind: SeedKind): void {
     ? i18next.t(description, { channel, time })
     : (status === 'ready' ? i18next.t('dynamicMap.bakeAvailableDescription') + ' ' : '')
       + i18next.t('dynamicMap.bakeScheduleDescription', { time });
+  if (level && identity) {
+    const seedLabel = identity === 'today' ? 'dynamicMap.seedTooltipDaily' : 'dynamicMap.seedTooltipPreviousDaily';
+    text = i18next.t(seedLabel);
+    if (unavailable) text += ' ' + i18next.t('dynamicMap.bakeUnavailableTitle');
+    else if (status === 'ready') text += ' ' + i18next.t('dynamicMap.bakeAvailableDescription');
+  }
   if (progress) text += ' ' + i18next.t('dynamicMap.bakeLastUpdate', { time: localBakeTime(progress.updatedAt, i18next.language) });
   seedInput.setAttribute("data-bs-title", title);
   seedInput.setAttribute("data-bs-content", text);

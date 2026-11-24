@@ -392,7 +392,7 @@ export function createGLTerrainTileSource(opts: GLTerrainSourceOpts): any {
   const persistentKey = (tile: PyramidTile) =>
     terrainTileKey(
       opts.gen.seed,
-      `${opts.gen.isNGP}/${opts.gen.gameMode || "normal"}`,
+      `${opts.gen.isNGP ? (opts.gen.ngPlus ?? 1) : 0}/${opts.gen.gameMode || "normal"}`,
       opts.gen.plane ?? 0,
       opts.pw,
       `${opts.worldX},${opts.worldY},${opts.worldW},${opts.worldH}`,
