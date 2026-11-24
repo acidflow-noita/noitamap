@@ -82,6 +82,33 @@ function expectBusy(busy: boolean) {
 }
 
 describe('toolbar state follows the current map request', () => {
+  it('uses a themed toolbar menu for all NG+ levels and keeps selection in sync', async () => {
+    opts.ngPlus = 28;
+    ui.updateDynamicUIVisibility('new-game-plus-dynamic-main-branch');
+    const toggle = button('dynamicNGPlusLevel'), menu = document.getElementById(toggle.getAttribute('aria-controls')!)!;
+    expect(toggle.matches('.btn-sm.btn-outline.theme-secondary.combobox-toggle')).toBe(true);
+    expect(toggle.getAttribute('aria-label')).toBe('dynamicMap.ngPlusLevel');
+    expect(menu.matches('.menu[role="listbox"]')).toBe(true);
+    expect(menu.querySelectorAll('.menu-item[role="option"]')).toHaveLength(28);
+    expect(menu.querySelector('[aria-selected="true"]')?.textContent).toBe('NG+28');
+    expect(toggle.textContent).toContain('NG+28');
+    ui.setDynamicUIBusy(true);
+    expect(toggle.disabled).toBe(true);
+    ui.setDynamicUIBusy(false);
+    expect(toggle.disabled).toBe(false);
+    toggle.click();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(menu.classList).toContain('show');
+    menu.querySelector<HTMLButtonElement>('[data-bs-value="2"]')!.click();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(new URL(location.href).searchParams.get('ng')).toBe('2');
+    expect(menu.querySelectorAll('[aria-selected="true"]')).toHaveLength(1);
+    expect(menu.querySelector('.selected')?.textContent).toBe('NG+2');
+    await vi.advanceTimersByTimeAsync(10);
+    ui.updateDynamicUIVisibility('dynamic-main-branch');
+    expect(toggle.parentElement?.style.display).toBe('none');
+  });
+
   it('covers the initial URL Daily lookup and its pipeline with one busy interval', async () => {
     const lookup = deferred<number>();
     history.replaceState(null, '', '/?m=dy');

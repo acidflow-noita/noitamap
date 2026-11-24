@@ -49,6 +49,7 @@ export async function createTerrainComposition(
     gen.biomeData.pixels,
     config,
     gen.plane ?? 0,
+    gen.isNGP,
   );
   const sceneBackgroundName = (scene: { key: string; variantKey?: string }) =>
     sceneBiomeNames(scene).find((name) => BIOME_BACKGROUND_MAP[name]);

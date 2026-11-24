@@ -29,6 +29,7 @@ export function createTerrainFootprint(
     gen.biomeData.pixels,
     config,
     gen.plane ?? 0,
+    gen.isNGP,
   );
   const y0 = WORLD_TOP + (gen.plane ?? 0) * WORLD_HEIGHT;
   const scenes = gen.sceneData?.scenes ?? [];

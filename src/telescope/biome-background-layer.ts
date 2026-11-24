@@ -1,5 +1,5 @@
 import { biomeBackgroundRevisions } from 'virtual:noitamap-data-archives';
-import { BIOME_BACKGROUND_MAP, STATIC_TERRAIN_BIOMES, CARVED_ROOM_BIOMES, WORLD_HEIGHT } from './terrain-policy';
+import { BIOME_BACKGROUND_MAP, NG_PLUS_ORB_BACKGROUNDS, STATIC_TERRAIN_BIOMES, CARVED_ROOM_BIOMES, WORLD_HEIGHT } from './terrain-policy';
 import { immutableTelescopeAssets, revisionedAssetUrl } from './immutable-assets';
 import { createBiomeBackgroundTiles, type BiomeBackgroundRegion } from './biome-background-tile-source';
 import { installViewportLayerDrawing } from './instant-terrain-viewport';
@@ -43,7 +43,7 @@ export function biomeBackgroundGeometry(biomes: { filename: string; svg_map_path
 /** Nightmare's generators paint different biome cells for every seed. Group adjacent
  * cells with the same artwork, extending the edge rows into heaven and hell. */
 export function generatedBiomeBackgroundGeometry(pixels: Uint32Array, worldSize: number, worldCenter: number,
-  config: Record<string, { color: number }>) {
+  config: Record<string, { color: number }>, isNGP = false) {
   const phaseX = -worldCenter * 512;
   const rowCount = pixels.length / worldSize;
   if (rowCount * 512 !== WORLD_HEIGHT) throw new Error("Invalid generated biome dimensions");
@@ -52,20 +52,32 @@ export function generatedBiomeBackgroundGeometry(pixels: Uint32Array, worldSize:
     if (config[name] && !STATIC_TERRAIN_BIOMES.has(name) && !CARVED_ROOM_BIOMES.has(name))
       colors.set(config[name].color & 0xffffff, texture);
   }
+  const orbColors = new Map<number, string>();
+  if (isNGP) for (const [name, texture] of Object.entries(NG_PLUS_ORB_BACKGROUNDS)) {
+    if (config[name]) orbColors.set(config[name].color & 0xffffff, texture);
+  }
   const groups = new Map<string, BiomeBackgroundRegion['rings']>();
   for (let row = 0; row < rowCount; row++) {
     const top = phaseY + (row === 0 ? -WORLD_HEIGHT : row * 512);
     const bottom = phaseY + (row === rowCount - 1 ? 2 * WORLD_HEIGHT : (row + 1) * 512);
     for (let col = 0; col < worldSize;) {
       const start = col++;
-      const textureKey = colors.get(pixels[row * worldSize + start] & 0xffffff);
-      while (col < worldSize && colors.get(pixels[row * worldSize + col] & 0xffffff) === textureKey) col++;
+      const color = pixels[row * worldSize + start] & 0xffffff;
+      const orb = orbColors.get(color);
+      const textureKey = orb ?? colors.get(color);
+      while (col < worldSize) {
+        const next = pixels[row * worldSize + col] & 0xffffff;
+        if (orbColors.get(next) !== orb || (orb ?? colors.get(next)) !== textureKey) break;
+        col++;
+      }
       if (!textureKey) continue;
       const left = phaseX + start * 512, right = phaseX + col * 512;
       const rings = groups.get(textureKey) ?? [];
       groups.set(textureKey, rings);
-      rings.push([{ x: left, y: top }, { x: right, y: top },
-        { x: right, y: bottom }, { x: left, y: bottom }]);
+      // The orb room scene occupies one chunk even on an edge row.
+      const y0 = orb ? phaseY + row * 512 : top, y1 = orb ? y0 + 512 : bottom;
+      rings.push([{ x: left, y: y0 }, { x: right, y: y0 },
+        { x: right, y: y1 }, { x: left, y: y1 }]);
     }
   }
   const regions = [...groups].map(([textureKey, rings]) => ({ textureKey, rings }));
@@ -117,10 +129,10 @@ export function prepareBiomeBackgroundLayer() {
 
 const generatedLayers = new WeakMap<Uint32Array, ReturnType<typeof loadLayer>>();
 export function prepareGeneratedBiomeBackground(pixels: Uint32Array, worldSize: number, worldCenter: number,
-  config: Record<string, { color: number }>) {
+  config: Record<string, { color: number }>, isNGP = false) {
   let layer = generatedLayers.get(pixels);
   if (!layer) {
-    layer = loadLayer(generatedBiomeBackgroundGeometry(pixels, worldSize, worldCenter, config))
+    layer = loadLayer(generatedBiomeBackgroundGeometry(pixels, worldSize, worldCenter, config, isNGP))
       .catch(error => { generatedLayers.delete(pixels); throw error; });
     generatedLayers.set(pixels, layer);
   }

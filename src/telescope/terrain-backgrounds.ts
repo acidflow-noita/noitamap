@@ -1,5 +1,5 @@
 import { decodePngToRgba } from "./png-decode";
-import { BIOME_BACKGROUND_MAP } from "./terrain-policy";
+import { BIOME_BACKGROUND_MAP, NG_PLUS_ORB_BACKGROUNDS } from "./terrain-policy";
 export interface TerrainTexture {
   data: Uint8ClampedArray;
   width: number;
@@ -19,7 +19,7 @@ export async function loadTerrainBackgrounds(
       "World data archive is unavailable for terrain backgrounds",
     );
   for (const name of new Set(names)) {
-    const path = BIOME_BACKGROUND_MAP[name];
+    const path = BIOME_BACKGROUND_MAP[name] ?? NG_PLUS_ORB_BACKGROUNDS[name];
     if (!path) continue; // sky/clouds intentionally reveal the static backdrop
     let texture = textures.get(path);
     if (!texture) {

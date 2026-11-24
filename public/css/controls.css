@@ -47,6 +47,20 @@
   }
 }
 
+.ng-plus-level-picker .combobox-toggle {
+  width: auto;
+  min-inline-size: calc(5ch + 2 * var(--control-padding-x) + var(--control-icon-size));
+}
+.ng-plus-level-picker .menu {
+  --bs-menu-min-width: 100%;
+  --bs-menu-max-height: min(18rem, 65dvh);
+  --bs-menu-overflow-y: auto;
+}
+.ng-plus-level-picker .menu-item.selected {
+  background-color: var(--control-active-bg);
+  color: var(--control-active-fg);
+}
+
 .form-control-sm,
 .navbar .form-control {
   --bs-control-min-height: var(--control-height);

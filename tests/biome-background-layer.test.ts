@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { createCanvas, Path2D } from '@napi-rs/canvas';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { decode } from 'fast-png';
-import { BIOME_BACKGROUND_MAP, createBackgroundOwnership, createTerrainOwnership, WORLD_HEIGHT, WORLD_TOP } from '../src/telescope/terrain-policy';
+import JSZip from 'jszip';
+import { BIOME_BACKGROUND_MAP, NG_PLUS_ORB_BACKGROUNDS, createBackgroundOwnership, createTerrainOwnership, WORLD_HEIGHT, WORLD_TOP } from '../src/telescope/terrain-policy';
 import { GENERATOR_CONFIG } from '../lib/noita-telescope-vm/js/generator_config.js';
 
 const state = vi.hoisted(() => ({
@@ -158,6 +159,30 @@ it('uses the generated Nightmare mask and center independently of regular biome 
   expect(layer.width).toBe(32768);
   const coal = layer.regions.find(region => region.textureKey === BIOME_BACKGROUND_MAP.coalmine)!;
   expect(coal.rings).toEqual([[{ x: -1024, y: 1536 }, { x: 512, y: 1536 }, { x: 512, y: 2048 }, { x: -1024, y: 2048 }]]);
+});
+
+it('paints each NG+ orb biome with its own game texture on both renderers', async () => {
+  const { generatedBiomeBackgroundGeometry } = await import('../src/telescope/biome-background-layer');
+  const archive = await JSZip.loadAsync(readFileSync('public/data.zip'));
+  const pixels = new Uint32Array(64 * 48);
+  const rooms = Object.entries(NG_PLUS_ORB_BACKGROUNDS);
+  const config: Record<string, { color: number }> = GENERATOR_CONFIG;
+  rooms.forEach(([name], i) => { pixels[47 * 64 + i] = config[name].color; });
+  const terrain = createTerrainOwnership([], pixels, GENERATOR_CONFIG, 64);
+  const baked = createBackgroundOwnership(terrain, pixels, GENERATOR_CONFIG, 0, true);
+  const live = generatedBiomeBackgroundGeometry(pixels, 64, 32, GENERATOR_CONFIG, true);
+  for (const [i, [name, path]] of rooms.entries()) {
+    const xml = await archive.file(`data/biome/orbrooms/${name}.xml`)!.async('text');
+    expect(xml).toContain(`background_image="${path}"`);
+    expect(readFileSync('public/biome_bg/' + path.split('/').pop())).toEqual(await archive.file(path)!.async('nodebuffer'));
+    const x = (i - 32) * 512, y = 33 * 512;
+    expect(baked.names[baked.at(x, y)]).toBe(name);
+    expect(terrain.at(x, y)).toBe(-1);
+    const region = live.regions.find(r => r.textureKey === path)!;
+    expect(region.rings.some(ring => ring[0].x <= x && x < ring[1].x && ring[0].y === y && ring[2].y === y + 512)).toBe(true);
+  }
+  expect(generatedBiomeBackgroundGeometry(pixels, 64, 32, GENERATOR_CONFIG).regions).toHaveLength(0);
+  expect(createBackgroundOwnership(terrain, pixels, GENERATOR_CONFIG, 0)).toBe(terrain);
 });
 
 it('places independently phased PW sources below subsequent terrain layers', async () => {

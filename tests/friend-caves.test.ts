@@ -7,6 +7,7 @@ import { decodePngToRgba } from '../src/telescope/png-decode';
 import * as policy from '../src/telescope/terrain-policy';
 import * as backgrounds from '../src/telescope/terrain-backgrounds';
 import * as goldRoom from '../src/telescope/captured-gold-room';
+import { pitPart, pitBackground } from '../src/telescope/nightmare-lava-pit';
 import type { PixelScene } from '../src/telescope/telescope-adapter';
 import { prepareAssetJobs } from '../src/telescope/background-idle';
 import { SceneBitmapCache } from '../src/telescope/scene-bitmap-cache';
@@ -42,7 +43,7 @@ const bitmap = async (source: any) => {
 beforeAll(async () => {
   archive.zip = await JSZip.loadAsync(readFileSync('public/data.zip'));
   const { makeBlackTransparent } = functions('lib/noita-telescope/js/image_processing.js', ['makeBlackTransparent'], {});
-  for (const name of ['friendroom', 'cavern', 'solid_wall_hidden_cavern']) {
+  for (const name of ['friendroom', 'cavern', 'solid_wall_hidden_cavern', 'orbroom']) {
     const pixels = decodePngToRgba(new Uint8Array(readFileSync(`lib/noita-telescope/data/pixel_scenes/general/${name}.png`)).buffer);
     // Both forks apply this before exposing a material scene to the host.
     makeBlackTransparent(pixels.data);
@@ -53,7 +54,7 @@ beforeAll(async () => {
     MATERIAL_COLOR_CONVERSION, PIXEL_SCENE_AIR_TRANSPARENCY_EXCEPTIONS: { friendroom: 255, cavern: 255, solid_wall_hidden_cavern: 255 },
   });
   const terrainBackgrounds = functions('src/telescope/terrain-backgrounds.ts', ['loadTerrainBackgrounds'], {
-    decodePngToRgba, BIOME_BACKGROUND_MAP: policy.BIOME_BACKGROUND_MAP,
+    decodePngToRgba, ...policy,
     require: (path: string) => {
       if (path === '../data-archive') return { getZip: async () => archive.zip };
       throw new Error(`Unexpected background dependency: ${path}`);
@@ -63,7 +64,7 @@ beforeAll(async () => {
     'getScenePngIndex', 'resolveScenePath', 'decodeScenePng', 'imgElementToBitmap',
     'sceneRenderKey', 'recolorSceneVariant', 'compositeSceneBitmap',
   ], {
-    ...policy, ...telescope, ...goldRoom, decodePngToRgba, ImageData, HTMLCanvasElement: Canvas,
+    ...policy, ...telescope, ...goldRoom, pitPart, pitBackground, decodePngToRgba, ImageData, HTMLCanvasElement: Canvas,
     OffscreenCanvas: class {
       constructor(width: number, height: number) {
         const canvas = createCanvas(width, height);
@@ -90,6 +91,28 @@ it('does not mistake Friend material PNGs for visual artwork', async () => {
   expect(index.visualByName.get('cavern')).toBeUndefined();
   expect(index.visualByName.get('solid_wall_hidden_cavern')).toBeUndefined();
   expect(index.bgByName.get('cavern')).toBe('data/biome_impl/cavern_background.png');
+});
+
+it('paints the game orb-room backdrop through the unoccupied pixels of the live scene', async () => {
+  const key = 'general/orbroom', pixels = raw.get(key)!;
+  const scene = { key, name: 'orbroom', x: -10752, y: 2560, width: 512, height: 512,
+    imgElement: pixels.data, variantKey: 'biome=general@orbroom_02' };
+  const index = await bridge.getScenePngIndex();
+  const art = decodePngToRgba(await archive.zip.file('data/biome_impl/orbroom_background.png').async('arraybuffer'));
+  const visual = decodePngToRgba(await archive.zip.file('data/biome_impl/orbroom_visual.png').async('arraybuffer'));
+  const result = await bridge.compositeSceneBitmap(key, scene, index, 1195917350);
+  const actual = result.bitmap.getContext('2d').getImageData(0, 0, 512, 512).data;
+  let exposed = 0, mismatches = 0;
+  for (let i = 0; i < actual.length; i += 4) {
+    if (pixels.data[i + 3] || visual.data[i + 3] || art.data[i + 3] !== 255) continue;
+    exposed++;
+    if (actual[i] !== art.data[i] || actual[i+1] !== art.data[i+1] ||
+        actual[i+2] !== art.data[i+2] || actual[i+3] !== 255) mismatches++;
+  }
+  result.bitmap.close();
+  expect(exposed).toBeGreaterThan(100000);
+  expect(mismatches).toBe(0);
+  expect(bridge.sceneRenderKey(scene)).not.toBe(bridge.sceneRenderKey({ ...scene, variantKey: 'biome=general@orbroom_05' }));
 });
 
 it.each(['friendroom', 'cavern'])('fills only carved air in %s with correctly phased native background pixels', async name => {
@@ -147,11 +170,16 @@ it('isolates corrected, placement-specific room caches without changing unrelate
 it('keeps the gold cavern scene while still excluding baked rooms', () => {
   let simplistic = false;
   const { renderableScenes } = functions('src/telescope/telescope-osd-bridge.ts',
-    ['pixelSceneConfig', 'getSceneCategory', 'renderableScenes'], { ...goldRoom, isSimplisticBackground: () => simplistic });
+    ['pixelSceneConfig', 'getSceneCategory', 'isCapturedPixelScene', 'renderableScenes'], { ...goldRoom, isSimplisticBackground: () => simplistic });
   const cavern = { key: 'general/solid_wall_hidden_cavern', name: 'solid_wall_hidden_cavern', x: -4126, y: 11264, width: 512, height: 512 };
   const baked = { ...cavern, key: 'general/dragoncave', name: 'dragoncave' };
   const captured = { ...cavern, x: -3102, y: 0 };
   expect(renderableScenes({ worldSize: 70, pixelScenesByPW: { '0,0': [cavern, baked, captured] } })).toEqual([cavern]);
+  const orb = { ...cavern, key: 'general/orbroom', name: 'orbroom' };
+  const rooms = { worldSize: 64, pixelScenesByPW: { '0,0': [orb], '-1,0': [{ ...orb, x: orb.x - 32768 }] } };
+  expect(renderableScenes({ ...rooms, isNGP: true })).toEqual(Object.values(rooms.pixelScenesByPW).flat());
+  expect(renderableScenes({ ...rooms, isNGP: false, gameMode: 'nightmare' })).toEqual([]);
+  expect(renderableScenes({ ...rooms, isNGP: false, worldSize: 70 })).toEqual([]);
   simplistic = true;
   expect(renderableScenes({ worldSize: 70, pixelScenesByPW: { '0,0': [captured] } })).toEqual([captured]);
 });

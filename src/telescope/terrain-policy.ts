@@ -47,6 +47,20 @@ export function isWaterCaveLayout(key: string): boolean {
   return /^general\/watercave_layout_[1-5]$/.test(key);
 }
 
+// The underground room chunks painted by biome_map_newgame_plus.lua have no Wang tile.
+// Each orbroom XML selects its own backdrop beneath the shared LoadPixelScene artwork.
+export const NG_PLUS_ORB_BACKGROUNDS: Record<string, string> = {
+  orbroom_02: "data/weather_gfx/background_crypt.png",
+  orbroom_03: "data/weather_gfx/background_crypt.png",
+  orbroom_04: "data/weather_gfx/background_cave_09.png",
+  orbroom_05: "data/weather_gfx/background_wandcave.png",
+  orbroom_06: "data/weather_gfx/background_cave_07.png",
+  orbroom_07: "data/weather_gfx/background_cave_04_alt.png",
+  orbroom_08: "data/weather_gfx/background_the_end.png",
+  orbroom_09: "data/weather_gfx/background_cave_04_alt.png",
+  orbroom_10: "data/weather_gfx/background_crypt.png",
+};
+
 export const BIOME_BACKGROUND_MAP: Record<string, string> = {
   coalmine: "data/weather_gfx/background_coalmine.png",
   coalmine_alt: "data/weather_gfx/background_coalmine.png",
@@ -114,7 +128,7 @@ export function sceneBiomeNames(scene: { key: string; variantKey?: string }): st
 
 export const TERRAIN_VERSION = "full-pixel-v21-instant-gold-cavern";
 // Local pixel caches include artwork changes even while a compatible older DZI is published.
-export const TERRAIN_PIXEL_REVISION = "wang-ownership-628d14c";
+export const TERRAIN_PIXEL_REVISION = "wang-ownership-628d14c-orb-rooms";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
 export type VerticalPlane = -1 | 0 | 1;
@@ -230,23 +244,23 @@ export function createBackgroundOwnership(
   pixels: Uint32Array,
   config: Record<string, any>,
   plane: VerticalPlane,
+  isNGP = false,
 ): TerrainOwnership {
-  if (plane === 0) return terrain;
-  const names: string[] = [],
+  if (plane === 0 && !isNGP) return terrain;
+  const names = plane === 0 ? [...terrain.names] : [],
     ids = new Map<number, number>();
   for (const [name, conf] of Object.entries(config)) {
-    if (
-      !conf.wangFile ||
-      STATIC_TERRAIN_BIOMES.has(name) ||
-      !BIOME_BACKGROUND_MAP[name]
-    )
-      continue;
+    if (plane === 0) {
+      if (!NG_PLUS_ORB_BACKGROUNDS[name]) continue;
+    } else if (!conf.wangFile || STATIC_TERRAIN_BIOMES.has(name) || !BIOME_BACKGROUND_MAP[name]) continue;
     ids.set(conf.color & 0xffffff, names.length);
     names.push(name);
   }
-  const owners = new Int16Array(pixels.length).fill(-1);
-  for (let i = 0; i < pixels.length; i++)
-    owners[i] = ids.get(pixels[i] & 0xffffff) ?? -1;
+  const owners = plane === 0 ? terrain.owners.slice() : new Int16Array(pixels.length).fill(-1);
+  for (let i = 0; i < pixels.length; i++) {
+    const id = ids.get(pixels[i] & 0xffffff);
+    if (id !== undefined) owners[i] = id;
+  }
   const width = terrain.width;
   return {
     width,

@@ -1,3 +1,4 @@
+import { createNGPlusLevelPicker } from './ng-plus-level-picker';
 import * as bootstrap from "./bootstrap";
 /**
  * dynamic_ui.ts
@@ -17,7 +18,7 @@ import { dailyMapPrefix, getDailyBakeStatus, getDailyBakeProgress, refreshDailyB
 import { localBakeTime, scheduledBakeReadyAt } from './telescope/daily-bake-progress';
 
 const NERD_MODE_URL = "https://lymm37.github.io/noita-telescope/";
-import { isDynamicMap, NG_PLUS_MAP, MAX_NG_PLUS, NIGHTMARE_DEFAULT_SEED } from "./data_sources/tile_data";
+import { isDynamicMap, NG_PLUS_MAP, NIGHTMARE_DEFAULT_SEED } from "./data_sources/tile_data";
 
 // Noita seeds are 32-bit signed ints; valid range is 1 .. 2147483647.
 const MIN_SEED = 1;
@@ -33,7 +34,7 @@ export type SeedKind = "daily" | "previousDaily" | "custom";
 let toolbarEl: HTMLElement | null = null;
 let toolbarItems: HTMLElement[] = [];
 let seedInput: HTMLInputElement | null = null;
-let ngPlusSelect: HTMLSelectElement | null = null;
+let ngPlusPicker: ReturnType<typeof createNGPlusLevelPicker> | null = null;
 let generateBtn: HTMLButtonElement | null = null;
 let dailySeedBtn: HTMLButtonElement | null = null;
 let prevDailySeedBtn: HTMLButtonElement | null = null;
@@ -150,17 +151,13 @@ export function createDynamicUI(opts: DynamicMapOptions): void {
   });
   toolbarItems.push(seedInput);
 
-  ngPlusSelect = document.createElement("select");
-  ngPlusSelect.id = "dynamicNGPlusLevel";
-  ngPlusSelect.className = "form-select form-select-sm w-auto";
-  ngPlusSelect.setAttribute("aria-label", i18next.t("dynamicMap.ngPlusLevel"));
-  for (let level = 1; level <= MAX_NG_PLUS; level++) ngPlusSelect.add(new Option(`NG+${level}`, String(level)));
-  ngPlusSelect.addEventListener("change", () => {
-    if (!dynamicOpts || isBusy || !ngPlusSelect) return;
-    updateURLWithNGPlus(Number(ngPlusSelect.value));
+  ngPlusPicker = createNGPlusLevelPicker(level => {
+    if (!dynamicOpts || isBusy) return;
+    updateURLWithNGPlus(level);
     void runDynamicMapFromURL(dynamicOpts).catch(error => console.error("[DynamicUI] NG+ level change failed", error));
   });
-  toolbarItems.push(ngPlusSelect);
+  ngPlusPicker.button.setAttribute("aria-label", i18next.t("dynamicMap.ngPlusLevel"));
+  toolbarItems.push(ngPlusPicker.element);
 
   // Wrapper span so popover works even when button is disabled (Bootstrap requirement)
   const generateWrapper = document.createElement("span");
@@ -251,7 +248,7 @@ function refreshDynamicUITranslations(): void {
     prevDailySeedBtn.setAttribute("data-bs-content", i18next.t("dynamicMap.previousDailyDescription"));
   }
 
-  ngPlusSelect?.setAttribute("aria-label", i18next.t("dynamicMap.ngPlusLevel"));
+  ngPlusPicker?.button.setAttribute("aria-label", i18next.t("dynamicMap.ngPlusLevel"));
   // Keep an active daily-bake warning when the language changes.
   if (seedInput) {
     seedInput.placeholder = i18next.t("dynamicMap.placeholder");
@@ -319,11 +316,12 @@ export function updateDynamicUIVisibility(currentMap: string): void {
   const isDynamic = isDynamicMap(currentMap);
   const nightmare = currentMap === "nightmare-dynamic-main-branch";
   const ngPlus = currentMap === NG_PLUS_MAP;
-  if (ngPlusSelect && ngPlus) ngPlusSelect.value = String(dynamicOpts?.ngPlus || 1);
+  if (ngPlus) ngPlusPicker?.setLevel(dynamicOpts?.ngPlus || 1);
+  else ngPlusPicker?.close();
   if (!isDynamic) setDynamicUIBusy(false);
   toolbarItems.forEach(el => {
     const dailyOnly = el === dailySeedBtn || el === prevDailySeedBtn;
-    el.style.display = isDynamic && !(nightmare && dailyOnly) && (el !== ngPlusSelect || ngPlus) ? "" : "none";
+    el.style.display = isDynamic && !(nightmare && dailyOnly) && (el !== ngPlusPicker?.element || ngPlus) ? "" : "none";
   });
   document.getElementById("simplisticBackgroundPopover")?.classList.toggle("d-none", nightmare || ngPlus);
 
@@ -510,7 +508,10 @@ function setBusy(busy: boolean): void {
   }
   if (dailySeedBtn) dailySeedBtn.disabled = busy;
   if (prevDailySeedBtn) prevDailySeedBtn.disabled = busy;
-  if (ngPlusSelect) ngPlusSelect.disabled = busy;
+  if (ngPlusPicker) {
+    if (busy) ngPlusPicker.close();
+    ngPlusPicker.button.disabled = busy;
+  }
 }
 
 function updateGenerateButtonState(): void {
@@ -684,7 +685,7 @@ export function finishLoadingStrip(): void {
 /** Resolution callbacks preserve text edited during loading. Explicit seed
  * selections replace that draft; repeating its value preserves the caret. */
 export function setDynamicUISeed(seed: number, _isDaily: boolean, preserveDraft = false): void {
-  if (ngPlusSelect && dynamicOpts?.ngPlus) ngPlusSelect.value = String(dynamicOpts.ngPlus);
+  if (dynamicOpts?.ngPlus) ngPlusPicker?.setLevel(dynamicOpts.ngPlus);
   if (preserveDraft && seedInputEdited) return;
   if (seedInput) {
     const value = String(seed);

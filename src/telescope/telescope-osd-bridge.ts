@@ -1448,7 +1448,6 @@ export const pixelSceneConfig = {
     'alchemist_secret_music',
     'null_room',
     'eyespot',
-    'orbroom',
     'yourroom',
     'yourroom_entrance',
     'yourroom_npc',
@@ -1753,6 +1752,7 @@ function getSceneCategory(scene: PixelScene): string | null {
   const name = scene.name;
   const biome = key.split('/')[0];
 
+  if (key === 'general/orbroom') return 'biomeChunk';
   if (biome === 'spliced') return 'spliced';
   if (biome.includes('temple')) return 'temple';
   if (name === 'friendroom' || name === 'cavern') return 'friendRoom';
@@ -1905,12 +1905,17 @@ const TEMPLE_SPAWN_STRIP_COLORS = new Set<number>([
 ]);
 
 /** Decode a PNG from data.zip, applying background transparency. */
-async function decodeScenePng(zip: any, path: string): Promise<ImageData | null> {
+async function decodeScenePng(zip: any, path: string, preserveAlpha = false): Promise<ImageData | null> {
   const file = zip.file(path);
   if (!file) return null;
   const buf = await file.async('arraybuffer');
   const decoded = decodePngToRgba(buf);
   const d = decoded.data;
+  if (preserveAlpha) {
+    const image = new ImageData(decoded.width, decoded.height);
+    image.data.set(d);
+    return image;
+  }
   const tlR = d[0],
     tlG = d[1],
     tlB = d[2],
@@ -2046,6 +2051,7 @@ function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y
   if (pitPart(scene.key) >= 0) return `${scene.key}|${seed}|${vk}`;
   const mat = vk.split('&').filter(p => p && !p.startsWith('biome='));
   const key = mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
+  if (scene.key === 'general/orbroom') return `${key}|orbroom-art-v1|${vk}`;
   if (scene.key === 'general/the_end_shop') {
     // Both vertical worlds use this template, but its fill colours differ.
     // Version even the default/prefetch variant so old shared PNGs cannot win.
@@ -2140,7 +2146,8 @@ async function compositeSceneBitmap(
 
   const caveBiome = carvedRoomBiome(key);
   const waterCave = isWaterCaveLayout(key);
-  const skipBg = biome === 'temple' || (biome === 'general' && !caveBiome);
+  const orbRoom = key === 'general/orbroom';
+  const skipBg = biome === 'temple' || (biome === 'general' && !caveBiome && !orbRoom);
 
   const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
   const wantBg = override?.background ?? pixelSceneConfig.layers.background;
@@ -2157,19 +2164,11 @@ async function compositeSceneBitmap(
   let visualData: ImageData | null = null;
 
   if (zip && bgPath) {
-    if (caveBiome) {
-      // Preserve the authored PNG alpha; its top-left colour is not a key.
-      const file = zip.file(bgPath);
-      if (file) {
-        const decoded = decodePngToRgba(await file.async('arraybuffer'));
-        bgData = new ImageData(decoded.width, decoded.height);
-        bgData.data.set(decoded.data);
-      }
-    } else bgData = await decodeScenePng(zip, bgPath).catch(() => null);
+    bgData = await decodeScenePng(zip, bgPath, !!caveBiome || orbRoom).catch(() => null);
     if (bgData && scene.width > 0 && bgData.width < scene.width / 2) bgData = null;
   }
   if (zip && visualPath) {
-    visualData = await decodeScenePng(zip, visualPath).catch(() => null);
+    visualData = await decodeScenePng(zip, visualPath, orbRoom).catch(() => null);
   }
 
   let midBitmap: ImageBitmap | null = null;
@@ -2389,15 +2388,19 @@ export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent, bef
 /** The exact same skip/no-op policy applies to approximate scenes, full-pixel
  * scenes and the native bake. Static holy mountains and authored map art must
  * not be repainted by switching renderers. */
+function isCapturedPixelScene(scene: PixelScene, result: GenerationResult): boolean {
+  // Regular and Nightmare have fixed orb rooms in their captures. NG+ places them per seed.
+  return (scene.key === 'general/orbroom' && !result.isNGP) ||
+    (isCapturedGoldRoom(scene, result.worldSize) && !isSimplisticBackground()) ||
+    pixelSceneConfig.skipNames.has(scene.name) || pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]);
+}
+
 function renderableScenes(result: GenerationResult): PixelScene[] {
   if (!pixelSceneConfig.enabled) return [];
   const allScenes = Object.values(result.pixelScenesByPW).flat();
   return allScenes.filter(s => {
     if (!s || s.width <= 0 || s.height <= 0) return false;
-    if (isCapturedGoldRoom(s, result.worldSize) && !isSimplisticBackground()) return false;
-    if (pixelSceneConfig.skipNames.has(s.name)) return false;
-    const biome = s.key.split('/')[0];
-    if (pixelSceneConfig.skipBiomes.has(biome)) return false;
+    if (isCapturedPixelScene(s, result)) return false;
     const category = getSceneCategory(s);
     if (category && !pixelSceneConfig.categories[category]) return false;
     if (pixelSceneConfig.skipFn && pixelSceneConfig.skipFn(s)) return false;
@@ -2438,7 +2441,7 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
   for (const scene of Object.values(result.pixelScenesByPW).flat()) {
     // The static scene skip/no-op list still owns the same pixels. Skipping the
     // scene's draw alone is insufficient: final terrain must not cover its art.
-    if (!((isCapturedGoldRoom(scene, result.worldSize) && !isSimplisticBackground()) || pixelSceneConfig.skipNames.has(scene.name) || pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]))) continue;
+    if (!isCapturedPixelScene(scene, result)) continue;
     const raw = await ensurePixelSceneData(scene.key, { art: false });
     if (!raw?.imgElement || !ArrayBuffer.isView(raw.imgElement) || raw.width < 2 || raw.height < 2) continue;
     const placement = `${scene.key}/${scene.x}/${scene.y}`;
@@ -2456,8 +2459,7 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
 async function instantSceneMasks(result: GenerationResult): Promise<StaticTerrainMask[]> {
   const rendered = new Set(renderableScenes(result));
   const scenes = Object.values(result.pixelScenesByPW).flat().filter(scene =>
-    rendered.has(scene) || (isCapturedGoldRoom(scene, result.worldSize) && !isSimplisticBackground()) || pixelSceneConfig.skipNames.has(scene.name) ||
-    pixelSceneConfig.skipBiomes.has(scene.key.split('/')[0]));
+    rendered.has(scene) || isCapturedPixelScene(scene, result));
   const masks = await loadInstantSceneMasks(scenes, key => ensurePixelSceneData(key, { art: false }));
   return masks;
 }
@@ -5146,7 +5148,7 @@ export async function renderGenerationResult(
   if (keepBiomeBackgrounds && (result.gameMode === "nightmare" || result.isNGP)) {
     await ensureTelescopeModules();
     if (currentGenerationId !== generationId) return;
-    const layer = await prepareGeneratedBiomeBackground(result.biomeData.pixels, result.worldSize, result.worldCenter, GENERATOR_CONFIG);
+    const layer = await prepareGeneratedBiomeBackground(result.biomeData.pixels, result.worldSize, result.worldCenter, GENERATOR_CONFIG, result.isNGP);
     if (currentGenerationId !== generationId) return;
     addBiomeBgToOSD(viewer, () => currentGenerationId === generationId, layer, result.worldSize, result.parallelWorlds);
   } else if (keepBiomeBackgrounds) {
