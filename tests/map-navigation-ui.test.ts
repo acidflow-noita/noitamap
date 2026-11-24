@@ -138,12 +138,17 @@ describe('map navigation UI during camera movement', () => {
     expect(url).toHaveBeenCalledTimes(180); expect(search).toHaveBeenCalledTimes(180);
     expect(toolbar).toHaveBeenCalledExactlyOnceWith(map); expect(selector).toHaveBeenCalledExactlyOnceWith(map);
     expect(clear).not.toHaveBeenCalled();
-    map = getAllMapDefinitions().find(([key]) => key !== 'dynamic-main-branch')![0];
+    map = getAllMapDefinitions().find(([key]) => !isDynamicMap(key))![0];
     callback({ map, pos: { x: 0, y: 0, zoom: 1 } });
     expect(clear).toHaveBeenCalledOnce(); expect(toolbar).toHaveBeenCalledTimes(2); expect(selector).toHaveBeenLastCalledWith(map);
     map = 'dynamic-main-branch';
     callback({ map }); callback({ map, pos: { x: 1, y: 0, zoom: 1 } });
     expect(runPriority).toHaveBeenCalledOnce(); expect(toolbar).toHaveBeenCalledTimes(3);
+    map = 'new-game-plus-dynamic-main-branch';
+    callback({ map });
+    expect(runPriority).toHaveBeenCalledTimes(2);
+    for (let frame = 0; frame < 20; frame++) callback({ map, pos: { x: frame, y: 0, zoom: 1 + frame } });
+    expect(runPriority).toHaveBeenCalledTimes(2); expect(toolbar).toHaveBeenCalledTimes(4);
   });
 });
 
