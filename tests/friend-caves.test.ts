@@ -170,7 +170,7 @@ it('isolates corrected, placement-specific room caches without changing unrelate
 it('keeps the gold cavern scene while still excluding baked rooms', () => {
   let simplistic = false;
   const { renderableScenes } = functions('src/telescope/telescope-osd-bridge.ts',
-    ['pixelSceneConfig', 'getSceneCategory', 'isCapturedPixelScene', 'renderableScenes'], { ...goldRoom, isSimplisticBackground: () => simplistic });
+    ['pixelSceneConfig', 'getSceneCategory', 'isCapturedPixelScene', 'renderableScenes'], { ...goldRoom, ...policy, isSimplisticBackground: () => simplistic });
   const cavern = { key: 'general/solid_wall_hidden_cavern', name: 'solid_wall_hidden_cavern', x: -4126, y: 11264, width: 512, height: 512 };
   const baked = { ...cavern, key: 'general/dragoncave', name: 'dragoncave' };
   const captured = { ...cavern, x: -3102, y: 0 };
@@ -180,6 +180,10 @@ it('keeps the gold cavern scene while still excluding baked rooms', () => {
   expect(renderableScenes({ ...rooms, isNGP: true })).toEqual(Object.values(rooms.pixelScenesByPW).flat());
   expect(renderableScenes({ ...rooms, isNGP: false, gameMode: 'nightmare' })).toEqual([]);
   expect(renderableScenes({ ...rooms, isNGP: false, worldSize: 70 })).toEqual([]);
+  const bottom = { ...orb, y: 16896 }, alreadyPresent = { ...orb, y: 17408 };
+  const tower = renderableScenes({ ...rooms, isNGP: true, pixelScenesByPW: { '0,0': [bottom, alreadyPresent] } });
+  expect(tower.map((s: PixelScene) => s.y)).toEqual(Array.from({ length: 49 }, (_, i) => 16896 + i * 512));
+  expect(tower.every((s: PixelScene) => s.x === bottom.x)).toBe(true);
   simplistic = true;
   expect(renderableScenes({ worldSize: 70, pixelScenesByPW: { '0,0': [captured] } })).toEqual([captured]);
 });

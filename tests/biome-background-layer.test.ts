@@ -171,15 +171,19 @@ it('paints each NG+ orb biome with its own game texture on both renderers', asyn
   const terrain = createTerrainOwnership([], pixels, GENERATOR_CONFIG, 64);
   const baked = createBackgroundOwnership(terrain, pixels, GENERATOR_CONFIG, 0, true);
   const live = generatedBiomeBackgroundGeometry(pixels, 64, 32, GENERATOR_CONFIG, true);
+  const hellPixels = new Uint32Array(pixels.length);
+  for (let y = 0; y < 48; y++) hellPixels.set(pixels.subarray(47 * 64), y * 64);
+  const hell = createBackgroundOwnership(terrain, hellPixels, GENERATOR_CONFIG, 1, true);
   for (const [i, [name, path]] of rooms.entries()) {
     const xml = await archive.file(`data/biome/orbrooms/${name}.xml`)!.async('text');
     expect(xml).toContain(`background_image="${path}"`);
     expect(readFileSync('public/biome_bg/' + path.split('/').pop())).toEqual(await archive.file(path)!.async('nodebuffer'));
     const x = (i - 32) * 512, y = 33 * 512;
     expect(baked.names[baked.at(x, y)]).toBe(name);
+    expect(hell.names[hell.at(x, WORLD_TOP)]).toBe(name);
     expect(terrain.at(x, y)).toBe(-1);
     const region = live.regions.find(r => r.textureKey === path)!;
-    expect(region.rings.some(ring => ring[0].x <= x && x < ring[1].x && ring[0].y === y && ring[2].y === y + 512)).toBe(true);
+    expect(region.rings.some(ring => ring[0].x <= x && x < ring[1].x && ring[0].y === y && ring[2].y === y + 512 + WORLD_HEIGHT)).toBe(true);
   }
   expect(generatedBiomeBackgroundGeometry(pixels, 64, 32, GENERATOR_CONFIG).regions).toHaveLength(0);
   expect(createBackgroundOwnership(terrain, pixels, GENERATOR_CONFIG, 0)).toBe(terrain);

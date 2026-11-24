@@ -128,9 +128,28 @@ export function sceneBiomeNames(scene: { key: string; variantKey?: string }): st
 
 export const TERRAIN_VERSION = "full-pixel-v21-instant-gold-cavern";
 // Local pixel caches include artwork changes even while a compatible older DZI is published.
-export const TERRAIN_PIXEL_REVISION = "wang-ownership-628d14c-orb-rooms";
+export const TERRAIN_PIXEL_REVISION = "wang-ownership-628d14c-orb-rooms-v2";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
+/** Only orb rooms on the last biome row repeat into the captured Hell plane. */
+export function repeatBottomOrbRooms<T extends { key: string; x: number; y: number }>(scenes: T[]): T[] {
+  const hellTop = WORLD_TOP + WORLD_HEIGHT;
+  const rooms = scenes.filter(scene => scene.key === "general/orbroom");
+  const bottomRooms = rooms.filter(scene => scene.y === hellTop - 512);
+  if (!bottomRooms.length) return scenes;
+  const positions = new Set(rooms.map(scene => `${scene.x},${scene.y}`));
+  const result = [...scenes];
+  for (const room of bottomRooms) {
+    for (let y = hellTop; y < hellTop + WORLD_HEIGHT; y += 512) {
+      const position = `${room.x},${y}`;
+      if (positions.has(position)) continue;
+      result.push({ ...room, y });
+      positions.add(position);
+    }
+  }
+  return result;
+}
+
 export type VerticalPlane = -1 | 0 | 1;
 export interface TerrainOwnership {
   width: number;
@@ -252,7 +271,8 @@ export function createBackgroundOwnership(
   for (const [name, conf] of Object.entries(config)) {
     if (plane === 0) {
       if (!NG_PLUS_ORB_BACKGROUNDS[name]) continue;
-    } else if (!conf.wangFile || STATIC_TERRAIN_BIOMES.has(name) || !BIOME_BACKGROUND_MAP[name]) continue;
+    } else if (!(plane === 1 && isNGP && NG_PLUS_ORB_BACKGROUNDS[name]) &&
+      (!conf.wangFile || STATIC_TERRAIN_BIOMES.has(name) || !BIOME_BACKGROUND_MAP[name])) continue;
     ids.set(conf.color & 0xffffff, names.length);
     names.push(name);
   }

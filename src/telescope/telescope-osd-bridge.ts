@@ -24,7 +24,7 @@ import { loadInstantSceneMasks } from "./instant-scene-masks";
 import { isSimplisticBackground } from '../simplistic-background';
 import { GOLD_ROOM_KEY, GOLD_ROOM_REPAIR_KEY, isCapturedGoldRoom, capturedGoldRepairs, capturedGoldRepairPixels } from './captured-gold-room';
 import type { TerrainSceneData, TerrainSceneSource } from "./terrain-scenes";
-import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, isRepeatedTempleTemplate, carvedRoomBiome, isWaterCaveLayout } from "./terrain-policy";
+import { STATIC_TERRAIN_BIOMES as SKIP_BIOMES, BIOME_BACKGROUND_MAP, repeatBottomOrbRooms, isRepeatedTempleTemplate, carvedRoomBiome, isWaterCaveLayout } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { isGLTerrainEnabled, isInstantTerrainEnabled, useRenderPerfGeneration } from "../renderer_settings";
 import { prepareInstantTerrain } from './instant-terrain-backend';
@@ -2398,7 +2398,7 @@ function isCapturedPixelScene(scene: PixelScene, result: GenerationResult): bool
 function renderableScenes(result: GenerationResult): PixelScene[] {
   if (!pixelSceneConfig.enabled) return [];
   const allScenes = Object.values(result.pixelScenesByPW).flat();
-  return allScenes.filter(s => {
+  const visible = allScenes.filter(s => {
     if (!s || s.width <= 0 || s.height <= 0) return false;
     if (isCapturedPixelScene(s, result)) return false;
     const category = getSceneCategory(s);
@@ -2406,6 +2406,7 @@ function renderableScenes(result: GenerationResult): PixelScene[] {
     if (pixelSceneConfig.skipFn && pixelSceneConfig.skipFn(s)) return false;
     return true;
   });
+  return result.isNGP ? repeatBottomOrbRooms(visible) : visible;
 }
 
 /** Export raw material pixels, not old flat-color scene composites. Material
@@ -2457,11 +2458,8 @@ export async function prepareTerrainSceneData(result: GenerationResult): Promise
 /** Reuse raw scene pixels already loaded by the generator. Only the mask is
  * needed by the display-resolution GPU path; existing scene layers paint art. */
 async function instantSceneMasks(result: GenerationResult): Promise<StaticTerrainMask[]> {
-  const rendered = new Set(renderableScenes(result));
-  const scenes = Object.values(result.pixelScenesByPW).flat().filter(scene =>
-    rendered.has(scene) || isCapturedPixelScene(scene, result));
-  const masks = await loadInstantSceneMasks(scenes, key => ensurePixelSceneData(key, { art: false }));
-  return masks;
+  const captured = Object.values(result.pixelScenesByPW).flat().filter(scene => isCapturedPixelScene(scene, result));
+  return loadInstantSceneMasks([...renderableScenes(result), ...captured], key => ensurePixelSceneData(key, { art: false }));
 }
 
 async function buildSceneBitmaps(

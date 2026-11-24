@@ -74,10 +74,10 @@ export function generatedBiomeBackgroundGeometry(pixels: Uint32Array, worldSize:
       const left = phaseX + start * 512, right = phaseX + col * 512;
       const rings = groups.get(textureKey) ?? [];
       groups.set(textureKey, rings);
-      // The orb room scene occupies one chunk even on an edge row.
-      const y0 = orb ? phaseY + row * 512 : top, y1 = orb ? y0 + 512 : bottom;
+      // Bottom-row orb chambers repeat downward. There are no orb chambers above the map.
+      const y0 = orb ? phaseY + row * 512 : top;
       rings.push([{ x: left, y: y0 }, { x: right, y: y0 },
-        { x: right, y: y1 }, { x: left, y: y1 }]);
+        { x: right, y: bottom }, { x: left, y: bottom }]);
     }
   }
   const regions = [...groups].map(([textureKey, rings]) => ({ textureKey, rings }));
