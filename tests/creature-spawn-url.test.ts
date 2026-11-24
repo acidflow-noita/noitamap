@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { ScriptTarget, transpileModule } from 'typescript';
-import { isDynamicMap } from '../src/data_sources/tile_data';
+import { isDynamicMap, NG_PLUS_MAP } from '../src/data_sources/tile_data';
 
 vi.mock('../src/data_sources/overlays', () => ({ isValidOverlayKey: () => false }));
 
@@ -105,7 +105,11 @@ describe('shared creature spawn selection', () => {
     });
   });
 
-  it('keeps spawn selection in the actual share snapshot alongside a creature card and pinned seed', () => {
+  it.each([
+    ['dy', 'dynamic-main-branch', 0],
+    ['dngp', NG_PLUS_MAP, 3],
+  ] as const)('keeps the creature, seed and selected level in the %s share link', (short, map, level) => {
+    history.replaceState(null, '', original.replace('m=dy', 'm=' + short));
     updateURLWithCreatureSpawn('thundermage');
     // Exercise the real share builder without starting the application or OSD.
     const source = readFileSync('src/main.ts', 'utf8');
@@ -117,8 +121,9 @@ describe('shared creature spawn selection', () => {
       compilerOptions: { target: ScriptTarget.ES2022 },
     }).outputText;
     const dependencies = {
-      isDynamicMap,
-      app: { getMap: () => 'dynamic-main-branch' },
+      isDynamicMap, NG_PLUS_MAP,
+      app: { getMap: () => map },
+      getCurrentNGPlus: () => level,
       getCurrentDynamicSeed: () => 789,
       getCurrentIsDaily: () => true,
       getEnabledOverlays: () => ['biomeBoundaries'],
@@ -129,7 +134,7 @@ describe('shared creature spawn selection', () => {
     const share = new Function(...Object.keys(dependencies), `${js}\nreturn getShareUrl;`)(...Object.values(dependencies));
     history.replaceState(null, '', share('shared-creature'));
     expect(parseURL()).toMatchObject({
-      spawnCreatureId: 'thundermage', targetPoiId: 'shared-creature',
+      map, ngPlus: level || undefined, spawnCreatureId: 'thundermage', targetPoiId: 'shared-creature',
       seed: 789, dailySeed: true, overlays: ['biomeBoundaries'],
       pos: { x: 10, y: -20, zoom: 0.125 },
     });
