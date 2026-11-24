@@ -183,7 +183,6 @@ export const createMapLinks = (): HTMLDivElement => {
   navLinks.replaceChildren();
 
   for (const [mapName, def] of getAllMapDefinitions()) {
-    if (mapName === 'new-game-plus-dynamic-main-branch') continue;
     navLinks.appendChild(buildMenuLink(mapName, def));
   }
 
