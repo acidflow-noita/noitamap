@@ -167,8 +167,8 @@ export class AuthUI {
         <h2 id="getProModalLabel" class="dialog-title visually-hidden">${i18next.t("auth.getPro", "Get Pro")}</h2>
         <button type="button" class="btn-close ms-auto" data-bs-dismiss="dialog" aria-label="${i18next.t("seedReport.close", "Close")}"></button>
       </div>
-      <div class="dialog-body pt-0">
-        <p class="text-center mb-5">${i18next.t("auth.proDescription", "Drawing tools and other Pro features are available to supporters.")}</p>
+      <div class="dialog-body">
+        <p class="text-center">${i18next.t("auth.proDescription", "Drawing tools and other Pro features are available to supporters.")}</p>
       </div>
     `;
 

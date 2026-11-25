@@ -69,7 +69,7 @@
 
 /* Soften sidebar header border */
 .drawing-sidebar .sidebar-header {
-  padding: var(--panel-padding) !important;
+  padding: var(--section-gap) !important;
 }
 .drawing-sidebar .sidebar-header {
   border-color: var(--border-strong) !important;
@@ -170,12 +170,7 @@
 
 /* Sidebar section structure */
 .drawing-sidebar .sidebar-section {
-  padding: var(--panel-padding);
-}
-
-/* First section needs no top padding (header already provides it) */
-.drawing-sidebar .sidebar-section:first-child {
-  padding-top: var(--panel-padding);
+  padding: var(--section-gap);
 }
 
 /* Tool buttons - wrap to grid */
@@ -248,7 +243,7 @@
 }
 
 .drawing-sidebar .list-group-item {
-  padding: var(--panel-padding);
+  padding: var(--panel-padding) var(--section-gap);
   border-radius: var(--radius-control) !important;
   flex-shrink: 0;
   overflow: hidden;
@@ -300,14 +295,14 @@ label[data-tool="text"] {
   min-width: var(--control-height);
 }
 
-/* Example drawings - compact to fit exactly the items present */
+/* The example list grows to fit its entries. */
 .example-drawings-list {
-  /* Remove max-height and scrolling to let it shrink-wrap exactly the 2 items */
+  display: grid;
+  gap: var(--control-gap);
   overflow: hidden;
 }
-
 .example-drawings-list .list-group-item {
-  padding: 0.25rem 0.5rem;
+  padding: var(--panel-padding) var(--section-gap);
 }
 
 /* Responsive adjustments */
@@ -463,6 +458,5 @@ label[data-tool="text"] {
 .drawing-sidebar, .drawing-toolbar { font-size: var(--control-font-size); }
 .drawing-sidebar .sidebar-header h6 { font-size: var(--panel-heading-size); }
 .drawing-sidebar .sidebar-section > :is(h5, h6) { font-size: var(--section-heading-size); }
-.drawing-sidebar .sidebar-section + .sidebar-section { padding-top: var(--section-gap); }
 .drawing-toolbar .btn > i { font-size: var(--control-icon-size); }
 }

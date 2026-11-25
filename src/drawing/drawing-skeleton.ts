@@ -31,17 +31,17 @@ export function showDrawingSkeleton(): void {
   sidebar.className = "drawing-sidebar";
   sidebar.setAttribute("aria-busy", "true");
   sidebar.innerHTML = `
-    <div class="sidebar-header p-2 border-bottom" aria-hidden="true">
+    <div class="sidebar-header border-bottom" aria-hidden="true">
       <h2 class="h5 mb-0 placeholder-wave"><span class="placeholder col-6"></span></h2>
     </div>
     <div id="drawing-sidebar-skel-content" class="overflow-auto" aria-hidden="true">
       <div class="sidebar-section placeholder-wave">
-        <p><span class="placeholder placeholder-sm col-4"></span></p>
-        <div class="d-flex flex-wrap gap-1">${Array.from({ length: 6 }, () => '<span class="btn btn-sm disabled placeholder col-2"></span>').join('')}</div>
+        <p class="mb-3"><span class="placeholder placeholder-sm col-4"></span></p>
+        <div class="d-flex flex-wrap gap-2">${Array.from({ length: 6 }, () => '<span class="btn btn-sm disabled placeholder col-2"></span>').join('')}</div>
       </div>
       ${[8, 10, 7].map(width => `
         <div class="sidebar-section placeholder-wave">
-          <p><span class="placeholder placeholder-sm col-4"></span></p>
+          <p class="mb-3"><span class="placeholder placeholder-sm col-4"></span></p>
           <p class="mb-0">
             <span class="placeholder col-${width}"></span>
             <span class="placeholder col-6"></span>
@@ -61,7 +61,7 @@ export function showDrawingSkeleton(): void {
   toolbar.id = TOOLBAR_ID;
   toolbar.className = "drawing-toolbar";
   toolbar.setAttribute("aria-hidden", "true");
-  toolbar.innerHTML = `<div class="d-flex flex-wrap gap-1 placeholder-wave">${Array.from({ length: 10 }, () => '<span class="btn btn-sm disabled placeholder"></span>').join('')}</div>`;
+  toolbar.innerHTML = `<div class="d-flex flex-wrap gap-2 placeholder-wave">${Array.from({ length: 10 }, () => '<span class="btn btn-sm disabled placeholder"></span>').join('')}</div>`;
   document.body.appendChild(toolbar);
 
   // Force reflow, then add .open so the CSS transition runs (instant slide-in).

@@ -311,7 +311,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
     if (note) {
       const noteLi = document.createElement("li");
       noteLi.className = "search-no-results-note";
-      noteLi.style.cssText = "padding:0.4em 0.75em;color:#aaa;font-size:0.85em;line-height:1.4";
+      noteLi.style.cssText = "color:var(--text-muted);font-size:0.85em;line-height:1.4";
       if (note.text) noteLi.appendChild(document.createTextNode(note.text + " "));
       const a = document.createElement("a");
       a.href = note.telescopeUrl;
@@ -340,7 +340,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
     if (notice && results.length > 0) {
       const noteLi = document.createElement("li");
       noteLi.className = "search-result-notice";
-      noteLi.style.cssText = "padding:0.4em 0.75em;color:var(--warning-fg,#d9b44a);font-size:0.85em;line-height:1.4";
+      noteLi.style.cssText = "color:var(--warning-fg,#d9b44a);font-size:0.85em;line-height:1.4";
       noteLi.textContent = notice;
       this.wrapper.appendChild(noteLi);
     }
@@ -670,7 +670,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
             if ((result as any).chunksAway != null && !isNaN((result as any).chunksAway)) {
               const chunksAway = Number((result as any).chunksAway) || 0;
               const proximitySpan = document.createElement("span");
-              proximitySpan.className = "ms-2 fg-secondary proximity-hint";
+              proximitySpan.className = "fg-secondary proximity-hint";
               proximitySpan.style.fontSize = "0.8em";
               proximitySpan.dataset.chunksAway = String(chunksAway);
               proximitySpan.textContent = i18next.t("search.chunksAway", "~{{count}} chunks away", { count: chunksAway });
@@ -705,10 +705,9 @@ export class UnifiedSearchResults extends EventEmitter2 {
               ((result as any).cards?.length > 0 || (result as any).alwaysCasts?.length > 0)
             ) {
               const spellsDiv = document.createElement("div");
-              spellsDiv.className = "wand-spells-container mt-1 d-flex flex-wrap gap-1";
-              spellsDiv.style.alignItems = "center";
-              // Leave room for the AC badge that overhangs the first icon's top-left
-              spellsDiv.style.marginLeft = "6px";
+              spellsDiv.className = "wand-spells-container d-flex flex-wrap align-items-center gap-1";
+              // An Always Cast badge extends four pixels beyond its spell icon.
+              if ((result as any).alwaysCasts?.length) spellsDiv.classList.add("pt-1", "ps-1");
 
               const addSpellIcons = (spellNames: string[], isAlwaysCast: boolean) => {
                 for (const spellName of spellNames) {
@@ -784,7 +783,7 @@ export class UnifiedSearchResults extends EventEmitter2 {
             // Container contents (hidden in spoiler-free mode)
             if (!isSpoilerFree() && (result as any).isDynamic && (result as any).items?.length > 0) {
               const itemsDiv = document.createElement("div");
-              itemsDiv.className = "container-items-row mt-1 d-flex flex-wrap gap-1";
+              itemsDiv.className = "container-items-row d-flex flex-wrap gap-1";
               itemsDiv.style.alignItems = "center";
 
               const items = (result as any).items as any[];

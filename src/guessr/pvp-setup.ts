@@ -15,10 +15,10 @@ export function mountPvpSetup(main: HTMLElement, open: (id: string) => void, bac
   const title = bindText(document.createElement('h1'), '1v1');
   const leave = bindText(document.createElement('button'), 'Back'); leave.type = 'button'; leave.onclick = back;
   card.append(pageHeading(title, leave), bindText(document.createElement('p'), 'Challenge another player. Only one of you needs Pro.'));
-  const access = document.createElement('div'); card.append(access);
+  const access = document.createElement('div'); access.className = 'setup-access'; card.append(access);
   const placeholders = loadingPlaceholders(); access.append(placeholders);
-  const settings = document.createElement('fieldset'); settings.disabled = true; settings.className = 'd-grid gap-3 border-0 p-0 m-0';
-  const length = document.createElement('select'); length.className = 'form-select';
+  const settings = document.createElement('fieldset'); settings.disabled = true; settings.className = 'd-grid gap-4 border-0 p-0 m-0';
+  const length = document.createElement('select'); length.className = 'form-control';
   for (const count of STREAM_ROUND_OPTIONS) {
     const option = document.createElement('option'); option.value = String(count);
     bindText(option, '{{rounds}} rounds', { rounds: formatGuessrNumber(count), count }); length.append(option);

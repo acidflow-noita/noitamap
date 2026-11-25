@@ -147,8 +147,8 @@
   opacity: 0.8;
 }
 .pro-gift-disclosure > summary { cursor: pointer; }
-.pro-gift-recipient { display: grid; gap: .5rem; padding-block-start: .5rem; }
-.pro-gift-recipient label { text-align: start; }
+.pro-gift-recipient { display: grid; gap: .5rem; padding-block-start: var(--section-gap); }
+.pro-gift-recipient label { display: grid; gap: var(--bs-spacer-1); text-align: start; }
 .pro-gift-recipient input { width: 100%; min-width: 0; }
 .pro-gift-checkout:disabled { opacity: .5; cursor: not-allowed; }
 .pro-gift-featured { text-decoration: none; }

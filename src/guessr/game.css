@@ -103,8 +103,11 @@ body:has(.game-shell, .stream-viewer-shell)::before { height: 20dvh; }
   margin-block: 1rem 0;
   padding-inline-start: 1.25rem;
 }
+.guessr-changelog .dialog-body { display: grid; gap: var(--section-gap); }
+.guessr-changelog .guessr-changelog-notes { margin-block: 0; }
+.changelog-more[open] > .guessr-changelog-notes { margin-block-start: var(--panel-padding); }
 .guessr-changelog .dialog-footer { flex-shrink: 0; }
-.changelog-more { margin-block-start: 1.25rem; border-block-start: 1px solid var(--border); padding-block-start: .75rem; }
+.changelog-more { border-block-start: 1px solid var(--border); padding-block-start: .75rem; }
 .changelog-more summary { cursor: pointer; color: var(--text); font-weight: 600; }
 .with-icon {
   display: inline-flex;
@@ -891,16 +894,16 @@ header.page-heading {
 .result-share-dialog { --bs-dialog-width: 52rem; inline-size: min(52rem, calc(100vw - 1rem)); max-block-size: calc(100dvh - 1rem); overflow: hidden; }
 .result-share-dialog[open] { display: flex; flex-direction: column; }
 .result-share-dialog :is(.dialog-header, .dialog-footer) { flex: none; }
-.result-share-dialog .dialog-body { flex: 1 1 auto; min-block-size: 0; min-inline-size: 0; overflow: auto; overscroll-behavior: contain; }
+.result-share-dialog .dialog-body { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--section-gap); flex: 1 1 auto; min-block-size: 0; min-inline-size: 0; overflow: auto; overscroll-behavior: contain; }
 .result-share-preview { aspect-ratio: 5 / 3; position: relative; background: var(--bg); border-radius: var(--radius-panel); overflow: hidden; }
 .result-share-preview > img, .result-share-preview > .placeholder { inline-size: 100%; block-size: 100%; object-fit: contain; }
 .result-share-preview > [hidden] { display: none; }
-.result-share-feedback { margin: .75rem 0 0; color: var(--text-muted); font-size: .875rem; }
+.result-share-feedback { margin: 0; color: var(--text-muted); font-size: .875rem; }
 .result-share-feedback:empty { display: none; }
 .result-share-dialog .dialog-footer { display: flex; flex-flow: row wrap; justify-content: end; gap: .5rem; }
 .result-share-dialog .dialog-footer > .btn { min-inline-size: 0; justify-content: center; white-space: normal; }
 .result-share-dialog .dialog-footer > [hidden] { display: none; }
-.result-share-player { display: flex; align-items: center; gap: var(--game-gutter); margin-block-end: var(--game-gutter); }
+.result-share-player { display: flex; flex-wrap: wrap; align-items: center; gap: var(--control-gap) var(--panel-padding); }
 .result-share-player > .combobox { position: relative; min-inline-size: 0; }
 .result-share-player .combobox-toggle { max-inline-size: min(24rem, 65vw); }
 .result-share-player .combobox-value { overflow: hidden; text-overflow: ellipsis; }

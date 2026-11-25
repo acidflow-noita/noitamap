@@ -18,10 +18,20 @@ export function createSeedReportLoading(
       #${ID} header{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:1rem;border-bottom:1px solid var(--border-strong)}
       #${ID} h2{font-size:var(--panel-heading-size);font-weight:500;margin:0}
       #${ID} .sr-loading-close{flex-shrink:0}
-      #${ID} .sr-loading-content{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:1rem}
+      #${ID} .sr-loading-content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-content: start;
+        gap: var(--bs-spacer-5, 1rem);
+        min-height: 0;
+        overflow: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+        padding: var(--bs-spacer-5, 1rem);
+      }
+      #${ID} .sr-loading-content > p { margin: 0; }
       #${ID} .sr-loading-hint{color:var(--text-muted);font-size:var(--control-font-size)}
-      #${ID} .sr-loading-placeholders{margin-top:1rem}
-      #${ID} .sr-loading-actions{display:flex;gap:.5rem;margin-top:1rem}
+      #${ID} .sr-loading-actions{display:flex;flex-wrap:wrap;gap:var(--bs-spacer-3, .5rem)}
       #${ID} .sr-loading-sheet-handle{display:none}
       @media(max-width:900px){#${ID}{top:auto;right:0;bottom:0;width:100vw;max-width:none;height:45dvh;max-height:45dvh;border-radius:var(--radius-panel) var(--radius-panel) 0 0}#${ID} header{padding-top:0}#${ID} .sr-loading-content{flex:1}#${ID} .sr-loading-sheet-handle{display:flex;align-items:center;justify-content:center;height:24px;flex-shrink:0}#${ID} .sr-loading-sheet-handle span{width:36px;height:4px;border-radius:4px;background:var(--text-muted)}}
     `;

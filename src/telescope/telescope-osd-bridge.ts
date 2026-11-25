@@ -3370,14 +3370,13 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     const colorMap = { wand: '#c8a2ff', spell: '#66ccff', something: 'var(--warning-fg)' };
 
     const title = document.createElement('div');
-    title.style.cssText = `font-weight:bold;color:${colorMap[category]};font-size:var(--panel-heading-size);margin-bottom:0.3em`;
+    title.style.cssText = `font-weight:bold;color:${colorMap[category]};font-size:var(--panel-heading-size)`;
     title.textContent = label;
     tooltipEl.appendChild(title);
 
     // Footer with position and optional particle attribution
     const footer = document.createElement('div');
-    footer.style.cssText =
-      'margin-top:0.5em;color:var(--text-faint);font-size:var(--control-font-size);border-top:0.065em solid var(--border-strong);padding-top:0.3em';
+    footer.className = 'poi-card-footer';
     footer.textContent = `${i18next.t('poi.pw', 'PW')} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
     if (usesDustAnimation(item.poi)) {
       footer.classList.add('dust-credit-footer');
@@ -3393,7 +3392,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     const isTaikasauva = (poi as any).isTaikasauva === true;
     // Header with sprite
     const header = document.createElement('div');
-    header.style.cssText = 'display:flex;align-items:center;gap:0.6em;margin-bottom:0.5em';
+    header.className = 'poi-card-header';
     const spriteImg = document.createElement('img');
     if (isTaikasauva) {
       // "Alive" wand: show the wand_ghost bestiary sprite (no rotation —
@@ -3426,6 +3425,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     }
     header.appendChild(spriteImg);
     const titleCol = document.createElement('div');
+    titleCol.className = 'poi-card-titles';
     const title = document.createElement('div');
     title.style.cssText = 'font-weight:bold;color:var(--text);font-size:var(--panel-heading-size)';
     title.textContent = formatWandName(poi);
@@ -3508,7 +3508,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     }
     if (displaySlots.length > 0) {
       const spellsRow = document.createElement('div');
-      spellsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;margin-top:0.3em';
+      spellsRow.className = 'poi-card-slots';
       for (const slot of displaySlots) {
         const container = document.createElement('div');
         container.style.cssText = `position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;background:var(--surface-2);border-radius:0.2em;border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border-strong)'}`;
@@ -3552,7 +3552,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
   ) {
     // Header with sprite
     const header = document.createElement('div');
-    header.style.cssText = 'display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em';
+    header.className = 'poi-card-header';
     const spriteImg = document.createElement('img');
     spriteImg.style.cssText = 'width:28px;height:28px;image-rendering:pixelated;object-fit:contain';
     getPOISpriteFirstFrame(poi as any).then(url => {
@@ -3607,7 +3607,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const theme = String((poi as any).theme || '');
       if (theme) {
         const sub = document.createElement('div');
-        sub.style.cssText = 'color:var(--text);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em';
+        sub.style.cssText = 'color:var(--text);font-size:var(--control-font-size);font-style:italic';
         sub.textContent = i18next.t(theme, theme);
         tooltipEl.appendChild(sub);
       }
@@ -3619,7 +3619,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const spec = pillarReqSpec(poi as any);
       if (spec) {
         const d = document.createElement('div');
-        d.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);margin-bottom:0.2em';
+        d.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size)';
         const lead = document.createElement('span');
         lead.textContent = `${i18next.t('poi.pillarHowTo', 'To unlock')}: `;
         d.appendChild(lead);
@@ -3990,7 +3990,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const t = gameTranslator.translateItem(String((poi as any).titleKey));
       if (t && t !== (poi as any).titleKey) {
         const sub = document.createElement('div');
-        sub.style.cssText = 'color:var(--text);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em';
+        sub.style.cssText = 'color:var(--text);font-size:var(--control-font-size);font-style:italic';
         sub.textContent = t;
         tooltipEl.appendChild(sub);
       }
@@ -4000,7 +4000,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     if ((poi as any).description) {
       const d = document.createElement('div');
       d.style.cssText =
-        'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;white-space:pre-line;text-align:center;margin-bottom:0.2em';
+        'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;white-space:pre-line;text-align:center';
       d.textContent = String((poi as any).description);
       tooltipEl.appendChild(d);
     }
@@ -4008,7 +4008,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     // Unknown (parallel-world) perk: explain why the identity can't be shown.
     if (poi.item === 'perk' && (poi as any).unknown) {
       const d = document.createElement('div');
-      d.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em';
+      d.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic';
       d.textContent = i18next.t(
         'perk.unknownParallel',
         'Loading order for holy mountains and parallel worlds matters. Without knowing your "travel history" it is impossible to accurately show the perks.'
@@ -4025,7 +4025,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const desc = gameTranslator.translateItem(descKey);
       if (desc && desc !== descKey) {
         const d = document.createElement('div');
-        d.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em';
+        d.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic';
         d.textContent = desc;
         tooltipEl.appendChild(d);
       }
@@ -4034,7 +4034,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
         const acId = String(typeof ac === 'string' ? ac : (ac.id ?? ac));
         const acName = gameTranslator.translateSpell(getSpellName(acId));
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:0.3em;font-size:var(--control-font-size);color:#c8a2ff;margin-top:0.2em';
+        row.style.cssText = 'display:flex;align-items:center;gap:0.3em;font-size:var(--control-font-size);color:#c8a2ff';
         const lbl = document.createElement('span');
         lbl.textContent = `${i18next.t('perk.alwaysCast', 'Always Cast')}:`;
         row.appendChild(lbl);
@@ -4054,7 +4054,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       if (gamble && Array.isArray(gamble.perks) && gamble.perks.length) {
         const row = document.createElement('div');
         row.style.cssText =
-          'display:flex;align-items:center;gap:0.4em;flex-wrap:wrap;font-size:var(--control-font-size);color:var(--text);margin-top:0.2em';
+          'display:flex;align-items:center;gap:0.4em;flex-wrap:wrap;font-size:var(--control-font-size);color:var(--text)';
         const lbl = document.createElement('span');
         lbl.textContent = `${i18next.t('perk.gambleGrants', 'Gamble grants')}:`;
         row.appendChild(lbl);
@@ -4095,7 +4095,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       link.textContent = 'Noitool';
       link.style.cssText = 'color:var(--accent-fg);text-decoration:underline';
       const note = document.createElement('div');
-      note.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-top:0.4em';
+      note.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic';
       const tpl = i18next.t(
         'perk.noitoolNote',
         'Note, that perks are shown as if you went through every holy mountain in regular order on a normal run and did not pick up extra perk. If you want to have absolute precision in what perks you are going to see, use {{link}} in "Advanced" mode'
@@ -4111,7 +4111,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       const desc = gameTranslator.translateItem(descKey);
       if (desc && desc !== descKey) {
         const sub = document.createElement('div');
-        sub.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-bottom:0.2em;white-space:pre-line';
+        sub.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;white-space:pre-line';
         // In-game description text encodes line breaks as a literal backslash-n.
         sub.textContent = desc.replace(/\\n/g, '\n');
         tooltipEl.appendChild(sub);
@@ -4134,7 +4134,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     }
     if (poi.contents && poi.contents.length) {
       const contentsDiv = document.createElement('div');
-      contentsDiv.style.cssText = 'margin-top:0.15em;color:var(--text-muted);font-size:var(--control-font-size)';
+      contentsDiv.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size)';
       contentsDiv.textContent = `${i18next.t('poi.contains', 'Contains')}: ${poi.contents
         .map((c: any) => {
           const cName = typeof c === 'string' ? c : (c.name ?? c.item ?? String(c));
@@ -4149,7 +4149,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     const stoneDrops = (poi as any).stoneDrops as Array<{ item: string; nameKey: string; name: string }> | undefined;
     if (poi.item === 'essence_eater' && Array.isArray(stoneDrops) && stoneDrops.length) {
       const note = document.createElement('div');
-      note.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin:0.3em 0 0.2em;line-height:1.4';
+      note.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;line-height:1.4';
       note.textContent = i18next.t(
         'poi.essenceEaterConvert',
         'Essence Eaters convert any carried Essence into its corresponding elemental stone.'
@@ -4157,17 +4157,16 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       tooltipEl.appendChild(note);
 
       const dropsDiv = document.createElement('div');
-      dropsDiv.style.cssText = 'margin-top:0.3em;border-top:0.065em solid var(--border-strong);padding-top:0.3em';
+      dropsDiv.className = 'poi-card-section';
       const dropsLabel = document.createElement('div');
-      dropsLabel.style.cssText = 'font-size:1em;color:var(--text-muted);margin-bottom:0.2em';
+      dropsLabel.className = 'poi-card-meta';
       dropsLabel.textContent = `${i18next.t('poi.drops', 'Drops')}:`;
       dropsDiv.appendChild(dropsLabel);
       const dropsRow = document.createElement('div');
-      dropsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center';
+      dropsRow.className = 'poi-card-slots';
       for (const s of stoneDrops) {
         const box = document.createElement('div');
-        box.style.cssText =
-          'display:flex;align-items:center;gap:0.2em;background:var(--surface-2);border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid var(--border-strong)';
+        box.className = 'poi-loot-chip';
         const img = document.createElement('img');
         img.style.cssText = 'width:20px;height:20px;image-rendering:pixelated;object-fit:contain';
         getPOISpriteFirstFrame({ type: 'item', item: s.item }).then(u => {
@@ -4186,7 +4185,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     }
   } else if (poi.type === 'spell') {
     const header = document.createElement('div');
-    header.style.cssText = 'display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em';
+    header.className = 'poi-card-header';
     const spriteImg = document.createElement('img');
     spriteImg.style.cssText = 'width:28px;height:28px;image-rendering:pixelated;display:block';
     getPOISpriteFirstFrame({ type: 'spell', item: poi.item }).then(url => {
@@ -4223,7 +4222,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
   ) {
     const isSpecialEntity = poi.type !== 'entity';
     const header = document.createElement('div');
-    header.style.cssText = 'display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em';
+    header.className = 'poi-card-header';
     const spriteImg = document.createElement('img');
     spriteImg.style.cssText = 'width:38px;height:38px;image-rendering:pixelated;object-fit:contain';
     getPOISpriteFirstFrame(poi as any).then(url => {
@@ -4231,6 +4230,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     });
     header.appendChild(spriteImg);
     const titleCol = document.createElement('div');
+    titleCol.className = 'poi-card-titles';
     const rawName = String((poi as any).entity || poi.type);
     let entityId = canonicalEntityId(rawName);
 
@@ -4296,7 +4296,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     // Horde marker (free) — full creature stats are in the pro extended section.
     if ((poi as any).isHorde && creature?.category) {
       const catDiv = document.createElement('div');
-      catDiv.style.cssText = 'color:var(--text-muted);margin-top:0.15em;font-size:var(--control-font-size)';
+      catDiv.className = 'poi-card-meta';
       catDiv.textContent = `${i18next.t('poi.horde', 'Horde')}: ${creature.category}`;
       tooltipEl.appendChild(catDiv);
     }
@@ -4306,7 +4306,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
 
     if (poi.biome) {
       const biomeDiv = document.createElement('div');
-      biomeDiv.style.cssText = 'color:var(--text-muted);font-size:1em;margin-top:0.2em';
+      biomeDiv.className = 'poi-card-biome';
       const biomeKey = String(poi.biome).startsWith('biome_') ? String(poi.biome) : `biome_${poi.biome}`;
       const biomeLabel = i18next.t(`gameContent.biomes.${biomeKey}`, {
         defaultValue: gameTranslator.translateContent('biomes', String(poi.biome)),
@@ -4316,7 +4316,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     }
   } else {
     const title = document.createElement('div');
-    title.style.cssText = 'font-weight:bold;font-size:1.25em;margin-bottom:0.3em';
+    title.style.cssText = 'font-weight:bold;font-size:1.25em';
     // Synthesized pillar place cards (Mountain Altar, The Tower, ...) carry
     // their display name directly (labelKey wins so the click-only marker's
     // baked name still translates); everything else derives from type.
@@ -4342,7 +4342,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
     const placeIcon = particleIcon(poi as ParticleIconPOI, getSunUnlocks(getActiveDescriptor()));
     if (placeIcon) {
       const header = document.createElement('div');
-      header.style.cssText = 'display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em';
+      header.className = 'poi-card-header';
       const image = document.createElement('img'); image.src = placeIcon; image.alt = '';
       image.width = image.height = 38;
       image.style.cssText = 'object-fit:contain;flex:none';
@@ -4425,9 +4425,9 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
   // Container contents — show items inside chests/shops/bosses
   if (CONTAINER_TYPES.has(poi.type) && poi.items && Array.isArray(poi.items) && poi.items.some((i: any) => !i.ignore)) {
     const contDiv = document.createElement('div');
-    contDiv.style.cssText = 'margin-top:0.5em;border-top:0.065em solid var(--border-strong);padding-top:0.3em';
+    contDiv.className = 'poi-card-section';
     const contLabel = document.createElement('div');
-    contLabel.style.cssText = 'font-size:1em;color:var(--text-muted);margin-bottom:0.2em';
+    contLabel.className = 'poi-card-meta';
     const isBossDrop = [
       'triangle_boss',
       'alchemist_boss',
@@ -4450,7 +4450,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       : `${i18next.t('poi.contains', 'Contains')}:`;
     contDiv.appendChild(contLabel);
     const contRow = document.createElement('div');
-    contRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center';
+    contRow.className = 'poi-card-slots';
     // Render a content sprite at an integer multiple of its native size so
     // nearest-neighbour scaling stays perfectly sharp (sprites have varied
     // native sizes; spell cards are 20px, items/wands differ).
@@ -4498,8 +4498,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       // matching the regular wand POI card.
       if (ci.type === 'wand') {
         const wandBox = document.createElement('div');
-        wandBox.style.cssText =
-          'display:flex;align-items:center;gap:0.4em;flex:1 1 100%;min-width:0;background:var(--surface-2);border-radius:0.2em;padding:0.15em 0.3em;border:0.065em solid var(--border-strong)';
+        wandBox.className = 'poi-loot-chip poi-loot-wand';
         if (ciKey) {
           const n = getSpriteNativeSize(ciKey);
           // 3x so the (thin) wand reads at roughly spell-cell height and isn't
@@ -4529,7 +4528,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
           slots.push({ id: sp ? (typeof sp === 'string' ? sp : (sp?.id ?? sp)) : null, isAC: false });
         }
         const slotsGrid = document.createElement('div');
-        slotsGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2em;align-items:center;flex:1 1 0;min-width:0';
+        slotsGrid.className = 'poi-card-slots poi-wand-deck';
         for (const slot of slots) {
           const cell = document.createElement('div');
           cell.style.cssText = `width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:0.065em solid ${slot.isAC ? '#c8a2ff' : 'var(--border)'};border-radius:0.15em;box-sizing:border-box`;
@@ -4555,8 +4554,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       // Gold: show sprite + amount
       if (ci.item === 'gold' || ci.item === 'goldnugget') {
         const goldBox = document.createElement('div');
-        goldBox.style.cssText =
-          'display:flex;align-items:center;gap:0.2em;background:var(--surface-2);border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid var(--border-strong)';
+        goldBox.className = 'poi-loot-chip';
         if (ciKey) {
           const canvas = scaledSprite(ciKey);
           if (canvas) goldBox.appendChild(canvas);
@@ -4576,8 +4574,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       // Hearts: show sprite + HP label
       if (ci.item === 'heart' || ci.item === 'heart_bigger' || ci.item === 'full_heal') {
         const heartBox = document.createElement('div');
-        heartBox.style.cssText =
-          'display:flex;align-items:center;gap:0.2em;background:var(--surface-2);border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid var(--border-strong)';
+        heartBox.className = 'poi-loot-chip';
         if (ciKey) {
           const canvas = scaledSprite(ciKey);
           if (canvas) heartBox.appendChild(canvas);
@@ -4614,8 +4611,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
       }
       if (ciKey) {
         const itemBox = document.createElement('div');
-        itemBox.style.cssText =
-          'display:flex;align-items:center;gap:0.2em;background:var(--surface-2);border-radius:0.15em;padding:0.065em 0.3em;border:0.065em solid var(--border-strong)';
+        itemBox.className = 'poi-loot-chip';
         const canvas = scaledSprite(ciKey);
         if (canvas) itemBox.appendChild(canvas);
         const textSpan = document.createElement('span');
@@ -4646,7 +4642,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
   // Dark chest: first-open also unlocks the Copy Trail spell.
   if (poi.type === 'chest' && (poi as any).chestVariant === 'dark') {
     const unlockDiv = document.createElement('div');
-    unlockDiv.style.cssText = 'margin-top:0.4em;display:flex;align-items:center;gap:0.3em;color:var(--text-muted);font-size:1em';
+    unlockDiv.style.cssText = 'display:flex;align-items:center;gap:0.3em;color:var(--text-muted);font-size:1em';
     const lbl = document.createElement('span');
     lbl.textContent = i18next.t('poi.unlocks', 'Unlocks') + ':';
     unlockDiv.appendChild(lbl);
@@ -4665,7 +4661,7 @@ function showMarkerTooltip(item: MarkerItem, viewer: any, request = poiCards.beg
 
   // Footer: position info
   const footer = document.createElement('div');
-  footer.style.cssText = 'margin-top:0.5em;color:var(--text-faint);font-size:var(--control-font-size);border-top:0.065em solid var(--border-strong);padding-top:0.3em';
+  footer.className = 'poi-card-footer';
   footer.textContent = `${i18next.t('poi.pw', 'PW')} ${item.pw} (${Math.round(item.poi.x)}, ${Math.round(item.poi.y)})`;
   if (usesDustAnimation(poi)) {
     footer.classList.add('dust-credit-footer');
@@ -4998,7 +4994,7 @@ function showOrbTooltip(
   (tooltipEl as any).__rebuild = () => showOrbTooltip(orb, iconUrl, viewer, anchor, request);
   tooltipEl.className = 'marker-tooltip';
   const header = document.createElement('div');
-  header.style.cssText = 'display:flex;align-items:center;gap:0.5em;margin-bottom:0.3em';
+  header.className = 'poi-card-header';
   const spriteImg = document.createElement('img');
   spriteImg.src = iconUrl;
   spriteImg.style.cssText = 'width:28px;height:36px;image-rendering:pixelated;object-fit:contain';
@@ -5011,13 +5007,13 @@ function showOrbTooltip(
 
   if (orb.text) {
     const desc = document.createElement('div');
-    desc.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic;margin-top:0.15em';
+    desc.style.cssText = 'color:var(--text-muted);font-size:var(--control-font-size);font-style:italic';
     desc.textContent = orb.text;
     tooltipEl.appendChild(desc);
   }
 
   const footer = document.createElement('div');
-  footer.style.cssText = 'margin-top:0.5em;color:var(--text-faint);font-size:var(--control-font-size);border-top:0.065em solid var(--border-strong);padding-top:0.3em';
+  footer.className = 'poi-card-footer';
   footer.textContent = `(${Math.round(orb.x)}, ${Math.round(orb.y)})`;
   tooltipEl.appendChild(footer);
 

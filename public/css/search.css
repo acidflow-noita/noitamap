@@ -133,12 +133,15 @@
   border-radius: 0;
   cursor: pointer;
   transition: background-color 0.15s ease-in-out;
-  padding: 0.5rem 0.75rem;
+  padding: var(--panel-padding) var(--section-gap);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+#unifiedSearchResults :is(.search-no-results-note, .search-result-notice) {
+  padding: var(--panel-padding) var(--section-gap);
+}
 #unifiedSearchResults .list-group-item.d-flex {
   white-space: normal;
   overflow: visible;

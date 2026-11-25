@@ -32,12 +32,45 @@
   padding-inline: var(--bs-spacer-6) var(--panel-padding);
 }
 .poi-card-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: var(--section-gap);
   min-block-size: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  padding-block: var(--panel-padding);
+  padding-block: var(--bs-spacer-1) var(--section-gap);
   padding-inline: var(--bs-spacer-6);
 }
+.poi-card-header { display: flex; align-items: center; gap: var(--panel-padding); min-inline-size: 0; }
+.poi-card-titles { display: grid; gap: var(--bs-spacer-1); min-inline-size: 0; overflow-wrap: anywhere; }
+.poi-card-biome, .poi-card-meta { color: var(--text-muted); }
+.poi-card-footer {
+  border-block-start: 1px solid var(--border-strong);
+  padding-block-start: var(--panel-padding);
+  color: var(--text-faint);
+}
+.poi-card-section {
+  display: grid;
+  gap: var(--panel-padding);
+  border-block-start: 1px solid var(--border-strong);
+  padding-block-start: var(--section-gap);
+}
+.poi-card-slots { display: flex; flex-wrap: wrap; align-items: center; gap: var(--control-gap); }
+.poi-loot-chip {
+  display: flex;
+  align-items: center;
+  min-inline-size: 0;
+  gap: var(--bs-spacer-1);
+  padding: var(--bs-spacer-1) var(--control-gap);
+  border: 1px solid var(--border-strong);
+  border-radius: .2em;
+  background: var(--surface-2);
+}
+.poi-loot-wand { flex: 1 1 100%; }
+.poi-wand-deck { flex: 1 1 0; min-inline-size: 0; }
+.poi-card-body > :is(.extended-info-section, .poi-spawn-section) { margin-block-start: 0; }
 .poi-card-controls > * { flex-shrink: 0; }
 .poi-card-controls .btn-group { flex-shrink: 1; }
 .poi-card-icon-button { width: var(--control-height); padding-inline: 0; }
@@ -45,23 +78,22 @@
 .poi-card-stats {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: .125rem var(--control-gap);
+  gap: var(--bs-spacer-1) var(--panel-padding);
   align-items: baseline;
-  margin-bottom: var(--panel-padding);
   font-variant-numeric: tabular-nums;
 }
 .poi-card-stat-label { color: var(--text-muted); overflow-wrap: anywhere; }
 .poi-card-stat-value { min-width: 0; color: var(--text); }
 
 .poi-spawn-section {
-  margin-top: .5em;
-  border-top: 1px solid var(--border-strong);
-  padding-top: .3em;
+  margin-block-start: var(--section-gap);
+  border-block-start: 1px solid var(--border-strong);
+  padding-block-start: var(--section-gap);
 }
-.poi-spawn-heading { color: var(--text-muted); margin-bottom: .25em; }
+.poi-spawn-heading { color: var(--text-muted); margin-block-end: var(--control-gap); }
 .poi-spawn-list {
   display: grid;
-  gap: .25em;
+  gap: var(--bs-spacer-1);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -70,7 +102,7 @@
   display: flex;
   align-items: center;
   gap: .5em;
-  margin-bottom: .25em;
+  margin-block-end: var(--control-gap);
   color: var(--text-muted);
   font-size: .85em;
   font-weight: 600;
@@ -81,7 +113,7 @@
   border-top: 1px solid var(--border-strong);
 }
 .poi-spawn-relationship {
-  margin-top: .35em;
+  margin-block-start: var(--panel-padding);
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
@@ -112,11 +144,13 @@
 
 /* Keep each label beside its value. Balanced newspaper columns moved rows
    between columns as asynchronous sections and translated text changed height. */
+.marker-tooltip .extended-info-group { display: grid; gap: var(--bs-spacer-1); }
 .marker-tooltip .extended-info-group--cols { columns: auto; }
+.marker-tooltip .extended-info-group > .extended-info-subhead { margin-block-end: 0; }
 .marker-tooltip .extended-info-row {
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: .125rem var(--control-gap);
-  padding-block: .125rem;
+  gap: var(--bs-spacer-1) var(--panel-padding);
+  padding-block: 0;
 }
 .marker-tooltip .extended-info-label {
   color: var(--text-muted);

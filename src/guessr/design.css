@@ -362,9 +362,17 @@ body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none
 #guess-app .stream-setup-card h2 {
   font-size: 1.0625rem;
 }
+#guess-app .setup-access:not([hidden]) {
+  display: grid;
+  gap: var(--section-gap);
+}
+#guess-app .stream-streaming-setting {
+  display: grid;
+  gap: var(--control-gap);
+}
 #guess-app .stream-setup-card .stepper-item > div {
   display: grid;
-  gap: 0.625rem;
+  gap: var(--panel-padding);
   inline-size: 100%;
 }
 #guess-app .round-settings-fields {
@@ -464,7 +472,7 @@ body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none
 #guess-app .daily-score-summary {
   display: grid;
   align-items: center;
-  gap: 0.375rem 1rem;
+  gap: var(--panel-padding) var(--game-gutter);
   padding: 1rem 1.25rem;
   border: 0;
   border-inline-start: 3px solid var(--daily-strong);

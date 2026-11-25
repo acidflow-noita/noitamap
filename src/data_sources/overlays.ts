@@ -416,10 +416,9 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: Point
   popup.dataset.poiId = poiId;
 
   const headerContainer = document.createElement("div");
-  headerContainer.style.cssText = "display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 4px; min-width: 150px;";
+  headerContainer.className = "overlay-popup-heading";
 
   const nameElement = document.createElement('h2');
-  nameElement.style.margin = "0";
   // Translate the name based on overlay type
   let translatedName = name;
   if (overlayType) {
@@ -445,18 +444,10 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: Point
   headerContainer.appendChild(nameElement);
 
   const shareBtn = document.createElement("button");
-  shareBtn.className = "btn btn-sm btn-outline theme-secondary";
-  shareBtn.style.cssText = `
-    display: flex; align-items: center; justify-content: center; 
-    padding: 2px 8px; font-size: 12px; background: rgba(255,255,255,0.1); 
-    border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; 
-    color: #ccc; cursor: pointer; transition: all 0.2s;
-    flex-shrink: 0;
-  `;
+  shareBtn.type = "button";
+  shareBtn.className = "btn btn-sm btn-outline theme-secondary poi-card-icon-button";
   shareBtn.innerHTML = '<i class="bi bi-share"></i>';
   shareBtn.title = i18next.t("share.copyLink", { defaultValue: "Copy direct link" });
-  shareBtn.onmouseenter = () => { shareBtn.style.background = "rgba(255,255,255,0.2)"; };
-  shareBtn.onmouseleave = () => { shareBtn.style.background = "rgba(255,255,255,0.1)"; };
   shareBtn.onclick = (e) => {
     e.stopPropagation();
     const finalUrl = (window as any).getShareUrl(poiId);
@@ -478,21 +469,18 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: Point
 
   if ((overlayType as string) === 'hiddenMessages') {
     const container = document.createElement('div');
-    container.style.display = 'flex';
-    container.style.gap = '16px';
-    container.style.alignItems = 'flex-start';
+    container.className = 'overlay-popup-illustration';
 
     if (fileName) {
       const imgElement = document.createElement('img');
       imgElement.src = fileName;
-      imgElement.style.width = '20vw';
       imgElement.style.display = 'block';
       imgElement.classList.add('pixelated-image');
       container.appendChild(imgElement);
     }
 
     const textContainer = document.createElement('div');
-    textContainer.style.width = '30vw';
+    textContainer.className = 'overlay-popup-caption';
 
     if (text !== undefined) {
       const textElement = document.createElement('p');
@@ -508,7 +496,6 @@ function createOverlayPopup({ name, aliases, text, wiki, fileName, x, y }: Point
       wikiLink.classList.add('wikiLink');
       attachWikiLinkPopover(wikiLink);
       wikiLink.style.display = 'inline-block';
-      wikiLink.style.marginTop = '8px';
       textContainer.appendChild(wikiLink);
     }
 

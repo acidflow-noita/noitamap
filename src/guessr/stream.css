@@ -94,12 +94,13 @@
 [aria-sort='ascending'] > .stream-table-sort::after { visibility: visible; transform: rotate(225deg); vertical-align: 0; }
 [aria-sort='descending'] > .stream-table-sort::after { visibility: visible; }
 .stream-score-table { --bs-table-color: var(--text); --bs-table-bg: transparent; --bs-table-border-color: var(--border); border-collapse: collapse; }
-.network-review { margin-block-start: .25rem; max-inline-size: 32rem; white-space: normal; }
+.network-review { margin-block-start: var(--control-gap); max-inline-size: 32rem; white-space: normal; }
 .network-review > summary { color: var(--danger-fg); font-size: .75rem; font-weight: 600; cursor: pointer; }
-.network-review > p { color: var(--text-muted); font-size: .8125rem; font-weight: 400; margin-block: .375rem; }
-.network-review-summary { max-inline-size: none; margin-block: .5rem; padding: .5rem .75rem; border: 1px solid var(--danger-fg); border-radius: var(--radius-control); }
-.network-review-summary h3 { color: var(--danger-fg); font-size: .875rem; margin-block: .5rem; }
-.network-review-summary p { color: var(--text-muted); font-size: .8125rem; }
+.network-review > p { color: var(--text-muted); font-size: .8125rem; font-weight: 400; margin: var(--panel-padding) 0 0; }
+.network-review-summary { max-inline-size: none; margin-block: var(--section-gap); padding: var(--section-gap); border: 1px solid var(--danger-fg); border-radius: var(--radius-control); }
+.network-review-summary > section { display: grid; gap: var(--bs-spacer-1); margin-block-start: var(--section-gap); }
+.network-review-summary h3 { color: var(--danger-fg); font-size: .875rem; margin: 0; }
+.network-review-summary p { margin: 0; color: var(--text-muted); font-size: .8125rem; }
 .stream-score-table :is(th, td) { padding: .65rem .9rem; border-block-end: 1px solid var(--border); vertical-align: middle; }
 .stream-score-table th { font-size: .8125rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
 .stream-channel-link { color: inherit; text-decoration: none; }
@@ -151,7 +152,7 @@
 .stream-clue-empty { flex: 1; min-block-size: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: .75rem; padding: clamp(1.5rem, 4vw, 3rem); color: var(--text-muted); font-size: 1rem; }
 .stream-clue-empty > strong { font-size: clamp(1.5rem, 3vw, 2.25rem); color: var(--text); }
 .stream-clue-empty > p { max-inline-size: 40ch; }
-.stream-clue-empty p { margin-block: .5rem; }
+.stream-clue-empty p { margin: 0; }
 .stream-connection-bar { grid-column: 1 / -1; grid-row: 1; }
 .stream-chat-header { display: flex; flex-wrap: wrap; align-items: center; flex: none; gap: var(--game-gutter); padding: .5rem; font-size: .875rem; }
 .stream-chat-header.stream-toolbar { display: grid; padding: .5rem .75rem; }
@@ -618,8 +619,9 @@
 }
 .stream-history-player {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--control-gap) var(--section-gap);
   margin-block-end: 1rem;
 }
 .stream-history-player .combobox {

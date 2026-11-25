@@ -464,7 +464,7 @@ export class StreamUI {
     };
     automatic.onchange = seconds.onchange = updateTimerSetting; updateTimerSetting();
     const gameLengthRow = el('label', '', 'stream-length-setting');
-    const gameLength = el('select'); gameLength.className = 'form-select';
+    const gameLength = el('select'); gameLength.className = 'form-control';
     for (const count of STREAM_ROUND_OPTIONS) {
       const option = el('option', () => tr('{{rounds}} rounds', { rounds: formatGuessrNumber(count), count }));
       option.value = String(count); gameLength.append(option);

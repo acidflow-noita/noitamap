@@ -6,8 +6,11 @@
   --bs-dialog-width: 46rem;
 }
 .pro-dialog .dialog-body {
-  padding: 1.5rem 2rem 2rem;
+  display: grid;
+  gap: var(--bs-spacer-5);
+  padding: var(--section-gap) var(--bs-spacer-7) var(--bs-spacer-7);
 }
+.pro-dialog .dialog-body > p { margin: 0; }
 /* Each provider can have a connection status, reconnect/disconnect actions,
    subscription and gift controls. Keep those in their natural vertical flow. */
 .pro-dialog .pro-columns {

@@ -40,7 +40,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: center;
-  gap: 0.375rem;
+  gap: var(--panel-padding);
   padding: 1rem 1.25rem;
   min-inline-size: 0;
   border: 0;
@@ -75,8 +75,8 @@
 .lobby-mode-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-block-start: 0.375rem;
+  gap: var(--panel-padding);
+  margin-block-start: var(--bs-spacer-1);
 }
 .lobby-mode-actions > button,
 .lobby-mode-heading > :is(h2, .badge) {
@@ -202,8 +202,8 @@
 @media (max-width: 35rem) {
   .lobby-mode:not(.lobby-feature) {
     grid-template: "heading heading" auto "art description" auto "actions actions" auto / 47% minmax(0, 1fr);
-    gap: .25rem .75rem;
-    padding: .75rem;
+    gap: var(--panel-padding) var(--section-gap);
+    padding: var(--section-gap);
   }
   .lobby-mode:not(.lobby-feature) .lobby-mode-image {
     grid-area: art;
