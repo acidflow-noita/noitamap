@@ -82,6 +82,55 @@ function referenceTile(f: ReturnType<typeof fixture>, level: number, x: number, 
 }
 
 describe("scene artwork tiles through native canvas and installed OSD loader", () => {
+  it("draws the authored preview while loading a visible placement once, then redraws its textured floor", async () => {
+    const image = (color: string) => {
+      const canvas = createCanvas(8, 8), ctx = canvas.getContext('2d');
+      ctx.fillStyle = color; ctx.fillRect(0, 0, 8, 8);
+      return canvas as unknown as ImageBitmap;
+    };
+    const preview = image('#ff0000'), floor = image('#00ff00');
+    const images = new Map([['preview', preview]]);
+    let done!: (bitmap: ImageBitmap) => void;
+    const load = vi.fn(() => new Promise<ImageBitmap>(resolve => { done = resolve; }));
+    const hidden = vi.fn(), redraw = vi.fn();
+    const { source } = createPixelSceneTileSource({ bitmapByKey: images, generationId: 8, redraw, items: [
+      { sceneKey: 'room', previewKey: 'preview', loadBitmap: load, osdX: 0, osdY: 0, w: 8, h: 8 },
+      { sceneKey: 'west', previewKey: 'preview', loadBitmap: hidden, osdX: 250, osdY: 0, w: 8, h: 8 },
+    ] });
+    try {
+      const ctx = createCanvas(10, 10).getContext('2d');
+      const draw = () => source.__drawViewport(ctx, { imageToViewportCoordinates: (x: number, y: number) => ({ x, y }) },
+        { pixelFromPoint: (p: { x: number; y: number }) => ({ x: p.x - 50, y: p.y - 50 }) });
+      draw(); draw();
+      expect(load).toHaveBeenCalledOnce();
+      expect(hidden).not.toHaveBeenCalled();
+      expect([...ctx.getImageData(2, 2, 1, 1).data]).toEqual([255, 0, 0, 255]);
+      images.set('room', floor); done(floor); await Promise.resolve();
+      expect(redraw).toHaveBeenCalledOnce();
+      draw();
+      expect([...ctx.getImageData(2, 2, 1, 1).data]).toEqual([0, 255, 0, 255]);
+    } finally { source.destroy(); }
+  });
+
+  it("waits for the real material pixels before caching an OSD tile", async () => {
+    const canvas = createCanvas(8, 8), ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#123456'; ctx.fillRect(0, 0, 8, 8);
+    let resolve!: (bitmap: ImageBitmap) => void;
+    const work = new Promise<ImageBitmap>(done => { resolve = done; });
+    const loadBitmap = vi.fn(() => work);
+    const f = tileFixture([{ sceneKey: 'floor', osdX: 0, osdY: 0, w: 8, h: 8, loadBitmap }], new Map());
+    try {
+      const request = f.request(f.source.maxLevel);
+      await Promise.resolve();
+      expect(request.callback).not.toHaveBeenCalled();
+      resolve(canvas as unknown as ImageBitmap);
+      await request.done;
+      const tile = request.callback.mock.calls[0][0];
+      expect([...tile.getImageData(52, 52, 1, 1).data]).toEqual([18, 52, 86, 255]);
+      expect(loadBitmap).toHaveBeenCalledOnce();
+    } finally { f.source.destroy(); }
+  });
+
   it("matches uninterrupted artwork at overview/detail levels and clipped right/bottom edges", async () => {
     const f = fixture();
     try {

@@ -238,6 +238,43 @@ export function applySceneForceAir(
   }
 }
 
+/** Shared material pass for baked terrain and position-dependent live scene art. */
+export async function loadSceneMaterialPainter(): Promise<ScenePainter> {
+  const sceneModule =
+    await import("noita-telescope-full-pixels/pixel_scene_generation.js");
+  if (!(await sceneModule.initPixelSceneTextures()))
+    throw new Error(
+      "Full-resolution scene material textures could not be loaded",
+    );
+  return (scene, source) => {
+    let raw: Uint8Array | Uint8ClampedArray = source.data;
+    let biome = scene.key.split("/")[0];
+    for (const part of (scene.variantKey ?? "").split("&")) {
+      const eq = part.indexOf("=");
+      if (eq < 0) continue;
+      if (part.slice(0, eq) === "biome") biome = part.slice(eq + 1);
+      else
+        raw = sceneModule.recolorPixelScene(
+          raw,
+          parseInt(part.slice(0, eq), 16),
+          parseInt(part.slice(eq + 1), 16),
+        );
+    }
+    const p = sceneModule.texturePixelSceneForBiome(
+      scene.name,
+      raw,
+      source.width,
+      source.height,
+      biome,
+      scene.x,
+      scene.y,
+    );
+    applySceneForceAir(raw, p);
+    applySceneVisualArt(p.pixels, source);
+    return p;
+  };
+}
+
 const compositors = new WeakMap<
   TerrainSceneData,
   Promise<ReturnType<typeof createSceneTileCompositor>>
@@ -248,41 +285,8 @@ export function createTerrainScenes(
 ) {
   let pending = compositors.get(data);
   if (!pending) {
-    pending = (async () => {
-      const sceneModule =
-        await import("noita-telescope-full-pixels/pixel_scene_generation.js");
-      if (!(await sceneModule.initPixelSceneTextures()))
-        throw new Error(
-          "Full-resolution scene material textures could not be loaded",
-        );
-      return createSceneTileCompositor(data, (scene, source) => {
-        let raw: Uint8Array | Uint8ClampedArray = source.data;
-        let biome = scene.key.split("/")[0];
-        for (const part of (scene.variantKey ?? "").split("&")) {
-          const eq = part.indexOf("=");
-          if (eq < 0) continue;
-          if (part.slice(0, eq) === "biome") biome = part.slice(eq + 1);
-          else
-            raw = sceneModule.recolorPixelScene(
-              raw,
-              parseInt(part.slice(0, eq), 16),
-              parseInt(part.slice(eq + 1), 16),
-            );
-        }
-        const p = sceneModule.texturePixelSceneForBiome(
-          scene.name,
-          raw,
-          source.width,
-          source.height,
-          biome,
-          scene.x,
-          scene.y,
-        );
-        applySceneForceAir(raw, p);
-        applySceneVisualArt(p.pixels, source);
-        return p;
-      }, 64 * 1024 * 1024, airBackground);
-    })();
+    pending = loadSceneMaterialPainter().then(paint =>
+      createSceneTileCompositor(data, paint, 64 * 1024 * 1024, airBackground));
     compositors.set(data, pending);
   }
   return pending;

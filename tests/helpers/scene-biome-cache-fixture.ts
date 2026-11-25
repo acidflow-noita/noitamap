@@ -1,3 +1,4 @@
+import { checkOrbRoomFloors } from './orb-room-floor-fixture';
 import { generateDynamicMap, releaseParallelWorlds } from '../../src/telescope/telescope-adapter';
 // @ts-ignore -- the test build exposes the real compositor/cache orchestration.
 import { sceneRenderKey, compositeSceneBitmap, getScenePngIndex, __warmSceneBuild, __clearSceneMemory } from '../../src/telescope/telescope-osd-bridge';
@@ -48,6 +49,6 @@ export async function run() {
     const third = await __warmSceneBuild(selected); leases.push(third);
     const disk = await inspect(third), diskComposites = (globalThis as any).__sceneComposites - coldComposites;
     return { references, differentPixels, cold, coldComposites, warm, warmComposites, shared, disk, diskComposites,
-      legacyEntryKept: (globalThis as any).__warmSceneStore.has(sceneKey) };
+      legacyEntryKept: (globalThis as any).__warmSceneStore.has(sceneKey), orbFloors: await checkOrbRoomFloors() };
   } finally { for (const lease of leases) lease.release(); releaseParallelWorlds(); }
 }

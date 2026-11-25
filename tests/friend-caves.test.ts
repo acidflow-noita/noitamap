@@ -43,7 +43,7 @@ const bitmap = async (source: any) => {
 beforeAll(async () => {
   archive.zip = await JSZip.loadAsync(readFileSync('public/data.zip'));
   const { makeBlackTransparent } = functions('lib/noita-telescope/js/image_processing.js', ['makeBlackTransparent'], {});
-  for (const name of ['friendroom', 'cavern', 'solid_wall_hidden_cavern', 'orbroom']) {
+  for (const name of ['friendroom', 'cavern', 'solid_wall_hidden_cavern']) {
     const pixels = decodePngToRgba(new Uint8Array(readFileSync(`lib/noita-telescope/data/pixel_scenes/general/${name}.png`)).buffer);
     // Both forks apply this before exposing a material scene to the host.
     makeBlackTransparent(pixels.data);
@@ -91,28 +91,6 @@ it('does not mistake Friend material PNGs for visual artwork', async () => {
   expect(index.visualByName.get('cavern')).toBeUndefined();
   expect(index.visualByName.get('solid_wall_hidden_cavern')).toBeUndefined();
   expect(index.bgByName.get('cavern')).toBe('data/biome_impl/cavern_background.png');
-});
-
-it('paints the game orb-room backdrop through the unoccupied pixels of the live scene', async () => {
-  const key = 'general/orbroom', pixels = raw.get(key)!;
-  const scene = { key, name: 'orbroom', x: -10752, y: 2560, width: 512, height: 512,
-    imgElement: pixels.data, variantKey: 'biome=general@orbroom_02' };
-  const index = await bridge.getScenePngIndex();
-  const art = decodePngToRgba(await archive.zip.file('data/biome_impl/orbroom_background.png').async('arraybuffer'));
-  const visual = decodePngToRgba(await archive.zip.file('data/biome_impl/orbroom_visual.png').async('arraybuffer'));
-  const result = await bridge.compositeSceneBitmap(key, scene, index, 1195917350);
-  const actual = result.bitmap.getContext('2d').getImageData(0, 0, 512, 512).data;
-  let exposed = 0, mismatches = 0;
-  for (let i = 0; i < actual.length; i += 4) {
-    if (pixels.data[i + 3] || visual.data[i + 3] || art.data[i + 3] !== 255) continue;
-    exposed++;
-    if (actual[i] !== art.data[i] || actual[i+1] !== art.data[i+1] ||
-        actual[i+2] !== art.data[i+2] || actual[i+3] !== 255) mismatches++;
-  }
-  result.bitmap.close();
-  expect(exposed).toBeGreaterThan(100000);
-  expect(mismatches).toBe(0);
-  expect(bridge.sceneRenderKey(scene)).not.toBe(bridge.sceneRenderKey({ ...scene, variantKey: 'biome=general@orbroom_05' }));
 });
 
 it.each(['friendroom', 'cavern'])('fills only carved air in %s with correctly phased native background pixels', async name => {

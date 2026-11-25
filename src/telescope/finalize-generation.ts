@@ -2,6 +2,7 @@ import { reconcileTempleCrystals } from "./temple-crystals";
 import type { GenerationResult } from "./telescope-adapter";
 import { completeGenerationBossPOIs } from "./boss-pois";
 import { normalizeScenePOIs } from "./scene-pois";
+import { withOrbRoomBiome } from "./terrain-policy";
 import { CAPTURE_X_LIMIT } from "./world-coverage";
 
 type WorldRecords = Pick<GenerationResult, "gameMode" | "worldSize" | "worldCenter" | "biomeData" | "poisByPW" | "pixelScenesByPW"> & Partial<Pick<GenerationResult, "isNGP">>;
@@ -18,8 +19,12 @@ export function finalizeGeneration<T extends WorldRecords>(input: T): T {
       poisByPW[key] = pois.filter(p => p.x >= -CAPTURE_X_LIMIT && p.x < CAPTURE_X_LIMIT);
   }
   for (const [key, scenes] of Object.entries(pixelScenesByPW)) {
-    if (Math.abs(parseInt(key, 10)) >= 2)
-      pixelScenesByPW[key] = scenes.filter(s => s.x < CAPTURE_X_LIMIT && s.x + Math.max(1, s.width || 1) > -CAPTURE_X_LIMIT);
+    const visible = Math.abs(parseInt(key, 10)) >= 2
+      ? scenes.filter(s => s.x < CAPTURE_X_LIMIT && s.x + Math.max(1, s.width || 1) > -CAPTURE_X_LIMIT)
+      : scenes;
+    pixelScenesByPW[key] = result.isNGP
+      ? visible.map(scene => withOrbRoomBiome(scene, result.biomeData.pixels, result.worldSize, result.worldCenter))
+      : visible;
   }
   return { ...result, poisByPW, pixelScenesByPW };
 }

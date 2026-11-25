@@ -10,6 +10,8 @@ export interface SceneTileItem {
   w: number;
   h: number;
   sceneKey: string;
+  loadBitmap?: () => Promise<ImageBitmap | undefined>;
+  previewKey?: string;
 }
 
 /** The caller supplies decoded scene artwork. This separate, bounded cache
@@ -22,6 +24,7 @@ export function createPixelSceneTileSource(options: {
   maxCacheBytes?: number;
   /** Shared decoded artwork is released by its layer's lease owner. */
   releaseBitmaps?: () => void;
+  redraw?: () => void;
 }) {
   const { items, bitmapByKey, generationId } = options;
   if (!items.length) throw new Error("Cannot tile an empty scene layer");
@@ -49,6 +52,7 @@ export function createPixelSceneTileSource(options: {
   let destroyed = false, rendered = 0, renderMs = 0, chunks = 0, maxChunkMs = 0;
   type Work = { aborted: boolean; subscribers: number; promise: Promise<CanvasRenderingContext2D> };
   const inflight = new Map<string, Work>();
+  const viewportLoads = new Set<string>();
   const pending = new Set<(fail?: boolean) => void>();
   // Explicit opt-in to the existing HD coverage scheduler, without pretending
   // this transparent artwork layer is GPU terrain (or applying its smoothing).
@@ -69,7 +73,19 @@ export function createPixelSceneTileSource(options: {
       // needed when original artwork is drawn at its exact world placement.
       const hits = index.search(bounds.left, bounds.top, bounds.right, bounds.bottom).sort((a, b) => a - b);
       for (const id of hits) {
-        const scene = items[id], bitmap = bitmapByKey.get(scene.sceneKey);
+        const scene = items[id];
+        let bitmap = bitmapByKey.get(scene.sceneKey);
+        if (!bitmap && scene.loadBitmap) {
+          if (!viewportLoads.has(scene.sceneKey)) {
+            viewportLoads.add(scene.sceneKey);
+            void scene.loadBitmap().then(ready => {
+              if (ready && !destroyed) options.redraw?.();
+            }).catch(error => {
+              if (!destroyed) console.warn('[Pixel scenes] Room material unavailable:', error);
+            }).finally(() => viewportLoads.delete(scene.sceneKey));
+          }
+          if (scene.previewKey) bitmap = bitmapByKey.get(scene.previewKey);
+        }
         if (bitmap) context.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height,
           scene.osdX - originX, scene.osdY - originY, scene.w, scene.h);
       }
@@ -125,7 +141,13 @@ export function createPixelSceneTileSource(options: {
       };
       try {
         for (let n = 0; n < hits.length; n++) {
-          const item = items[hits[n]], bitmap = bitmapByKey.get(item.sceneKey);
+          const item = items[hits[n]];
+          let bitmap = bitmapByKey.get(item.sceneKey);
+          if (!bitmap && item.loadBitmap) {
+            bitmap = await item.loadBitmap();
+            cancelled();
+            if (!bitmap) throw new DOMException("Scene placement retired", "AbortError");
+          }
           if (bitmap) {
             context.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height,
               item.osdX - originX, item.osdY - originY, item.w, item.h);

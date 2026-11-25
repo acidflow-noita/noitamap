@@ -4,7 +4,7 @@ import { Worker } from 'node:worker_threads';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-it.each([true, false])('preserves the generated sky/hell shop colours through memory and PNG-cache reuse (full=%s)', async fullPixels => {
+it.each([true, false])('preserves shop variants and location-specific NG+ orb floors (full=%s)', async fullPixels => {
   const root = resolve(import.meta.dirname, '..'), bundle = await mkdtemp('/tmp/noitamap-scene-biome-');
   try {
     await build({ configFile: resolve(root, 'vite.config.ts'), publicDir: false, logLevel: 'error',
@@ -46,6 +46,21 @@ it.each([true, false])('preserves the generated sky/hell shop colours through me
       expect(result[phase].total).toBe(2);
     }
     expect(result).toMatchObject({ coldComposites: 2, warmComposites: 0, diskComposites: 0, shared: true, legacyEntryKept: true });
+    const { samples, initialImages, cancelled } = result.orbFloors;
+    expect(initialImages).toBe(2);
+    expect(cancelled).toBe(true);
+    // Lossless native NG+1 bake for this seed. The rock crop is inside the
+    // white density mask beneath the steps. The pool crop uses a material ID.
+    expect(samples.map((s: any) => s.rock)).toEqual([
+      'e6ab737c0b2c34a9e1abd763aa87d99bb584510bbf8ab398a09948421a51da2c',
+      '44bb0bd7c6ebb5c3c54420cb80871a2440bc0c2c48de0047d8df087406deb253',
+      '3addff449bf886bcdcc12785ab49f1599b14cfd5e97b025cee9f39194e1f832f',
+    ]);
+    for (const sample of samples) {
+      expect(sample).toMatchObject({ biome: 'biome=general@orbroom_02', exposed: 111215, stairs: 31666, artworkErrors: 0,
+        pool: 'dd2ca4543a65a14e8cc286919bfdeb6614c121d7c85ddff5d40f34efdc141779' });
+      expect(sample.colors).toBeGreaterThan(20);
+    }
     console.log('[Shop biome cache]', JSON.stringify({ fullPixels, ...result }));
   } finally { await rm(bundle, { recursive: true, force: true }); }
 }, 90000);

@@ -131,6 +131,24 @@ export const TERRAIN_VERSION = "full-pixel-v21-instant-gold-cavern";
 export const TERRAIN_PIXEL_REVISION = "wang-ownership-628d14c-orb-rooms-v2";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
+/** The legacy scene record only names its shared "general" folder. Its biome-map
+ * cell selects the material bands, including for seeds restored from IndexedDB. */
+export function withOrbRoomBiome<T extends { key: string; x: number; y: number; variantKey?: string }>(
+  scene: T, pixels: Uint32Array, worldSize: number, worldCenter: number,
+): T {
+  if (scene.key !== "general/orbroom") return scene;
+  const column = ((Math.floor(scene.x / 512) + worldCenter) % worldSize + worldSize) % worldSize;
+  const lastRow = Math.floor(pixels.length / worldSize) - 1;
+  const row = Math.min(Math.floor((scene.y - WORLD_TOP) / 512), lastRow);
+  const color = pixels[row * worldSize + column] & 0xffffff;
+  const biome = `orbroom_${(color & 0xff).toString(16).padStart(2, "0")}`;
+  if (color >>> 8 !== 0xffd1 || !Object.hasOwn(NG_PLUS_ORB_BACKGROUNDS, biome)) return scene;
+  const part = `biome=general@${biome}`;
+  const parts = (scene.variantKey ?? "").split("&").filter(Boolean);
+  if (parts.includes(part)) return scene;
+  return { ...scene, variantKey: [...parts.filter(p => !p.startsWith("biome=")), part].join("&") };
+}
+
 /** Only orb rooms on the last biome row repeat into the captured Hell plane. */
 export function repeatBottomOrbRooms<T extends { key: string; x: number; y: number }>(scenes: T[]): T[] {
   const hellTop = WORLD_TOP + WORLD_HEIGHT;

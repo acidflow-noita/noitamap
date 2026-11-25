@@ -2051,7 +2051,12 @@ function sceneRenderKey(scene: { key: string; variantKey?: string; x?: number; y
   if (pitPart(scene.key) >= 0) return `${scene.key}|${seed}|${vk}`;
   const mat = vk.split('&').filter(p => p && !p.startsWith('biome='));
   const key = mat.length ? `${scene.key}|${mat.join('&')}` : scene.key;
-  if (scene.key === 'general/orbroom') return `${key}|orbroom-art-v1|${vk}`;
+  if (scene.key === 'general/orbroom' || scene.key.startsWith('general/orbroom#')) {
+    const layers = pixelSceneConfig.layerOverrides.orbroom ?? pixelSceneConfig.layerOverrides['general/orbroom'];
+    const { background, mid, visual } = { ...pixelSceneConfig.layers, ...layers };
+    if (scene.key === 'general/orbroom#upper' || scene.key === 'general/orbroom#preview') return `${scene.key}|v2|${+background}${+visual}`;
+    return `${scene.key}|orbroom-material-v2|${seed}|${vk}|${scene.x},${scene.y}|${+background}${+mid}${+visual}`;
+  }
   if (scene.key === 'general/the_end_shop') {
     // Both vertical worlds use this template, but its fill colours differ.
     // Version even the default/prefetch variant so old shared PNGs cannot win.
@@ -2121,6 +2126,12 @@ async function compositeSceneBitmap(
   height: number;
   kind: 'composite' | 'fallback';
 } | null> {
+  if (key === 'general/orbroom' || key.startsWith('general/orbroom#')) {
+    const { renderOrbRoomArt } = await import('./orb-room-art');
+    const layers = { ...pixelSceneConfig.layers, ...(pixelSceneConfig.layerOverrides.orbroom ?? pixelSceneConfig.layerOverrides['general/orbroom']) };
+    if (scene.x === undefined || scene.y === undefined) throw new Error('Orb-room art requires its world placement');
+    return renderOrbRoomArt({ ...scene, x: scene.x, y: scene.y }, seed, layers);
+  }
   if (key === GOLD_ROOM_REPAIR_KEY) {
     const raw = await ensurePixelSceneData(GOLD_ROOM_KEY, { art: false });
     const file = (await getDataZip())?.file('data/materials_gfx/rock_hard_border.png');
@@ -2146,8 +2157,7 @@ async function compositeSceneBitmap(
 
   const caveBiome = carvedRoomBiome(key);
   const waterCave = isWaterCaveLayout(key);
-  const orbRoom = key === 'general/orbroom';
-  const skipBg = biome === 'temple' || (biome === 'general' && !caveBiome && !orbRoom);
+  const skipBg = biome === 'temple' || (biome === 'general' && !caveBiome);
 
   const override = pixelSceneConfig.layerOverrides[name] || pixelSceneConfig.layerOverrides[key];
   const wantBg = override?.background ?? pixelSceneConfig.layers.background;
@@ -2164,11 +2174,11 @@ async function compositeSceneBitmap(
   let visualData: ImageData | null = null;
 
   if (zip && bgPath) {
-    bgData = await decodeScenePng(zip, bgPath, !!caveBiome || orbRoom).catch(() => null);
+    bgData = await decodeScenePng(zip, bgPath, !!caveBiome).catch(() => null);
     if (bgData && scene.width > 0 && bgData.width < scene.width / 2) bgData = null;
   }
   if (zip && visualPath) {
-    visualData = await decodeScenePng(zip, visualPath, orbRoom).catch(() => null);
+    visualData = await decodeScenePng(zip, visualPath).catch(() => null);
   }
 
   let midBitmap: ImageBitmap | null = null;
@@ -2314,7 +2324,7 @@ export const prefetchAllSceneBitmaps = createScenePrefetch(async (isCurrent, bef
     try {
       // These scenes need actual placement coordinates, seed or biome context.
       const allKeys = getAllPixelSceneKeys().filter(key => !carvedRoomBiome(key) && !isWaterCaveLayout(key)
-        && key !== 'general/the_end_shop');
+        && key !== 'general/the_end_shop' && key !== 'general/orbroom');
       if (allKeys.length === 0) return;
       const cached = await getCachedSceneBitmapKeys();
       const missing = allKeys.filter(k => !cached.has(k));
@@ -2465,8 +2475,12 @@ async function instantSceneMasks(result: GenerationResult): Promise<StaticTerrai
 async function buildSceneBitmaps(
   result: GenerationResult,
   generationId: number | null
-): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap>; release: () => void } | null> {
-  const validScenes = renderableScenes(result);
+): Promise<{ validScenes: PixelScene[]; bitmapByKey: Map<string, ImageBitmap>; release: () => void; loadFloor?: (key: string) => Promise<ImageBitmap | undefined> } | null> {
+  let validScenes = renderableScenes(result);
+  if (validScenes.some(scene => scene.key === 'general/orbroom')) {
+    const { splitOrbRoomArt } = await import('./orb-room-art');
+    validScenes = await splitOrbRoomArt(validScenes);
+  }
   // Correct the captured base only for live/exported scene composition. Baked
   // daily display skips this entire path and keeps its finished pixels.
   if (!isSimplisticBackground()) validScenes.unshift(...capturedGoldRepairs(validScenes, result.worldSize));
@@ -2493,11 +2507,19 @@ async function buildSceneBitmaps(
 
   try {
     const uniqueKeys = new Map<string, PixelScene>();
+    const floors = new Map<string, PixelScene>();
     for (const scene of validScenes) {
-      const rk = sceneRenderKey(scene, result.seed);
-      if (!uniqueKeys.has(rk)) uniqueKeys.set(rk, scene);
+      if (memory && scene.key === 'general/orbroom#floor') {
+        floors.set(sceneRenderKey(scene, result.seed), scene);
+        // The shared authored stairs can draw immediately. The floor underneath
+        // resolves at its actual position when the viewer requests it.
+        const preview = { ...scene, key: 'general/orbroom#preview' };
+        uniqueKeys.set(sceneRenderKey(preview, result.seed), preview);
+      } else {
+        const rk = sceneRenderKey(scene, result.seed);
+        if (!uniqueKeys.has(rk)) uniqueKeys.set(rk, scene);
+      }
     }
-
     // Most scene bitmaps are seed-independent; Water Cave keys include its
     // seeded edges. Bulk-fetch every cached bitmap in one IDB transaction
     // (~138 separate read transactions add 1-3s on Brave/FF).
@@ -2524,10 +2546,8 @@ async function buildSceneBitmaps(
 
     // A burst of fifty cached decodes/recolors could monopolize the UI thread.
     // Share bounded foreground preparation with real task yields between slices.
-    await prepareAssetJobs(keyArr, async ([rk, scene]) => {
+    const loadBitmap = async (rk: string, scene: PixelScene, cached: Awaited<ReturnType<typeof getCachedSceneBitmap>> | undefined) => {
       if (!current()) return;
-      // ── Cache fast path ────────────────────────────────────────────────
-      const cached = bulkSceneCache.get(rk);
       if (cached) {
         try {
           const bmp = await createImageBitmap(cached.blob);
@@ -2553,7 +2573,8 @@ async function buildSceneBitmaps(
           console.warn('[OSD Bridge] cacheSceneBitmap failed:', rk, e)
         );
       }
-    });
+    };
+    await prepareAssetJobs(keyArr, ([rk, scene]) => loadBitmap(rk, scene, bulkSceneCache.get(rk)));
     if (generationId !== null && currentGenerationId !== generationId) {
       release();
       return null;
@@ -2563,7 +2584,34 @@ async function buildSceneBitmaps(
       `[OSD Bridge] Pixel scene bitmaps: ${bitmapByKey.size}/${uniqueKeys.size} ` +
         `(${memoryHitCount} memory, ${cacheHitCount} disk, ${compositeCount} composite, ${fallbackCount} fallback, ${missingCount} missing)`
     );
-    return { validScenes, bitmapByKey, release };
+    // Limit position-specific painting to one room per task. The initial map
+    // can open without materializing the 48 repetitions in each Hell world.
+    const pendingFloors = new Map<string, Promise<ImageBitmap | undefined>>();
+    let floorQueue = Promise.resolve();
+    const loadFloor = (rk: string): Promise<ImageBitmap | undefined> => {
+      const scene = floors.get(rk);
+      if (!scene || !current()) return Promise.resolve(undefined);
+      const ready = bitmapByKey.get(rk);
+      if (ready) return Promise.resolve(ready);
+      const pending = pendingFloors.get(rk);
+      if (pending) return pending;
+      const hit = memory?.acquire(rk);
+      if (hit) {
+        bitmapByKey.set(rk, hit.bitmap);
+        releases.push(hit.release);
+        return Promise.resolve(hit.bitmap);
+      }
+      const work = floorQueue.then(async () => {
+        if (!current()) return;
+        await new Promise<void>(resume => setTimeout(resume, 0));
+        if (current()) await loadBitmap(rk, scene, await getCachedSceneBitmap(rk));
+        return bitmapByKey.get(rk);
+      }).finally(() => pendingFloors.delete(rk));
+      floorQueue = work.then(() => {}, () => {});
+      pendingFloors.set(rk, work);
+      return work;
+    };
+    return { validScenes, bitmapByKey, release, ...(floors.size ? { loadFloor } : {}) };
   } catch (error) {
     release();
     throw error;
@@ -2625,13 +2673,18 @@ export async function addPixelScenes(viewer: OSDViewer, result: GenerationResult
   const items: SceneTileItem[] = [];
   for (const scene of validScenes) {
     const rk = sceneRenderKey(scene, result.seed);
-    if (!bitmapByKey.has(rk)) continue;
-    items.push({ osdX: scene.x, osdY: scene.y, w: scene.width, h: scene.height, sceneKey: rk });
+    const item: SceneTileItem = { osdX: scene.x, osdY: scene.y, w: scene.width, h: scene.height, sceneKey: rk };
+    if (built.loadFloor && scene.key === 'general/orbroom#floor') {
+      item.loadBitmap = () => built.loadFloor!(rk);
+      item.previewKey = sceneRenderKey({ ...scene, key: 'general/orbroom#preview' }, result.seed);
+    } else if (!bitmapByKey.has(rk)) continue;
+    items.push(item);
   }
   if (items.length === 0) { built.release(); return; }
   try {
     const { source, originX, originY, width: bboxWidth } = createPixelSceneTileSource({
       items, bitmapByKey, generationId, releaseBitmaps: built.release,
+      redraw: () => (viewer.viewer ?? viewer).forceRedraw?.(),
     });
 
     // Complete attachment before the first atomic terrain/art frame is released.
