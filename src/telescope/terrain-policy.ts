@@ -131,6 +131,20 @@ export const TERRAIN_VERSION = "full-pixel-v21-instant-gold-cavern";
 export const TERRAIN_PIXEL_REVISION = "wang-ownership-628d14c-orb-rooms-v2";
 export const WORLD_HEIGHT = 48 * 512;
 export const WORLD_TOP = -14 * 512;
+export const NG_PLUS_WALL_TEXTURE = 'data/materials_gfx/rock_hard_border.png';
+
+/** Every fifth loop paints two EDR walls over the NG+ template. Rock already
+ * present in the template belongs to the capture, including its fixed scenes. */
+export function changedNGPlusWalls(level: number, pixels: Uint32Array, baseRGBA: ArrayLike<number>): Uint16Array | undefined {
+  if (level <= 0 || level % 5 !== 0) return;
+  const cells: number[] = [];
+  for (let i = 0; i < pixels.length; i++) {
+    if ((pixels[i] & 0xffffff) !== 0x3d3d3d) continue;
+    const p = i * 4;
+    if (baseRGBA[p] !== 0x3d || baseRGBA[p + 1] !== 0x3d || baseRGBA[p + 2] !== 0x3d) cells.push(i);
+  }
+  return Uint16Array.from(cells);
+}
 /** The legacy scene record only names its shared "general" folder. Its biome-map
  * cell selects the material bands, including for seeds restored from IndexedDB. */
 export function withOrbRoomBiome<T extends { key: string; x: number; y: number; variantKey?: string }>(
@@ -245,10 +259,17 @@ export function createPlaneOwnership(
   paintPixels: Uint32Array,
   config: Record<string, any>,
   width: number,
+  ngPlusWallCells?: Uint16Array,
 ): TerrainOwnership {
   const source = createTerrainOwnership(layers, sourcePixels, config, width,
     sourcePixels !== paintPixels);
-  if (sourcePixels === paintPixels) return source;
+  if (sourcePixels === paintPixels) {
+    if (ngPlusWallCells?.length) {
+      const id = source.names.push('solid_wall') - 1;
+      for (const i of ngPlusWallCells) source.owners[i] = id;
+    }
+    return source;
+  }
   const nameByColor = new Map<number, string>();
   for (const [name, cfg] of Object.entries(config))
     if (cfg.wangFile && !STATIC_TERRAIN_BIOMES.has(name))

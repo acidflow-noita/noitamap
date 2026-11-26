@@ -707,6 +707,7 @@ export async function addInstantTerrain(
             : gen.biomeData.pixels) ?? gen.biomeData.pixels,
         deps.GENERATOR_CONFIG,
         width,
+        gen.biomeData.ngPlusWallCells,
       ), elevatorShafts, plane as VerticalPlane),
     );
     clip = createInstantClip(owners, masks);

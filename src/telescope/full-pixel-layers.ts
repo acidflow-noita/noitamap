@@ -47,6 +47,7 @@ export async function addFullPixelLayers(
       gen.biomeData.pixels,
       deps.GENERATOR_CONFIG,
       width,
+      gen.biomeData.ngPlusWallCells,
     );
     includeElevatorOwnership(ownership, gen.elevatorShafts, gen.plane);
     const layers = createTileOverlaysCheap(

@@ -3,7 +3,7 @@ import { createCanvas, Path2D } from '@napi-rs/canvas';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { decode } from 'fast-png';
 import JSZip from 'jszip';
-import { BIOME_BACKGROUND_MAP, NG_PLUS_ORB_BACKGROUNDS, createBackgroundOwnership, createTerrainOwnership, WORLD_HEIGHT, WORLD_TOP } from '../src/telescope/terrain-policy';
+import { BIOME_BACKGROUND_MAP, NG_PLUS_ORB_BACKGROUNDS, NG_PLUS_WALL_TEXTURE, changedNGPlusWalls, createBackgroundOwnership, createPlaneOwnership, createTerrainOwnership, WORLD_HEIGHT, WORLD_TOP } from '../src/telescope/terrain-policy';
 import { GENERATOR_CONFIG } from '../lib/noita-telescope-vm/js/generator_config.js';
 
 const state = vi.hoisted(() => ({
@@ -159,6 +159,30 @@ it('uses the generated Nightmare mask and center independently of regular biome 
   expect(layer.width).toBe(32768);
   const coal = layer.regions.find(region => region.textureKey === BIOME_BACKGROUND_MAP.coalmine)!;
   expect(coal.rings).toEqual([[{ x: -1024, y: 1536 }, { x: 512, y: 1536 }, { x: 512, y: 2048 }, { x: -1024, y: 2048 }]]);
+});
+
+it('paints only changed NG+ wall cells in the main vertical plane, including the western and eastern worlds', async () => {
+  const { generatedBiomeBackgroundGeometry } = await import('../src/telescope/biome-background-layer');
+  const width = 64, rock = GENERATOR_CONFIG.solid_wall.color;
+  const pixels = new Uint32Array(width * 48).fill(rock);
+  const base = new Uint8Array(pixels.length * 4).fill(0x3d);
+  // Seed 1244794027, NG+5 replaces jungle in world chunk (1, 15).
+  const target = 29 * width + 33;
+  base.set([0x80, 0x80, 0x00, 0xff], target * 4);
+  const cells = changedNGPlusWalls(5, pixels, base);
+  expect(cells).toEqual(Uint16Array.of(target));
+  for (const level of [1, 4, 6, 28]) expect(changedNGPlusWalls(level, pixels, base)).toBeUndefined();
+  for (const level of [10, 15, 20, 25]) expect(changedNGPlusWalls(level, pixels, base)).toEqual(cells);
+
+  const owners = createPlaneOwnership([], pixels, pixels, GENERATOR_CONFIG, width, cells);
+  for (const offset of [-32768, 0, 32768]) {
+    expect(owners.names[owners.at(959 + offset, 8004)]).toBe('solid_wall');
+    expect(owners.at(959 + 512 + offset, 8004)).toBe(-1);
+  }
+  expect(createPlaneOwnership([], pixels, pixels.slice(), GENERATOR_CONFIG, width, cells).at(959, 8004)).toBe(-1);
+  const { regions } = generatedBiomeBackgroundGeometry(pixels, width, 32, GENERATOR_CONFIG, true, cells);
+  expect(regions).toEqual([{ textureKey: NG_PLUS_WALL_TEXTURE, phaseX: 0, phaseY: 0,
+    rings: [[{ x: 512, y: 7680 }, { x: 1024, y: 7680 }, { x: 1024, y: 8192 }, { x: 512, y: 8192 }]] }]);
 });
 
 it('paints each NG+ orb biome with its own game texture on both renderers', async () => {

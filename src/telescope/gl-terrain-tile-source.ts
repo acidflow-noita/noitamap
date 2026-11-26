@@ -34,6 +34,7 @@ export interface GLTerrainGeneration {
     pixels: Uint32Array;
     heavenPixels?: Uint32Array;
     hellPixels?: Uint32Array;
+    ngPlusWallCells?: Uint16Array;
   };
   /** Original world map that owns the source buffers; differs from the material
    * lookup map in heaven/hell. Must survive worker/bake serialization. */
@@ -392,7 +393,7 @@ export function createGLTerrainTileSource(opts: GLTerrainSourceOpts): any {
   const persistentKey = (tile: PyramidTile) =>
     terrainTileKey(
       opts.gen.seed,
-      `${opts.gen.isNGP ? (opts.gen.ngPlus ?? 1) : 0}/${opts.gen.gameMode || "normal"}`,
+      `${opts.gen.isNGP ? (opts.gen.ngPlus ?? 1) : 0}/${opts.gen.gameMode || "normal"}${opts.gen.biomeData.ngPlusWallCells?.length ? '/walls-v1' : ''}`,
       opts.gen.plane ?? 0,
       opts.pw,
       `${opts.worldX},${opts.worldY},${opts.worldW},${opts.worldH}`,

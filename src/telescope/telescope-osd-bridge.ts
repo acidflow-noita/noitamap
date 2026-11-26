@@ -5195,7 +5195,7 @@ export async function renderGenerationResult(
   if (keepBiomeBackgrounds && (result.gameMode === "nightmare" || result.isNGP)) {
     await ensureTelescopeModules();
     if (currentGenerationId !== generationId) return;
-    const layer = await prepareGeneratedBiomeBackground(result.biomeData.pixels, result.worldSize, result.worldCenter, GENERATOR_CONFIG, result.isNGP);
+    const layer = await prepareGeneratedBiomeBackground(result.biomeData.pixels, result.worldSize, result.worldCenter, GENERATOR_CONFIG, result.isNGP, result.biomeData.ngPlusWallCells);
     if (currentGenerationId !== generationId) return;
     addBiomeBgToOSD(viewer, () => currentGenerationId === generationId, layer, result.worldSize, result.parallelWorlds);
   } else if (keepBiomeBackgrounds) {

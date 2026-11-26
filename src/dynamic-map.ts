@@ -18,7 +18,7 @@ import { addBakedWorlds, beginDynamicRequest, generationToken, type InitialDaily
 import { fetchDailySeed, fetchPreviousDailySeed } from "./data_sources/daily_seed";
 import { parseURL, updateURLWithSeed, clearSeedParams } from "./data_sources/url";
 import { getCachedGeneration, cacheGeneration } from "./telescope/tile-cache";
-import { generateDynamicMap, initTelescope, prewarmParallelWorlds, releaseParallelWorlds, type GenerationResult } from "./telescope/telescope-adapter";
+import { generateDynamicMap, initTelescope, prewarmParallelWorlds, releaseParallelWorlds, restoreNGPlusWallCells, type GenerationResult } from "./telescope/telescope-adapter";
 import { ensureTelescopeCacheVersion } from "./telescope/telescope-cache-version";
 import { prewarmInstantTerrain, releaseInstantTerrainBackend } from "./telescope/instant-terrain-backend";
 import { getUnlocksFromURL, unlocksChanged, UNLOCK_KEYS, getUrlUnlockKind } from "./unlocks";
@@ -495,6 +495,7 @@ async function runDynamicMapRequest(
     if (myToken !== generationToken) return null;
     if (result && (!result.tileLayers?.length || (result.gameMode ?? "normal") !== gameMode || result.ngPlus !== ngPlus)) result = null; // baked metadata cannot render live terrain
     restoreTerrain = !!result;
+    if (result && ngPlus > 0) restoreNGPlusWallCells(ngPlus, result.biomeData);
     console.log(`[DynamicMap] Assets + cache: ${((performance.now() - t) / 1000).toFixed(2)}s (${result ? "HIT" : "MISS"})`);
 
     if (!result) {

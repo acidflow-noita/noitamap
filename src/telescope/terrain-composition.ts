@@ -42,6 +42,7 @@ export async function createTerrainComposition(
     gen.biomeData.pixels,
     config,
     width,
+    gen.biomeData.ngPlusWallCells,
   );
   includeElevatorOwnership(ownership, gen.elevatorShafts, gen.plane);
   const backgroundOwnership = createBackgroundOwnership(

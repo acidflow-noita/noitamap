@@ -4,6 +4,7 @@ import { captureWorlds } from "./world-coverage";
 import { finalizeGeneration } from "./finalize-generation";
 import { missingNightmareDragons } from "./boss-pois";
 import { prepareElevatorShafts, withoutElevatorEndpointSpawns } from "./terrain-elevator";
+import { changedNGPlusWalls } from "./terrain-policy";
 import { loadTelescopeModules } from "./load-telescope";
 import { restorePreparedScenePixels } from './prepared-scene-pixels';
 import { useRenderPerfGeneration } from "../renderer_settings";
@@ -225,6 +226,14 @@ let biomeAssets: { ng0: Uint32Array | null; ngp: Uint32Array | null; nightmare: 
 };
 
 // ─── Initialization ─────────────────────────────────────────────────────────
+
+/** The immutable template is also loaded on generation-cache hits. Recover
+ * these cell claims from the cached layout without regenerating tiles or POIs. */
+export function restoreNGPlusWallCells(ngPlus: number, biomeData: GenerationResult['biomeData']): void {
+  if (ngPlus > 0 && ngPlus % 5 === 0 && biomeAssets.ngp) {
+    biomeData.ngPlusWallCells = changedNGPlusWalls(ngPlus, biomeData.pixels, biomeAssets.ngp);
+  }
+}
 
 /**
  * One-time setup: install DOM shim, fetch interceptor, load base assets.
@@ -502,6 +511,7 @@ async function generatePreparedMap(opts: GenerateOptions, workerPool: ParallelWo
 
   // Step 1: Generate biome data
   const biomeData = generateBiomeData(seed, ngPlus, gameMode, base, w, h);
+  restoreNGPlusWallCells(ngPlus, biomeData);
 
   // Debug: Log all unique colors to see if they match constants
   const uniqueColors = new Set(Array.from(biomeData.pixels));

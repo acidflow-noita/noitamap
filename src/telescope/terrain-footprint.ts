@@ -22,6 +22,7 @@ export function createTerrainFootprint(
     gen.biomeData.pixels,
     config,
     width,
+    gen.biomeData.ngPlusWallCells,
   );
   includeElevatorOwnership(owners, gen.elevatorShafts, gen.plane);
   const backgrounds = createBackgroundOwnership(

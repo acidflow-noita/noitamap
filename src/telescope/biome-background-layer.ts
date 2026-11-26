@@ -1,5 +1,5 @@
 import { biomeBackgroundRevisions } from 'virtual:noitamap-data-archives';
-import { BIOME_BACKGROUND_MAP, NG_PLUS_ORB_BACKGROUNDS, STATIC_TERRAIN_BIOMES, CARVED_ROOM_BIOMES, WORLD_HEIGHT } from './terrain-policy';
+import { BIOME_BACKGROUND_MAP, NG_PLUS_ORB_BACKGROUNDS, NG_PLUS_WALL_TEXTURE, STATIC_TERRAIN_BIOMES, CARVED_ROOM_BIOMES, WORLD_HEIGHT } from './terrain-policy';
 import { immutableTelescopeAssets, revisionedAssetUrl } from './immutable-assets';
 import { createBiomeBackgroundTiles, type BiomeBackgroundRegion } from './biome-background-tile-source';
 import { installViewportLayerDrawing } from './instant-terrain-viewport';
@@ -43,7 +43,7 @@ export function biomeBackgroundGeometry(biomes: { filename: string; svg_map_path
 /** Nightmare's generators paint different biome cells for every seed. Group adjacent
  * cells with the same artwork, extending the edge rows into heaven and hell. */
 export function generatedBiomeBackgroundGeometry(pixels: Uint32Array, worldSize: number, worldCenter: number,
-  config: Record<string, { color: number }>, isNGP = false) {
+  config: Record<string, { color: number }>, isNGP = false, ngPlusWallCells?: Uint16Array) {
   const phaseX = -worldCenter * 512;
   const rowCount = pixels.length / worldSize;
   if (rowCount * 512 !== WORLD_HEIGHT) throw new Error("Invalid generated biome dimensions");
@@ -80,13 +80,26 @@ export function generatedBiomeBackgroundGeometry(pixels: Uint32Array, worldSize:
         { x: right, y: bottom }, { x: left, y: bottom }]);
     }
   }
-  const regions = [...groups].map(([textureKey, rings]) => ({ textureKey, rings }));
+  const regions: BiomeBackgroundRegion[] = [...groups].map(([textureKey, rings]) => ({ textureKey, rings }));
+  if (ngPlusWallCells?.length) {
+    const rings = Array.from(ngPlusWallCells, cell => {
+      const x = phaseX + (cell % worldSize) * 512, y = phaseY + Math.floor(cell / worldSize) * 512;
+      return [{ x, y }, { x: x + 512, y }, { x: x + 512, y: y + 512 }, { x, y: y + 512 }];
+    });
+    regions.push({ textureKey: NG_PLUS_WALL_TEXTURE, rings, phaseX: 0, phaseY: 0 });
+  }
   return { regions, originX: phaseX, originY: phaseY - WORLD_HEIGHT, width: worldSize * 512,
     height: WORLD_HEIGHT * 3, phaseX, phaseY };
 }
 
 const decodedTextures = new Map<string, ImageBitmap>();
 async function loadTexture(path: string) {
+  if (path === NG_PLUS_WALL_TEXTURE) {
+    const { getDataZip } = await import('../data-archive');
+    const file = (await getDataZip())?.file(path);
+    if (!file) throw new Error('Missing NG+ wall material texture');
+    return createImageBitmap(new Blob([await file.async('arraybuffer')], { type: 'image/png' }));
+  }
   const filename = path.split('/').pop()!;
   const revision = biomeBackgroundRevisions[filename];
   if (!revision) throw new Error("Missing biome background revision: " + filename);
@@ -129,10 +142,10 @@ export function prepareBiomeBackgroundLayer() {
 
 const generatedLayers = new WeakMap<Uint32Array, ReturnType<typeof loadLayer>>();
 export function prepareGeneratedBiomeBackground(pixels: Uint32Array, worldSize: number, worldCenter: number,
-  config: Record<string, { color: number }>, isNGP = false) {
+  config: Record<string, { color: number }>, isNGP = false, ngPlusWallCells?: Uint16Array) {
   let layer = generatedLayers.get(pixels);
   if (!layer) {
-    layer = loadLayer(generatedBiomeBackgroundGeometry(pixels, worldSize, worldCenter, config, isNGP))
+    layer = loadLayer(generatedBiomeBackgroundGeometry(pixels, worldSize, worldCenter, config, isNGP, ngPlusWallCells))
       .catch(error => { generatedLayers.delete(pixels); throw error; });
     generatedLayers.set(pixels, layer);
   }

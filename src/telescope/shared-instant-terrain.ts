@@ -112,7 +112,7 @@ export async function buildSharedTerrainUpload(layers: any[], biomeData: any, op
       for (let y = 0; y < 48; y++) pixels.set(biomeData.pixels.subarray(row, row + width), y * width);
     }
     return includeElevatorOwnership(createPlaneOwnership(layers, biomeData.pixels, pixels,
-      opts.generatorConfig ?? {}, width), opts.elevatorShafts ?? [], plane).owners;
+      opts.generatorConfig ?? {}, width, biomeData.ngPlusWallCells), opts.elevatorShafts ?? [], plane).owners;
   });
   const liquids = packLiquidSurfaces(buildEngineTable(opts.seed ?? 0),
     findLiquidSurfaces(engine.lattice, liquidIds, width), owners, width, limit);

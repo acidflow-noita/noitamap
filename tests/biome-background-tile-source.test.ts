@@ -117,13 +117,14 @@ function fixture(options: { width?: number; height?: number; regions?: BiomeBack
   return { pack, source, textures, loader, width, height };
 }
 
-function pixelCheck(ctx: any, left: number, top: number, offset = 0, owns = (_x: number, _y: number) => true) {
+function pixelCheck(ctx: any, left: number, top: number, offset = 0, owns = (_x: number, _y: number) => true,
+  textureX = phaseX, textureY = phaseY) {
   const actual = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height).data;
   const mod = (v: number, size: number) => ((v % size) + size) % size;
   let mismatch = "";
   outer: for (let y = 0; y < ctx.canvas.height; y++) for (let x = 0; x < ctx.canvas.width; x++) {
     const worldX = originX + left + x, worldY = originY + top + y;
-    const tx = mod(worldX + offset - phaseX, texture.width), ty = mod(worldY - phaseY, texture.height);
+    const tx = mod(worldX + offset - textureX, texture.width), ty = mod(worldY - textureY, texture.height);
     for (let c = 0; c < 4; c++) {
       const expected = owns(left + x, top + y) ? original[(ty * texture.width + tx) * 4 + c] : 0;
       const value = actual[(y * ctx.canvas.width + x) * 4 + c];
@@ -134,6 +135,20 @@ function pixelCheck(ctx: any, left: number, top: number, offset = 0, owns = (_x:
 }
 
 describe("native biome backgrounds through installed OSD and native canvas", () => {
+  it('samples material art at absolute world coordinates in both tile and viewport drawing', async () => {
+    const size = 64, offset = -32768;
+    const f = fixture({ width: size, height: size, regions: [{
+      rings: [rect(originX, originY, size, size)], textureKey: 'wandcave', phaseX: 0, phaseY: 0,
+    }] });
+    try {
+      const { source, read } = f.source(offset);
+      pixelCheck(await read(), 0, 0, offset, undefined, 0, 0);
+      const ctx = createCanvas(size, size).getContext('2d');
+      expect(source.__drawViewport(ctx, { imageToViewportCoordinates: (x: number, y: number) => ({ x, y }) },
+        { pixelFromPoint: (point: any) => point })).toBe(true);
+      pixelCheck(ctx, 0, 0, offset, undefined, 0, 0);
+    } finally { f.pack.destroy(); }
+  });
   it('covers the former upper basin strip in both cached tiles and immediate viewport drawing', async () => {
     const left = 512, top = 984, width = 512, height = 64;
     const pack = createBiomeBackgroundTiles({ originX: left, originY: top, width, height, phaseX, phaseY,

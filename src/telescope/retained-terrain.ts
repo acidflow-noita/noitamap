@@ -210,6 +210,7 @@ function* terrainIdentityInputs(gen: GLTerrainGeneration, masks: StaticTerrainMa
     if (layer.buffer) yield layer.buffer;
   }
   yield gen.biomeData.pixels;
+  if (gen.biomeData.ngPlusWallCells?.length) yield gen.biomeData.ngPlusWallCells;
   if (gen.biomeData.heavenPixels) yield gen.biomeData.heavenPixels;
   if (gen.biomeData.hellPixels) yield gen.biomeData.hellPixels;
   for (const mask of masks) {

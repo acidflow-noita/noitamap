@@ -7,6 +7,8 @@ export interface BiomeBackgroundRegion {
   /** All SVG subpaths participate in one nonzero-winding clip, including holes. */
   rings: Array<Array<{ x: number; y: number }>>;
   textureKey: string;
+  phaseX?: number;
+  phaseY?: number;
 }
 
 export interface BiomeBackgroundTiles {
@@ -37,7 +39,7 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
       minX = Math.min(minX, point.x); minY = Math.min(minY, point.y);
       maxX = Math.max(maxX, point.x); maxY = Math.max(maxY, point.y);
     }
-    return { ...region, minX, minY, maxX, maxY };
+    return { phaseX, phaseY, ...region, minX, minY, maxX, maxY };
   });
   const maxLevel = Math.max(0, Math.ceil(Math.log2(Math.max(width, height))));
   const cache = new InstantTerrainCache(options.maxCacheBytes ?? 16 * 1024 * 1024);
@@ -81,13 +83,13 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
             ctx.closePath();
           }
           ctx.clip("nonzero");
-          const textureOriginX = phaseX - worldOffsetX;
+          const textureOriginX = region.phaseX - worldOffsetX, textureOriginY = region.phaseY;
           if (scale === 1) {
             // Direct blits preserve authored bytes even on native canvas
             // engines that filter CanvasPattern at 1:1. The world footprint
             // is at most 256 square here, so repetitions stay tile-bounded.
             const startX = Math.floor((left - textureOriginX) / texture.width) * texture.width + textureOriginX;
-            const startY = Math.floor((top - phaseY) / texture.height) * texture.height + phaseY;
+            const startY = Math.floor((top - textureOriginY) / texture.height) * texture.height + textureOriginY;
             for (let ty = startY; ty < top + h; ty += texture.height)
               for (let tx = startX; tx < left + w; tx += texture.width)
                 ctx.drawImage(texture, tx, ty);
@@ -96,9 +98,9 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
             // proportional to that world area and keeps every canvas small.
             const pattern = ctx.createPattern(texture, "repeat");
             if (!pattern) throw new Error(`Cannot repeat biome background ${region.textureKey}`);
-            ctx.translate(textureOriginX, phaseY);
+            ctx.translate(textureOriginX, textureOriginY);
             ctx.fillStyle = pattern;
-            ctx.fillRect(left - textureOriginX, top - phaseY, w / scale, h / scale);
+            ctx.fillRect(left - textureOriginX, top - textureOriginY, w / scale, h / scale);
           }
           ctx.restore();
         }
@@ -153,22 +155,22 @@ export function createBiomeBackgroundTiles(options: BiomeBackgroundTiles) {
               context.closePath();
             }
             context.clip('nonzero');
-            const tx = phaseX - worldOffsetX;
+            const tx = region.phaseX - worldOffsetX, ty = region.phaseY;
             if (bounds.scale >= 1) {
               // Only repeat across the visible intersection. A close-up must
               // never visit every texture repetition in a world-sized biome.
               const x0 = Math.max(left, region.minX), y0 = Math.max(top, region.minY);
               const x1 = Math.min(right, region.maxX), y1 = Math.min(bottom, region.maxY);
               const startX = Math.floor((x0 - tx) / texture.width) * texture.width + tx;
-              const startY = Math.floor((y0 - phaseY) / texture.height) * texture.height + phaseY;
+              const startY = Math.floor((y0 - ty) / texture.height) * texture.height + ty;
               for (let y = startY; y < y1; y += texture.height)
                 for (let x = startX; x < x1; x += texture.width) context.drawImage(texture, x, y);
             } else {
               const pattern = context.createPattern(texture, 'repeat');
               if (!pattern) continue;
-              context.translate(tx, phaseY);
+              context.translate(tx, ty);
               context.fillStyle = pattern;
-              context.fillRect(left - tx, top - phaseY, right - left, bottom - top);
+              context.fillRect(left - tx, top - ty, right - left, bottom - top);
             }
           } finally { context.restore(); }
         }
