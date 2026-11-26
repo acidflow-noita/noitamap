@@ -39,6 +39,7 @@ export interface TerrainWorkerRequest {
   y: number;
   width: number;
   height: number;
+  step?: number;
   pixels?: Uint8ClampedArray;
 }
 type Job = {

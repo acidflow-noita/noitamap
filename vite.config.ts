@@ -52,7 +52,7 @@ const browserTelescopePlugin = () => withFilter(
 );
 const terrainBitsPlugin = () => withFilter(
   terrainShaderBitsPlugin(resolve(import.meta.dirname, "lib/noita-telescope-vm/js")),
-  { transform: { id: /\/gl\/shaders\.js$/ } },
+  { transform: { id: /\/(?:gl\/shaders|engine_resolve\/(?:topo0_resolve|engine_data))\.js$/ } },
 );
 
 const shimTelescopePlugin = {

@@ -5198,6 +5198,12 @@ export async function renderGenerationResult(
     const layer = await prepareGeneratedBiomeBackground(result.biomeData.pixels, result.worldSize, result.worldCenter, GENERATOR_CONFIG, result.isNGP, result.biomeData.ngPlusWallCells);
     if (currentGenerationId !== generationId) return;
     addBiomeBgToOSD(viewer, () => currentGenerationId === generationId, layer, result.worldSize, result.parallelWorlds);
+    if (result.biomeData.ngPlusSurfaceCells?.length) {
+      const { addNGPlusSurface } = await import('./ng-plus-surface-tiles');
+      addNGPlusSurface(viewer, result.seed, result.biomeData.pixels, result.biomeData.ngPlusSurfaceCells,
+        result.worldSize, result.parallelWorlds, () => currentGenerationId === generationId,
+        item => dynamicTiledImages.add(item));
+    }
   } else if (keepBiomeBackgrounds) {
     addBiomeBgToOSD(viewer);
   }

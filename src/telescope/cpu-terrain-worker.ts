@@ -21,6 +21,7 @@ installFetchInterceptor(true);
 let terrain: Awaited<
   ReturnType<typeof import("./cpu-terrain-core").createCpuTerrain>
 > | null = null;
+let surface: Awaited<ReturnType<typeof import('./ng-plus-surface-raster').createNGPlusSurfaceRaster>> | null = null;
 const cancelled = new Set<number>();
 const active = new Set<number>();
 self.onmessage = async ({ data }) => {
@@ -34,6 +35,16 @@ self.onmessage = async ({ data }) => {
       // A pool slot keeps one plane resident. Release the previous material
       // lattice before loading a different one; never multiply it by all planes.
       terrain = null;
+      surface = null;
+      if (data.generation.kind === 'ng-plus-surface') {
+        const [{ createNGPlusSurfaceRaster }, { loadNGPlusSurfaceLandmarkMasks }] = await Promise.all([
+          import('./ng-plus-surface-raster'), import('./ng-plus-surface-landmarks'),
+        ]);
+        const { seed, pixels, cells } = data.generation;
+        surface = await createNGPlusSurfaceRaster(seed, pixels, cells, await loadNGPlusSurfaceLandmarkMasks());
+        self.postMessage({ id, type: 'ready' });
+        return;
+      }
       const { createCpuTerrain } = await import("./cpu-terrain-core");
       terrain = await createCpuTerrain({
         ...data.generation,
@@ -48,14 +59,15 @@ self.onmessage = async ({ data }) => {
         stats: terrain.stats,
       });
     } else if (type === "render" || type === "present") {
-      if (!terrain) throw new Error("CPU terrain resources are not ready");
-      const { x, y, width, height } = data;
+      if (!terrain && !surface) throw new Error("CPU terrain resources are not ready");
+      const { x, y, width, height, step = 1 } = data;
       if (
         ![x, y, width, height].every(Number.isSafeInteger) ||
         width < 1 ||
         width > 512 ||
         height < 1 ||
-        height > 512
+        height > 512 ||
+        !Number.isSafeInteger(step) || step < 1 || (step & (step - 1)) !== 0
       ) {
         throw new Error("Invalid CPU terrain tile dimensions");
       }
@@ -66,7 +78,7 @@ self.onmessage = async ({ data }) => {
           : new Uint8ClampedArray(width * height * 4);
       if (pixels.length !== width * height * 4)
         throw new Error("Invalid terrain presentation buffer");
-      const hasContent = terrain.contains(x, y, width, height);
+      const hasContent = !!surface || terrain!.contains(x, y, width, height);
       let yieldAt = performance.now() + 12;
       for (
         let row = 0;
@@ -74,14 +86,12 @@ self.onmessage = async ({ data }) => {
         row += 16
       ) {
         if (cancelled.has(id)) break;
-        terrain.renderRows(
-          x,
-          y,
-          width,
-          row,
-          Math.min(row + 16, height),
-          pixels,
-        );
+        const end = Math.min(row + 16, height);
+        if (surface) {
+          pixels.set(surface(x, y + row * step, width, end - row, step), row * width * 4);
+        } else {
+          terrain!.renderRows(x, y, width, row, end, pixels);
+        }
         if (row + 16 < height && performance.now() >= yieldAt) {
           await new Promise((resolve) => setTimeout(resolve, 0));
           yieldAt = performance.now() + 12;
@@ -89,7 +99,7 @@ self.onmessage = async ({ data }) => {
       }
       if (cancelled.has(id)) self.postMessage({ id, type: "cancelled" });
       else {
-        if (hasContent) terrain.finish(pixels, x, y, width, height);
+        if (hasContent && terrain) terrain.finish(pixels, x, y, width, height);
         self.postMessage(
           { id, type: "tile", width, height, pixels: pixels.buffer },
           [pixels.buffer],

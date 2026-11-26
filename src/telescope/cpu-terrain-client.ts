@@ -6,7 +6,7 @@ import {
 } from "./terrain-worker-pool";
 
 let pool: TerrainWorkerPool | undefined;
-function sharedPool() {
+export function sharedCpuTerrainPool() {
   return (pool ??= new TerrainWorkerPool(
     terrainWorkerLimit(),
     () =>
@@ -57,7 +57,7 @@ export class CpuTerrainRenderer {
     this.sourceBiome = biomeData;
     this.sourceSeed = options.seed;
     const lifetime = (this.lifetime = new AbortController());
-    const context = (this.context = sharedPool().context({
+    const context = (this.context = sharedCpuTerrainPool().context({
       tileLayers: layers.map(serializeTileLayer),
       plane: options.plane ?? 0,
       biomeData,
@@ -68,13 +68,13 @@ export class CpuTerrainRenderer {
       isNGP: options.isNGP,
       gameMode: options.gameMode,
     }));
-    this.initialization = sharedPool()
+    this.initialization = sharedCpuTerrainPool()
       .ready(context, lifetime.signal)
       .then((data) => {
         lifetime.signal.throwIfAborted();
         this.mapWidth = data.mapWidth;
         this.centerPx = data.centerPx;
-        this.stats = { ...data.stats, workerLimit: sharedPool().limit };
+        this.stats = { ...data.stats, workerLimit: sharedCpuTerrainPool().limit };
         this.ready = true;
         return true;
       })
@@ -96,7 +96,7 @@ export class CpuTerrainRenderer {
     if (!this.ready || !this.context)
       throw new Error("CPU terrain is not ready");
     signal.throwIfAborted();
-    const data = await sharedPool().render(
+    const data = await sharedCpuTerrainPool().render(
       this.context,
       {
         x: Math.floor(

@@ -30,6 +30,31 @@ export const TOPOLOGY_WARP_FLOAT_BITS = {
   ENG_F2: 0x3de38e39,
 } as const;
 
+function replaceSurfaceRule(source: string, before: string, after: string) {
+  if (source.includes(after)) return source;
+  if (source.split(before).length !== 2) throw new Error('Review changed Telescope Hills2 surface rule');
+  return source.replace(before, after);
+}
+
+/** Noita 9dbd52c, BiomeChunk_EvalSurfaceLine at 0x0087eaf0. Mode 2 runs
+ * the top coordinates through float32 four-octave simplex (0x009296d0).
+ * The bottom still uses the double-precision simplex call shared with mode 1. */
+export function correctSurfaceResolver(source: string) {
+  return replaceSurfaceRule(source,
+    "if (cfg.edge === 2) throw new Error('topo0: mGradientAddNoise=2 (FBM top) not ported');\n\tconst topY = ComputeMagicValueFromDoubles(sx, topBase * cfg.freq) * cfg.low + topBase;",
+    `const topNoise = cfg.edge === 2
+        ? fbm4(F(sx), F(topBase * cfg.freq), ComputeMagicValueFromDoubles)
+        : ComputeMagicValueFromDoubles(sx, topBase * cfg.freq);
+    const topY = topNoise * cfg.low + topBase;`);
+}
+
+export function enableHills2MaterialField(source: string) {
+  // Hills2 (0x33e311) uses the known hills material bands and bitmap grid.
+  // The missing edge-2 height rule was the reason its table entry was disabled.
+  const prefix = '{"color":3400465,"topo":0,"supported":';
+  return replaceSurfaceRule(source, prefix + 'false,', prefix + 'true,');
+}
+
 /** Both output modes resolve exactly the same material. Keep one call site
  * for the large topology/noise tree so drivers need not compile it twice. */
 export function shareTerrainMaterialResolve(source: string): string {
@@ -148,6 +173,10 @@ ${resolve.slice(resolve.indexOf('        if ((info & 2048u)')).trimEnd()}
 }
 
 export function correctTerrainShaderBits(source: string): string {
+  source = replaceSurfaceRule(source,
+    'return magicNoise(sx, topB * t0.w) * t1.x + topB;',
+    `float topNoise = edge == 2 ? engFbm4(sx, topB * t0.w, 5) : magicNoise(sx, topB * t0.w);
+    return topNoise * t1.x + topB;`);
   for (const [name, bits] of Object.entries({
     ...POLKA_FLOAT_BITS,
     ...TOPOLOGY_WARP_FLOAT_BITS,
@@ -256,6 +285,8 @@ float covAt(int x, int y) {`,
 
 export function terrainShaderBitsPlugin(directory: string): Plugin {
   const path = resolve(directory, "gl/shaders.js").replace(/\\/g, "/");
+  const resolver = resolve(directory, "engine_resolve/topo0_resolve.js").replace(/\\/g, "/");
+  const table = resolve(directory, "engine_resolve/engine_data.js").replace(/\\/g, "/");
   const standalone = "\0virtual:instant-terrain-shaders";
   return {
     name: "noita-exact-terrain-shader-constants",
@@ -270,6 +301,8 @@ export function terrainShaderBitsPlugin(directory: string): Plugin {
       );
     },
     transform(source, id) {
+      if (id === resolver) return { code: correctSurfaceResolver(source), map: null };
+      if (id === table) return { code: enableHills2MaterialField(source), map: null };
       if (id !== path) return null;
       return { code: correctTerrainShaderBits(source), map: null };
     },
