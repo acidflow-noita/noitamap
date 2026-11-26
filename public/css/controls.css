@@ -53,7 +53,11 @@
 }
 .ng-plus-level-picker .menu {
   --bs-menu-min-width: 100%;
-  --bs-menu-max-height: min(18rem, 65dvh);
+  /* Ten complete rows, including the nine gaps, menu padding and border. */
+  --bs-menu-max-height: min(
+    calc(10 * var(--control-height) + 9 * var(--bs-menu-gap) + 2 * var(--bs-menu-padding-y) + 2 * var(--bs-border-width)),
+    calc(100dvh - var(--control-height) - 2 * var(--section-gap))
+  );
   --bs-menu-overflow-y: auto;
 }
 .ng-plus-level-picker .menu-item.selected {

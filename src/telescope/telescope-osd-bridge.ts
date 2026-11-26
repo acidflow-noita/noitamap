@@ -5209,6 +5209,22 @@ export async function renderGenerationResult(
   }
   if (currentGenerationId !== generationId) return;
 
+  // Correct the captured base beneath both live terrain and archived Daily
+  // pyramids. A baked view only reads its saved grid and the prebuilt artwork.
+  if (result.isNGP && !isGLTerrainEnabled() && result.biomeData?.pixels?.length) {
+    const { addNGPlusWater } = await import('./ng-plus-water');
+    if (currentGenerationId !== generationId) return;
+    const world = viewer.world;
+    let index = 0;
+    while (index < world.getItemCount()) {
+      const item = world.getItemAt(index);
+      if (isDynamicSeedItem(item) && !item.source?.__biomeBg) break;
+      index++;
+    }
+    addNGPlusWater(viewer, result.biomeData.pixels, result.worldSize, result.parallelWorlds,
+      generationId, index, () => currentGenerationId === generationId, item => dynamicTiledImages.add(item));
+  }
+
   // Wrap onFirstPaint so the moment PW 0,0 of the new seed is in place we
   // ALSO purge the previous render's items. This avoids holding two full
   // generations in memory through the rest of the pipeline (~5-6s on FF
