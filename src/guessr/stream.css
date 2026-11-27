@@ -217,15 +217,17 @@
   content: ""; grid-area: 1 / 1; box-sizing: border-box;
   background-color: var(--bs-gray-800); border: 2px solid var(--replay-map-color);
 }
-.replay-timeline .stepper-item.active::before { border-width: 4px; }
+.replay-timeline .stepper-item.active::before { background-color: var(--replay-map-color); }
 .replay-timeline .replay-row-end::after { display: none; }
 #guess-app .replay-step { grid-area: 1 / 1 / span 2; z-index: 2; display: grid; grid-template-rows: var(--bs-stepper-size) auto;
   justify-items: center; align-items: center; gap: var(--bs-stepper-text-gap); inline-size: 100%; min-inline-size: 0; min-block-size: 44px;
   margin: 0; padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text); cursor: pointer; }
 .replay-step-icon { display: inline-flex; align-items: center; justify-content: center; line-height: 1; color: var(--text); }
+.replay-step[aria-current="step"] .replay-step-icon { color: var(--bg); }
 @media (forced-colors: active) {
   .replay-timeline .stepper-item::before { border: 1px solid ButtonText; }
-  .replay-timeline .stepper-item.active::before { outline: 2px solid Highlight; outline-offset: -3px; }
+  .replay-timeline .stepper-item.active::before { forced-color-adjust: none; background-color: Highlight; border-color: Highlight; }
+  .replay-step[aria-current="step"] .replay-step-icon { forced-color-adjust: none; color: HighlightText; }
 }
 @media (pointer: coarse) {
   #guess-app .score-with-replay > .clue-replay-open { inline-size: 2.75rem; block-size: 2.75rem; }
