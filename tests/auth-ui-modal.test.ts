@@ -292,7 +292,7 @@ describe("Shared provider controls", () => {
   it("keeps inline IDs unique and saves before starting the selected provider login", () => {
     const calls: string[] = [];
     vi.mocked(authService.login).mockImplementationOnce(() => { calls.push('patreon'); });
-    vi.mocked(authService.loginTwitch).mockImplementationOnce(() => { calls.push('twitch'); });
+    vi.mocked(authService.loginTwitch).mockImplementationOnce(async () => { calls.push('twitch'); });
     const inline = AuthUI.createProControls({
       beforeLogin: () => { calls.push('save'); },
       idPrefix: 'guessr-daily-',

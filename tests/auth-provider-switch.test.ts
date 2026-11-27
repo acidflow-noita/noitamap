@@ -42,6 +42,11 @@ describe('authenticated provider connections', () => {
     expect(results).toEqual([ticket, ticket, ticket]);
     expect(await auth.getPlayerTicket()).toEqual(ticket);
     expect(fetcher).toHaveBeenCalledOnce();
+    const renewed = { ...ticket, token: 'renewed-participant-ticket' };
+    fetcher.mockResolvedValueOnce(Response.json(renewed));
+    expect(await auth.getPlayerTicket(true)).toEqual(renewed);
+    expect(await auth.getPlayerTicket()).toEqual(renewed);
+    expect(fetcher).toHaveBeenCalledTimes(2);
     expect([...Array(localStorage.length)].map((_, i) => localStorage.getItem(localStorage.key(i)!)).join('')).not.toContain('participant-ticket');
   });
 
@@ -64,6 +69,24 @@ describe('authenticated provider connections', () => {
     await Promise.all([auth.refreshMembership(), auth.refreshMembership()]); await auth.refreshMembership();
     expect(fetcher).toHaveBeenCalledOnce(); expect(auth.isSubscriber()).toBe(true);
     expect(localStorage.getItem('noitamap_refresh_jwt')).toBe(original);
+  });
+
+  it('keeps a subsequent login when the previous session finishes signing out', async () => {
+    let finish!: (response: Response) => void;
+    fetcher.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const logout = auth.logout();
+    expect(auth.hasSavedSession()).toBe(false);
+    localStorage.setItem('noitamap_jwt', 'new-access');
+    localStorage.setItem('noitamap_refresh_jwt', 'new-refresh');
+    finish(new Response(null, { status: 204 })); await logout;
+    expect(auth.getToken()).toBe('new-access');
+    expect(localStorage.getItem('noitamap_refresh_jwt')).toBe('new-refresh');
+  });
+  it('requires a new login when the server rejects both the participant request and the saved session', async () => {
+    fetcher.mockImplementation(async () => Response.json({ error: 'Sign in to continue.' }, { status: 401 }));
+    await expect(auth.getPlayerTicket(true)).rejects.toMatchObject({ status: 401 });
+    expect(auth.getState().authenticated).toBe(false);
+    expect(auth.hasSavedSession()).toBe(false);
   });
   it('saves the workspace and starts an authenticated link without replacing the existing Pro session', async () => {
     auth.loginTwitch();

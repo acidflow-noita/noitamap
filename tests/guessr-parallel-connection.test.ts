@@ -104,6 +104,19 @@ it('automatically reconnects and replays exactly the same unacknowledged submiss
   expect(localStorage.getItem(`noitaguessr-socket-v2:${game}:200:pending`)).toBe('[]');
   expect(connection.connected()).toBe(true);
 });
+it('renews the site ticket when the coordinator refuses a saved room ticket', async () => {
+  const key = `noitaguessr-socket-v2:${game}:200`;
+  sessionStorage.setItem(key, JSON.stringify({ ticket: 'old-resume', expiresAt: Date.now() + 600000 }));
+  const authorize = vi.fn(async (renew?: boolean) => ({ role: 'account' as const, ticket: renew ? 'new-player-ticket' : 'cached-player-ticket' }));
+  connection = new ParallelConnection('https://guessr-api.sage-data.xyz', game, '200', authorize, { message() {}, status() {} });
+  const first = Socket.all[0]; first.open(); await vi.advanceTimersByTimeAsync(0);
+  expect(JSON.parse(first.sent[0])).toMatchObject({ role: 'resume', ticket: 'old-resume' });
+  first.close(4001); await vi.advanceTimersByTimeAsync(1500);
+  const second = Socket.all[1]; await authorized(second);
+  expect(authorize).toHaveBeenCalledExactlyOnceWith(true);
+  expect(JSON.parse(second.sent[0])).toMatchObject({ role: 'account', ticket: 'new-player-ticket' });
+  expect(connection.connected()).toBe(true);
+});
 it('keeps a newer update queued when a delayed receipt for the old pin arrives, including across F5', async () => {
   const auth = async () => ({ role: 'player' as const, accessToken: 'test-only-token' });
   const events = { message: vi.fn(), status: vi.fn() };

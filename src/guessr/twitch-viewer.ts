@@ -15,6 +15,7 @@ export function twitchMessageText(source: string): string {
 export const DEFAULT_TWITCH_CLIENT_ID = '9wmgerb87z6v5i8yb1q5ggy2ya2khj';
 export const TWITCH_VIEWER_CALLBACK = '/guess/twitch-callback.html';
 export const TWITCH_VIEWER_MESSAGE = 'noitamap-twitch-viewer-oauth';
+export const TWITCH_VERIFICATION_FAILED = 'Could not verify Twitch sign-in. Please connect again.';
 const SCOPES = ['user:write:chat'];
 const VALIDATE_URL = 'https://id.twitch.tv/oauth2/validate';
 const VALIDATE_INTERVAL = 60 * 60 * 1000;
@@ -57,9 +58,9 @@ export interface TwitchViewerPopup { readonly closed: boolean; close(): void }
 export interface TwitchViewerOptions {
   /** A verified site identity uses game tickets, never a second provider popup. */
   siteIdentity?: { userId: string; login: string; displayName: string; color?: string };
-  siteAuthorization?: () => Promise<string>;
+  siteAuthorization?: (renew?: boolean) => Promise<string>;
   siteRole?: 'host' | 'account';
-  siteLogin?: () => void;
+  siteLogin?: () => void | Promise<void>;
   onDispose?: () => void;
   siteSignOut?: () => void;
   /** Local host sharing may request posting permission. Gameplay needs identity only. */
@@ -109,8 +110,7 @@ export class TwitchViewer {
         && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname));
     this.purgeLegacyCredentials();
     if (options.siteIdentity && options.siteAuthorization) {
-      this.state = { ...emptyState(), ...options.siteIdentity, connected: true, savedUserId: options.siteIdentity.userId };
-      try { localStorage.setItem(IDENTITY_KEY + this.clientId, JSON.stringify({ userId: options.siteIdentity.userId })); } catch {}
+      this.setSiteSession(options.siteIdentity, options.siteRole ?? 'host', options.siteAuthorization);
       this.ready = Promise.resolve(); return;
     }
     this.state.savedUserId = savedTwitchViewerId(this.clientId) ?? null;
@@ -195,6 +195,7 @@ export class TwitchViewer {
   }
 
   getState(): TwitchViewerState { return { ...this.state }; }
+  get usesSiteLogin(): boolean { return !!this.options.siteLogin; }
   subscribe(listener: (state: TwitchViewerState) => void): () => void {
     this.listeners.add(listener);
     listener(this.getState());
@@ -205,17 +206,34 @@ export class TwitchViewer {
     for (const listener of this.listeners) listener(this.getState());
   }
 
+  setSiteSession(player: NonNullable<TwitchViewerOptions['siteIdentity']>, role: 'host' | 'account',
+    authorize: NonNullable<TwitchViewerOptions['siteAuthorization']>): void {
+    if (this.disposed) return;
+    this.options.siteIdentity = player;
+    this.options.siteAuthorization = authorize;
+    this.options.siteRole = role;
+    try { localStorage.setItem(IDENTITY_KEY + this.clientId, JSON.stringify({ userId: player.userId })); } catch {}
+    this.update({ ...emptyState(), ...player, color: player.color, connected: true, savedUserId: player.userId });
+  }
+
+  siteConnectionFailed(): void {
+    if (!this.disposed) this.update({ connecting: false, error: TWITCH_VERIFICATION_FAILED });
+  }
+
   /** Call directly from the Connect button so the browser permits the popup. */
   connect(options: { announcements?: boolean; posting?: boolean } = {}): Promise<TwitchViewerState> {
     if (this.disposed) return Promise.reject(new TwitchViewerError('disconnected', 'This Twitch connection is closed.'));
     if (this.options.siteLogin && !this.state.connected && !options.posting && !options.announcements) {
-      this.options.siteLogin(); return Promise.resolve(this.getState());
+      this.update({ connecting: true, error: null });
+      return Promise.resolve(this.options.siteLogin()).finally(() => {
+        if (!this.disposed && this.state.connecting) this.update({ connecting: false });
+      }).then(() => this.getState());
     }
     if (this.options.siteIdentity && this.options.siteAuthorization) return this.options.siteAuthorization().then(() => {
       this.update({ ...this.options.siteIdentity, connected: true, error: null }); return this.getState();
     });
     if (this.options.siteLogin && !options.posting && !options.announcements) {
-      this.options.siteLogin(); return Promise.resolve(this.getState());
+      return Promise.resolve(this.options.siteLogin()).then(() => this.getState());
     }
     if (!this.configured) return Promise.reject(new TwitchViewerError('configuration', 'Twitch chat sending is not configured on this site.'));
     if (this.state.sending) return Promise.reject(new TwitchViewerError('busy', 'Wait for the current guess to finish sending.'));
@@ -378,9 +396,10 @@ export class TwitchViewer {
   }
   /** Ephemeral first-frame authentication for the parallel game connection.
    * The coordinator validates it with Twitch and never stores the provider token. */
-  async transportAuthorization(): Promise<ParallelAuthorization> {
-    if (this.options.siteAuthorization) return { role: this.options.siteRole ?? 'host', ticket: await this.options.siteAuthorization() };
-    const credentials = await this.currentCredentials();
+  async transportAuthorization(renew = false): Promise<ParallelAuthorization> {
+    if (this.disposed || !this.state.connected) throw new TwitchViewerError('disconnected', 'Connect Twitch before sending a guess.');
+    if (this.options.siteAuthorization) return { role: this.options.siteRole ?? 'host', ticket: await this.options.siteAuthorization(renew) };
+    const credentials = renew ? await this.refreshValidation() : await this.currentCredentials();
     return { role: 'player', accessToken: credentials.token };
   }
 
@@ -392,10 +411,9 @@ export class TwitchViewer {
     this.update({ connected: false, userId: null, savedUserId: null, login: null, expiresAt: null, displayName: undefined, color: undefined });
   }
   disconnect(forget = true): void {
-    if (forget && this.options.siteSignOut) {
-      this.options.siteSignOut();
-      this.options.siteIdentity = undefined; this.options.siteAuthorization = undefined; this.options.siteSignOut = undefined;
-    }
+    if (forget) this.options.siteSignOut?.();
+    this.options.siteIdentity = undefined;
+    this.options.siteAuthorization = undefined;
     let revoked = this.#credentials?.token;
     if (forget && !revoked) try {
       const raw = sessionStorage.getItem(STORAGE_KEY + this.clientId);

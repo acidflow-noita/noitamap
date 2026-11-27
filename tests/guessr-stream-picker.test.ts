@@ -16,12 +16,12 @@ import { encodeStreamPacket, guessReceiptKey } from '../src/guessr/stream-wire';
 import { Blob as NodeBlob } from 'node:buffer';
 import { streamArea, streamAnswer } from './helpers/guessr-stream';
 
-const parallel = vi.hoisted(() => ({ events: undefined as Parameters<typeof import('../src/guessr/parallel-game-client')['watchParallelGame']>[3] | undefined, submit: vi.fn(), command: vi.fn(async (_message: unknown) => {}) }));
+const parallel = vi.hoisted(() => ({ events: undefined as Parameters<typeof import('../src/guessr/parallel-game-client')['watchParallelGame']>[3] | undefined, retry: vi.fn(), submit: vi.fn(), command: vi.fn(async (_message: unknown) => {}) }));
 const confirmation = vi.hoisted(() => ({ quit: undefined as (() => Promise<unknown>) | undefined }));
 vi.mock('../src/guessr/quit-game', () => ({ confirmQuitGame: (quit: () => Promise<unknown>) => { confirmation.quit = quit; } }));
 vi.mock('../src/guessr/parallel-game-client', () => ({ watchParallelGame: (_viewer: unknown, _channel: string, _id: string, events: NonNullable<typeof parallel.events>) => {
   parallel.events = events; events.status('connected', '');
-  return { hasJoined: () => true, join() {}, now: () => Date.now(), submit: parallel.submit, nextRevision: () => 1, explored() {}, command: parallel.command, receive() {}, transport() { events.status('connected', ''); }, retry() {}, requestRecovery() {}, dispose() {} };
+  return { hasJoined: () => true, join() {}, now: () => Date.now(), submit: parallel.submit, nextRevision: () => 1, explored() {}, command: parallel.command, receive() {}, transport() { events.status('connected', ''); }, retry: parallel.retry, requestRecovery() {}, dispose() {} };
 } }));
 const ui = vi.hoisted(() => ({ pick: (_point: Point) => {}, show: vi.fn(async (_camera: unknown, ready?: () => void) => { await Promise.resolve(); ready?.(); return true; }), destroy: vi.fn(), notice: vi.fn(), markers: vi.fn() }));
 vi.mock('../src/guessr/button-notice', () => ({ buttonNotice: () => ({ show: ui.notice, dispose: vi.fn() }) }));
@@ -81,6 +81,18 @@ function mount(url: string, initial: Partial<TwitchViewerState> = {}) {
 }
 
 describe('shared channel guess picker', () => {
+  it('reconnects a signed-in chatter to the game without signing them out of the site', () => {
+    const id = '11111111-1111-4111-8111-111111111111';
+    const f = mount(`/guess/channel/${gameCode(id, 'parallel')}/`, { connected: true, login: 'viewer', userId: '123' });
+    parallel.events!.status('stopped', 'Sign in with Twitch to play.');
+    const reconnect = f.main.querySelector<HTMLButtonElement>('.stream-signin button')!;
+    expect(reconnect.textContent).toBe('Reconnect');
+    expect(reconnect.closest('.stream-signin')?.hasAttribute('hidden')).toBe(false);
+    reconnect.click();
+    expect(parallel.retry).toHaveBeenCalledOnce();
+    expect(f.viewer.disconnect).not.toHaveBeenCalled();
+    expect(f.viewer.connect).not.toHaveBeenCalled();
+  });
   it('allows zoom and travel when each countdown ends on the same page', async () => {
     vi.useFakeTimers();
     const id = '11111111-1111-4111-8111-111111111111';

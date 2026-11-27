@@ -30,7 +30,7 @@ export function watchParallelGame(viewer: TwitchViewer, _channel: string, gameId
     if (!user.connected || !user.userId) return;
     socketUser = user.userId;
     const current = () => !closed && epoch === currentEpoch;
-    socket = new ParallelConnection(gameApiOrigin()!, gameId, user.userId, () => viewer.transportAuthorization(), {
+    socket = new ParallelConnection(gameApiOrigin()!, gameId, user.userId, renew => viewer.transportAuthorization(renew), {
       status: (state, detail) => { if (current()) handlers.status(state, detail); },
       message: message => {
         if (!current()) return;

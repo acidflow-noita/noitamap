@@ -74,7 +74,11 @@ export function mountAccountMenu(parent: HTMLElement) {
         } else action('Sign in with Twitch', async () => (await gameAuth()).loginTwitch(), 'btn btn-twitch');
         action('Sign out', async () => { viewer?.disconnect(); await auth?.logout(); await instance.hide(); paint(); });
       } else {
-        action('Sign in with Twitch', async () => (await gameAuth()).loginTwitch(), 'btn btn-twitch');
+        action('Sign in with Twitch', async () => {
+          if (viewer?.usesSiteLogin) {
+            if ((await viewer.connect()).connected) await instance.hide();
+          } else await (await gameAuth()).loginTwitch();
+        }, 'btn btn-twitch');
         action('Sign in with Patreon', async () => (await gameAuth()).login(), 'btn btn-patreon');
       }
       body.append(error);

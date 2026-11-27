@@ -1,35 +1,96 @@
 // @vitest-environment jsdom
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import type { AuthState } from '../src/auth/auth-service';
 import { pvpViewer } from '../src/guessr/pvp-identity';
-const state = vi.hoisted(() => ({ authenticated: true, isSubscriber: true, accountId: 'account',
-  linkedAccounts: [{ provider: 'twitch', userId: '123', membershipStatus: 'active' }],
-  token: '', logout: vi.fn(), login: vi.fn(), ticket: vi.fn(), participant: vi.fn(), options: undefined as any }));
-vi.mock('../src/guessr/api', () => ({ gameAuth: async () => ({ getState: () => state, logout: state.logout,
-  loginTwitch: state.login, getPlayerTicket: state.participant, subscribe: () => () => {} }) }));
-vi.mock('../src/guessr/stream-api', () => ({ StreamApi: class { hostSocketTicket = state.ticket; } }));
-vi.mock('../src/guessr/twitch-viewer', () => ({ TwitchViewer: class { constructor(options: any) { state.options = options; } } }));
-const ticket = (id = '123') => 'header.' + btoa(JSON.stringify({ v: 2, typ: 'game', aud: 'noitamap-guessr', twitchUserId: id, twitchLogin: 'wuote', name: 'WUOTE' })) + '.signature';
-afterEach(() => { vi.clearAllMocks(); state.authenticated = state.isSubscriber = true; });
-it('reuses the signed-in Pro account and its game ticket without a second Twitch login', async () => {
-  state.ticket.mockResolvedValue(ticket()); await pvpViewer();
-  expect(state.options.siteIdentity).toEqual({ userId: '123', login: 'wuote', displayName: 'WUOTE' });
-  expect(await state.options.siteAuthorization()).toBe(ticket());
-  state.options.siteSignOut(); expect(state.logout).toHaveBeenCalledOnce();
+import type { TwitchViewer } from '../src/guessr/twitch-viewer';
+
+const service = vi.hoisted(() => ({
+  state: {} as AuthState, saved: false, listeners: new Set<(state: AuthState) => void>(),
+  loginTwitch: vi.fn(), logout: vi.fn(async () => {}), checkAuth: vi.fn(), playerTicket: vi.fn(), hostTicket: vi.fn(),
+}));
+vi.mock('../src/guessr/api', () => ({ gameAuth: async () => ({
+  getState: () => service.state, hasSavedSession: () => service.saved, loginTwitch: service.loginTwitch,
+  logout: service.logout, checkAuth: service.checkAuth, getPlayerTicket: service.playerTicket,
+  subscribe(listener: (state: AuthState) => void) {
+    service.listeners.add(listener);
+    return () => service.listeners.delete(listener);
+  },
+}) }));
+vi.mock('../src/guessr/stream-api', () => ({ StreamApi: class { hostSocketTicket = service.hostTicket; } }));
+
+const player = { userId: '123', login: 'player', displayName: 'Player' };
+const signedOut: AuthState = { authenticated: false, isSubscriber: false, isFollower: false, username: null, nickname: null, provider: null };
+const signedIn: AuthState = { ...signedOut, authenticated: true, isSubscriber: true, provider: 'twitch', accountId: 'account',
+  linkedAccounts: [{ ...player, username: player.displayName, provider: 'twitch', membershipStatus: 'active', isSubscriber: true, isFollower: true, checkedAt: 1 }] };
+const hostTicket = (id = player.userId) => 'header.' + btoa(JSON.stringify({ v: 2, typ: 'game', aud: 'noitamap-guessr',
+  twitchUserId: id, twitchLogin: player.login, name: player.displayName })) + '.signature';
+function update(state: AuthState) {
+  service.state = state;
+  for (const listener of service.listeners) listener(state);
+}
+let viewer: TwitchViewer;
+beforeEach(() => {
+  vi.resetAllMocks();
+  service.saved = false; service.state = signedIn;
+  service.hostTicket.mockResolvedValue(hostTicket());
+  service.playerTicket.mockResolvedValue({ token: 'participant-ticket', player });
+  service.logout.mockImplementation(async () => update(signedOut));
 });
-it('starts remembered identity-only sign-in for a signed-out invited player', async () => {
-  state.authenticated = state.isSubscriber = false; await pvpViewer();
-  expect(state.options.chat).toBe(false); state.options.siteLogin(); expect(state.login).toHaveBeenCalledOnce(); expect(state.ticket).not.toHaveBeenCalled();
+afterEach(() => { viewer?.dispose(); service.listeners.clear(); });
+
+it('reuses the verified host identity and signs out only on request', async () => {
+  viewer = await pvpViewer();
+  expect(viewer.getState()).toMatchObject({ connected: true, ...player });
+  expect(await viewer.transportAuthorization()).toEqual({ role: 'host', ticket: hostTicket() });
+  expect(service.loginTwitch).not.toHaveBeenCalled();
+  viewer.disconnect(); expect(service.logout).toHaveBeenCalledOnce();
 });
-it.each([true, false])('uses participant credentials for a chatter, with Pro=%s', async pro => {
-  state.isSubscriber = pro;
-  state.participant.mockResolvedValue({ token: 'participant-ticket', player: { userId: '123', login: 'wuote', displayName: 'WUOTE' } });
-  await pvpViewer('player');
-  expect(state.options.siteRole).toBe('account');
-  expect(await state.options.siteAuthorization()).toBe('participant-ticket');
-  expect(state.ticket).not.toHaveBeenCalled();
+it('starts site sign-in for a genuinely signed-out invite', async () => {
+  service.state = signedOut;
+  viewer = await pvpViewer('player'); await viewer.connect();
+  expect(service.loginTwitch).toHaveBeenCalledOnce();
+  expect(service.checkAuth).not.toHaveBeenCalled(); expect(service.playerTicket).not.toHaveBeenCalled();
 });
-it('rejects an account change during ticket renewal', async () => {
-  state.ticket.mockResolvedValue(ticket()); await pvpViewer();
-  state.ticket.mockResolvedValue(ticket('456'));
-  await expect(state.options.siteAuthorization()).rejects.toThrow('connection changed');
+it.each([true, false])('uses a renewed participant ticket for a chatter with Pro=%s', async isSubscriber => {
+  service.state = { ...signedIn, isSubscriber };
+  viewer = await pvpViewer('player');
+  expect(viewer.getState()).toMatchObject({ connected: true, ...player });
+  expect(await viewer.transportAuthorization(true)).toEqual({ role: 'account', ticket: 'participant-ticket' });
+  expect(service.playerTicket).toHaveBeenLastCalledWith(true);
+  expect(service.hostTicket).not.toHaveBeenCalled();
+});
+it('rejects a different identity during ticket renewal', async () => {
+  viewer = await pvpViewer();
+  service.hostTicket.mockResolvedValue(hostTicket('456'));
+  await expect(viewer.transportAuthorization(true)).rejects.toThrow('connection changed');
+});
+it('restores a saved session on an invitation after a temporary check failure, without starting OAuth', async () => {
+  service.state = signedOut; service.saved = true;
+  viewer = await pvpViewer('player');
+  expect(viewer.getState()).toMatchObject({ connected: false, error: 'Could not verify Twitch sign-in. Please connect again.' });
+  await expect(viewer.connect()).rejects.toThrow('Could not verify');
+  service.checkAuth.mockImplementation(async () => update(signedIn));
+  await viewer.connect();
+  expect(viewer.getState()).toMatchObject({ connected: true, ...player, error: null });
+  expect(service.loginTwitch).not.toHaveBeenCalled(); expect(service.logout).not.toHaveBeenCalled();
+});
+it('recognizes a login from another tab and disconnects when that account signs out', async () => {
+  service.state = signedOut;
+  viewer = await pvpViewer('player');
+  update(signedIn);
+  await vi.waitFor(() => expect(viewer.getState()).toMatchObject({ connected: true, ...player }));
+  update(signedOut);
+  expect(viewer.getState().connected).toBe(false);
+  await expect(viewer.transportAuthorization()).rejects.toThrow();
+  expect(service.logout).not.toHaveBeenCalled();
+});
+it('discards a pending participant ticket if its account signs out while the request is in flight', async () => {
+  service.state = signedOut;
+  viewer = await pvpViewer('player');
+  let finish!: (ticket: unknown) => void;
+  service.playerTicket.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+  update(signedIn); update(signedOut);
+  finish({ token: 'participant-ticket', player });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(viewer.getState().connected).toBe(false);
 });

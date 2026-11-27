@@ -1,6 +1,7 @@
 import { gameAuth } from './api';
 import { StreamApi } from './stream-api';
-import { TwitchViewer } from './twitch-viewer';
+import { TwitchViewer, TWITCH_VERIFICATION_FAILED } from './twitch-viewer';
+import type { AuthState } from '../auth/auth-service';
 
 /** Display identity from a ticket obtained directly from the site's auth API.
  * The game Worker independently verifies the signature and authorizes the seat. */
@@ -15,28 +16,55 @@ function identity(token: string) {
 }
 export async function pvpViewer(role: 'auto' | 'player' = 'auto'): Promise<TwitchViewer> {
   const auth = await gameAuth();
-  const state = auth.getState();
-  const login = () => auth.loginTwitch();
-  if (!state.authenticated) return new TwitchViewer({ chat: false, siteLogin: login });
-  if (!state.linkedAccounts?.some(row => row.provider === 'twitch' && row.membershipStatus !== 'reconnect'))
-    return new TwitchViewer({ chat: false, siteLogin: login });
-  const api = new StreamApi();
-  const host = role === 'auto' && state.isSubscriber;
-  const player = host ? identity(await api.hostSocketTicket()) : (await auth.getPlayerTicket()).player;
-  let unsubscribe = () => {};
-  const viewer = new TwitchViewer({ chat: false, siteIdentity: player, siteRole: host ? 'host' : 'account', siteLogin: login,
-    siteAuthorization: async () => {
-      if (!auth.getState().authenticated) throw Error('Sign in to continue.');
-      const ticket = host ? { token: await api.hostSocketTicket(), player: undefined } : await auth.getPlayerTicket();
-      const token = ticket.token;
-      if ((ticket.player ?? identity(token)).userId !== player.userId) throw Error('The Twitch connection changed. Click Send after connecting again.');
-      return token;
+  const twitchAccount = (state: AuthState) => state.authenticated && state.accountId
+    ? state.linkedAccounts?.find(row => row.provider === 'twitch' && row.membershipStatus !== 'reconnect') : undefined;
+  let binding: { account: string; twitchId: string; host: boolean } | undefined;
+  let pending: Promise<void> | undefined, signingOut: Promise<void> | undefined;
+  let disposed = false;
+  const viewer = new TwitchViewer({ chat: false,
+    siteLogin: async () => {
+      await signingOut;
+      if (!auth.getState().authenticated && auth.hasSavedSession()) await auth.checkAuth();
+      if (disposed) return;
+      if (twitchAccount(auth.getState())) return sync(auth.getState());
+      if (!auth.getState().authenticated && auth.hasSavedSession()) throw Error(TWITCH_VERIFICATION_FAILED);
+      return auth.loginTwitch();
     },
-    siteSignOut: () => { void auth.logout(); },
-    onDispose: () => unsubscribe(),
+    siteSignOut: () => {
+      binding = undefined;
+      signingOut = auth.logout().finally(() => { signingOut = undefined; });
+    },
+    onDispose: () => { disposed = true; binding = undefined; unsubscribe(); },
   });
-  unsubscribe = auth.subscribe(next => {
-    if (!next.authenticated || next.accountId !== state.accountId || !next.linkedAccounts?.some(row => row.provider === 'twitch' && row.userId === player.userId)) viewer.disconnect(false);
-  });
+  function sync(state: AuthState): Promise<void> | undefined {
+    if (disposed || signingOut) return;
+    const linked = twitchAccount(state), host = role === 'auto' && state.isSubscriber;
+    if (binding && linked && binding.account === state.accountId && binding.twitchId === linked.userId && binding.host === host) return pending;
+    binding = undefined;
+    if (viewer.getState().connected) viewer.disconnect(false);
+    if (!linked) return;
+    const expected = binding = { account: state.accountId!, twitchId: linked.userId, host };
+    const api = host ? new StreamApi() : undefined;
+    const issue = async (renew = false) => {
+      const ticket = api ? await api.hostSocketTicket(renew).then(token => ({ token, player: identity(token) }))
+        : await auth.getPlayerTicket(renew);
+      if (binding !== expected || ticket.player.userId !== expected.twitchId) throw Error('The Twitch connection changed. Click Send after connecting again.');
+      return ticket;
+    };
+    pending = issue().then(({ player }) => {
+      if (binding === expected) viewer.setSiteSession(player, host ? 'host' : 'account', async renew => (await issue(renew)).token);
+    }).catch(error => {
+      if (binding === expected) {
+        binding = undefined;
+        viewer.siteConnectionFailed();
+        throw error;
+      }
+    });
+    return pending;
+  }
+  const unsubscribe = auth.subscribe(next => { void sync(next)?.catch(() => {}); });
+  if (!auth.getState().authenticated && auth.hasSavedSession()) await auth.checkAuth();
+  await sync(auth.getState())?.catch(() => {});
+  if (!auth.getState().authenticated && auth.hasSavedSession()) viewer.siteConnectionFailed();
   return viewer;
 }

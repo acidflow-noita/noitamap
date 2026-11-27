@@ -21,6 +21,7 @@ export class ParallelConnection {
   private ready = false;
   private failures = 0;
   private authFailures = 0;
+  private renewTicket = false;
   private completed = false;
   private unavailable = false;
   private checkedAvailabilityAt = -Infinity;
@@ -48,7 +49,7 @@ export class ParallelConnection {
     if (document.visibilityState === 'visible' && this.ready) this.probe?.();
   };
   constructor(private origin: string, readonly gameId: string, readonly identity: string,
-    private authorize: () => Promise<ParallelAuthorization>,
+    private authorize: (renew?: boolean) => Promise<ParallelAuthorization>,
     private events: { message(value: ParallelServerMessage): void; status(value: RoomConnection, detail: string): void }) {
     this.storageKey = `noitaguessr-socket-v${GAME_PROTOCOL}:${gameId}:${identity}`;
     this.replayOutbox = new ClueReplayOutbox(this.storageKey + ':clues', m => this.send(m));
@@ -135,7 +136,9 @@ export class ParallelConnection {
       void (async () => {
         let resume: { ticket: string; expiresAt: number } | null = null;
         try { resume = JSON.parse(sessionStorage.getItem(this.storageKey) ?? 'null'); } catch {}
-        const authorization = resume && resume.expiresAt > Date.now() + 60000 ? { role: 'resume' as const, ticket: resume.ticket } : await this.authorize();
+        const authorization = !this.renewTicket && resume && resume.expiresAt > Date.now() + 60000
+          ? { role: 'resume' as const, ticket: resume.ticket }
+          : await this.authorize(this.renewTicket);
         if (current()) socket.send(JSON.stringify({ type: 'authorize', protocol: GAME_PROTOCOL, ...authorization }));
       })().catch(error => { if (current()) socket.close(authorizationCloseCode(error), 'Authorization unavailable'); });
     };
@@ -165,7 +168,7 @@ export class ParallelConnection {
           this.revisions.set(round, Math.max(revision, this.revisions.get(round) ?? 0));
         connectionDiagnostic({ event: 'connected', transport: 'coordinator', code: this.ready ? 'reauthorized' : 'authorized' });
         clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.refreshAuth);
-        this.ready = true; this.failures = 0; this.authFailures = 0;
+        this.ready = true; this.failures = 0; this.authFailures = 0; this.renewTicket = false;
         this.replayEnabled = message.clueReplays === true;
         if (this.replayEnabled) this.replayOutbox.reconnect();
         try { sessionStorage.setItem(this.storageKey, JSON.stringify({ ticket: message.ticket, expiresAt: message.expiresAt })); } catch {}
@@ -220,6 +223,7 @@ export class ParallelConnection {
       if (event.code === 4003) { this.update('stopped', 'This invitation is not available.'); return; }
       if (event.code === 4004) { this.update('stopped', 'Reload this page to use the updated game connection.'); return; }
       if (event.code === 4001) {
+        this.renewTicket = true;
         try { sessionStorage.removeItem(this.storageKey); } catch {}
         if (++this.authFailures > 1) { this.update('stopped', 'Sign in with Twitch to play.'); return; }
       }

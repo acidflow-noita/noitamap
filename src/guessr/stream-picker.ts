@@ -17,7 +17,7 @@ import { MapBoard } from './map-board';
 import { maximumScore, newClueProgress, within, type Point, type ClueProgress } from './rules';
 import { STREAM_ROUNDS } from './stream-types';
 import { STREAM_SUBMISSION_GRACE_MS } from './stream-timing';
-import { TwitchViewer, twitchMessageText } from './twitch-viewer';
+import { TwitchViewer, twitchMessageText, TWITCH_VERIFICATION_FAILED } from './twitch-viewer';
 import { decodeViewerClue } from './viewer-clue';
 import { viewerChatPanel } from './viewer-chat-panel';
 import { supportedCamera } from './clue-camera';
@@ -138,7 +138,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const connection = node('div', 'stream-account'), account = node('span', 'stream-viewer-account');
   const connect = button('Sign in with Twitch', async () => {
     try { actionError = '';
-      if (connectionState === 'stopped' && viewer.getState().connected) viewer.disconnect();
+      if (connectionState === 'stopped' && viewer.getState().connected) {
+        feed?.retry();
+        return;
+      }
       await viewer.connect();
     } catch (error) { if (!closed) { actionError = twitchMessageText((error as Error).message); refresh(); } }
   }, 'btn-twitch small');
@@ -540,6 +543,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     layout.classList.toggle('show-stream-lobby', inLobby);
     round.hidden = inLobby;
     const needsAuthorization = connectionState === 'stopped' && connectionDetail === 'Sign in with Twitch to play.';
+    const statusDetail = needsAuthorization && state.connected ? TWITCH_VERIFICATION_FAILED : connectionDetail;
     signIn.hidden = state.connected && !needsAuthorization || reviewedRound !== null;
     map.hidden = (!state.connected || needsAuthorization) && reviewedRound === null;
     signInError.textContent = actionError || (state.error ? twitchMessageText(state.error) : '');
@@ -553,7 +557,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     budget.hidden = !progress || reviewedRound !== null || !revealBar.hidden;
     account.textContent = state.connected ? tr('Playing as {{player}}', { player: state.login! }) : '';
     connect.hidden = state.connected && !needsAuthorization; connect.disabled = state.connecting;
-    bindText(connect, state.restoring ? 'Restoring Twitch…' : state.connecting ? 'Signing in…' : 'Sign in with Twitch');
+    bindText(connect, state.restoring ? 'Restoring Twitch…' : state.connecting ? 'Signing in…'
+      : state.connected && needsAuthorization ? 'Reconnect' : state.error && !state.connected ? 'Try again' : 'Sign in with Twitch');
     disconnect.hidden = !state.connected; disconnect.disabled = state.sending;
     const own = live ? personal.round(live.round - 1) : null;
     let deliveryRound = live ? live.round - 1 : undefined;
@@ -626,7 +631,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         : live.phase === 'complete' ? 'Game finished' : live.phase === 'reveal' && live.round === (live.totalRounds ?? STREAM_ROUNDS) ? tr('Waiting for the streamer', { rounds: formatGuessrNumber(live.totalRounds ?? STREAM_ROUNDS) }) : live.phase === 'reveal' ? 'Round closed'
         : live.timing?.early ? 'Everyone has submitted. This round is closing.'
         : !live.online ? 'Streamer disconnected from NoitaGuessr' : live.paused ? 'Paused' : isHost() ? 'You are the streamer' : '');
-    } else bindText(roomStatus, connectionDetail);
+    } else bindText(roomStatus, statusDetail);
     if (unavailableGame) bindText(roomStatus, 'This game is no longer active.');
     roomStatus.hidden = !channel || !roomStatus.textContent;
     result.hidden = !live?.resultId && !(unavailableGame && requestedGame);
@@ -679,7 +684,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
         const remaining = Math.max(0, Math.ceil(((live!.timing?.deadline ?? gameNow()) - gameNow()) / 1000));
         pvpClock.textContent = `${formatGuessrNumber(Math.floor(remaining / 60), { minimumIntegerDigits: 2 })}:${formatGuessrNumber(remaining % 60, { minimumIntegerDigits: 2 })}`;
       }
-      bindText(roomStatus, actionError || (live?.ended ? 'The match was cancelled.' : connectionState === 'stopped' ? connectionDetail : ''));
+      bindText(roomStatus, actionError || (live?.ended ? 'The match was cancelled.' : connectionState === 'stopped' ? statusDetail : ''));
       roomStatus.hidden = !roomStatus.textContent || live?.phase === 'complete';
     }
     activity.hidden = roomStatus.hidden && delivery.hidden;

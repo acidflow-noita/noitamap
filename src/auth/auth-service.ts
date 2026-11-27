@@ -227,20 +227,27 @@ class AuthService {
   }
 
   /** Participant tickets stay in memory and never authorize Pro/host actions. */
-  async getPlayerTicket(): Promise<PlayerTicket> {
+  async getPlayerTicket(renew = false): Promise<PlayerTicket> {
     const owner = this.state.accountId;
     const generation = this.sessionGeneration;
     if (!this.state.authenticated || !owner) throw new Error('Sign in to continue.');
+    if (renew) this.playerTicket = undefined;
     if (this.playerTicket && this.playerTicket.expiresAt > Date.now() + 90000) return this.playerTicket;
-    return this.playerTicketPending ??= (async () => {
+    if (this.playerTicketPending) return this.playerTicketPending;
+    const pending = (async () => {
       const response = await this.accountRequest('/auth/player-ticket', {});
+      if (!response.ok) {
+        if (response.status === 401 && this.state.accountId === owner && this.sessionGeneration === generation) await this.checkAuth();
+        const data = await response.json().catch(() => ({}));
+        throw Object.assign(new Error(data.error || 'Sign in to continue.'), { status: response.status });
+      }
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Sign in to continue.');
       if (!this.state.authenticated || this.state.accountId !== owner || this.sessionGeneration !== generation) throw new Error('Sign in to continue.');
       if (typeof data.token !== 'string' || !Number.isFinite(data.expiresAt) || !/^\d{1,30}$/.test(data.player?.userId ?? '')
         || !/^[a-z0-9_]{1,25}$/.test(data.player?.login ?? '') || typeof data.player?.displayName !== 'string') throw new Error('Sign in to continue.');
       this.playerTicket = data; return data as PlayerTicket;
-    })().finally(() => { this.playerTicketPending = undefined; });
+    })().finally(() => { if (this.playerTicketPending === pending) this.playerTicketPending = undefined; });
+    return this.playerTicketPending = pending;
   }
 
   /** Exchange the stored refresh reference for a fresh registered session. */
@@ -297,6 +304,11 @@ class AuthService {
     linkingAvailable?: boolean;
     linkedAccounts?: LinkedAccount[];
   }): void {
+    if (this.state.authenticated && this.state.accountId !== data.accountId) {
+      this.sessionGeneration++;
+      this.playerTicket = undefined;
+      this.playerTicketPending = undefined;
+    }
     this.state = {
       authenticated: true,
       username: data.username || null,
@@ -313,7 +325,7 @@ class AuthService {
 
   private setUnauthenticated(): AuthState {
     this.sessionGeneration++;
-    this.playerTicket = undefined; this.membershipCheckedAt = 0;
+    this.playerTicket = undefined; this.playerTicketPending = undefined; this.membershipCheckedAt = 0;
     this.state = {
       authenticated: false,
       username: null,
@@ -336,8 +348,8 @@ class AuthService {
   /**
    * Start Twitch login flow (UI entry points are gated by TWITCH_ENABLED).
    */
-  loginTwitch(): void {
-    void this.redirectToLogin('twitch');
+  loginTwitch(): Promise<void> {
+    return this.redirectToLogin('twitch');
   }
 
   /** Announcement permission is optional and selected during streamer setup. */
@@ -442,6 +454,7 @@ class AuthService {
    */
   async logout(): Promise<void> {
     const token = localStorage.getItem(REFRESH_KEY) || localStorage.getItem(JWT_KEY);
+    this.clearSession();
     try {
       if (token) {
         const response = await fetch(`${AUTH_WORKER_URL}/auth/logout`, {
@@ -450,7 +463,6 @@ class AuthService {
         if (!response.ok) console.error('[Auth] Server logout was not confirmed.');
       }
     } catch { console.error('[Auth] Server logout was not confirmed.'); }
-    finally { this.clearSession(); }
   }
 
   private clearSession(): void {
@@ -474,6 +486,11 @@ class AuthService {
 
   getToken(): string | null {
     return localStorage.getItem(JWT_KEY);
+  }
+
+  hasSavedSession(): boolean {
+    try { return !!(localStorage.getItem(JWT_KEY) || localStorage.getItem(REFRESH_KEY)); }
+    catch { return false; }
   }
 
   /**

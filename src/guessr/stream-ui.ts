@@ -187,7 +187,7 @@ export class StreamUI {
     const game = this.game;
     if (!game || !this.durable || this.parallel) return;
     this.parallel = new ParallelConnection(this.api.origin!, game.session.id, 'host:' + game.session.host.id,
-      async () => ({ role: 'host', ticket: await this.api.hostSocketTicket() }), {
+      async renew => ({ role: 'host', ticket: await this.api.hostSocketTicket(renew) }), {
         status: (status, detail) => {
           if (this.game !== game) return;
           this.coordinatorUnavailable = status === 'stopped' && detail === GAME_UNAVAILABLE_MESSAGE;

@@ -22,9 +22,9 @@ export class StreamApi {
   private api = this.origin ? new GameApi(this.origin) : null;
   private publicResults = new Map<string, Promise<StreamResult>>();
   private localChannel?: string;
-  hostSocketTicket(): Promise<string> {
+  hostSocketTicket(renew = false): Promise<string> {
     if (!this.api) return Promise.reject(new Error('Stream hosting is not configured on this site yet.'));
-    return this.api.transportTicket();
+    return this.api.transportTicket(renew);
   }
   setLocalChannel(channel?: string): void {
     if (channel !== undefined && !/^[a-z0-9_]{1,25}$/.test(channel)) throw new Error('Invalid Twitch channel.');
