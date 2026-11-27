@@ -8,7 +8,7 @@ import { playerColor } from './player-color';
 import { RESULT_PIN_PADDING_Y } from './map-framing';
 import { within } from './rules';
 import type { ReplayLoader } from './clue-replay';
-import { createReplayRows } from './clue-replay-view';
+import { createScoreReplay } from './clue-replay-view';
 import { guessrFeatures, newFeatureBadge, replayLegend } from './release-features';
 import { focusScoreRow, scoreSummary } from './score-summary';
 
@@ -75,7 +75,7 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
     selected = id; rows.get(id)?.classList.add('selected'); board.highlightPlayer(id);
   };
   const readReplay = data.clueReplays ? options.readReplay : undefined;
-  const replays = readReplay ? createReplayRows(readReplay, config) : undefined;
+  const replays = readReplay ? createScoreReplay(readReplay, grid, config) : undefined;
   if (replays) heading.insertBefore(replayLegend(), actions);
   const players = data.players;
   const streamerId = data.mode === 'pvp' ? '' : data.host.id;
@@ -133,7 +133,7 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
         }
         row.append(cell);
       }
-      rows.set(player.id, row); fragment.append(row); replays?.appendAfterScore(fragment,player.id);
+      rows.set(player.id, row); fragment.append(row);
     }
     body.replaceChildren(fragment); replays?.discardHidden();
   }

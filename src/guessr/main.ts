@@ -406,6 +406,7 @@ function makePlayPanels(
   onPick?: (point: Point) => void,
   readOnly = false,
   config?: ImageGameConfig,
+  onMapView?: (pose: import('./guess-map-replay').MapPose, action: import('./guess-map-replay').MapReplayAction, at: number) => void,
 ): { clue: HTMLElement; bar: HTMLElement; mapBar: HTMLElement } {
   const grid = node("div", "game-grid"),
     left = node("section", "game-panel"),
@@ -466,6 +467,7 @@ function makePlayPanels(
   mapBar.append(mapControls(board, { readOnly }));
   board.setMarkers(guess);
   board.setLocked(locked);
+  if (onMapView) board.recordViews(onMapView);
   clearFrame = fitGameFrame(grid);
   return { clue, bar, mapBar };
 }
@@ -1620,6 +1622,7 @@ if (!isGuessrAvailable(location.hostname, import.meta.env.DEV)) {
       },
       markers: (guess, answer) => board?.setMarkers(guess, answer),
       lockGuess: locked => board?.setLocked(locked),
+      flushMapCamera: () => board?.flushCamera(),
       hud: gameHud,
       result: showMapResult,
       home,

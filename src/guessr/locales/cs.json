@@ -1,4 +1,12 @@
 {
+  "The clue and guess maps play side by side as a player pans, zooms and submits a guess.": "Mapa nápovědy a mapa tipů se zobrazují vedle sebe, zatímco hráč posouvá pohled, mění přiblížení a odesílá tip.",
+  "Clue map": "Mapa nápovědy",
+  "Guess map": "Mapa tipů",
+  "Pan guess map": "Posunout mapu tipů",
+  "Follow actions": "Sledovat akce",
+  "Replay view": "Zobrazení záznamu",
+  "No guess-map movement was recorded.": "Pohyb na mapě tipů nebyl zaznamenán.",
+  "Watch the clue and guess map together. On phones, follow the action or choose a map.": "Sledujte nápovědu a mapu tipů společně. Na telefonu můžete sledovat jednotlivé akce nebo si vybrat mapu.",
   "Replay": "Přehrát znovu",
   "Resume playback": "Pokračovat",
   "Score summary": "Přehled skóre",

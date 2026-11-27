@@ -92,15 +92,15 @@ function replayPreview() {
   const figure = document.createElement('figure');
   figure.className = 'guessr-release-preview';
   const image = document.createElement('img');
-  image.width = 512; image.height = 496; image.decoding = 'async';
+  image.width = 680; image.height = 360; image.decoding = 'async';
   image.className = 'border rounded-9';
-  bindAttribute(image, 'alt', 'A player’s score is highlighted. The replay moves across the clue and shows the submitted pin on the map.');
+  bindAttribute(image, 'alt', 'The clue and guess maps play side by side as a player pans, zooms and submits a guess.');
   const toggle = document.createElement('button');
   toggle.type = 'button'; toggle.className = 'btn btn-sm btn-outline theme-secondary';
   let playing = false;
   const show = (animate: boolean) => {
     playing = animate;
-    image.src = '/guessr/updates/round-replays-2026-11-27.' + (playing ? 'gif' : 'webp');
+    image.src = '/guessr/updates/two-map-replays-2026-11-27.' + (playing ? 'gif' : 'webp');
     bindText(toggle, playing ? 'Stop animation' : 'Play animation');
   };
   show(window.matchMedia?.('(prefers-reduced-motion: no-preference)').matches === true);

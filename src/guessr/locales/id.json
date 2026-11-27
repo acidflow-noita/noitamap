@@ -1,4 +1,12 @@
 {
+  "The clue and guess maps play side by side as a player pans, zooms and submits a guess.": "Peta petunjuk dan peta tebakan ditampilkan berdampingan saat pemain menggeser tampilan, mengubah zoom, dan mengirim tebakan.",
+  "Clue map": "Peta petunjuk",
+  "Guess map": "Peta tebakan",
+  "Pan guess map": "Geser peta tebakan",
+  "Follow actions": "Ikuti aksi",
+  "Replay view": "Tampilan tayangan ulang",
+  "No guess-map movement was recorded.": "Tidak ada pergerakan yang terekam di peta tebakan.",
+  "Watch the clue and guess map together. On phones, follow the action or choose a map.": "Lihat petunjuk dan peta tebakan secara berdampingan. Di ponsel, Anda dapat mengikuti aksi atau memilih peta.",
   "Replay": "Putar lagi",
   "Resume playback": "Lanjutkan",
   "Score summary": "Ringkasan skor",

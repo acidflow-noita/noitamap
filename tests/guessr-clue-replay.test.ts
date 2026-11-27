@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { encodeReplayFrames, publicClueReplay, type ReplayFrame } from '../src/guessr/clue-replay';
+import { encodeReplayFrames, playbackSteps, publicClueReplay, type ReplayFrame } from '../src/guessr/clue-replay';
+import { decodeMapFrames, encodeMapFrames, mapPose, mapView, MAP_PACKET_LIMIT } from '../src/guessr/guess-map-replay';
+import { GuessMapOutbox } from '../src/guessr/guess-map-outbox';
 import { ClueReplayOutbox } from '../src/guessr/clue-replay-outbox';
 
 const start = 1800000000000;
@@ -18,6 +20,35 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+it('keeps both camera clocks ordered within a public second and preserves a deeply zoomed portrait view', () => {
+  const world = {x:-17920,y:-31744,width:36352,height:73728}, visible = {x:304.25,y:-2048.5,width:15,height:29};
+  const pose = mapPose(visible,world), restored = mapView(pose,world);
+  for (const key of ['x','y','width','height'] as const) expect(Math.abs(restored[key]-visible[key])).toBeLessThan(.006);
+  const maps = encodeMapFrames([{at:2501,action:'map-pan',map:pose},{at:2540,action:'map-zoom-in',map:pose}],0);
+  expect(maps).toHaveLength(40);
+  const replay = publicClueReplay({}, {track:encodeReplayFrames([[2500,0,0,0],[2525,24,0,0,'right']],0),
+    opens:2500,guesses:[[2540,35,40,0]],maps})!;
+  expect(replay.steps).toHaveLength(3);
+  expect(playbackSteps(replay).map(s=>s.action)).toEqual(['view','map-pan','right','map-zoom-in','submit']);
+  expect(playbackSteps(replay).every(s=>s.second===0)).toBe(true);
+  expect(JSON.stringify(replay)).not.toContain('2540');
+});
+
+it('bounds an unsent movement burst and restores only unacknowledged movement on reconnect', () => {
+  const pose = {x:1000,y:2000,w:33000,h:32700};
+  const old = new GuessMapOutbox('map');
+  for (let i=0;i<MAP_PACKET_LIMIT+20;i++) old.record('round',{...pose,x:1000+i},'map-pan',start+i);
+  const next = new GuessMapOutbox('map');
+  const payload = next.attach('round','guess')!;
+  expect(payload.partial).toBe(true);
+  const frames=decodeMapFrames(payload.data,payload.base,MAP_PACKET_LIMIT);
+  expect(frames[0].map.x).toBe(1000);
+  expect(frames.at(-1)?.map.x).toBe(1000+MAP_PACKET_LIMIT+19);
+  expect(next.attach('round','clue')).toBeUndefined();
+  next.reconnect();expect(next.attach('round','retry')).toEqual(payload);
+  next.acknowledge('retry',true);
+  expect(new GuessMapOutbox('map').attach('round','again')).toBeUndefined();
+});
 it('round-trips signed offsets, zoom, return-to-start, and the original timing across batches', () => {
   const f: ReplayFrame[] = [
     [start + 3000, 0, 0, 0],

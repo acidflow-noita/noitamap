@@ -203,6 +203,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     && live.online && !live.paused && live.phase === 'guess' && (!live.timing || gameNow() >= live.timing.startsAt
       && (live.timing.deadline === null || gameNow() < live.timing.deadline)));
   const sendGuess = async (automatic = false) => {
+    board.flushCamera?.();
     if (!point || !channel || !snapshot || (!automatic && !canGuess()) || sending || !viewer.getState().connected) return;
     if (automatic && (!live?.timing?.deadline || live.ended || live.phase !== 'guess' || isHost() || gameNow() > live.timing.deadline + STREAM_SUBMISSION_GRACE_MS)) return;
     const submittedPoint = { x: Math.round(point.x), y: Math.round(point.y) }, key = guessKey(), identity = roundKey, playerId = viewer.getState().userId!;
@@ -282,6 +283,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
   const guessKey = () => point ? `${viewer.getState().userId}/${channel}/${live?.roundId ?? snapshot?.round}/${Math.round(point.x)}/${Math.round(point.y)}/${progress ? maximumScore(progress) : ''}` : '';
   const setRound = (payload: string | null, identity: string) => {
     if (identity === roundKey && (!!payload === !!snapshot)) return;
+    board.recordViews?.();
     clearResults?.(); clearResults = undefined;
     viewport?.destroy(); viewport = undefined; clearControls?.(); clearControls = undefined;
     snapshot = undefined; progress = null; point = null; submitted = null; lastSent = ''; actionError = ''; roundKey = identity;
@@ -303,6 +305,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       const clue = node('div', 'clue loading');
       cluePanel.replaceChildren(roundPanelHeader(clueTitleBar(budget)), clue);
       const replayRound = live?.roundId;
+      if (replayRound && feed?.recordMap) board.recordViews((pose, action, at) => {
+        if (live?.roundId === replayRound && live.phase === 'guess' && !live.paused && reviewedRound === null &&
+          (action === 'map-view' || canGuess())) feed?.recordMap(replayRound, pose, action, at);
+      });
       if (progress) clearControls = attachClueControls(clue, snapshot.source, progress, 256, () => { saveProgress(); refresh(); },
         { compact: true, difficultyTier: () => live?.difficultyTier,
           onCamera: (camera, action) => { if (replayRound && live?.roundId === replayRound) feed?.recordCamera(replayRound, camera, action); },

@@ -133,6 +133,26 @@ function click(mount: HTMLElement, x: number, y: number) {
 }
 
 describe("guess-map camera", () => {
+  it('records settled user gestures and flushes an in-progress wheel burst before a guess', async () => {
+    const { board, mount } = await fixture();
+    vi.useFakeTimers();
+    try {
+      const moved = vi.fn(); board.recordViews(moved); board.zoom(2);
+      const event = (type:string,x:number,y:number) => {
+        const e = new MouseEvent(type,{clientX:x,clientY:y,button:0});
+        Object.defineProperty(e,'pointerId',{value:1}); mount.dispatchEvent(e);
+      };
+      event('pointerdown',100,80);event('pointermove',135,95);event('pointermove',140,100);
+      expect(moved.mock.calls.map(c=>c[1])).toEqual(['map-view','map-zoom-in']);
+      event('pointerup',140,100);
+      mount.dispatchEvent(new WheelEvent('wheel',{deltaY:-20,clientX:100,clientY:80}));
+      mount.dispatchEvent(new WheelEvent('wheel',{deltaY:-10,clientX:100,clientY:80}));
+      board.flushCamera();await vi.advanceTimersByTimeAsync(200);
+      expect(moved.mock.calls.map(c=>c[1])).toEqual(['map-view','map-zoom-in','map-pan','map-zoom-in']);
+      board.showEntireMap();expect(moved.mock.lastCall![1]).toBe('map-home');
+      board.recordViews();board.zoom(2);expect(moved).toHaveBeenCalledTimes(5);
+    } finally { vi.useRealTimers(); }
+  });
   it('pans with global arrows without moving the guess and ignores typing, browser shortcuts and dialogs', async () => {
     const { board, mount, guess, viewer } = await fixture();
     board.setMarkers({ x: 1000, y: 2000 }); board.zoom(2);

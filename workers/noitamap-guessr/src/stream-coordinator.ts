@@ -243,7 +243,7 @@ export class StreamCoordinator extends DurableObject<Env> {
             if (other !== socket && prior?.id === identity.id && prior.role === identity.role) other.close(4002, 'Opened in another tab');
           }
           if (active || record.game.pvp) await this.persist(active ? [player] : []);
-          this.send(socket, { type: 'authorized', ...(record.game.session.clueReplays ? { clueReplays: true } : {}),
+          this.send(socket, { type: 'authorized', ...(record.game.session.clueReplays ? { clueReplays: true, guessMapReplays: true } : {}),
             player: { id: player.id, login: player.login, name: player.name, color: player.color },
             ticket: await socketTicket(this.env, record.game.session.id, identity), expiresAt: identity.expiresAt, now: Date.now(),
             acceptedRevisions: Object.fromEntries(player.guesses.flatMap((guess, round) => guess?.revision ? [[record.game.session.rounds[round].id, guess.revision]] : [])) });
@@ -295,7 +295,7 @@ export class StreamCoordinator extends DurableObject<Env> {
         this.send(socket, { type: 'clue-replay', request: message.request,
           replay: releasedClueReplay(this.ctx.storage.sql, record.game, message.round, message.player) });
       } else {
-        const through = appendClueFrames(this.ctx.storage.sql, record, identity, message.roundId, message.frames, now);
+        const through = appendClueFrames(this.ctx.storage.sql, record, identity, message.roundId, message.frames, now, message.mapMoves);
         await this.ctx.storage.sync();
         this.send(socket, { type: 'clue-ack', roundId: message.roundId, through });
       }
@@ -342,7 +342,7 @@ export class StreamCoordinator extends DurableObject<Env> {
         const tag = this.attachment(socket).networkTag;
         if (tag) { const review = this.reviews.get(identity.id) ?? newPlayerReview(); review.submitted[command.round - 1] = tag; this.reviews.set(identity.id, review); }
         record.metrics.firstBySocket++;
-        await this.persist([player], [], acceptedReplayGuess(record.game, command.round - 1, player.id)); await this.schedule();
+        await this.persist([player], [], acceptedReplayGuess(record.game, command.round - 1, player.id, message.mapMoves)); await this.schedule();
         if (record.game.timing!.revision !== oldRevision) this.broadcast();
         this.hosts({ type: 'participant', participant: hostPlayer(record.game, player), joined: Object.keys(record.game.joinedPlayers ?? {}).length,
           submittedCounts: submittedCounts(record.game), submitted: true });
@@ -367,7 +367,7 @@ export class StreamCoordinator extends DurableObject<Env> {
       } else if (message.type === 'quit') record.ended = true;
       else if (message.type !== 'publish') throw new ParallelActionError('Invalid command');
       if (!record.hostCommands.includes(message.id)) record.hostCommands = [...record.hostCommands.slice(-31), message.id];
-      const replayGuess = message.type === 'host-guess' ? acceptedReplayGuess(record.game, record.game.round, identity.id) : undefined;
+      const replayGuess = message.type === 'host-guess' ? acceptedReplayGuess(record.game, record.game.round, identity.id, message.mapMoves) : undefined;
       if(record.ended) await releaseFinish(this.env,record.game.session.id,now).catch(() => {});
       tickParallel(record, now); await this.persist([record.game.participants[0]], [], replayGuess);
       if (record.game.stage === 'complete') await this.publish();
@@ -388,7 +388,7 @@ export class StreamCoordinator extends DurableObject<Env> {
       const accepted = status === 'accepted' || status === 'duplicate';
       if (status === 'accepted') {
         game.participants.find(p => p.id === identity.id)!.guesses[command.round - 1]!.automatic = message.submission.automatic;
-        const replayGuess = acceptedReplayGuess(game, command.round - 1, identity.id);
+        const replayGuess = acceptedReplayGuess(game, command.round - 1, identity.id, message.mapMoves);
         record.metrics.firstBySocket++; tickParallel(record, now);
         await this.persist(game.participants, [], replayGuess); await this.schedule();
       } else if (status === 'duplicate') record.metrics.duplicates++;

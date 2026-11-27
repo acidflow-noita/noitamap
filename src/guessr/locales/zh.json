@@ -1,4 +1,12 @@
 {
+  "The clue and guess maps play side by side as a player pans, zooms and submits a guess.": "线索地图和猜测地图并排回放，展示玩家平移、缩放并提交猜测的过程。",
+  "Clue map": "线索地图",
+  "Guess map": "猜测地图",
+  "Pan guess map": "平移猜测地图",
+  "Follow actions": "跟随操作",
+  "Replay view": "回放视图",
+  "No guess-map movement was recorded.": "未记录猜测地图的移动。",
+  "Watch the clue and guess map together. On phones, follow the action or choose a map.": "并排观看线索和猜测地图。在手机上，可以跟随操作自动切换，也可以自行选择地图。",
   "Replay": "重新播放",
   "Resume playback": "继续播放",
   "Score summary": "得分概览",

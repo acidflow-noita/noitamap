@@ -6,6 +6,8 @@ import { connectionDiagnostic } from './connection-diagnostics';
 import { GAME_PROTOCOL } from './game-protocol';
 import { GAME_UNAVAILABLE_MESSAGE } from './stream-lifetime';
 import { ClueReplayOutbox } from './clue-replay-outbox';
+import { GuessMapOutbox } from './guess-map-outbox';
+import type { MapPose, MapReplayAction } from './guess-map-replay';
 import type { ClueReplay, ReplayLoader } from './clue-replay';
 import type { Camera } from './clue-camera';
 
@@ -37,6 +39,8 @@ export class ParallelConnection {
   private hostPending?: Extract<Command, { type: 'host-guess' }>;
   private replayEnabled = false;
   private replayOutbox: ClueReplayOutbox;
+  private mapOutbox: GuessMapOutbox;
+  private mapReplayEnabled = false;
   private replayReads = new Map<string, { finish(value: ClueReplay | null): void; fail(): void }>();
   private flushReplay = () => { if (this.replayEnabled) this.replayOutbox.flush(); };
   private offset = 0;
@@ -53,6 +57,7 @@ export class ParallelConnection {
     private events: { message(value: ParallelServerMessage): void; status(value: RoomConnection, detail: string): void }) {
     this.storageKey = `noitaguessr-socket-v${GAME_PROTOCOL}:${gameId}:${identity}`;
     this.replayOutbox = new ClueReplayOutbox(this.storageKey + ':clues', m => this.send(m));
+    this.mapOutbox = new GuessMapOutbox(this.storageKey + ':map');
     try {
       const saved = JSON.parse(localStorage.getItem(this.storageKey + ':pending') ?? '[]');
       if (Array.isArray(saved)) for (const item of saved.slice(-10)) if (item?.roundId && /^[a-f0-9]{16}$/.test(item.nonce)
@@ -77,6 +82,9 @@ export class ParallelConnection {
   recordCamera(roundId: string, camera: Camera, action?: import('./clue-replay').CameraAction): void {
     if (this.replayEnabled && !this.closed && !this.completed) this.replayOutbox.record(roundId, camera, this.now(), action);
   }
+  recordMap(roundId: string, pose: MapPose, action: MapReplayAction, at = Date.now()): void {
+    if (this.mapReplayEnabled && !this.closed && !this.completed) this.mapOutbox.record(roundId, pose, action, at + this.offset);
+  }
   readReplay: ReplayLoader = (round, player, signal) => {
     if (!this.replayEnabled) return Promise.resolve(null);
     if (!this.connected() || signal.aborted) return Promise.reject(Error('Connection unavailable. Reconnecting…'));
@@ -96,6 +104,13 @@ export class ParallelConnection {
   }
   private send(message: ParallelClientMessage): boolean {
     if (!this.ready || this.socket?.readyState !== WebSocket.OPEN) return false;
+    if (this.mapReplayEnabled && (message.type === 'clue-frames' || message.type === 'host-guess' || message.type === 'guess')) {
+      const round = message.type === 'guess' ? message.submission.roundId : message.roundId;
+      const key = message.type === 'guess' ? 'g:' + message.submission.nonce : message.type === 'host-guess' ? 'h:' + message.id :
+        round + ':' + message.frames[message.frames.length - 1][0];
+      const mapMoves = this.mapOutbox.attach(round, key);
+      if (mapMoves) message = { ...message, mapMoves };
+    }
     this.socket.send(JSON.stringify(message)); return true;
   }
   submit(submission: ParallelSubmission): void {
@@ -160,6 +175,7 @@ export class ParallelConnection {
         this.update('stopped', message.message); socket.close(4003, 'Invitation unavailable'); return;
       }
       if (message.type === 'published') {
+        this.mapOutbox.clear();
         this.replayOutbox.clear();
         this.completed = true; clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
       }
@@ -168,8 +184,10 @@ export class ParallelConnection {
           this.revisions.set(round, Math.max(revision, this.revisions.get(round) ?? 0));
         connectionDiagnostic({ event: 'connected', transport: 'coordinator', code: this.ready ? 'reauthorized' : 'authorized' });
         clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.refreshAuth);
+        if (!this.ready) this.mapOutbox.reconnect();
         this.ready = true; this.failures = 0; this.authFailures = 0; this.renewTicket = false;
         this.replayEnabled = message.clueReplays === true;
+        this.mapReplayEnabled = this.replayEnabled && message.guessMapReplays === true;
         if (this.replayEnabled) this.replayOutbox.reconnect();
         try { sessionStorage.setItem(this.storageKey, JSON.stringify({ ticket: message.ticket, expiresAt: message.expiresAt })); } catch {}
         this.update('connected');
@@ -196,13 +214,16 @@ export class ParallelConnection {
             .catch(error => { if (current()) socket.close(authorizationCloseCode(error), 'Authorization unavailable'); });
         }, Math.max(1000, message.expiresAt - this.now() - 60000));
       } else if (message.type === 'clue-ack') {
+        this.mapOutbox.acknowledge(message.roundId + ':' + message.through, true);
         this.replayOutbox.acknowledge(message.roundId, message.through); return;
       } else if (message.type === 'clue-replay') {
         this.replayReads.get(message.request)?.finish(message.replay); return;
       } else if (message.type === 'receipt') {
+        this.mapOutbox.acknowledge('g:' + message.nonce, message.accepted);
         const pending = this.outbox.get(message.roundId);
         if (pending?.nonce === message.nonce) { this.outbox.delete(message.roundId); this.persist(); }
       } else if (message.type === 'command') {
+        this.mapOutbox.acknowledge('h:' + message.id, message.accepted);
         const command = this.commands.get(message.id); this.commands.delete(message.id);
         if (this.hostPending?.id === message.id || command?.message.type === 'quit' && message.accepted) {
           this.hostPending = undefined; try { localStorage.removeItem(this.storageKey + ':host-guess'); } catch {}

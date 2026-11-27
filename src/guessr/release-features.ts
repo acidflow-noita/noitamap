@@ -3,7 +3,7 @@ import { bindAttribute, bindText } from './i18n';
 export const guessrFeatures = {
   replays: {
     title: 'Round replays',
-    note: 'Replays start when you open them. You can pause, resume or watch again.',
+    note: 'Watch the clue and guess map together. On phones, follow the action or choose a map.',
   },
   markers: {
     title: 'Player pins',

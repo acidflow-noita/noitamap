@@ -6,6 +6,8 @@ import { frameMap, frameMarkers } from "./map-framing";
 import { bindAttribute, bindText } from "./i18n";
 import { twitchColor } from './player-color';
 import { gameShortcut } from './game-keyboard';
+import { mapPose, mapView, type MapPose, type MapReplayAction } from './guess-map-replay';
+import type { ReplayMotion } from './replay-motion';
 import { MAP_PIN_PATH, MAP_PIN_TIP, ANSWER_PIN_CENTER, GUESS_PIN_COLOR, ANSWER_PIN_COLOR,
   GUESS_PIN_HEIGHT, ANSWER_PIN_HEIGHT, PLAYER_PIN_HEIGHT, HIGHLIGHT_PIN_HEIGHT } from './map-pin';
 
@@ -30,6 +32,12 @@ export class MapBoard {
   private pinListeners = new Set<(placed: boolean) => void>();
   private playerMarks = new Map<string, SVGGElement>();
   private highlightedPlayer?: string;
+  private cameraListener?: (pose: MapPose, action: MapReplayAction, at: number) => void;
+  private initialCamera = false;
+  private settleTimer?: ReturnType<typeof setTimeout>;
+  private pendingCamera?: { pose:MapPose; action:MapReplayAction; at:number };
+  private gestureZoom?: number;
+  private playbackView?: Bounds;
   constructor(
     readonly element: HTMLElement,
     readonly bounds: Bounds,
@@ -116,6 +124,8 @@ export class MapBoard {
     this.resize.observe(element);
   }
   destroy(): void {
+    this.flushCamera();
+    this.cameraListener = undefined;
     this.pinListeners.clear();
     this.tiles?.destroy();
     this.tiles = undefined;
@@ -141,7 +151,9 @@ export class MapBoard {
   private updateView(): void {
     const width = this.element.clientWidth,
       height = this.element.clientHeight;
-    if (this.fittedMarkers) {
+    if (this.playbackView) {
+      this.view = { ...this.playbackView };
+    } else if (this.fittedMarkers) {
       this.view = frameMarkers(
         this.fittedMarkers,
         width,
@@ -195,6 +207,68 @@ export class MapBoard {
       );
     }
     this.updateMarkers();
+    if (this.initialCamera && width > 0 && height > 0) this.emitCamera('map-view');
+  }
+  recordViews(listener?: (pose: MapPose, action: MapReplayAction, at: number) => void): void {
+    this.flushCamera();
+    this.cameraListener = listener;
+    this.initialCamera = !!listener;
+    if (listener && this.element.clientWidth && this.element.clientHeight) this.emitCamera('map-view');
+  }
+  private emitCamera(action: MapReplayAction) {
+    if (!this.cameraListener || !this.element.clientWidth || !this.element.clientHeight) return;
+    this.initialCamera = false;
+    this.cameraListener(mapPose(this.view, this.bounds), action, Date.now());
+  }
+  flushCamera(): void {
+    clearTimeout(this.settleTimer);
+    const last = this.pendingCamera;
+    this.pendingCamera = undefined;
+    if (last) this.cameraListener?.(last.pose, last.action, last.at);
+  }
+  private settleCamera(action: MapReplayAction) {
+    if (!this.cameraListener) return;
+    this.pendingCamera = {pose:mapPose(this.view, this.bounds), action, at:Date.now()};
+    clearTimeout(this.settleTimer);
+    this.settleTimer = setTimeout(() => this.flushCamera(), 180);
+  }
+  clearReplayPose(): void {
+    if (!this.playbackView) return;
+    this.playbackView = undefined;
+    this.element.style.removeProperty('--map-replay-aspect');
+    this.showEntireMap();
+  }
+  /** Replays use the player's original world rectangle even on a different screen. */
+  async setReplayPose(pose: MapPose, motion?: ReplayMotion): Promise<void> {
+    const from = this.playbackView, to = mapView(pose, this.bounds);
+    const animate = from && motion && !motion.reduced && this.element.clientWidth > 0;
+    let previous: HTMLDivElement | undefined;
+    if (animate) {
+      previous = document.createElement('div'); previous.className = 'replay-map-snapshot';
+      previous.setAttribute('aria-hidden', 'true');
+      for (const source of this.element.querySelectorAll<HTMLCanvasElement>('.map-tiles canvas')) {
+        if (!source.width || !source.height) continue;
+        const copy = document.createElement('canvas'); copy.width = source.width; copy.height = source.height;
+        copy.getContext('2d')?.drawImage(source, 0, 0); previous.append(copy);
+      }
+      previous.append(this.svg.cloneNode(true));
+    }
+    this.playbackView = to;
+    this.element.style.setProperty('--map-replay-aspect', String(to.width / to.height));
+    this.updateView();
+    if (!previous || !from || !motion) return;
+    const project = (view: Bounds, into: Bounds) => {
+      const x = (view.x + view.width / 2 - into.x - into.width / 2) * 100 / into.width;
+      const y = (view.y + view.height / 2 - into.y - into.height / 2) * 100 / into.height;
+      return `translate(${x}%, ${y}%) scale(${view.width / into.width}, ${view.height / into.height})`;
+    };
+    // Request the destination tiles once. The already-painted terrain covers the move between endpoints.
+    const layers = [this.element.querySelector('.map-tiles'), this.svg].filter((el): el is Element => !!el);
+    this.element.append(previous);
+    try {
+      await Promise.all([motion.animate(previous, [{ transform:'none', opacity:1 }, { transform:project(from, to), opacity:0 }]),
+        ...layers.map(el => motion.animate(el, [{ transform:project(to, from) }, { transform:'none' }]))]);
+    } finally { previous.remove(); }
   }
   private updateMarkers(): void {
     const matrix = this.svg.getScreenCTM();
@@ -217,7 +291,9 @@ export class MapBoard {
       x: this.view.x + this.view.width / 2,
       y: this.view.y + this.view.height / 2,
     },
+    input: 'control' | 'wheel' | 'pinch' = 'control',
   ): void {
+    if (input === 'control') this.flushCamera();
     const aspect = this.view.width / this.view.height;
     // Result padding can exceed the world bounds; zoom-out must not shrink it.
     const resultWidth = this.resultMarkers
@@ -243,19 +319,25 @@ export class MapBoard {
       height: this.view.height * ratio,
     };
     this.updateView();
+    if (input === 'wheel') this.settleCamera(factor > 1 ? 'map-zoom-in' : 'map-zoom-out');
+    if (input === 'control') this.emitCamera(factor > 1 ? 'map-zoom-in' : 'map-zoom-out');
   }
   home(): void {
+    this.flushCamera();
     this.fittedMarkers = this.resultMarkers;
     this.atHome = !this.resultMarkers;
     this.homeFit = 'fill';
     this.view = { ...this.bounds };
     this.updateView();
+    this.emitCamera('map-home');
   }
   showEntireMap(): void {
+    this.flushCamera();
     this.fittedMarkers = null;
     this.atHome = true;
     this.homeFit = 'contain';
     this.updateView();
+    this.emitCamera('map-home');
   }
   onPinChange(listener: (placed: boolean) => void): () => void {
     this.pinListeners.add(listener);
@@ -269,19 +351,23 @@ export class MapBoard {
   }
   centerOnPin(): void {
     if (!this.point) return;
+    this.flushCamera();
     this.fittedMarkers = null; this.atHome = false;
     this.view.x = this.point.x - this.view.width / 2;
     this.view.y = this.point.y - this.view.height / 2;
     this.updateView();
+    this.emitCamera('map-center');
   }
   private wheel = (event: WheelEvent) => {
     event.preventDefault();
     this.zoom(
       event.deltaY < 0 ? 1.25 : 0.8,
       this.world(event.clientX, event.clientY),
+      'wheel',
     );
   };
   private start = (event: PointerEvent) => {
+    this.flushCamera();
     if (event.button !== 0) return;
     // The SVG owns touch gestures because OSD navigation is intentionally off.
     // Cancel synthetic clicks and scrolling without affecting toolbar buttons.
@@ -297,6 +383,7 @@ export class MapBoard {
         moved: false,
       };
     else if (this.pointers.size === 2) {
+      this.gestureZoom = this.view.width;
       const [a, b] = [...this.pointers.values()];
       this.pinch = {
         distance: Math.hypot(a.x - b.x, a.y - b.y),
@@ -313,7 +400,7 @@ export class MapBoard {
       const [a, b] = [...this.pointers.values()],
         distance = Math.hypot(a.x - b.x, a.y - b.y);
       this.view = { ...this.pinch.view };
-      this.zoom(distance / Math.max(1, this.pinch.distance), this.pinch.anchor);
+      this.zoom(distance / Math.max(1, this.pinch.distance), this.pinch.anchor, 'pinch');
       const center = this.world((a.x + b.x) / 2, (a.y + b.y) / 2);
       this.view.x += this.pinch.anchor.x - center.x;
       this.view.y += this.pinch.anchor.y - center.y;
@@ -352,6 +439,9 @@ export class MapBoard {
     this.cancel(event);
   };
   private cancel = (event: PointerEvent) => {
+    if (this.down?.moved) this.emitCamera(this.gestureZoom && this.gestureZoom !== this.view.width
+      ? (this.view.width < this.gestureZoom ? 'map-zoom-in' : 'map-zoom-out') : 'map-pan');
+    this.gestureZoom = undefined;
     this.pointers.delete(event.pointerId);
     this.down = undefined;
     this.pinch = undefined;
@@ -384,6 +474,7 @@ export class MapBoard {
     this.view.x += this.view.width * step * (event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0);
     this.view.y += this.view.height * step * (event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0);
     this.updateView();
+    this.settleCamera('map-pan');
   };
   setMarkers(guess: Point | null, answer?: Point, guessLabel = 'Your guess'): void {
     this.playerMarks.clear(); this.highlightedPlayer = undefined;

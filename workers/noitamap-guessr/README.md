@@ -24,7 +24,9 @@ An unsent last marker is submitted automatically at zero. The existing bounded s
 
 ## Results and history
 
-Each player’s clue replay records displayed camera actions and accepted guesses, including revisions. Changed views travel in batches on the existing WebSocket. After reveal, the public API returns ordered actions and whole seconds from that player’s round opening. Private storage retains the original camera timestamps. Show replay opens an inline timeline in the round results or standings. Hover or focus a step to review it. Play all advances the steps at half-second intervals. Published reads use `GET /api/streams/results/{game}/rounds/{round}/replays/{player}`.
+Each player’s replay records clue navigation, settled guess-map movements and accepted guesses, including revisions. Guess-map data travels with existing clue batches and submissions. A map movement takes 15 bytes before Base64 encoding and shares the carrier’s replay-row write and per-player storage budget. Unsent movements stay in that tab until another eligible message for the round. A round with no subsequent clue update or submission can therefore have a missing tail.
+
+After reveal, one replay read returns actions and whole seconds from the player’s round opening. The viewer merges both maps on a single timeline using their recorded order, including actions within the same second. Full timestamps remain private. The score button opens the full-width player above the results. Play starts automatically, and closing the player returns to its score. Older recordings show the clue actions and submitted pins they contain. Published reads use `GET /api/streams/results/{game}/rounds/{round}/replays/{player}`.
 
 Replay pages count against the result storage budget. When only the scores fit, the coordinator serves the recordings for its usual 24-hour retention period. Removing a result also removes its archived recordings.
 

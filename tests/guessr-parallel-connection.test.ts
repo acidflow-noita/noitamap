@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ParallelConnection } from '../src/guessr/parallel-connection';
 import type { ParallelServerMessage } from '../src/guessr/parallel-types';
+import { decodeMapFrames, MAP_PACKET_LIMIT } from '../src/guessr/guess-map-replay';
 
 class Socket {
   static OPEN = 1; static all: Socket[] = [];
@@ -46,6 +47,25 @@ it('flushes displayed clue moves ahead of the guess and reloads only the request
   const pending=connection.readReplay(1,'200',new AbortController().signal);
   const read=JSON.parse(socket.sent.at(-1)!);expect(read).toMatchObject({type:'clue-read',round:1,player:'200'});
   socket.receive({type:'clue-replay',request:read.request,replay:null});expect(await pending).toBeNull();
+});
+it('sends settled guess-map views on existing messages and leaves idle heartbeat traffic alone', async () => {
+  connection = new ParallelConnection('https://guessr-api.sage-data.xyz',game,'200',async()=>({role:'player',accessToken:'test'}),{message:vi.fn(),status:vi.fn()});
+  const socket=Socket.all[0]; await authorized(socket,true);
+  socket.receive({type:'authorized',clueReplays:true,guessMapReplays:true,ticket:'resume',expiresAt:Date.now()+600000,
+    player:{id:'200',name:'Player',login:'player'},now:Date.now()});
+  const t=Date.now(), pose={x:12345,y:12345,w:29000,h:29000};
+  for(let i=0;i<5;i++) connection.recordMap(submission.roundId,{...pose,x:pose.x+i},'map-pan',t + i);
+  await vi.advanceTimersByTimeAsync(2000);
+  expect(socket.sent).toHaveLength(1);
+  connection.recordCamera(submission.roundId,{dx:0,dy:0,level:0});
+  const carried=JSON.parse(socket.sent[1]);
+  expect(decodeMapFrames(carried.mapMoves.data,carried.mapMoves.base,MAP_PACKET_LIMIT)).toHaveLength(5);
+  socket.receive({type:'clue-ack',roundId:submission.roundId,through:carried.frames[0][0]});
+  connection.recordMap(submission.roundId,{...pose,w:28000},'map-zoom-in');
+  connection.submit(submission);
+  const guess=JSON.parse(socket.sent[2]);
+  expect(decodeMapFrames(guess.mapMoves.data,guess.mapMoves.base,MAP_PACKET_LIMIT)[0].action).toBe('map-zoom-in');
+  expect(socket.sent.map(m=>JSON.parse(m).type)).toEqual(['authorize','clue-frames','guess']);
 });
 it('keeps playing with a coordinator which predates recordings', async()=>{
   connection=new ParallelConnection('https://guessr-api.sage-data.xyz',game,'200',async()=>({role:'player',accessToken:'test'}),{message:vi.fn(),status:vi.fn()});

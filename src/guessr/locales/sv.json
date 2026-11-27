@@ -1,4 +1,12 @@
 {
+  "The clue and guess maps play side by side as a player pans, zooms and submits a guess.": "Ledtrådskartan och gissningskartan visas sida vid sida medan spelaren panorerar, zoomar och skickar en gissning.",
+  "Clue map": "Ledtrådskarta",
+  "Guess map": "Gissningskarta",
+  "Pan guess map": "Panorera gissningskartan",
+  "Follow actions": "Följ åtgärder",
+  "Replay view": "Reprisvy",
+  "No guess-map movement was recorded.": "Inga rörelser på gissningskartan spelades in.",
+  "Watch the clue and guess map together. On phones, follow the action or choose a map.": "Se ledtråden och gissningskartan sida vid sida. På mobilen kan du följa åtgärderna eller välja en karta.",
   "Replay": "Spela upp igen",
   "Resume playback": "Fortsätt",
   "Score summary": "Poängöversikt",

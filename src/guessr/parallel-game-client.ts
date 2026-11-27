@@ -55,6 +55,8 @@ export function watchParallelGame(viewer: TwitchViewer, _channel: string, gameId
     },
     submit: (input: ParallelSubmission) => { connect(); if (!socket) throw Error('Join game'); socket.submit(input); },
     recordCamera: (roundId: string, camera: import('./clue-camera').Camera, action?: import('./clue-replay').CameraAction) => socket?.recordCamera(roundId, camera, action),
+    recordMap: (roundId: string, pose: import('./guess-map-replay').MapPose, action: import('./guess-map-replay').MapReplayAction, at: number) =>
+      socket?.recordMap(roundId, pose, action, at),
     readReplay: (round: number, player: string, signal: AbortSignal) =>
       socket ? socket.readReplay(round, player, signal) : Promise.reject(Error('Connection unavailable. Reconnecting…')),
     nextRevision: (roundId: string) => socket?.nextRevision(roundId) ?? 1,

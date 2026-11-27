@@ -1,4 +1,12 @@
 {
+  "The clue and guess maps play side by side as a player pans, zooms and submits a guess.": "Мапи підказки й відповіді показано поруч. Гравець пересуває мапу, змінює масштаб і надсилає відповідь.",
+  "Clue map": "Мапа підказки",
+  "Guess map": "Мапа відповіді",
+  "Pan guess map": "Пересунути мапу відповіді",
+  "Follow actions": "Стежити за діями",
+  "Replay view": "Вигляд повтору",
+  "No guess-map movement was recorded.": "Рухи на мапі відповіді не записано.",
+  "Watch the clue and guess map together. On phones, follow the action or choose a map.": "Дивіться підказку й мапу відповіді поруч. На телефоні можна стежити за діями або вибрати мапу.",
   "Replay": "Переглянути знову",
   "Resume playback": "Продовжити",
   "Score summary": "Зведення результатів",

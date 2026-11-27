@@ -78,10 +78,12 @@ export interface StreamUIHooks {
     pick: (point: Point) => void,
     readOnly?: boolean,
     config?: ImageGameConfig,
+    onMapView?: (pose: import('./guess-map-replay').MapPose, action: import('./guess-map-replay').MapReplayAction, at: number) => void,
   ): { clue: HTMLElement; bar: HTMLElement };
   cleanupClue(cleanup: () => void): void;
   markers(guess: Point | null, answer?: Point): void;
   lockGuess(locked: boolean): void;
+  flushMapCamera?(): void;
   hud(options: {
     label: string;
     badge: string;
@@ -1171,6 +1173,10 @@ export class StreamUI {
       },
       !!reveal,
       game.session.config,
+      !reveal && this.parallel ? (pose, action, at) => {
+        if (this.game === game && index === game.round && game.stage === 'guess' && !game.paused)
+          this.parallel?.recordMap(game.session.rounds[index].id, pose, action, at);
+      } : undefined,
     );
     updateRoundIndicators(main, game.clue, reveal?.area.difficultyTier ?? game.session.rounds[index].difficultyTier);
     if (reveal || game.stage === "closing") {
@@ -1310,6 +1316,7 @@ export class StreamUI {
     main.append(details);
   }
   private async submit(timedOut = false): Promise<void> {
+    this.hooks.flushMapCamera?.();
     if (
       !this.game ||
       this.busy ||

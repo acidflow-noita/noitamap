@@ -2,6 +2,7 @@ import type { Point } from './rules';
 import type { StreamGame, StreamParticipant, StreamPlayer, StreamResult, StreamReveal, StreamSession } from './stream-types';
 import type { LiveRoomView } from './live-room-types';
 import type { StreamChatMessage } from './stream-state';
+import type { MapPacket } from './guess-map-replay';
 
 export interface ParallelSubmission {
   roundId: string;
@@ -46,21 +47,21 @@ export type ParallelAuthorization =
   | { role: 'resume'; ticket: string };
 export type ParallelClientMessage =
   | ({ type: 'authorize'; protocol?: number } & ParallelAuthorization)
-  | { type: 'clue-frames'; roundId: string; frames: import('./clue-replay').ReplayFrame[] }
+  | { type: 'clue-frames'; roundId: string; frames: import('./clue-replay').ReplayFrame[]; mapMoves?: MapPacket }
   | { type: 'clue-read'; request: string; round: number; player: string }
   | { type: 'activity'; id: string; roundId: string }
-  | { type: 'guess'; submission: ParallelSubmission }
+  | { type: 'guess'; submission: ParallelSubmission; mapMoves?: MapPacket }
   | { type: 'relay'; message: StreamChatMessage }
   | { type: 'start'; id: string; opponentId?: string }
   | { type: 'ready'; id: string; ready: boolean; round: number; phase: 'lobby' | 'review' }
   | { type: 'reject-opponent'; id: string; playerId: string }
-  | { type: 'host-guess'; id: string; roundId: string; point: Point | null; maximum: number }
+  | { type: 'host-guess'; id: string; roundId: string; point: Point | null; maximum: number; mapMoves?: MapPacket }
   | { type: 'quit'; id: string }
   | { type: 'publish'; id: string }
   | { type: 'advance'; id: string }
   | { type: 'recover' };
 export type ParallelServerMessage =
-  | { type: 'authorized'; ticket: string; expiresAt: number; player: StreamPlayer; now: number; acceptedRevisions?: Record<string, number>; clueReplays?: true }
+  | { type: 'authorized'; ticket: string; expiresAt: number; player: StreamPlayer; now: number; acceptedRevisions?: Record<string, number>; clueReplays?: true; guessMapReplays?: true }
   | { type: 'clue-ack'; roundId: string; through: number }
   | { type: 'clue-replay'; request: string; replay: import('./clue-replay').ClueReplay | null }
   | { type: 'state'; state: LiveRoomView; now: number }

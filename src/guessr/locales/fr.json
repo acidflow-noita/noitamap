@@ -1,4 +1,12 @@
 {
+  "The clue and guess maps play side by side as a player pans, zooms and submits a guess.": "La carte de l’indice et celle des réponses sont affichées côte à côte pendant que le joueur déplace la vue, zoome et envoie sa réponse.",
+  "Clue map": "Carte de l’indice",
+  "Guess map": "Carte des réponses",
+  "Pan guess map": "Déplacer la carte des réponses",
+  "Follow actions": "Suivre les actions",
+  "Replay view": "Affichage de la rediffusion",
+  "No guess-map movement was recorded.": "Aucun déplacement sur la carte des réponses n’a été enregistré.",
+  "Watch the clue and guess map together. On phones, follow the action or choose a map.": "Regardez l’indice et la carte des réponses côte à côte. Sur téléphone, suivez les actions ou choisissez une carte.",
   "Replay": "Revoir",
   "Resume playback": "Reprendre",
   "Score summary": "Résumé des scores",

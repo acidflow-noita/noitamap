@@ -1,4 +1,12 @@
 {
+  "The clue and guess maps play side by side as a player pans, zooms and submits a guess.": "Vihjekartta ja arvauskartta näkyvät rinnakkain, kun pelaaja siirtää näkymää, zoomaa ja lähettää arvauksensa.",
+  "Clue map": "Vihjekartta",
+  "Guess map": "Arvauskartta",
+  "Pan guess map": "Siirrä arvauskarttaa",
+  "Follow actions": "Seuraa toimintoja",
+  "Replay view": "Uusintanäkymä",
+  "No guess-map movement was recorded.": "Arvauskartan liikkeitä ei tallennettu.",
+  "Watch the clue and guess map together. On phones, follow the action or choose a map.": "Katso vihjettä ja arvauskarttaa rinnakkain. Puhelimella voit seurata toimintoja tai valita kartan.",
   "Replay": "Toista uudelleen",
   "Resume playback": "Jatka",
   "Score summary": "Tulosten yhteenveto",

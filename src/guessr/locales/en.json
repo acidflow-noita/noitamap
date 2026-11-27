@@ -1,4 +1,12 @@
 {
+  "The clue and guess maps play side by side as a player pans, zooms and submits a guess.": "The clue and guess maps play side by side as a player pans, zooms and submits a guess.",
+  "Clue map": "Clue map",
+  "Guess map": "Guess map",
+  "Pan guess map": "Pan guess map",
+  "Follow actions": "Follow actions",
+  "Replay view": "Replay view",
+  "No guess-map movement was recorded.": "No guess-map movement was recorded.",
+  "Watch the clue and guess map together. On phones, follow the action or choose a map.": "Watch the clue and guess map together. On phones, follow the action or choose a map.",
   "Replay": "Replay",
   "Resume playback": "Resume",
   "Score summary": "Score summary",

@@ -1,4 +1,12 @@
 {
+  "The clue and guess maps play side by side as a player pans, zooms and submits a guess.": "De aanwijzingskaart en raadkaart staan naast elkaar terwijl de speler de kaart verschuift, zoomt en een gok instuurt.",
+  "Clue map": "Aanwijzingskaart",
+  "Guess map": "Raadkaart",
+  "Pan guess map": "Raadkaart verschuiven",
+  "Follow actions": "Acties volgen",
+  "Replay view": "Herhalingsweergave",
+  "No guess-map movement was recorded.": "Er zijn geen bewegingen op de raadkaart opgenomen.",
+  "Watch the clue and guess map together. On phones, follow the action or choose a map.": "Bekijk de aanwijzing en de raadkaart naast elkaar. Op je telefoon kun je de acties volgen of een kaart kiezen.",
   "Replay": "Opnieuw afspelen",
   "Resume playback": "Hervatten",
   "Score summary": "Scoreoverzicht",

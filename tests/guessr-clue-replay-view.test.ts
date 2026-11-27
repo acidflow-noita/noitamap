@@ -13,6 +13,8 @@ const seen = vi.hoisted(() => ({
   focus: vi.fn(),
   players: vi.fn(),
   highlight: vi.fn(),
+  pose: vi.fn(async (_pose: unknown, _motion?: unknown) => {}),
+  markers: vi.fn(),
   show: vi.fn(async (_: unknown, ready?: () => void) => {
     ready?.();
     return true;
@@ -30,6 +32,9 @@ vi.mock('../src/guessr/map-board', () => ({
   MapBoard: class {
     setLocked() {}
     setPlayers = seen.players;
+    setMarkers = seen.markers;
+    setReplayPose = seen.pose;
+    clearReplayPose() {}
     focusPlayer = seen.focus;
     highlightPlayer = seen.highlight;
     destroy() {}
@@ -70,7 +75,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('keeps names plain, frames the pin on hover and opens only the requested inline timeline', async () => {
+it('keeps names plain, frames the pin on hover and opens the requested replay above the score grid', async () => {
   const read = vi.fn(async () => replay);
   const close = sharedRoundResults(document.body, config, round, document.createElement('div'), { readReplay: read });
   const row = document.querySelector<HTMLTableRowElement>('tr[data-player="200"]')!;
@@ -107,8 +112,8 @@ it('keeps names plain, frames the pin on hover and opens only the requested inli
     expect.any(Function)
   );
   const item = document.querySelector<HTMLDetailsElement>('.replay-item')!;
-  expect(row.nextElementSibling?.querySelector('details')).toBe(item);
-  expect(row.nextElementSibling?.querySelector('td')?.colSpan).toBe(row.cells.length);
+  expect(item.closest('table')).toBeNull();
+  expect(item.closest('.score-replay-disclosure')?.nextElementSibling).toBe(row.closest('.stream-review-grid'));
   expect(item.querySelector('ol.stepper.stepper-horizontal > li.stepper-item')).not.toBeNull();
   expect(item.querySelector('.replay-timeline')?.nextElementSibling?.querySelector('.replay-play')).not.toBeNull();
   expect(item.open).toBe(true);
@@ -118,10 +123,31 @@ it('keeps names plain, frames the pin on hover and opens only the requested inli
   item.querySelector('summary')!.click();
   await vi.waitFor(() => expect(open.getAttribute('aria-expanded')).toBe('false'));
   expect(item.open).toBe(false);
+  expect(document.activeElement).toBe(open);
   open.click();
   await vi.waitFor(() => expect(open.getAttribute('aria-expanded')).toBe('true'));
   await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(2));
   close();
+});
+
+it('restores both maps when seeking across a pin and a pan, without another replay read', async () => {
+  const initial = { x:8000000, y:8000000, w:32768, h:32768 }, pan = { ...initial, x:8500000 };
+  const read = vi.fn(async () => ({ ...replay, mapSteps:[
+    {action:'map-view' as const,second:0,before:1,map:initial}, {action:'map-pan' as const,second:3,before:1,map:pan},
+  ] }));
+  const close = sharedRoundResults(document.body, config, round, document.createElement('div'), {readReplay:read});
+  try {
+    document.querySelector<HTMLButtonElement>('.clue-replay-open')!.click();
+    const panel = document.querySelector('.score-replay-disclosure')!;
+    await vi.waitFor(() => expect(panel.querySelectorAll('.replay-step')).toHaveLength(5));
+    panel.querySelector<HTMLButtonElement>('[title="Sent guess"]')!.click();
+    await vi.waitFor(() => expect(seen.players).toHaveBeenCalled());
+    expect(seen.pose.mock.lastCall?.[0]).toEqual(pan);
+    panel.querySelector<HTMLButtonElement>('[title="Started view"]')!.click();
+    await vi.waitFor(() => expect(seen.pose.mock.lastCall?.[0]).toEqual(initial));
+    expect(seen.markers).toHaveBeenLastCalledWith(null);
+    expect(read).toHaveBeenCalledOnce();
+  } finally { close(); }
 });
 
 it('shows the round rank, round score and running total in a jump link for the current chatter', () => {
@@ -160,10 +186,10 @@ it('switches the one open replay between players and tables, aborting stale load
     const buttons = [...page.querySelectorAll<HTMLButtonElement>('.clue-replay-open')];
     for (const i of [0, 1, 2]) {
       buttons[i].click();
-      const rows = page.querySelectorAll('tr.score-replay-row');
-      expect(rows).toHaveLength(1);
-      expect(rows[0].previousElementSibling).toBe(buttons[i].closest('tr'));
-      expect(rows[0].querySelector('details[open]')).not.toBeNull();
+      const panels = page.querySelectorAll('.score-replay-disclosure');
+      expect(panels).toHaveLength(1);
+      expect(panels[0].nextElementSibling).toBe(buttons[i].closest('.stream-review-grid'));
+      expect(panels[0].querySelector('details[open]')).not.toBeNull();
       expect(page.querySelectorAll('button[aria-expanded="true"]')).toHaveLength(1);
       expect(buttons[i].getAttribute('aria-expanded')).toBe('true');
       if (i > 0) expect(read.mock.calls[i - 1][2].aborted).toBe(true);
@@ -177,7 +203,7 @@ it('switches the one open replay between players and tables, aborting stale load
     await vi.waitFor(() => expect(page.querySelectorAll('.replay-step')).toHaveLength(4));
     buttons[2].click();
     expect(read.mock.calls[2][2].aborted).toBe(true);
-    expect(page.querySelector('.score-replay-row')).toBeNull();
+    expect(page.querySelector('.score-replay-disclosure')).toBeNull();
   } finally {
     tables.forEach(destroy => destroy());
   }
@@ -245,8 +271,8 @@ it('opens the pressed player when a previous replay moves their button before re
     expect(second.setPointerCapture).toHaveBeenCalledWith(1);
     bounds.mockReturnValue(new DOMRect(10, 20, 40, 40));
     second.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1, clientX: 30, clientY: 220 }));
-    expect(document.querySelectorAll('.score-replay-row')).toHaveLength(1);
-    expect(document.querySelector('.score-replay-row')?.previousElementSibling).toBe(second.closest('tr'));
+    expect(document.querySelectorAll('.score-replay-disclosure')).toHaveLength(1);
+    expect(document.querySelector('.score-replay-disclosure')?.id).toBe(second.getAttribute('aria-controls'));
     expect(first.getAttribute('aria-expanded')).toBe('false');
     expect(second.getAttribute('aria-expanded')).toBe('true');
   } finally {

@@ -9,7 +9,7 @@ import { streamResultNames } from './stream-display-name';
 import { streamResultShare } from './stream-share';
 import { streamResultReviews } from './stream-result-review';
 import type { ReplayLoader } from './clue-replay';
-import { createReplayRows, publishedReplayLoader } from './clue-replay-view';
+import { createScoreReplay, publishedReplayLoader } from './clue-replay-view';
 import type { ImageGameConfig } from './image-game';
 import { pvpResultHeadline } from './pvp-results';
 import { privateResultReview } from './network-review-view';
@@ -86,7 +86,6 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   section.append(menu);
   const review = privateResultReview(result); if (review) section.append(review.element);
   const readReplay = result.clueReplays && result.rounds.length ? liveReplay ?? publishedReplayLoader(result.id) : undefined;
-  const replays = readReplay ? createReplayRows(readReplay, result.config ?? config) : undefined;
   const reviews = streamResultReviews(result, config, readReplay, viewerId); section.append(reviews.element);
   const controls = el("div", "", "stream-table-controls"),
     filter = el("input"),
@@ -96,9 +95,10 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   bindAttribute(filter, "placeholder", "Find a player");
   bindAttribute(filter, "aria-label", "Filter players by name or login");
   controls.append(el('h2', 'Player scores'), count);
-  if (replays) controls.append(replayLegend());
+  if (readReplay) controls.append(replayLegend());
   controls.append(filter);
   const standings = el('section', '', 'stream-standings'); standings.append(controls); section.append(standings);
+  const replays = readReplay ? createScoreReplay(readReplay, standings, result.config ?? config) : undefined;
   const wrap = el("div", "", "table-wrap stream-score-frame rounded-9"),
     table = el("table", '', 'table stream-score-table'),
     head = el("tr"),
@@ -192,7 +192,7 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
         row.append(cell);
       });
       row.append(el("td", () => formatGuessrNumber(player.score), "numeric score"));
-      fragment.append(row); replays?.appendAfterScore(fragment,player.id);
+      fragment.append(row);
     }
     tbody.replaceChildren(fragment); replays?.discardHidden();
     bindText(count, () => query

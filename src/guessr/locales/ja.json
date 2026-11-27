@@ -1,4 +1,12 @@
 {
+  "The clue and guess maps play side by side as a player pans, zooms and submits a guess.": "ヒントのマップと回答用マップが並び、プレイヤーが表示位置や倍率を変えて回答を送信する様子が再生されます。",
+  "Clue map": "ヒントのマップ",
+  "Guess map": "回答用マップ",
+  "Pan guess map": "回答用マップを移動",
+  "Follow actions": "操作に追従",
+  "Replay view": "リプレイ表示",
+  "No guess-map movement was recorded.": "回答用マップの移動は記録されていません。",
+  "Watch the clue and guess map together. On phones, follow the action or choose a map.": "ヒントと回答用マップを並べて確認できます。スマートフォンでは操作に合わせて表示を切り替えるか、マップを選べます。",
   "Replay": "もう一度再生",
   "Resume playback": "再生を再開",
   "Score summary": "スコアの概要",

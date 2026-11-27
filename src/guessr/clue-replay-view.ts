@@ -8,7 +8,8 @@ import { gameApiOrigin } from './api-origin';
 import { MapBoard } from './map-board';
 import type { ImageGameConfig } from './image-game';
 import type { Point } from './rules';
-import type { ReplayLoader, ReplayStep } from './clue-replay';
+import { playbackSteps, type PlaybackStep, type ReplayLoader } from './clue-replay';
+import type { MapPose } from './guess-map-replay';
 import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, guessrLocale, tr } from './i18n';
 
 export function publishedReplayLoader(game: string): ReplayLoader {
@@ -27,6 +28,12 @@ export function publishedReplayLoader(game: string): ReplayLoader {
 const actions = {
   view: ['eye', 'Clue view'],
   ...clueNavigation,
+  'map-view': ['map', 'Guess map'],
+  'map-pan': ['arrows-move', 'Pan guess map'],
+  'map-zoom-in': ['zoom-in', 'Zoom in'],
+  'map-zoom-out': ['zoom-out', 'Zoom out'],
+  'map-home': ['map', 'Show entire map'],
+  'map-center': ['geo-alt', 'Center map on marker'],
   submit: ['geo-alt-fill', 'Sent guess'],
   update: ['geo-fill', 'Updated guess'],
   automatic: ['stopwatch', 'Automatic guess'],
@@ -54,15 +61,15 @@ interface ReplayRound {
 let tableSequence = 0;
 const activeReplays = new WeakMap<Element, () => void>();
 
-/** A results page has one player replay. Sorting keeps it attached to its score. */
-export function createReplayRows(load: ReplayLoader, config?: ImageGameConfig) {
+/** One full-width replay per results page. Sorting rebinds the return button by player and round. */
+export function createScoreReplay(load: ReplayLoader, anchor: HTMLElement, config?: ImageGameConfig) {
   const prefix = 'score-replay-' + ++tableSequence;
   let active:
     | {
         player: string;
         round: number;
         scope: Element;
-        row: HTMLTableRowElement;
+        panel: HTMLElement;
         trigger: HTMLButtonElement;
         destroy(): void;
       }
@@ -74,8 +81,11 @@ export function createReplayRows(load: ReplayLoader, config?: ImageGameConfig) {
     activeReplays.delete(entry.scope);
     entry.trigger.setAttribute('aria-expanded', 'false');
     entry.destroy();
-    entry.row.remove();
-    if (restoreFocus && entry.trigger.isConnected) entry.trigger.focus({ preventScroll: true });
+    entry.panel.remove();
+    if (restoreFocus && entry.trigger.isConnected) {
+      entry.trigger.focus({ preventScroll: true });
+      entry.trigger.scrollIntoView?.({ block: 'center', inline: 'nearest', behavior: 'instant' });
+    }
   }
   function scoreButton(player: { id: string; name: string }, round: ReplayRound) {
     const id = prefix + '-' + player.id + '-' + round.number;
@@ -117,59 +127,30 @@ export function createReplayRows(load: ReplayLoader, config?: ImageGameConfig) {
       const scope =
         source.closest('.stream-results') ?? source.closest('.stream-result-reviews') ?? source.closest('table')!;
       const closePrevious = activeReplays.get(scope);
-      const row = document.createElement('tr');
-      row.className = 'score-replay-row';
-      row.dataset.player = player.id;
-      const cell = row.insertCell();
-      cell.colSpan = source.cells.length;
-      const slot = document.createElement('div');
-      slot.className = 'accordion score-replay-disclosure';
-      slot.id = id;
-      cell.append(slot);
-      source.after(row);
-      const destroy = openClueReplay(player.id, player.name, round, load, {
-        mount: slot,
-        config,
-        onToggle: isOpen => {
-          if (!isOpen && active?.row === row) close(slot.contains(document.activeElement));
-        },
-      });
-      // Keep the table tall enough to retain its scroll position throughout the switch.
       closePrevious?.();
-      const frame = source.closest<HTMLElement>('.inline-round-review .stream-round-score-scroll');
-      const size =
-        frame && typeof ResizeObserver !== 'undefined'
-          ? new ResizeObserver(() => {
-              frame.style.setProperty('--open-replay-height', row.offsetHeight + 'px');
-            })
-          : undefined;
-      size?.observe(row);
-      active = {
-        player: player.id,
-        round: round.number,
-        row,
-        scope,
-        trigger: button,
-        destroy() {
-          size?.disconnect();
-          frame?.style.removeProperty('--open-replay-height');
-          destroy();
-        },
-      };
+      const panel = document.createElement('section');
+      panel.className = 'accordion score-replay-disclosure';
+      panel.id = id;
+      panel.dataset.player = player.id;
+      panel.dataset.round = String(round.number);
+      anchor.before(panel);
+      const destroy = openClueReplay(player.id, player.name, round, load, {
+        mount: panel, config, onToggle: open => { if (!open && active?.panel === panel) close(true); },
+      });
+      active = { player: player.id, round: round.number, panel, scope, trigger: button, destroy };
+      panel.querySelector('summary')?.focus({preventScroll:true});
+      panel.scrollIntoView?.({block:'start', inline:'nearest', behavior:'instant'});
       activeReplays.set(scope, close);
       button.setAttribute('aria-expanded', 'true');
     };
     return button;
   }
-  function appendAfterScore(parent: DocumentFragment, player: string) {
-    if (active?.player === player) parent.append(active.row);
-  }
   function discardHidden() {
     if (active && !active.trigger.isConnected) close();
   }
+
   return {
     scoreButton,
-    appendAfterScore,
     discardHidden,
     destroy: close,
   };
@@ -203,7 +184,9 @@ export function openClueReplay(
   toolbar.className = 'clue-replay-toolbar';
   const play = control('Pause', 'pause-fill');
   play.classList.add('replay-play');
-  toolbar.append(play);
+  const closeButton = control('Close', 'x-lg');
+  closeButton.onclick = () => { item.open = false; context.onToggle?.(false); };
+  toolbar.append(play, closeButton);
   const stage = document.createElement('div');
   stage.className = 'clue-replay-stage border rounded-9 overflow-hidden';
   const clue = document.createElement('div');
@@ -211,7 +194,32 @@ export function openClueReplay(
   const badge = document.createElement('span');
   badge.className = 'replay-action-badge';
   badge.setAttribute('aria-hidden', 'true');
+  const boards = document.createElement('div'); boards.className = 'replay-boards';
+  function pane(title: string, kind: string, surface: HTMLElement) {
+    const figure = document.createElement('figure'); figure.className = 'replay-pane'; figure.dataset.board = kind;
+    figure.append(bindText(document.createElement('figcaption'), title), surface); boards.append(figure);
+    return figure;
+  }
   stage.append(clue, badge);
+  pane('Clue map', 'clue', stage);
+  const mapStage = document.createElement('div'); mapStage.className = 'replay-map-stage border rounded-9 overflow-hidden';
+  const guessPane = pane('Guess map', 'guess', mapStage);
+  const mapNote = bindText(document.createElement('span'), 'No guess-map movement was recorded.');
+  mapNote.className = 'replay-map-note'; mapStage.append(mapNote);
+  const switches = document.createElement('div'); switches.className = 'replay-board-switch';
+  switches.setAttribute('role','group'); bindAttribute(switches,'aria-label','Replay view');
+  let selection: 'follow' | 'clue' | 'guess' = 'follow', actionBoard = 'clue';
+  function selectBoard() {
+    boards.dataset.visible = selection === 'follow' ? actionBoard : selection;
+    for (const button of switches.querySelectorAll('button'))
+      button.setAttribute('aria-pressed', String(button.dataset.view === selection));
+  }
+  for (const [view, text] of [['follow','Follow actions'],['clue','Clue map'],['guess','Guess map']] as const) {
+    const button = control(text); button.dataset.view = view;
+    button.onclick = () => { selection = view; selectBoard(); };
+    switches.append(button);
+  }
+  selectBoard();
   const status = document.createElement('p');
   status.className = 'replay-status';
   status.setAttribute('role', 'status');
@@ -229,31 +237,20 @@ export function openClueReplay(
   timeline.append(strip, timeMeasure);
   const content = document.createElement('div');
   content.className = 'replay-content';
-  content.append(stage, timeline, toolbar, status, retry);
+  content.append(switches, boards, timeline, toolbar, status, retry);
   panel.append(content);
 
   let viewport: ClueViewport | undefined, request: AbortController | undefined;
   let motion: ReplayMotion | undefined;
-  type GuessMap = { element: HTMLDivElement; board?: MapBoard };
-  let currentMap: GuessMap | undefined, outgoingMap: GuessMap | undefined;
-  function removeMap(view: GuessMap | undefined) {
-    if (!view) return;
-    view.board?.destroy();
-    view.element.remove();
+  let board: MapBoard | undefined, mapSurface: HTMLDivElement | undefined, initialMap: MapPose | undefined;
+  let shownClue = -2, shownGuess = -2, shownMap = -2;
+  function removeMap() {
+    board?.destroy(); board = undefined; mapSurface?.remove(); mapSurface = undefined;
+    shownClue = shownGuess = shownMap = -2;
   }
-  function interrupt() {
-    motion?.cancel();
-    viewport?.stop();
-    removeMap(outgoingMap);
-    outgoingMap = undefined;
-  }
-  function reveal() {
-    const row = item.closest('tr')?.previousElementSibling;
-    revealReviewPreview(content, toggle, row instanceof HTMLElement ? row : undefined);
-  }
-  let steps: ReplayStep[] = [],
-    priorCamera: number[] = [],
-    priorGuess: number[] = [];
+  function interrupt() { motion?.cancel(); viewport?.stop(); }
+  function reveal() { revealReviewPreview(boards, toggle); }
+  let steps: PlaybackStep[] = [], priorCamera: number[] = [], priorGuess: number[] = [], priorMap: number[] = [];
   let active = -1,
     run = 0,
     paint = 0,
@@ -268,6 +265,8 @@ export function openClueReplay(
     new Intl.NumberFormat(guessrLocale(), { style: 'unit', unit: 'second', unitDisplay: 'narrow' }).format(sec);
   const label = (index: number) =>
     index === 0 && steps[index].action === 'view' ? 'Started view' : actions[steps[index].action][1];
+  const stepTitle = (index: number) => 'map' in steps[index] && !['map-view','map-pan'].includes(steps[index].action)
+    ? tr('Guess map') + ' — ' + tr(label(index)) : tr(label(index));
   let thumbnail: ClueViewport | undefined;
   let cached: Awaited<ReturnType<ReplayLoader>> | undefined;
   function setPlayback(state: typeof playback) {
@@ -338,8 +337,8 @@ export function openClueReplay(
         time.className = 'replay-step-time';
         bindText(time, () => stamp(step.second));
         node.append(circle, time);
-        bindAttribute(node, 'aria-label', () => tr(label(i)) + ', ' + stamp(step.second));
-        bindAttribute(node, 'title', () => tr(label(i)));
+        bindAttribute(node, 'aria-label', () => stepTitle(i) + ', ' + stamp(step.second));
+        bindAttribute(node, 'title', () => stepTitle(i));
         const preview = () => {
           stopSequence(i === steps.length - 1);
           if (active !== i) void display(i);
@@ -388,60 +387,76 @@ export function openClueReplay(
       fade = setTimeout(() => badge.classList.remove('visible'), 1150);
     };
     try {
-      if ('camera' in step) {
-        const previous = steps[priorCamera[i]];
-        const transition = previous && 'camera' in previous ? { replayFrom: previous.camera, motion: movement } : false;
-        let fade: Promise<boolean> | undefined;
-        const drawn = await viewport.show(step.camera, () => {
-          if (serial !== paint || dead) return;
-          announce();
-          clue.inert = false;
-          if (currentMap) {
-            outgoingMap = currentMap;
-            currentMap = undefined;
-            outgoingMap.element.inert = true;
-            outgoingMap.element.style.opacity = '0';
-            fade = movement.animate(outgoingMap.element, [{ opacity: 1 }, { opacity: 0 }]);
-          }
-        }, transition);
-        if (fade) await fade;
-        return drawn && serial === paint;
+      const clueIndex = 'camera' in step ? i : priorCamera[i];
+      const mapIndex = 'map' in step ? i : priorMap[i];
+      const guessIndex = 'point' in step ? i : priorGuess[i];
+      actionBoard = 'camera' in step ? 'clue' : 'guess';
+      selectBoard();
+      const activeStage = actionBoard === 'clue' ? stage : mapStage;
+      activeStage.append(badge);
+      const work: Promise<unknown>[] = [];
+      if (clueIndex !== shownClue || 'camera' in step) {
+        shownClue = -2;
+        const cameraStep = steps[clueIndex], previous = steps[priorCamera[i]];
+        const camera = cameraStep && 'camera' in cameraStep ? cameraStep.camera : { dx:0, dy:0, level:0 };
+        const transition = 'camera' in step && previous && 'camera' in previous ? { replayFrom: previous.camera, motion: movement } : false;
+        work.push(viewport.show(camera, 'camera' in step ? announce : undefined, transition).then(drawn => {
+          if (drawn && serial === paint && !dead) shownClue = clueIndex;
+        }));
       }
-      outgoingMap = currentMap;
-      if (outgoingMap) outgoingMap.element.inert = true;
-      const map = document.createElement('div');
-      map.className = 'map-board replay-guess-map';
-      badge.before(map);
-      currentMap = { element: map };
-      clue.inert = true;
-      const config = context.config, answer = round.answer;
-      let pinMotion: Promise<boolean> | undefined;
-      if (config && answer) {
-        const board = currentMap.board = new MapBoard(map, config.bounds, config.overview, () => {}, config.map);
-        board.setLocked(true);
-        const previous = steps[priorGuess[i]];
-        const pins = [{ id: 'current', name, guess: step.point, color: '#56b9ff' }];
-        if (previous && 'point' in previous)
-          pins.push({ id: 'previous', name: tr('Previous guess'), guess: previous.point, color: '#a2aab9' });
-        board.setPlayers(pins, answer, () => {});
-        const pin = board.highlightPlayer('current');
-        if (pin && !movement.reduced) {
-          // Keep the board's SVG positioning on the pin. Translate its parent in world coordinates.
-          const carrier = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-          pin.before(carrier);
-          carrier.append(pin);
-          const prior = previous && 'point' in previous ? previous.point : undefined;
-          const worldScale = board.svg.getScreenCTM()?.a || 1;
-          const dx = prior ? prior.x - step.point.x : 0;
-          const dy = prior ? prior.y - step.point.y : -HIGHLIGHT_PIN_HEIGHT / (2 * worldScale);
-          pinMotion = movement.animate(carrier, [
-            { transform: `translate(${dx}px, ${dy}px)`, opacity: dx || dy ? 1 : 0.4 },
-            { transform: 'translate(0px, 0px)', opacity: 1 },
-          ]);
+      const mapStep = steps[mapIndex], pose = mapStep && 'map' in mapStep ? mapStep.map : initialMap;
+      const guessStep = steps[guessIndex];
+      if (pose || (guessStep && 'point' in guessStep)) {
+        if (!mapSurface) {
+          mapSurface = document.createElement('div'); mapSurface.className = 'map-board replay-guess-map';
+          mapStage.prepend(mapSurface);
+          if (context.config) {
+            board = new MapBoard(mapSurface, context.config.bounds, context.config.overview, () => {}, context.config.map);
+            board.setLocked(true); mapSurface.tabIndex = -1;
+            bindAttribute(mapSurface, 'aria-label', 'Guess map');
+          }
+          mapSurface.inert = true;
         }
-      } else map.textContent = formatGuessrNumber(step.point.x) + ', ' + formatGuessrNumber(step.point.y);
-      announce();
-      await Promise.all([movement.animate(map, [{ opacity: 0 }, { opacity: 1 }]), pinMotion]);
+        mapNote.hidden = !!board || !!guessStep;
+        mapSurface.hidden = false;
+        if (pose && board && (shownMap !== mapIndex || 'map' in step)) {
+          const previous = steps[priorMap[i]];
+          const from = previous && 'map' in previous ? previous.map : initialMap;
+          if ('map' in step && from && shownMap !== priorMap[i]) {
+            await board.setReplayPose(from);
+          }
+          if (dead || serial !== paint) return false;
+          work.push(board.setReplayPose(pose, 'map' in step ? movement : undefined));
+          shownMap = mapIndex;
+        } else if (!pose && cached?.mapSteps?.length) { board?.clearReplayPose(); shownMap = -2; }
+        if (shownGuess !== guessIndex || 'point' in step) {
+          shownGuess = guessIndex;
+          if (guessStep && 'point' in guessStep) {
+            const previous = steps[priorGuess[guessIndex]];
+            const prior = previous && 'point' in previous ? previous.point : undefined;
+            const pins = [{ id:'current', name, guess:guessStep.point, color:'#56b9ff' }];
+            if (prior) pins.push({ id:'previous', name:tr('Previous guess'), guess:prior, color:'#a2aab9' });
+            if (board) {
+              board.setPlayers(pins, round.answer, () => {});
+              const pin = board.highlightPlayer('current');
+              if (pin && 'point' in step && !movement.reduced) {
+                const carrier = document.createElementNS('http://www.w3.org/2000/svg','g');
+                pin.before(carrier); carrier.append(pin);
+                const dx = prior ? prior.x - step.point.x : 0;
+                const dy = prior ? prior.y - step.point.y : -HIGHLIGHT_PIN_HEIGHT / (2 * (board.svg.getScreenCTM()?.a || 1));
+                work.push(movement.animate(carrier, [{ transform:`translate(${dx}px, ${dy}px)`, opacity:prior ? 1 : .4 },
+                  { transform:'translate(0px, 0px)', opacity:1 }]));
+              }
+            } else mapSurface.textContent = formatGuessrNumber(guessStep.point.x) + ', ' + formatGuessrNumber(guessStep.point.y);
+          } else board?.setMarkers(null);
+        }
+      } else {
+        if (mapSurface) mapSurface.hidden = true;
+        mapNote.hidden = false;
+        shownGuess = shownMap = -2;
+      }
+      if (!('camera' in step)) announce();
+      await Promise.all(work);
       return serial === paint && !dead;
     } catch {
       if (serial === paint && !dead) {
@@ -452,11 +467,7 @@ export function openClueReplay(
       }
       return false;
     } finally {
-      if (serial === paint) {
-        removeMap(outgoingMap);
-        outgoingMap = undefined;
-        rendering = false;
-      }
+      if (serial === paint) rendering = false;
     }
   }
   async function sequence(index: number, token: number) {
@@ -485,15 +496,14 @@ export function openClueReplay(
     interrupt();
     viewport?.destroy();
     viewport = undefined;
-    removeMap(currentMap);
-    currentMap = undefined;
+    removeMap();
     clue.inert = false;
     steps = [];
     active = -1;
     nodes.clear();
     strip.replaceChildren();
     timeline.scrollTop = 0;
-    stage.hidden = false;
+    boards.hidden = switches.hidden = true;
     timeline.hidden = toolbar.hidden = retry.hidden = true;
     status.hidden = false;
     bindText(status, 'Loading…');
@@ -507,26 +517,34 @@ export function openClueReplay(
         thumbnail = new ClueViewport(thumb, data.clue);
         void thumbnail.show({ dx: 0, dy: 0, level: 0 }).catch(() => {});
       }
-      if (!data?.steps?.length) {
-        stage.hidden = true;
+      if (!data || (!data.steps.length && !data.mapSteps?.length)) {
+        boards.hidden = true;
         bindText(status, 'No replay was recorded for this round.');
         return;
       }
-      steps = data.steps;
+      steps = playbackSteps(data);
+      const firstMap = data.mapSteps?.[0];
+      initialMap = firstMap?.action === 'map-view' && firstMap.before <= 1 && firstMap.second <= 1 ? firstMap.map : undefined;
+      if (initialMap && steps.length > 1) steps = steps.filter(s => s !== firstMap);
+      const hasGuessMap = !!data.mapSteps?.length || steps.some(s => 'point' in s);
+      guessPane.hidden = !hasGuessMap;
+      boards.classList.toggle('single-board', !hasGuessMap);
+      switches.hidden = !hasGuessMap;
+      bindText(mapNote, data.mapSteps?.length ? 'Guess map' : 'No guess-map movement was recorded.');
       const lastSecond = steps.reduce((end, step) => Math.max(end, step.second), 0);
       bindText(timeMeasure, () => stamp(lastSecond));
       priorCamera = [];
-      priorGuess = [];
-      let cam = -1,
-        guess = -1;
+      priorGuess = []; priorMap = [];
+      let cam = -1, guess = -1, map = -1;
       steps.forEach((step, i) => {
         priorCamera.push(cam);
-        priorGuess.push(guess);
+        priorGuess.push(guess); priorMap.push(map);
         if ('camera' in step) cam = i;
+        else if ('map' in step) map = i;
         else guess = i;
       });
       viewport = new ClueViewport(clue, data.clue);
-      stage.hidden = timeline.hidden = false;
+      boards.hidden = timeline.hidden = false;
       layoutSteps();
       toolbar.hidden = play.hidden = false;
       status.hidden = !data.partial;
@@ -534,7 +552,7 @@ export function openClueReplay(
       startSequence(0);
     } catch {
       if (!controller.signal.aborted) {
-        stage.hidden = !viewport;
+        boards.hidden = !viewport;
         status.hidden = false;
         bindText(status, 'Preview unavailable');
         retry.hidden = false;
@@ -596,8 +614,7 @@ export function openClueReplay(
       interrupt();
       viewport?.destroy();
       viewport = undefined;
-      removeMap(currentMap);
-      currentMap = undefined;
+      removeMap();
     }
   });
   void selectRound();
@@ -612,8 +629,7 @@ export function openClueReplay(
     interrupt();
     viewport?.destroy();
     thumbnail?.destroy();
-    removeMap(currentMap);
-    currentMap = undefined;
+    removeMap();
     item.remove();
   };
 }

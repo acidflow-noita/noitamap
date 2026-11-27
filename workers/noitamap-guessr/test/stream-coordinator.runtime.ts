@@ -14,6 +14,7 @@ import storageSchema from '../migrations/0006_stream_storage.sql?raw';
 import ownershipSchema from '../migrations/0007_result_ownership.sql?raw';
 import replaySchema from '../migrations/0011_clue_replays.sql?raw';
 import { encodeReplayFrames, type ReplayFrame } from '../../../src/guessr/clue-replay';
+import { encodeMapFrames, MAP_RECORD_CHARS } from '../../../src/guessr/guess-map-replay';
 import { archiveReplayBatch } from '../src/clue-replay-store';
 import { archivedClueReplay } from '../src/result-storage';
 
@@ -48,10 +49,15 @@ it.each(['stream', 'pvp'] as const)(
     await evictDurableObject(stub, { webSockets: 'hibernate' });
     const t = session.createdAt,
       roundId = session.rounds[0].id;
+    const center = { x:8000000, y:7000000, w:31000, h:30900 };
+    const mapMoves = {base:t,data:encodeMapFrames([
+      {at:t,action:'map-view',map:center},{at:t+1,action:'map-pan',map:{...center,x:8100000}},
+    ],t)};
     const input = {
       type: 'clue-frames',
       player: '100',
       roundId,
+      mapMoves,
       frames: [
         [t, 0, 0, 0],
         [t + 1, 24, 0, 0],
@@ -64,7 +70,8 @@ it.each(['stream', 'pvp'] as const)(
       await ack;
     }
     const own = host.wait(m => m.type === 'clue-ack');
-    host.send({ type: 'clue-frames', roundId, frames: [[t, 0, 0, 0]] });
+    host.send({ type: 'clue-frames', roundId, frames: [[t, 0, 0, 0]], mapMoves:{base:t,
+      data:encodeMapFrames([{at:t,action:'map-home',map:center}],t)} });
     await own;
     const early = host.wait(m => m.type === 'clue-replay');
     host.send({ type: 'clue-read', round: 1, player: '200', request: 'early' });
@@ -79,9 +86,9 @@ it.each(['stream', 'pvp'] as const)(
     expect(host.messages.some(m => JSON.stringify(m).includes('clue-frames'))).toBe(false);
     expect(
       await runInDurableObject(stub, (_, state) =>
-        state.storage.sql.exec('SELECT frames FROM clue_replays ORDER BY player').toArray()
+        state.storage.sql.exec('SELECT frames,length(maps) AS bytes FROM clue_replays ORDER BY player').toArray()
       )
-    ).toEqual([{ frames: 1 }, { frames: 3 }]);
+    ).toEqual([{ frames: 1, bytes:MAP_RECORD_CHARS }, { frames: 3, bytes:2*MAP_RECORD_CHARS }]);
     await runInDurableObject(stub, (_, state) => {
       const record = JSON.parse(
         state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data
@@ -99,6 +106,8 @@ it.each(['stream', 'pvp'] as const)(
       [0,{dx:0,dy:0,level:0}], [0,{dx:24,dy:0,level:0}], [0,{dx:24,dy:0,level:1}],
     ]);
     expect(live.replay).not.toHaveProperty('track');
+    expect(live.replay.mapSteps).toEqual([{before:1,second:0,action:'map-view',map:center},
+      {before:2,second:0,action:'map-pan',map:{...center,x:8100000}}]);
     expect(live.replay.clue).toEqual(session.rounds[0].clue);
     const late = player.wait(m => m.type === 'clue-ack');
     player.send({ ...input, frames: [[t + 3, 0, 0, 0]] });
@@ -170,25 +179,28 @@ it('records each accepted chatter revision once and preserves an automatic updat
     automatic: true,
   };
   for (const guess of [original, update, update]) {
+    const at = session.createdAt, pose = {x:8000000,y:7200000,w:28000,h:28000};
     const reply = chatter.wait(m => m.type === 'receipt' && m.nonce === guess.nonce);
-    chatter.send({ type: 'guess', submission: guess });
+    chatter.send({ type: 'guess', submission: guess, mapMoves:{base:at,data:encodeMapFrames([
+      {at,action:'map-view',map:pose}, ...(guess === update ? [{at:at+1,action:'map-pan' as const,map:{...pose,x:8100000}}] : [])
+    ],at)} });
     expect(await reply).toMatchObject({ accepted: true });
   }
   const replay = await runInDurableObject(stub, (_, state) => {
     const row = state.storage.sql
-      .exec<{ guesses: string; frames: number }>(
-        'SELECT guesses,frames FROM clue_replays WHERE player=? AND round=1',
+      .exec<{ guesses: string; frames: number; mapBytes: number }>(
+        'SELECT guesses,frames,length(maps) AS mapBytes FROM clue_replays WHERE player=? AND round=1',
         '200'
       )
       .one();
-    return { points: JSON.parse(row.guesses).map((step: number[]) => step.slice(1)), frames: row.frames };
+    return { points: JSON.parse(row.guesses).map((step: number[]) => step.slice(1)), frames: row.frames, mapBytes:row.mapBytes };
   });
   expect(replay).toEqual({
     points: [
       [streamAnswer.x, streamAnswer.y, 0],
       [update.point.x, update.point.y, 1],
     ],
-    frames: 0,
+    frames: 0, mapBytes:2 * MAP_RECORD_CHARS,
   });
 });
 it('resumes large replay archives with deterministic pages and fetches only the requested player', async () => {
