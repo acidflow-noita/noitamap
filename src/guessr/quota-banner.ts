@@ -1,5 +1,6 @@
 import { bindText } from './i18n';
 import { quotaTiming } from './messages';
+import { newFeatureBadge } from './release-features';
 import { currentQuota, watchQuota } from './quota-state';
 
 const messages = {
@@ -20,7 +21,7 @@ export function createQuotaBanner(): HTMLElement {
   const countdown = document.createElement('time');
   countdown.setAttribute('role', 'timer');
   countdown.setAttribute('aria-live', 'off');
-  text.append(reason, ' ', countdown);
+  text.append(reason, ' ', countdown, ' ', newFeatureBadge('limits'));
   bar.append(icon, text);
   let timer: ReturnType<typeof setTimeout> | undefined;
   let scope: keyof typeof messages | undefined;

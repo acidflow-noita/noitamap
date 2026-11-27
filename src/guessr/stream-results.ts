@@ -1,4 +1,5 @@
 import { roundProgress } from './round-progress';
+import { replayLegend } from './release-features';
 import { iconLabel } from './control-icons';
 import topographySvg from '../../public/guessr/topography.svg?raw';
 import { bindAttribute, bindText, formatGuessrNumber, guessrLocale, tr } from "./i18n";
@@ -86,7 +87,9 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   filter.type = "search";
   bindAttribute(filter, "placeholder", "Find a player");
   bindAttribute(filter, "aria-label", "Filter players by name or login");
-  controls.append(el('h2', 'Player scores'), count, filter);
+  controls.append(el('h2', 'Player scores'), count);
+  if (replays) controls.append(replayLegend());
+  controls.append(filter);
   const standings = el('section', '', 'stream-standings'); standings.append(controls); section.append(standings);
   const wrap = el("div", "", "table-wrap stream-score-frame rounded-9"),
     table = el("table", '', 'table stream-score-table'),

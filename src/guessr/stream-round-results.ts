@@ -9,6 +9,7 @@ import { RESULT_PIN_PADDING_Y } from './map-framing';
 import { within } from './rules';
 import type { ReplayLoader } from './clue-replay';
 import { createReplayRows } from './clue-replay-view';
+import { guessrFeatures, newFeatureBadge, replayLegend } from './release-features';
 
 function reviewHeader(label: string | (() => string), controls: HTMLElement) {
   const header = document.createElement('header'); header.className = 'panel-bar review-header';
@@ -59,6 +60,11 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
     scoreBody.append(wrap); scores.append(heading,scoreBody);
   } else scores.append(heading,wrap);
   grid.append(mapPanel, scores); main.append(grid);
+  if (data.players.some(player => player.guess && within(player.guess, config.bounds))) {
+    const hint = document.createElement('p'); hint.className = 'guessr-marker-hint';
+    hint.append(newFeatureBadge('markers'), ' ', bindText(document.createElement('span'), guessrFeatures.markers.note));
+    map.after(hint);
+  }
   const board = new MapBoard(map, config.bounds, config.overview, () => {}, config.map); board.setLocked(true);
   mapPanel.prepend(reviewHeader(() => guessrGameTerm(data.label), mapControls(board, { readOnly: true })));
   const rows = new Map<string, HTMLTableRowElement>();
@@ -69,6 +75,7 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
   };
   const readReplay = data.clueReplays ? options.readReplay : undefined;
   const replays = readReplay ? createReplayRows(readReplay, config) : undefined;
+  if (replays) heading.insertBefore(replayLegend(), actions);
   const players = data.players;
   const streamerId = data.mode === 'pvp' ? '' : data.host.id;
   const roundOrder = [...players].sort((a, b) => b.score - a.score || b.total - a.total);

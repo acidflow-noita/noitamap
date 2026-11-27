@@ -119,8 +119,33 @@ it('allows a deliberate reopen and translates the open dialog without rebuilding
   await i18next.changeLanguage('de');
   expect(dialog()).toBe(element);
   expect(element.querySelector('h1')?.textContent).not.toBe("What's new");
-  expect(element.querySelectorAll('li')).toHaveLength(GUESSR_CHANGELOG.notes.length);
+  expect(element.querySelectorAll('li')).toHaveLength(GUESSR_CHANGELOG.notes.length + GUESSR_CHANGELOG.features.length);
   expect(element.querySelector('.btn-close')?.getAttribute('aria-label')).toBe('Schließen');
   expect(element.querySelector('.dialog-footer')).toBeNull();
   expect(element.textContent).not.toContain('{{');
+});
+
+it('announces the replay release once and badges each current feature in the active language', async () => {
+  localStorage.setItem('noitamap-guessr-changelog-seen', '2026-11-23');
+  const controller = create(); controller.setSafe(true); await flush();
+  const element = dialog()!;
+  expect(element.querySelector('time')?.dateTime).toBe('2026-11-27');
+  const badges = [...element.querySelectorAll<HTMLElement>('.guessr-release-features .badge.theme-success')];
+  expect(badges.map(badge => badge.dataset.newFeature)).toEqual(GUESSR_CHANGELOG.features);
+  expect(badges.every(badge => badge.textContent === 'New')).toBe(true);
+  expect(element.querySelector('.changelog-more .badge')).toBeNull();
+  await i18next.changeLanguage('de');
+  expect(badges.every(badge => badge.textContent === 'Neu')).toBe(true);
+  expect(element.querySelector('.guessr-release-preview img')?.getAttribute('alt')).not.toContain('highlighted');
+});
+
+it.each([true, false])('uses the motion preference (%s) and lets the reader stop or replay the GIF', async normal => {
+  vi.stubGlobal('matchMedia', () => ({ matches: normal }));
+  const controller = create(); controller.setSafe(true); await flush();
+  const image = dialog()!.querySelector<HTMLImageElement>('.guessr-release-preview img')!;
+  const toggle = dialog()!.querySelector<HTMLButtonElement>('.guessr-release-preview button')!;
+  expect(image.src.endsWith(normal ? '.gif' : '.webp')).toBe(true);
+  expect(toggle.textContent).toBe(normal ? 'Stop animation' : 'Play animation');
+  toggle.click(); expect(image.src.endsWith(normal ? '.webp' : '.gif')).toBe(true);
+  toggle.click(); expect(image.src.endsWith(normal ? '.gif' : '.webp')).toBe(true);
 });

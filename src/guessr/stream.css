@@ -396,6 +396,14 @@
   align-content: start;
   gap: var(--game-gutter);
 }
+.review-header > .guessr-feature-label, .stream-table-controls > .guessr-feature-label, .guessr-marker-hint {
+  color: var(--text-muted); font-size: .8125rem;
+}
+#guess-app .round-review-score-panel .review-header > .panel-title { flex-basis: auto; }
+.round-review-score-panel .review-header > :empty { display: none; }
+.guessr-marker-hint { margin: 0; }
+.guessr-marker-hint .guessr-new-badge { margin-inline-end: .25rem; }
+.review-map-body > .guessr-marker-hint { margin: .75rem var(--game-gutter); }
 #guess-app .inline-round-review .review-header { min-block-size: 0; padding: 0 0 .75rem; }
 #guess-app .inline-round-review .round-review-score-panel > .review-header {
   padding-inline-start: calc(var(--bs-border-width) + var(--review-rank-inset));

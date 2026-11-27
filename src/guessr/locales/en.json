@@ -793,5 +793,20 @@
   "The game service has reached its daily limit.": "The game service has reached its daily limit.",
   "Ranked play is paused. Practice is available.": "Ranked play is paused. Practice is available.",
   "Limits reset in {{duration}} (at {{time}} on {{date}}).": "Limits reset in {{duration}} (at {{time}} on {{date}}).",
-  "Next availability check in {{duration}} (at {{time}} on {{date}}).": "Next availability check in {{duration}} (at {{time}} on {{date}})."
+  "Next availability check in {{duration}} (at {{time}} on {{date}}).": "Next availability check in {{duration}} (at {{time}} on {{date}}).",
+  "You": "You",
+  "Connect your Twitch channel before hosting.": "Connect your Twitch channel before hosting.",
+  "New": "New",
+  "Round replays": "Round replays",
+  "Player pins": "Player pins",
+  "Host-only review": "Host-only review",
+  "Daily limit countdown": "Daily limit countdown",
+  "Replays": "Replays",
+  "Watch a player’s moves and guesses with the play button beside their score. Select another score to switch replays.": "Watch a player’s moves and guesses with the play button beside their score. Select another score to switch replays.",
+  "Select a player in the round scores to see their guess and the correct location together.": "Select a player in the round scores to see their guess and the correct location together.",
+  "Only the host can read the moderation details when a game is flagged for review.": "Only the host can read the moderation details when a game is flagged for review.",
+  "When a daily limit blocks play, the notice shows a countdown and the reset time in your time zone.": "When a daily limit blocks play, the notice shows a countdown and the reset time in your time zone.",
+  "A player’s score is highlighted. The replay moves across the clue and shows the submitted pin on the map.": "A player’s score is highlighted. The replay moves across the clue and shows the submitted pin on the map.",
+  "Play animation": "Play animation",
+  "Stop animation": "Stop animation"
 }

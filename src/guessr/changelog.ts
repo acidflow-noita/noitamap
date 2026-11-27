@@ -1,13 +1,15 @@
 import Dialog from 'bootstrap/js/dist/dialog.js';
 import { bindAttribute, bindText, guessrLocale, tr } from './i18n';
 import { readGuessRoute } from './routes';
+import { featureLabel, guessrFeatures, latestFeatures } from './release-features';
 
 const isMainPage = () => readGuessRoute(new URL(location.href)).pane === 'home';
 
 // One announcement per release day. Editing hotfix notes must not reopen it.
 export const GUESSR_CHANGELOG = {
-  id: '2026-11-23-hard-puzzle-vote',
-  date: '2026-11-23',
+  id: '2026-11-27-round-replays',
+  date: '2026-11-27',
+  features: latestFeatures,
   notes: [
     'Players voted 8 to 2 to exclude hard puzzles. This applies to new games in all four modes.',
     'The clue and guess panels line up side by side. {{nextRound}} now appears above the maps.',
@@ -86,6 +88,27 @@ function write(kind: 'localStorage' | 'sessionStorage', key: string, value: stri
   try { window[kind].setItem(key, value); } catch { /* In-memory guard still prevents repeated openings. */ }
 }
 
+function replayPreview() {
+  const figure = document.createElement('figure');
+  figure.className = 'guessr-release-preview';
+  const image = document.createElement('img');
+  image.width = 512; image.height = 496; image.decoding = 'async';
+  image.className = 'border rounded-9';
+  bindAttribute(image, 'alt', 'A player’s score is highlighted. The replay moves across the clue and shows the submitted pin on the map.');
+  const toggle = document.createElement('button');
+  toggle.type = 'button'; toggle.className = 'btn btn-sm btn-outline theme-secondary';
+  let playing = false;
+  const show = (animate: boolean) => {
+    playing = animate;
+    image.src = '/guessr/updates/round-replays-2026-11-27.' + (playing ? 'gif' : 'webp');
+    bindText(toggle, playing ? 'Stop animation' : 'Play animation');
+  };
+  show(window.matchMedia?.('(prefers-reduced-motion: no-preference)').matches === true);
+  toggle.onclick = () => show(!playing);
+  figure.append(image, toggle);
+  return figure;
+}
+
 export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
   const announcement = /^\d{4}-\d{2}-\d{2}/.exec(release.id)?.[0] ?? release.id;
   const seen = () => {
@@ -110,13 +133,21 @@ export function createGuessrChangelog(release = GUESSR_CHANGELOG) {
     const date = bindText(document.createElement('time'), () => new Date(release.date + 'T00:00:00Z')
       .toLocaleDateString(guessrLocale(), { dateStyle: 'long', timeZone: 'UTC' }));
     date.dateTime = release.date; date.className = 'muted';
-    const notes = document.createElement('ul'); notes.className = 'guessr-changelog-notes';
+    const notes = document.createElement('ul'); notes.className = 'guessr-release-features';
+    for (const feature of release.features) {
+      const item = document.createElement('li');
+      const heading = document.createElement('h2');
+      heading.append(featureLabel(feature));
+      item.append(heading, bindText(document.createElement('p'), guessrFeatures[feature].note));
+      if (feature === 'replays') item.append(replayPreview());
+      notes.append(item);
+    }
     const labels = () => ({ streaming: tr('I’m streaming'), streamMode: tr('Chat vs Streamer'),
       hostAction: tr('Play as streamer'), chatterAction: tr('Play as chatter'), nextRound: tr('Next round'), backToResults: tr('Back to results'),
       dailyMode: tr('Daily'), received: tr('Guess received'), startGame: tr('Start game'), howToPlay: tr('How to play'), whatsNew: tr("What's new"),
       share: tr('Share result'), answers: tr('View answers') });
     const earlier = document.createElement('ul'); earlier.className = 'guessr-changelog-notes';
-    release.notes.forEach((text, index) => (index < 4 ? notes : earlier).append(bindText(document.createElement('li'), text, labels)));
+    for (const text of release.notes) earlier.append(bindText(document.createElement('li'), text, labels));
     body.append(date, notes);
     if (earlier.childElementCount) {
       const more = document.createElement('details'); more.className = 'changelog-more';

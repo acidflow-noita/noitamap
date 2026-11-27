@@ -109,6 +109,20 @@ body:has(.game-shell, .stream-viewer-shell)::before { height: 20dvh; }
 .guessr-changelog .dialog-footer { flex-shrink: 0; }
 .changelog-more { border-block-start: 1px solid var(--border); padding-block-start: .75rem; }
 .changelog-more summary { cursor: pointer; color: var(--text); font-weight: 600; }
+.guessr-feature-label { min-inline-size: 0; }
+.guessr-feature-label > .guessr-new-badge { margin-inline-start: .25em; vertical-align: .08em; }
+.badge.guessr-new-badge {
+  color: var(--bs-success-fg, var(--success-fg)); background: var(--bs-success-bg-subtle, var(--success-bg));
+  border-color: var(--bs-success-border-subtle, var(--success-fg)); padding: .125rem .45rem;
+  font-size: .75rem; line-height: 1.25; white-space: nowrap; flex: none;
+}
+.guessr-release-features { display: grid; gap: var(--game-gutter, 1rem); margin: 0; padding: 0; list-style: none; }
+.guessr-release-features > li, .guessr-release-preview { display: grid; gap: .5rem; }
+.guessr-release-features h2, .guessr-release-features p, .guessr-release-preview { margin: 0; }
+.guessr-release-features h2 { font-size: 1rem; }
+.guessr-release-preview { margin-block-start: .25rem; }
+.guessr-release-preview img { display: block; inline-size: 100%; block-size: auto; }
+.guessr-release-preview button { justify-self: start; }
 .with-icon {
   display: inline-flex;
   align-items: center;

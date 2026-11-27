@@ -3,11 +3,13 @@ import { gameAuth } from './api';
 import { gameApiOrigin } from './api-origin';
 import { bindText, guessrLocale, onGuessrLanguageChanged } from './i18n';
 import type { StreamResult } from './stream-types';
+import { featureLabel } from './release-features';
 
 export function reviewDisclosure(read: (signal: AbortSignal) => Promise<string[]>) {
   const element = document.createElement('section');
   element.className = 'host-review-notice';
-  const title = bindText(document.createElement('strong'), 'Host review suggested');
+  const title = document.createElement('strong');
+  title.append(featureLabel('hostReview', 'Host review suggested'));
   const warning = bindText(
     document.createElement('p'),
     'Keep the reasoning off stream. It contains private moderation details.'

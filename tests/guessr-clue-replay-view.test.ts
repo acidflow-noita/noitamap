@@ -318,6 +318,9 @@ it('gives the clue and map in an expanded review one media column with individua
   const stack = grid.querySelector('.round-review-media')!;
   expect(stack.children[0]).toBe(clue);
   expect(stack.children[1].matches('.map-board')).toBe(true);
-  for (const child of Array.from(stack.children)) expect(child.matches('.border.rounded-9.overflow-hidden')).toBe(true);
+  const media = [...stack.querySelectorAll(':scope > .clue, :scope > .map-board')];
+  expect(media).toHaveLength(2);
+  for (const child of media) expect(child.matches('.border.rounded-9.overflow-hidden')).toBe(true);
+  expect(stack.querySelector('.guessr-marker-hint [data-new-feature="markers"]')).not.toBeNull();
   destroy();
 });
