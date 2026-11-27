@@ -16,7 +16,7 @@ Other players' pins remain private until their round is released. The host recei
 
 ## Game flow
 
-Multiplayer supports 3, 5 and 10 rounds, with 5 selected by default. The default round timer is 90 seconds. Starting a game opens a lobby with no deadline. The host shares the link and then presses Start game. The countdown is silent. Timed games hold intermediate results for at least eight seconds before automatic round progression.
+Multiplayer supports 3, 5, 7 and 10 rounds, with 5 selected by default. The default round timer is 90 seconds. Starting a game opens a lobby with no deadline. The host shares the link and then presses Start game. The countdown is silent. Timed games hold intermediate results for at least eight seconds before automatic round progression.
 
 The streaming-protection option is on by default for Chat vs Streamer and off for 1v1. With protection on, the other players complete each location before the streamer sees it. With protection off, both sides play the same location together. A 1v1 roster has exactly two players, and the host must approve the named ready opponent. Leaving an active 1v1 match concedes it and opens the result.
 

@@ -1,4 +1,11 @@
 {
+  "Replay": "Replay",
+  "Resume playback": "Resume",
+  "Score summary": "Score summary",
+  "Show {{player}} in the full table": "Show {{player}} in the full table",
+  "Replays start when you open them. You can pause, resume or watch again.": "Replays start when you open them. You can pause, resume or watch again.",
+  "Select your score or the streamer’s score to jump to that player in the full table.": "Select your score or the streamer’s score to jump to that player in the full table.",
+  "Choose 3, 5, 7 or 10 rounds.": "Choose 3, 5, 7 or 10 rounds.",
   ", Streamer": ", Streamer",
   ", You": ", You",
   "+{{value1}} pts": "+{{value1}} pts",

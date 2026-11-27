@@ -1,4 +1,11 @@
 {
+  "Replay": "Přehrát znovu",
+  "Resume playback": "Pokračovat",
+  "Score summary": "Přehled skóre",
+  "Show {{player}} in the full table": "Zobrazit hráče {{player}} v celé tabulce",
+  "Replays start when you open them. You can pause, resume or watch again.": "Záznam se po otevření spustí automaticky. Můžete ho pozastavit, pokračovat v přehrávání nebo ho přehrát znovu.",
+  "Select your score or the streamer’s score to jump to that player in the full table.": "Výběrem svého skóre nebo skóre streamera přejdete na příslušný řádek v celé tabulce.",
+  "Choose 3, 5, 7 or 10 rounds.": "Vyberte 3, 5, 7 nebo 10 kol.",
   ", Streamer": ", Streamer",
   ", You": ", Vy",
   "+{{value1}} pts": "+{{value1}} b.",

@@ -16,8 +16,12 @@ it('creates the private default-five-round match with streaming off, and sends a
   const create = [...main.querySelectorAll('button')].find(b => b.textContent === 'Create match')!;
   create.click(); await vi.waitFor(() => expect(opened).toHaveBeenCalledWith('match'));
   expect(mocks.start).toHaveBeenLastCalledWith('parallel', 5, 90, false, 'pvp');
+  const length = main.querySelector<HTMLElement>('.stream-length-setting .combobox')!;
+  expect(length.querySelector('.combobox-caret')).not.toBeNull();
+  expect([...length.querySelectorAll<HTMLElement>('[role=option]')].map(option => option.dataset.bsValue)).toEqual(['3','5','7','10']);
+  length.querySelector<HTMLButtonElement>('[data-bs-value="7"]')!.click();
   toggle.click(); create.click();
-  await vi.waitFor(() => expect(mocks.start).toHaveBeenLastCalledWith('parallel', 5, 90, true, 'pvp'));
+  await vi.waitFor(() => expect(mocks.start).toHaveBeenLastCalledWith('parallel', 7, 90, true, 'pvp'));
   dispose();
 });
 it('requires Pro to create the match while explaining that the invited opponent is free', async () => {

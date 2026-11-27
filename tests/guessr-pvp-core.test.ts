@@ -6,7 +6,7 @@ import { pvpSnapshot } from '../src/guessr/pvp-state';
 import { streamSource, streamHost, streamSecret, streamNow, streamAnswer } from './helpers/guessr-stream';
 
 const opponent = { id: '1234', login: 'opponent', name: 'Opponent', color: '#ff4500' };
-async function fixture(rounds: 3 | 5 | 10 = 5, streaming = false) {
+async function fixture(rounds = 5, streaming = false) {
   const service = new StreamService(streamSource(), streamSecret);
   const session = { ...await service.start(streamHost, streamNow, 'parallel', rounds, { mode: 'pvp', streaming }), live: true as const };
   const record = createParallelRecord({ owner: streamHost.sub, session, seconds: 30,
@@ -33,7 +33,7 @@ it('requires the selected opponent to be ready and keeps the roster at two', asy
   expect(record.game.timing!.phase).toBe('play');
 });
 
-it.each([3, 5, 10] as const)('plays %i simultaneous rounds with final locks and early completion', async count => {
+it.each([3, 5, 7, 10] as const)('plays %i simultaneous rounds with final locks and early completion', async count => {
   let record = await fixture(count);
   let previousHostNonce: string | undefined;
   beginParallel(record, 'start', streamNow, opponent.id);
@@ -63,7 +63,7 @@ it.each([3, 5, 10] as const)('plays %i simultaneous rounds with final locks and 
   expect(result.players).toHaveLength(2); expect(result.players.every(p => p.score === 4900 * count)).toBe(true);
 });
 
-it.each([3, 5, 10] as const)('stages %i streamed rounds without exposing future clues or interrupting the opponent', async count => {
+it.each([3, 5, 7, 10] as const)('stages %i streamed rounds without exposing future clues or interrupting the opponent', async count => {
   const record = await fixture(count, true), game = record.game;
   beginParallel(record, 'start', streamNow, opponent.id);
   expect(pvpSnapshot(game, streamHost.twitchUserId, '/images').clue).toBeNull();

@@ -31,8 +31,9 @@ import {
   type StreamChatMessage,
 } from "./stream-state";
 import { streamResultsView } from "./stream-results";
+import { roundCountPicker } from './round-count-picker';
 import {
-  STREAM_ROUNDS, STREAM_DEFAULT_ROUNDS, STREAM_ROUND_OPTIONS, validStreamRoundCount,
+  STREAM_ROUNDS, STREAM_DEFAULT_ROUNDS, validStreamRoundCount,
   STREAM_SESSION_KEY,
   type StreamGame,
   type StreamResult,
@@ -463,17 +464,10 @@ export class StreamUI {
       try { localStorage.setItem('noitamap-guessr-round-timer', JSON.stringify({ automatic: this.timedRounds, seconds: this.roundSeconds, rounds: this.roundCount })); } catch { /* Optional preference. */ }
     };
     automatic.onchange = seconds.onchange = updateTimerSetting; updateTimerSetting();
-    const gameLengthRow = el('label', '', 'stream-length-setting');
-    const gameLength = el('select'); gameLength.className = 'form-control';
-    for (const count of STREAM_ROUND_OPTIONS) {
-      const option = el('option', () => tr('{{rounds}} rounds', { rounds: formatGuessrNumber(count), count }));
-      option.value = String(count); gameLength.append(option);
-    }
-    gameLength.value = String(this.roundCount);
-    gameLength.onchange = () => { const count = Number(gameLength.value); if (validStreamRoundCount(count)) this.roundCount = count; updateTimerSetting(); };
-    gameLengthRow.append(el('span', 'Number of rounds'), gameLength);
+    const length = roundCountPicker(this.roundCount, count => { this.roundCount = count; updateTimerSetting(); });
+    this.hooks.cleanupClue(length.destroy);
     const durationFields = el('div', '', 'round-settings-fields');
-    durationFields.append(gameLengthRow, lengthRow);
+    durationFields.append(length.element, lengthRow);
     playStep.append(durationFields, timerRow, manualWarning, earlyHint, streaming);
     shareStep.append(el('h2', 'Share game link in chat'));
     const sharingRow = el('div', '', 'd-flex align-items-center gap-2');
@@ -1380,7 +1374,9 @@ export class StreamUI {
     this.hooks.cleanupClue(view.destroy);
     main.append(view);
     this.resultPublication(view, entry, this.game);
-    view.querySelector('.stream-results-menu')!.prepend(action('Start another game', async () => {
+    const menu = view.querySelector('.stream-results-menu')!;
+    view.querySelector('.stream-results-heading')!.after(menu);
+    menu.prepend(action('Start another game', async () => {
       // Do not replace the singleton host session until its retry credential is
       // durable, or publication has already been confirmed.
       const saved = await this.archive.get(result.id).catch(() => undefined);

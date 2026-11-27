@@ -11,7 +11,7 @@ import { defaultStreaming, type MultiplayerMode } from './match-settings.ts';
 import { GAME_PROTOCOL } from './game-protocol.ts';
 import {
   STREAM_MAX_PLAYERS,
-  STREAM_DEFAULT_ROUNDS, validStreamRoundCount,
+  STREAM_DEFAULT_ROUNDS, STREAM_ROUND_ERROR, validStreamRoundCount,
   type StreamPlayer,
   type StreamPublishWireInput,
   type StreamReveal,
@@ -145,7 +145,7 @@ export class StreamService {
     roundCount = STREAM_DEFAULT_ROUNDS,
     settings: { mode?: MultiplayerMode; streaming?: boolean; id?: string } = {},
   ): Promise<StreamSession> {
-    if (!validStreamRoundCount(roundCount)) throw new ImageGameError(400, 'Choose 3, 5 or 10 rounds.');
+    if (!validStreamRoundCount(roundCount)) throw new ImageGameError(400, STREAM_ROUND_ERROR);
     if (settings.id !== undefined && !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(settings.id))
       throw new ImageGameError(400, 'Invalid game identifier.');
     if (settings.mode !== undefined && settings.mode !== 'stream' && settings.mode !== 'pvp'

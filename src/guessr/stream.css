@@ -499,6 +499,28 @@
 }
 .result-outcome > .result-back { grid-area: 2 / 1; align-self: start; translate: 0 -.0625rem; }
 .stream-standings { display: grid; gap: .75rem; min-inline-size: 0; }
+.score-summary { display: grid; gap: .5rem; min-inline-size: 0; }
+.score-summary h3 { font-size: 1rem; margin: 0; }
+.round-review-score-panel .score-summary { margin-block-end: var(--game-gutter); }
+.stream-round-results-layout .round-review-score-panel > .score-summary { margin-inline: var(--game-gutter); }
+.stream-review-grid > .score-summary { grid-column: 1 / -1; }
+.score-summary .score-summary-table { margin: 0; min-inline-size: 0; }
+#guess-app .score-summary .score-summary-table :is(th, td) { padding: .375rem .75rem; }
+.score-summary-table .numeric { inline-size: 1%; }
+.score-summary-table th.numeric { white-space: normal; }
+.score-summary .stream-score-frame .score-summary-table tr > :last-child { position: static; background-color: transparent; }
+.score-summary tbody tr[data-player] { cursor: pointer; }
+.score-summary tbody tr[data-player]:is(:hover, :focus-within) { background: var(--surface-2); }
+#guess-app .score-summary .score-summary-table .score-summary-gap > td {
+  text-align: center; padding-block: 0; color: var(--text-muted); line-height: 1;
+}
+#guess-app .score-summary-jump {
+  display: inline-flex; align-items: center; gap: .5rem; max-inline-size: 100%; min-inline-size: 0;
+  margin: 0; padding: 0; min-block-size: 0; background: transparent; border: 0;
+  font: inherit; text-align: start; overflow-wrap: anywhere;
+}
+.score-summary-jump i { color: var(--text-muted); font-size: .75em; }
+.stream-score-table tbody tr[data-player]:focus { outline: 2px solid var(--accent-fg); outline-offset: -2px; }
 .stream-results > .stream-result-reviews, .stream-results > .host-review-notice { margin-block: 0; }
 .stream-result-reviews:empty { display: none; }
 #guess-app .result-back {

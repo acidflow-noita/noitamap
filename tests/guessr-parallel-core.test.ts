@@ -6,7 +6,7 @@ import { acceptParallelGuess, beginParallel, createParallelRecord, directGuessMe
 import { streamSnapshot } from '../src/guessr/stream-snapshot';
 import { STREAM_DELIVERY_GRACE_MS, STREAM_SUBMISSION_GRACE_MS } from '../src/guessr/stream-timing';
 
-async function fixture(rounds: 3 | 5 | 10 = 5) {
+async function fixture(rounds = 5) {
   const service = new StreamService(streamSource(), streamSecret);
   const session = { ...await service.start(streamHost, streamNow, 'parallel', rounds), live: true as const };
   return createParallelRecord({ owner: streamHost.sub, session, seconds: 30,
@@ -14,7 +14,7 @@ async function fixture(rounds: 3 | 5 | 10 = 5) {
 }
 const player = (id: number) => ({ id: String(id + 1000), login: 'player' + id, name: 'Player ' + id });
 describe('durable dual-path game rules', () => {
-  it.each([3, 5, 10] as const)('records 100 players through all %i rounds, deduplicating both paths and protecting latest updates', async count => {
+  it.each([3, 5, 7, 10] as const)('records 100 players through all %i rounds, deduplicating both paths and protecting latest updates', async count => {
     const record = await fixture(count), game = record.game;
     for (let i = 0; i < 100; i++) joinParallelPlayer(record, player(i));
     beginParallel(record, 'start', streamNow);

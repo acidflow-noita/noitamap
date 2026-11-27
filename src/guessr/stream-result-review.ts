@@ -9,14 +9,14 @@ import { bindAttribute, bindText, formatGuessrNumber, guessrGameTerm, tr } from 
 import type { ReplayLoader } from './clue-replay';
 
 /** Results expand in document flow. Opening a review never enters live play. */
-export function streamResultReviews(result: StreamResult, fallback?: ImageGameConfig, readReplay?: ReplayLoader) {
+export function streamResultReviews(result: StreamResult, fallback?: ImageGameConfig, readReplay?: ReplayLoader, viewerId?: string) {
   return roundResultReviews(result.rounds.map((_, index) => resultRoundView(result, index)), resultMapConfig(result, fallback),
-    [], readReplay);
+    [], readReplay, viewerId);
 }
 
 /** Bootstrap 6 uses native details/summary accordions. Independent disclosures
  * do not collapse a different round above the reader and move the clicked row. */
-export function roundResultReviews(rounds: StreamRoundView[], config?: ImageGameConfig, openRounds: number[] = [], readReplay?: ReplayLoader) {
+export function roundResultReviews(rounds: StreamRoundView[], config?: ImageGameConfig, openRounds: number[] = [], readReplay?: ReplayLoader, viewerId?: string) {
   let destroyed = false;
   const element = document.createElement('div'); element.className = 'accordion stream-result-reviews';
   const destroyers: (() => void)[] = [];
@@ -53,7 +53,7 @@ export function roundResultReviews(rounds: StreamRoundView[], config?: ImageGame
       bindAttribute(preview, 'aria-label', 'Round {{round}} clue', { round: formatGuessrNumber(data.round) });
       const viewport = clue ? new ClueViewport(preview, clue) : undefined;
       if (viewport) void viewport.show({ dx: 0, dy: 0, level: 0 }).catch(() => unavailable(preview)); else unavailable(preview);
-      const cleanup = config ? sharedRoundResults(panel, config, data, document.createElement('div'), { inline: true, clue: preview, readReplay }) : undefined;
+      const cleanup = config ? sharedRoundResults(panel, config, data, document.createElement('div'), { inline: true, clue: preview, readReplay, viewerId }) : undefined;
       if (!config) panel.append(preview);
       closeReview = () => { cleanup?.(); viewport?.destroy(); panel.replaceChildren(); closeReview = undefined; };
     };
@@ -61,7 +61,8 @@ export function roundResultReviews(rounds: StreamRoundView[], config?: ImageGame
     toggle.addEventListener('click', () => {
       if (item.open) return;
       open();
-      const preview = panel.querySelector<HTMLElement>('.stream-round-preview');
+      const preview = panel.querySelector<HTMLElement>('.stream-review-grid > .score-summary') ??
+        panel.querySelector<HTMLElement>('.stream-round-preview');
       if (preview) revealReviewPreview(preview, toggle);
     });
     item.addEventListener('toggle', () => {

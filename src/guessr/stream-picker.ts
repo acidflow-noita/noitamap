@@ -394,7 +394,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
               : r.received ? () => formatGuessrNumber(r.score?.score ?? 0) : '—'));
           body.append(row);
         }
-        const reviews = roundResultReviews(released, config, openRounds, feed?.readReplay); clearResults = reviews.destroy;
+        const reviews = roundResultReviews(released, config, openRounds, feed?.readReplay,
+          viewer.getState().userId ?? viewer.getState().savedUserId ?? undefined); clearResults = reviews.destroy;
         table.append(body); const links = node('div', 'stream-results-menu'); links.append(result);
         const wrap = node('div', 'table-wrap'); wrap.append(table);
         resultsPanel.replaceChildren(heading, links, total, reviews.element, wrap);
@@ -508,7 +509,8 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       }
       sharedNext = button('Waiting for the streamer', () => {}, 'secondary'); sharedNext.disabled = true;
       actions.append(sharedNext);
-      clearShared = sharedRoundResults(sharedPanel, config, data, actions, { readReplay: feed?.readReplay });
+      clearShared = sharedRoundResults(sharedPanel, config, data, actions, { readReplay: feed?.readReplay,
+        viewerId: viewer.getState().userId ?? viewer.getState().savedUserId ?? undefined });
     }
     const finalReveal = data.round === live?.totalRounds && !!live.timing?.seconds;
     const readyPhase = pvp && live?.phase === 'reveal' && !finalReveal;

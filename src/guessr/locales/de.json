@@ -1,4 +1,11 @@
 {
+  "Replay": "Erneut abspielen",
+  "Resume playback": "Fortsetzen",
+  "Score summary": "Punkteübersicht",
+  "Show {{player}} in the full table": "{{player}} in der Gesamttabelle anzeigen",
+  "Replays start when you open them. You can pause, resume or watch again.": "Wiederholungen starten beim Öffnen. Du kannst sie anhalten, fortsetzen oder erneut abspielen.",
+  "Select your score or the streamer’s score to jump to that player in the full table.": "Wähle deine Punktzahl oder die des Streamers, um zur jeweiligen Zeile in der Gesamttabelle zu springen.",
+  "Choose 3, 5, 7 or 10 rounds.": "Wähle 3, 5, 7 oder 10 Runden.",
   ", Streamer": ", Streamer",
   ", You": ", Du",
   "+{{value1}} pts": "+{{value1}} Pkt.",

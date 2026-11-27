@@ -25,7 +25,7 @@ it('excludes both Hard views from new games and can still score an archived Hard
     if (path.endsWith('catalog.json')) return Response.json(catalog);
     return new Response(path.endsWith('native-grid.bin') ? grid : starts);
   }, 'https://images.test', 'https://reference.test', () => 0);
-  for (const count of [3, 5, 10]) {
+  for (const count of [3, 5, 7, 10]) {
     const rounds = await source.sampleRounds(count);
     expect(rounds).toHaveLength(count);
     expect(rounds.every(r => r.area.id === 'biome/other' && r.area.difficultyTier === 'normal')).toBe(true);

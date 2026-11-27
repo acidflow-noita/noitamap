@@ -1,4 +1,11 @@
 {
+  "Replay": "重新播放",
+  "Resume playback": "继续播放",
+  "Score summary": "得分概览",
+  "Show {{player}} in the full table": "在完整排行榜中查看 {{player}}",
+  "Replays start when you open them. You can pause, resume or watch again.": "打开回放后会自动播放，可以随时暂停、继续或重新观看。",
+  "Select your score or the streamer’s score to jump to that player in the full table.": "选择自己或主播的得分，即可跳转到完整排行榜中对应的行。",
+  "Choose 3, 5, 7 or 10 rounds.": "选择 3、5、7 或 10 轮。",
   ", Streamer": ", 主播",
   ", You": ", 你",
   "+{{value1}} pts": "+{{value1}} 分",

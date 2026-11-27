@@ -1,4 +1,11 @@
 {
+  "Replay": "Revoir",
+  "Resume playback": "Reprendre",
+  "Score summary": "Résumé des scores",
+  "Show {{player}} in the full table": "Afficher {{player}} dans le classement complet",
+  "Replays start when you open them. You can pause, resume or watch again.": "La rediffusion démarre dès son ouverture. Vous pouvez la mettre en pause, la reprendre ou la revoir.",
+  "Select your score or the streamer’s score to jump to that player in the full table.": "Sélectionnez votre score ou celui du streamer pour accéder à la ligne du joueur dans le classement complet.",
+  "Choose 3, 5, 7 or 10 rounds.": "Choisissez 3, 5, 7 ou 10 manches.",
   ", Streamer": ", Streamer",
   ", You": ", Vous",
   "+{{value1}} pts": "+{{value1}} pts",

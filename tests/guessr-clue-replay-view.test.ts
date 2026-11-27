@@ -92,7 +92,7 @@ it('keeps names plain, frames the pin on hover and opens only the requested inli
   const steps = document.querySelectorAll<HTMLButtonElement>('.replay-step');
   expect([...steps].map(step => step.title)).toEqual(['Started view', 'Travel east', 'Sent guess', 'Updated guess']);
   expect(steps[3].textContent).toContain('23');
-  steps[1].dispatchEvent(new Event('pointerenter'));
+  steps[1].dispatchEvent(Object.assign(new Event('pointermove'), { pointerType: 'mouse', movementX: 1 }));
   await Promise.resolve();
   expect(seen.show).toHaveBeenLastCalledWith({ dx: 24, dy: 0, level: 0 }, expect.any(Function),
     expect.objectContaining({ replayFrom: { dx: 0, dy: 0, level: 0 } }));
@@ -122,6 +122,24 @@ it('keeps names plain, frames the pin on hover and opens only the requested inli
   await vi.waitFor(() => expect(open.getAttribute('aria-expanded')).toBe('true'));
   await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(2));
   close();
+});
+
+it('shows the round rank, round score and running total in a jump link for the current chatter', () => {
+  const players = Array.from({length:70}, (_, i) => ({ ...player, id:String(100+i), name:'Player '+i,
+    guess:round.answer, score:4000-i, total:8000-i }));
+  const destroy = sharedRoundResults(document.body, config, { ...round, host:players[0], players },
+    document.createElement('div'), { viewerId:players[52].id });
+  try {
+    const summary = document.querySelector('.score-summary')!;
+    const row = summary.querySelector<HTMLTableRowElement>('tr[data-player="152"]')!;
+    expect(row.cells[0].textContent).toBe('53');
+    expect(row.cells[2].textContent).toBe('3,948');
+    expect(row.cells[3].textContent).toBe('7,948');
+    document.querySelector<HTMLButtonElement>('.stream-round-score-table th:nth-child(4) button')!.click();
+    row.cells[2].click();
+    expect(document.activeElement).toBe(document.querySelector('.stream-round-score-table tr[data-player="152"]'));
+    expect(seen.focus).toHaveBeenCalledWith('152');
+  } finally { destroy(); }
 });
 
 it('switches the one open replay between players and tables, aborting stale loads', async () => {
@@ -179,7 +197,14 @@ it('holds each completed action for half a second and stops when closed', async 
       }
     );
     await vi.advanceTimersByTimeAsync(0);
-    document.querySelector<HTMLButtonElement>('.replay-play')!.click();
+    const play = document.querySelector<HTMLButtonElement>('.replay-play')!;
+    expect(play.textContent).toBe('Pause');
+    expect(play.querySelector('.bi-pause-fill')).not.toBeNull();
+    play.click();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(document.querySelector('[aria-current="step"]')?.getAttribute('data-step')).toBe('0');
+    expect(play.textContent).toBe('Resume');
+    play.click();
     await vi.advanceTimersByTimeAsync(495);
     expect(document.querySelector('[aria-current="step"]')?.getAttribute('data-step')).toBe('0');
     let finishPan!: (painted: boolean) => void;
@@ -262,7 +287,14 @@ it('exposes replay selection in final standings, including no-guess players, and
   await vi.waitFor(() => expect(view.querySelectorAll('.replay-step')).toHaveLength(1));
   expect(read).toHaveBeenCalledExactlyOnceWith(2, player.id, expect.any(AbortSignal));
   expect(view.querySelector('.replay-item summary')?.textContent).toContain('Vault');
-  expect(view.querySelector<HTMLButtonElement>('.replay-play')?.hidden).toBe(true);
+  const play = view.querySelector<HTMLButtonElement>('.replay-play')!;
+  expect(play.hidden).toBe(false);
+  expect(play.textContent).toBe('Replay');
+  expect(play.querySelector('.bi-arrow-counterclockwise')).not.toBeNull();
+  play.click();
+  expect(play.textContent).toBe('Pause');
+  await vi.waitFor(() => expect(play.textContent).toBe('Replay'));
+  expect(read).toHaveBeenCalledOnce();
   view.destroy();
   const legacy = streamResultsView({ ...result, clueReplays: undefined });
   expect(legacy.querySelector('.clue-replay-open')).toBeNull();

@@ -386,6 +386,7 @@ body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none
   gap: 0.75rem;
 }
 #guess-app .round-settings-fields > label,
+#guess-app .round-settings-fields > .stream-length-setting,
 #guess-app .round-settings-fields > .stream-timer-settings {
   display: grid;
   align-content: end;
@@ -394,7 +395,7 @@ body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none
   font-size: 0.875rem;
   color: var(--text-muted);
 }
-#guess-app .round-settings-fields :is(input, select) {
+#guess-app .round-settings-fields :is(input, .combobox-toggle) {
   min-inline-size: 0;
   inline-size: 100%;
   block-size: 2.75rem;

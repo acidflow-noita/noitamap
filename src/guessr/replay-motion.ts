@@ -37,6 +37,11 @@ export class ReplayMotion {
     for (const animation of this.animations.keys()) animation.pause();
   }
 
+  resume(): void {
+    this.paused = false;
+    for (const animation of this.animations.keys()) animation.play();
+  }
+
   cancel(): void {
     if (this.cancelled) return;
     this.cancelled = true;

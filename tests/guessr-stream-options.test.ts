@@ -3,11 +3,11 @@ import { StreamService } from '../src/guessr/stream-server';
 import { streamPlayerName, streamResultNames } from '../src/guessr/stream-display-name';
 import { streamHost, streamNow, streamSecret, streamSource } from './helpers/guessr-stream';
 
-it('defaults stream games to five rounds and supports exactly three, five and ten', async () => {
+it('defaults stream games to five rounds and supports exactly three, five, seven and ten', async () => {
   const service = new StreamService(streamSource(), streamSecret);
   expect((await service.start(streamHost, streamNow)).rounds).toHaveLength(5);
-  for (const count of [3, 5, 10]) expect((await service.start(streamHost, streamNow, 'twitch', count)).rounds).toHaveLength(count);
-  for (const count of [0, 4, 6, 11, NaN]) await expect(service.start(streamHost, streamNow, 'twitch', count)).rejects.toThrow('Choose 3, 5 or 10 rounds.');
+  for (const count of [3, 5, 7, 10]) expect((await service.start(streamHost, streamNow, 'twitch', count)).rounds).toHaveLength(count);
+  for (const count of [0, 4, 6, 8, 9, 11, NaN]) await expect(service.start(streamHost, streamNow, 'twitch', count)).rejects.toThrow('Choose 3, 5, 7 or 10 rounds.');
 });
 it('publishes every score when a Twitch display name contains invisible direction marks', async () => {
   const service = new StreamService(streamSource(), streamSecret);

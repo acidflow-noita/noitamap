@@ -201,7 +201,7 @@ export function openClueReplay(
   context.mount.append(item);
   const toolbar = document.createElement('div');
   toolbar.className = 'clue-replay-toolbar';
-  const play = control('Play all', 'play-fill');
+  const play = control('Pause', 'pause-fill');
   play.classList.add('replay-play');
   toolbar.append(play);
   const stage = document.createElement('div');
@@ -258,8 +258,10 @@ export function openClueReplay(
     run = 0,
     paint = 0,
     rendering = false,
-    dead = false,
-    playing = false;
+    dead = false;
+  let playback: 'playing' | 'paused' | 'finished' = 'paused';
+  let sequencing = false;
+  let nextStep: { index: number; delay: number; due: number } | undefined;
   let timeout: ReturnType<typeof setTimeout> | undefined, fade: ReturnType<typeof setTimeout> | undefined;
   const nodes = new Map<number, HTMLButtonElement>();
   const stamp = (sec: number) =>
@@ -268,15 +270,28 @@ export function openClueReplay(
     index === 0 && steps[index].action === 'view' ? 'Started view' : actions[steps[index].action][1];
   let thumbnail: ClueViewport | undefined;
   let cached: Awaited<ReturnType<ReplayLoader>> | undefined;
-  function setPlaying(value: boolean) {
-    if (playing === value) return;
-    playing = value;
-    run++;
-    clearTimeout(timeout);
+  function setPlayback(state: typeof playback) {
+    playback = state;
     play.replaceChildren(
-      glyph(value ? 'pause-fill' : 'play-fill'),
-      bindText(document.createElement('span'), value ? 'Pause' : 'Play all')
+      glyph(state === 'playing' ? 'pause-fill' : state === 'finished' ? 'arrow-counterclockwise' : 'play-fill'),
+      bindText(document.createElement('span'), state === 'playing' ? 'Pause' : state === 'finished' ? 'Replay' : 'Resume playback')
     );
+  }
+  function stopSequence(finished = false) {
+    ++run;
+    clearTimeout(timeout);
+    nextStep = undefined;
+    sequencing = false;
+    setPlayback(finished ? 'finished' : 'paused');
+  }
+  function scheduleNext() {
+    if (!nextStep || playback !== 'playing') return;
+    const { index, delay } = nextStep, token = run;
+    nextStep.due = performance.now() + delay;
+    timeout = setTimeout(() => {
+      nextStep = undefined;
+      void sequence(index, token);
+    }, delay);
   }
   let columns = 1,
     rowHeight = 56;
@@ -326,18 +341,16 @@ export function openClueReplay(
         bindAttribute(node, 'aria-label', () => tr(label(i)) + ', ' + stamp(step.second));
         bindAttribute(node, 'title', () => tr(label(i)));
         const preview = () => {
-          setPlaying(false);
+          stopSequence(i === steps.length - 1);
           if (active !== i) void display(i);
         };
-        node.onpointerenter = e => {
-          if (e.pointerType !== 'touch') {
-            setPlaying(false);
-            void display(i);
-          }
+        node.onpointerenter = e => { if (e.pointerType !== 'touch' && playback !== 'playing') preview(); };
+        node.onpointermove = e => {
+          if (e.pointerType !== 'touch' && playback === 'playing' && (e.movementX || e.movementY)) preview();
         };
         node.onfocus = preview;
         node.onclick = () => {
-          setPlaying(false);
+          stopSequence(i === steps.length - 1);
           if (active !== i || !rendering) void display(i);
         };
         const next = strip.children[i - start] ?? null;
@@ -432,7 +445,7 @@ export function openClueReplay(
       return serial === paint && !dead;
     } catch {
       if (serial === paint && !dead) {
-        setPlaying(false);
+        stopSequence();
         bindText(status, 'Preview unavailable');
         status.hidden = false;
         retry.hidden = false;
@@ -449,19 +462,25 @@ export function openClueReplay(
   async function sequence(index: number, token: number) {
     moveIntoView(index);
     let presentedAt = performance.now();
-    if (!(await display(index, () => { presentedAt = performance.now(); })) || dead || !playing || token !== run) return;
+    if (!(await display(index, () => { presentedAt = performance.now(); })) || dead || token !== run) return;
     if (index + 1 === steps.length) {
-      setPlaying(false);
+      stopSequence(true);
       return;
     }
     const initialView = index === 0 && steps[index].action === 'view';
     const remaining = initialView ? 0 : Math.max(0, REPLAY_MOVE_MS - (performance.now() - presentedAt));
-    timeout = setTimeout(() => void sequence(index + 1, token), remaining + STEP_HOLD_MS);
+    nextStep = { index: index + 1, delay: remaining + STEP_HOLD_MS, due: 0 };
+    scheduleNext();
+  }
+  function startSequence(index: number) {
+    sequencing = true;
+    setPlayback('playing');
+    void sequence(index, ++run);
   }
   async function selectRound() {
     request?.abort();
     paint++;
-    setPlaying(false);
+    stopSequence();
     clearTimeout(fade);
     interrupt();
     viewport?.destroy();
@@ -509,10 +528,10 @@ export function openClueReplay(
       viewport = new ClueViewport(clue, data.clue);
       stage.hidden = timeline.hidden = false;
       layoutSteps();
-      toolbar.hidden = play.hidden = steps.length < 2;
+      toolbar.hidden = play.hidden = false;
       status.hidden = !data.partial;
       if (data.partial) bindText(status, 'Recording limit reached');
-      await display(0);
+      startSequence(0);
     } catch {
       if (!controller.signal.aborted) {
         stage.hidden = !viewport;
@@ -523,14 +542,16 @@ export function openClueReplay(
     }
   }
   play.onclick = () => {
-    if (playing) {
-      setPlaying(false);
+    if (playback === 'playing') {
+      clearTimeout(timeout);
+      if (nextStep) nextStep.delay = Math.max(0, nextStep.due - performance.now());
+      setPlayback('paused');
       motion?.pause();
-    }
-    else {
-      setPlaying(true);
-      void sequence(0, run);
-    }
+    } else if (sequencing) {
+      setPlayback('playing');
+      motion?.resume();
+      scheduleNext();
+    } else startSequence(playback === 'finished' ? 0 : Math.min(active + 1, steps.length - 1));
   };
   timeline.onscroll = renderStrip;
   timeline.onkeydown = event => {
@@ -568,7 +589,7 @@ export function openClueReplay(
     if (item.open) {
       if (!request || request.signal.aborted) void selectRound();
     } else {
-      setPlaying(false);
+      stopSequence();
       paint++;
       request?.abort();
       clearTimeout(fade);

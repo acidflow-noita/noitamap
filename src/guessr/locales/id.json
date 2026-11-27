@@ -1,4 +1,11 @@
 {
+  "Replay": "Putar lagi",
+  "Resume playback": "Lanjutkan",
+  "Score summary": "Ringkasan skor",
+  "Show {{player}} in the full table": "Tampilkan {{player}} di tabel lengkap",
+  "Replays start when you open them. You can pause, resume or watch again.": "Tayangan ulang langsung diputar saat dibuka. Anda dapat menjeda, melanjutkan, atau menontonnya lagi.",
+  "Select your score or the streamer’s score to jump to that player in the full table.": "Pilih skor Anda atau skor streamer untuk melihat baris pemain tersebut di tabel lengkap.",
+  "Choose 3, 5, 7 or 10 rounds.": "Pilih 3, 5, 7, atau 10 ronde.",
   ", Streamer": ", Streamer",
   ", You": ", Anda",
   "+{{value1}} pts": "+{{value1}} poin",

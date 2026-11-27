@@ -1,4 +1,11 @@
 {
+  "Replay": "Toista uudelleen",
+  "Resume playback": "Jatka",
+  "Score summary": "Tulosten yhteenveto",
+  "Show {{player}} in the full table": "Näytä {{player}} koko tulostaulukossa",
+  "Replays start when you open them. You can pause, resume or watch again.": "Uusinta käynnistyy, kun avaat sen. Voit keskeyttää toiston, jatkaa sitä tai katsoa uusinnan uudelleen.",
+  "Select your score or the streamer’s score to jump to that player in the full table.": "Valitse omat tai striimaajan pisteet, niin siirryt kyseisen pelaajan kohdalle koko tulostaulukossa.",
+  "Choose 3, 5, 7 or 10 rounds.": "Valitse 3, 5, 7 tai 10 kierrosta.",
   ", Streamer": ", Striimaaja",
   ", You": ", Sinä",
   "+{{value1}} pts": "+{{value1}} p",

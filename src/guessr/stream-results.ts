@@ -13,6 +13,7 @@ import { createReplayRows, publishedReplayLoader } from './clue-replay-view';
 import type { ImageGameConfig } from './image-game';
 import { pvpResultHeadline } from './pvp-results';
 import { privateResultReview } from './network-review-view';
+import { focusScoreRow, scoreSummary } from './score-summary';
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -34,6 +35,11 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   const own = viewerId ? result.players.find(p => p.id === viewerId) : undefined;
   const featured = own ?? host;
   const pvp = result.mode === 'pvp';
+  const playerRows = new Map<string, HTMLTableRowElement>();
+  const summary = scoreSummary(result.players.map(p => ({ ...p, total: p.score })), pvp ? '' : result.host.id, viewerId, id => {
+    if (!playerRows.has(id) && filter.value) { filter.value = ''; render(); }
+    focusScoreRow(playerRows.get(id));
+  });
   const placement = (rank: number) => {
     const number = formatGuessrNumber(rank);
     if (!/^en(?:-|$)/i.test(guessrLocale())) return number;
@@ -53,9 +59,9 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
     el("span", pvp ? '1v1' : "Chat vs Streamer", 'result-mode' + (pvp ? '' : ' twitch-mode-label')),
     title,
     ...(pvp ? [el('p', () => pvpResultHeadline(result), 'stream-placement')] : []),
-    ...(!pvp && own && own.id !== host.id ? [el('p', () => tr('You finished in position {{rank}} out of {{players}} players.',
+    ...(!pvp && !summary && own && own.id !== host.id ? [el('p', () => tr('You finished in position {{rank}} out of {{players}} players.',
       { rank: placement(own.rank), players: formatGuessrNumber(result.players.length) }), 'stream-placement')] : []),
-    ...(!pvp ? [el('p', () => tr('Streamer {{player}} finished in position {{rank}} out of {{players}} players.',
+    ...(!pvp && !summary ? [el('p', () => tr('Streamer {{player}} finished in position {{rank}} out of {{players}} players.',
       { player: result.host.name, rank: placement(host.rank), players: formatGuessrNumber(result.players.length) }), 'stream-placement')] : []),
   );
   const score = el('div', '', 'result-score');
@@ -75,11 +81,13 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   bindAttribute(download, 'title', 'Open the saved web page in a browser to search and sort every player’s scores offline.');
   const json = el('button', 'Save scores as a JSON file', 'btn btn-outline theme-secondary'); json.type = 'button';
   json.onclick = () => downloadStreamResult(result, 'json');
-  menu.append(download, json); section.append(hero, menu);
+  menu.append(download, json); section.append(hero);
+  if (summary) section.append(summary);
+  section.append(menu);
   const review = privateResultReview(result); if (review) section.append(review.element);
   const readReplay = result.clueReplays && result.rounds.length ? liveReplay ?? publishedReplayLoader(result.id) : undefined;
   const replays = readReplay ? createReplayRows(readReplay, result.config ?? config) : undefined;
-  const reviews = streamResultReviews(result, config, readReplay); section.append(reviews.element);
+  const reviews = streamResultReviews(result, config, readReplay, viewerId); section.append(reviews.element);
   const controls = el("div", "", "stream-table-controls"),
     filter = el("input"),
     count = el("span", "", "muted");
@@ -159,8 +167,10 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
                   b.rounds[Number(sort)].score) || a.name.localeCompare(b.name, guessrLocale()),
     );
     const fragment = document.createDocumentFragment();
+    playerRows.clear();
     for (const player of rows) {
       const row = el("tr");
+      row.dataset.player = player.id; row.tabIndex = -1; playerRows.set(player.id, row);
       if (!pvp && player.id === result.host.id) row.className = "stream-host-row";
       if (player.id === viewerId) row.classList.add('stream-viewer-row');
       const name = document.createElement('td');

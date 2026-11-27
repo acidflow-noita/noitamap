@@ -1,4 +1,11 @@
 {
+  "Replay": "Opnieuw afspelen",
+  "Resume playback": "Hervatten",
+  "Score summary": "Scoreoverzicht",
+  "Show {{player}} in the full table": "Toon {{player}} in de volledige ranglijst",
+  "Replays start when you open them. You can pause, resume or watch again.": "Een herhaling begint zodra je die opent. Je kunt pauzeren, verder kijken of opnieuw afspelen.",
+  "Select your score or the streamer’s score to jump to that player in the full table.": "Selecteer je eigen score of die van de streamer om naar die speler in de volledige ranglijst te gaan.",
+  "Choose 3, 5, 7 or 10 rounds.": "Kies 3, 5, 7 of 10 rondes.",
   ", Streamer": ", Streamer",
   ", You": ", Jij",
   "+{{value1}} pts": "+{{value1}} pt",

@@ -1,9 +1,10 @@
 import { StreamApi } from './stream-api';
 import { gameAuth } from './api';
 import { streamingSetting } from './streaming-setting';
-import { STREAM_DEFAULT_ROUNDS, STREAM_ROUND_OPTIONS, validStreamRoundCount } from './stream-types';
+import { STREAM_DEFAULT_ROUNDS } from './stream-types';
+import { roundCountPicker } from './round-count-picker';
 import { validStreamSeconds } from './stream-timing';
-import { bindText, formatGuessrNumber, tr } from './i18n';
+import { bindText } from './i18n';
 import { pageHeading } from './page-heading';
 import { loadingPlaceholders } from './loading-placeholders';
 import { localizedError } from './messages';
@@ -18,14 +19,8 @@ export function mountPvpSetup(main: HTMLElement, open: (id: string) => void, bac
   const access = document.createElement('div'); access.className = 'setup-access'; card.append(access);
   const placeholders = loadingPlaceholders(); access.append(placeholders);
   const settings = document.createElement('fieldset'); settings.disabled = true; settings.className = 'd-grid gap-4 border-0 p-0 m-0';
-  const length = document.createElement('select'); length.className = 'form-control';
-  for (const count of STREAM_ROUND_OPTIONS) {
-    const option = document.createElement('option'); option.value = String(count);
-    bindText(option, '{{rounds}} rounds', { rounds: formatGuessrNumber(count), count }); length.append(option);
-  }
-  length.value = String(STREAM_DEFAULT_ROUNDS);
-  const lengthLabel = document.createElement('label'); lengthLabel.className = 'stream-length-setting';
-  lengthLabel.append(bindText(document.createElement('span'), 'Number of rounds'), length);
+  let rounds = STREAM_DEFAULT_ROUNDS;
+  const length = roundCountPicker(rounds, count => { rounds = count; });
   const seconds = document.createElement('input'); seconds.type = 'number'; seconds.min = '15'; seconds.max = '600'; seconds.step = '1'; seconds.value = '90';
   const timeLabel = document.createElement('label'); timeLabel.className = 'stream-length-setting';
   timeLabel.append(bindText(document.createElement('span'), 'Round length (seconds)'), seconds);
@@ -33,18 +28,18 @@ export function mountPvpSetup(main: HTMLElement, open: (id: string) => void, bac
   const error = document.createElement('p'); error.className = 'form-text'; error.setAttribute('role', 'status');
   create.onclick = async () => {
     if (busy) return;
-    const count = Number(length.value), duration = Number(seconds.value);
-    if (!validStreamRoundCount(count) || !validStreamSeconds(duration) || !duration) { bindText(error, 'Choose a round duration between 15 and 600 seconds.'); return; }
+    const duration = Number(seconds.value);
+    if (!validStreamSeconds(duration) || !duration) { bindText(error, 'Choose a round duration between 15 and 600 seconds.'); return; }
     busy = true; settings.disabled = true; error.textContent = '';
     try {
-      const session = await api.start('parallel', count, duration, streaming, 'pvp');
+      const session = await api.start('parallel', rounds, duration, streaming, 'pvp');
       if (session.mode !== 'pvp' || session.transport !== 'parallel') throw Error('1v1 is not available on this site yet.');
       if (!closed) open(session.id);
     } catch (reason) { if (!closed) bindText(error, () => localizedError(reason)); }
     finally { busy = false; if (!closed) settings.disabled = false; }
   };
   const fields = document.createElement('div'); fields.className = 'round-settings-fields';
-  fields.append(lengthLabel, timeLabel);
+  fields.append(length.element, timeLabel);
   const controls = document.createElement('div'); controls.className = 'setup-actions'; controls.append(create);
   settings.append(fields, streamingSetting('pvp', value => { streaming = value; }).element, controls, error); card.append(settings);
   void (async () => {
@@ -73,5 +68,5 @@ export function mountPvpSetup(main: HTMLElement, open: (id: string) => void, bac
       settings.disabled = false;
     } catch (reason) { placeholders.remove(); if (!closed) bindText(access, (reason as Error).message); }
   })();
-  return () => { closed = true; };
+  return () => { closed = true; length.destroy(); };
 }

@@ -5,7 +5,8 @@ import type { ClueProgress, Point } from "./rules.ts";
 import { ROUND_COUNT } from './rules.ts';
 
 export const STREAM_ROUNDS = ROUND_COUNT;
-export const STREAM_ROUND_OPTIONS = [3, 5, 10] as const;
+export const STREAM_ROUND_OPTIONS = [3, 5, 7, 10] as const;
+export const STREAM_ROUND_ERROR = 'Choose 3, 5, 7 or 10 rounds.';
 export const STREAM_DEFAULT_ROUNDS = 5;
 export function validStreamRoundCount(value: unknown): value is typeof STREAM_ROUND_OPTIONS[number] {
   return STREAM_ROUND_OPTIONS.some(rounds => rounds === value);

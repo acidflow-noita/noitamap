@@ -1,4 +1,11 @@
 {
+  "Replay": "Смотреть снова",
+  "Resume playback": "Продолжить",
+  "Score summary": "Сводка результатов",
+  "Show {{player}} in the full table": "Показать игрока {{player}} в полной таблице",
+  "Replays start when you open them. You can pause, resume or watch again.": "Повтор запускается при открытии. Его можно поставить на паузу, продолжить или посмотреть заново.",
+  "Select your score or the streamer’s score to jump to that player in the full table.": "Выберите свой результат или результат стримера, чтобы перейти к строке этого игрока в полной таблице.",
+  "Choose 3, 5, 7 or 10 rounds.": "Выберите количество раундов (3, 5, 7 или 10).",
   ", Streamer": ", Стример",
   ", You": ", Вы",
   "+{{value1}} pts": "+{{value1}} очк.",

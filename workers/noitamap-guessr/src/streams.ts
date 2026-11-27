@@ -8,7 +8,7 @@ import {
   type StreamRoundSource,
 } from "../../../src/guessr/stream-server";
 import {
-  STREAM_DEFAULT_ROUNDS, validStreamRoundCount,
+  STREAM_DEFAULT_ROUNDS, STREAM_ROUND_ERROR, validStreamRoundCount,
 } from "../../../src/guessr/stream-types";
 import { verifyGameTicket, verifyResultManagementTicket } from "./tickets";
 import type { Env } from "./index";
@@ -229,7 +229,7 @@ export async function streamRoute(
     if (path.endsWith('/sessions')) {
       if (data.transport !== 'parallel') throw new ImageGameError(410, 'This game transport has been retired.');
       const rounds = data.rounds === undefined ? STREAM_DEFAULT_ROUNDS : data.rounds;
-      if (!validStreamRoundCount(rounds)) throw new ImageGameError(400, 'Choose 3, 5 or 10 rounds.');
+      if (!validStreamRoundCount(rounds)) throw new ImageGameError(400, STREAM_ROUND_ERROR);
       const mode = data.mode === undefined ? 'stream' : data.mode;
       if (mode !== 'stream' && mode !== 'pvp' || mode === 'pvp' && data.transport !== 'parallel') throw new ImageGameError(400, 'Invalid game settings.');
       if (data.streaming !== undefined && typeof data.streaming !== 'boolean') throw new ImageGameError(400, 'Invalid game settings.');

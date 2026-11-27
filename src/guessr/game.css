@@ -155,7 +155,7 @@ a {
   /* Let the shared language menu and Bootstrap controls own their link colors. */
   a:where(:not(.menu-item, .btn)) { color: var(--accent-fg); }
 }
-:where(#guess-app) button:not(:where(.btn, .btn-twitch, .btn-patreon, .btn-patron)) {
+:where(#guess-app) button:not(:where(.btn, .btn-twitch, .btn-patreon, .btn-patron, .menu-item)) {
   min-height: 2.5rem;
   padding: 0.5rem 0.875rem;
   border: 1px solid var(--control-border);
@@ -172,7 +172,7 @@ a {
     color 120ms;
 }
 :where(#guess-app)
-  button:not(:where(.btn, .btn-twitch, .btn-patreon, .btn-patron)):hover:not(
+  button:not(:where(.btn, .btn-twitch, .btn-patreon, .btn-patron, .menu-item)):hover:not(
     :disabled
   ) {
   color: var(--control-hover-fg);

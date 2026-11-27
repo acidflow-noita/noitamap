@@ -8,7 +8,7 @@ import { advanceStreamRound } from '../src/guessr/stream-state';
 import { streamSource, streamHost, streamSecret, streamNow, streamAnswer } from './helpers/guessr-stream';
 
 const player = { id: '1234', login: 'opponent', name: 'Opponent' };
-async function match(rounds: 3 | 5 | 10 = 5, seconds = 30) {
+async function match(rounds = 5, seconds = 30) {
   const service = new StreamService(streamSource(), streamSecret);
   const session = { ...await service.start(streamHost, streamNow, 'parallel', rounds, { streaming: false }), live: true as const };
   const record = createParallelRecord({ owner: streamHost.sub, session, seconds,
@@ -30,7 +30,7 @@ describe('streaming setup controls the actual schedule', () => {
     expect((await service.start(streamHost, streamNow, 'parallel', 3, { mode: 'pvp', streaming: true })).streaming).toBe(true);
   });
 
-  it.each([3, 5, 10] as const)('runs %i shared rounds without a warm-up, leaked early answer or extra final turn', async count => {
+  it.each([3, 5, 7, 10] as const)('runs %i shared rounds without a warm-up, leaked early answer or extra final turn', async count => {
     const record = await match(count), game = record.game;
     expect(game.timing!.phase).toBe('play');
     for (let i = 0; i < count; i++) {

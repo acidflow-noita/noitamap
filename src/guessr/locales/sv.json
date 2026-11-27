@@ -1,4 +1,11 @@
 {
+  "Replay": "Spela upp igen",
+  "Resume playback": "Fortsätt",
+  "Score summary": "Poängöversikt",
+  "Show {{player}} in the full table": "Visa {{player}} i hela tabellen",
+  "Replays start when you open them. You can pause, resume or watch again.": "Reprisen startar när du öppnar den. Du kan pausa, fortsätta eller titta igen.",
+  "Select your score or the streamer’s score to jump to that player in the full table.": "Välj din egen eller streamarens poäng för att gå till spelarens rad i hela tabellen.",
+  "Choose 3, 5, 7 or 10 rounds.": "Välj 3, 5, 7 eller 10 omgångar.",
   ", Streamer": ", Streamare",
   ", You": ", Du",
   "+{{value1}} pts": "+{{value1}} p",

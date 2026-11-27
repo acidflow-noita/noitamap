@@ -1,4 +1,11 @@
 {
+  "Replay": "もう一度再生",
+  "Resume playback": "再生を再開",
+  "Score summary": "スコアの概要",
+  "Show {{player}} in the full table": "{{player}}を全体の順位表で表示",
+  "Replays start when you open them. You can pause, resume or watch again.": "リプレイは開くと自動で再生されます。一時停止や再開、最初からの再生ができます。",
+  "Select your score or the streamer’s score to jump to that player in the full table.": "自分または配信者のスコアを選ぶと、全体の順位表でそのプレイヤーの行に移動します。",
+  "Choose 3, 5, 7 or 10 rounds.": "ラウンド数は3、5、7、10から選べます。",
   ", Streamer": " ・ストリーマー",
   ", You": " ・あなた",
   "+{{value1}} pts": "+{{value1}} ポイント",

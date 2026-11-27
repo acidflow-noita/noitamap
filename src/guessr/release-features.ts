@@ -3,7 +3,7 @@ import { bindAttribute, bindText } from './i18n';
 export const guessrFeatures = {
   replays: {
     title: 'Round replays',
-    note: 'Watch a player’s moves and guesses with the play button beside their score. Select another score to switch replays.',
+    note: 'Replays start when you open them. You can pause, resume or watch again.',
   },
   markers: {
     title: 'Player pins',
@@ -21,10 +21,18 @@ export const guessrFeatures = {
     title: 'Return to start',
     note: 'Press R to return to the starting point on the clue map at the current zoom level.',
   },
+  scoreSummary: {
+    title: 'Score summary',
+    note: 'Select your score or the streamer’s score to jump to that player in the full table.',
+  },
+  roundCount: {
+    title: 'Number of rounds',
+    note: 'Choose 3, 5, 7 or 10 rounds.',
+  },
 } as const;
 
 type Feature = keyof typeof guessrFeatures;
-export const latestFeatures: readonly Feature[] = ['replays', 'markers', 'hostReview', 'limits', 'clueReset'];
+export const latestFeatures: readonly Feature[] = ['replays', 'scoreSummary', 'roundCount', 'markers', 'hostReview', 'limits', 'clueReset'];
 
 export function newFeatureBadge(feature: Feature) {
   const badge = document.createElement('span');

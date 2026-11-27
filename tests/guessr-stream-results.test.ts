@@ -19,6 +19,29 @@ const result: StreamResult = {
   ],
 };
 
+it('keeps the streamer and viewer visible and jumps to their row through a sort and a filter', () => {
+  const players = Array.from({ length: 70 }, (_, i) => ({ ...result.players[1], id: String(1000+i),
+    name: 'Player ' + i, login: 'p' + i, rank: i + 1, score: 5000 - i }));
+  const game = { ...result, players, host: players[0] };
+  const page = streamResultsView(game, players[52].id); document.body.append(page);
+  try {
+    const summary = page.querySelector('.score-summary')!;
+    expect([...summary.querySelectorAll('tbody tr[data-player]')].map(row => row.firstElementChild?.textContent)).toEqual(['1','53']);
+    expect(summary.querySelector('.score-summary-gap')).not.toBeNull();
+    const filter = page.querySelector<HTMLInputElement>('input[type=search]')!;
+    filter.value = 'Player 6'; filter.dispatchEvent(new Event('input'));
+    const column = page.querySelector<HTMLButtonElement>('.stream-standings th:nth-child(2) button')!;
+    column.click();
+    summary.querySelector<HTMLButtonElement>('tr[data-player="1052"] button')!.click();
+    expect(filter.value).toBe('');
+    expect(document.activeElement).toBe(page.querySelector('.stream-standings tbody tr[data-player="1052"]'));
+    expect(column.parentElement!.getAttribute('aria-sort')).toBe('ascending');
+  } finally { page.destroy(); page.remove(); }
+  const hostView = streamResultsView(game, players[0].id);
+  expect(hostView.querySelectorAll('.score-summary tbody tr')).toHaveLength(1);
+  hostView.destroy();
+});
+
 it('names the streamer and the chatter explicitly in their finishing positions, including ties', () => {
   const own = streamResultsView(result, '456'); document.body.append(own);
   expect(own.querySelector('.finish-hero')!.textContent).toContain('You finished 1st out of 2.');
