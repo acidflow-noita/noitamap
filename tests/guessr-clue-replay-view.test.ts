@@ -95,7 +95,8 @@ it('keeps names plain, frames the pin on hover and opens the requested replay ab
   expect(read).toHaveBeenCalledExactlyOnceWith(1, '200', expect.any(AbortSignal));
   expect(document.querySelector('dialog, input[type="range"]')).toBeNull();
   const steps = document.querySelectorAll<HTMLButtonElement>('.replay-step');
-  expect([...steps].map(step => step.title)).toEqual(['Started view', 'Travel east', 'Sent guess', 'Updated guess']);
+  expect([...steps].map(step => step.title)).toEqual(['Clue map — Started view', 'Clue map — Travel east', 'Guess map — Sent guess', 'Guess map — Updated guess']);
+  expect([...steps].map(step => step.parentElement?.dataset.board)).toEqual(['clue', 'clue', 'guess', 'guess']);
   expect(steps[3].textContent).toContain('23');
   steps[1].dispatchEvent(Object.assign(new Event('pointermove'), { pointerType: 'mouse', movementX: 1 }));
   await Promise.resolve();
@@ -130,6 +131,30 @@ it('keeps names plain, frames the pin on hover and opens the requested replay ab
   close();
 });
 
+it('attributes identical zoom icons and an automatic guess to their maps on the shared timeline', async () => {
+  const data: ClueReplay = {
+    clue: replay.clue,
+    steps: [
+      { action: 'zoom-out', second: 4, camera: { dx: 0, dy: 0, level: 1 } },
+      { action: 'automatic', second: 5, point: round.answer },
+    ],
+    mapSteps: [{ action: 'map-zoom-out', second: 4, before: 1, map: { x: 8000000, y: 8000000, w: 32768, h: 32768 } }],
+  };
+  const close = openClueReplay(player.id, player.name, { number: 1, answer: round.answer, location: 'Mines' },
+    async () => data, { mount: document.body, config });
+  try {
+    await vi.waitFor(() => expect(document.querySelectorAll('.replay-step')).toHaveLength(3));
+    const steps = [...document.querySelectorAll<HTMLButtonElement>('.replay-step')];
+    expect(steps.map(step => step.parentElement?.dataset.board)).toEqual(['clue', 'guess', 'guess']);
+    expect(steps.slice(0, 2).every(step => step.querySelector('.bi-zoom-out'))).toBe(true);
+    expect(steps.map(step => step.title)).toEqual(['Clue map — Zoom out', 'Guess map — Zoom out', 'Guess map — Automatic guess']);
+    for (const step of steps) expect(step.getAttribute('aria-label')).toContain(step.title);
+    steps[1].click();
+    expect(steps[1].getAttribute('aria-current')).toBe('step');
+    expect(document.querySelector('.replay-boards')?.getAttribute('data-visible')).toBe('guess');
+  } finally { close(); }
+});
+
 it('restores both maps when seeking across a pin and a pan, without another replay read', async () => {
   const initial = { x:8000000, y:8000000, w:32768, h:32768 }, pan = { ...initial, x:8500000 };
   const read = vi.fn(async () => ({ ...replay, mapSteps:[
@@ -140,10 +165,10 @@ it('restores both maps when seeking across a pin and a pan, without another repl
     document.querySelector<HTMLButtonElement>('.clue-replay-open')!.click();
     const panel = document.querySelector('.score-replay-disclosure')!;
     await vi.waitFor(() => expect(panel.querySelectorAll('.replay-step')).toHaveLength(5));
-    panel.querySelector<HTMLButtonElement>('[title="Sent guess"]')!.click();
+    panel.querySelector<HTMLButtonElement>('[title="Guess map — Sent guess"]')!.click();
     await vi.waitFor(() => expect(seen.players).toHaveBeenCalled());
     expect(seen.pose.mock.lastCall?.[0]).toEqual(pan);
-    panel.querySelector<HTMLButtonElement>('[title="Started view"]')!.click();
+    panel.querySelector<HTMLButtonElement>('[title="Clue map — Started view"]')!.click();
     await vi.waitFor(() => expect(seen.pose.mock.lastCall?.[0]).toEqual(initial));
     expect(seen.markers).toHaveBeenLastCalledWith(null);
     expect(read).toHaveBeenCalledOnce();

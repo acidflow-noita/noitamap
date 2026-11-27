@@ -100,7 +100,7 @@ function replayPreview() {
   let playing = false;
   const show = (animate: boolean) => {
     playing = animate;
-    image.src = '/guessr/updates/two-map-replays-2026-11-27.' + (playing ? 'gif' : 'webp');
+    image.src = `/guessr/updates/two-map-replays-2026-11-27.${playing ? 'gif' : 'webp'}?v=map-colors`;
     bindText(toggle, playing ? 'Stop animation' : 'Play animation');
   };
   show(window.matchMedia?.('(prefers-reduced-motion: no-preference)').matches === true);

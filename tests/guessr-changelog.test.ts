@@ -144,8 +144,9 @@ it.each([true, false])('uses the motion preference (%s) and lets the reader stop
   const controller = create(); controller.setSafe(true); await flush();
   const image = dialog()!.querySelector<HTMLImageElement>('.guessr-release-preview img')!;
   const toggle = dialog()!.querySelector<HTMLButtonElement>('.guessr-release-preview button')!;
-  expect(image.src.endsWith(normal ? '.gif' : '.webp')).toBe(true);
+  const imagePath = () => new URL(image.src).pathname;
+  expect(imagePath().endsWith(normal ? '.gif' : '.webp')).toBe(true);
   expect(toggle.textContent).toBe(normal ? 'Stop animation' : 'Play animation');
-  toggle.click(); expect(image.src.endsWith(normal ? '.webp' : '.gif')).toBe(true);
-  toggle.click(); expect(image.src.endsWith(normal ? '.gif' : '.webp')).toBe(true);
+  toggle.click(); expect(imagePath().endsWith(normal ? '.webp' : '.gif')).toBe(true);
+  toggle.click(); expect(imagePath().endsWith(normal ? '.gif' : '.webp')).toBe(true);
 });

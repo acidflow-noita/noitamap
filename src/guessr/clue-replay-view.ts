@@ -39,6 +39,11 @@ const actions = {
   automatic: ['stopwatch', 'Automatic guess'],
 } as const;
 
+const boardNames = { clue: 'Clue map', guess: 'Guess map' } as const;
+function stepBoard(step: PlaybackStep): keyof typeof boardNames {
+  return 'camera' in step ? 'clue' : 'guess';
+}
+
 function glyph(icon: string): HTMLElement {
   const el = document.createElement('i');
   el.className = 'bi bi-' + icon;
@@ -195,15 +200,15 @@ export function openClueReplay(
   badge.className = 'replay-action-badge';
   badge.setAttribute('aria-hidden', 'true');
   const boards = document.createElement('div'); boards.className = 'replay-boards';
-  function pane(title: string, kind: string, surface: HTMLElement) {
+  function pane(kind: keyof typeof boardNames, surface: HTMLElement) {
     const figure = document.createElement('figure'); figure.className = 'replay-pane'; figure.dataset.board = kind;
-    figure.append(bindText(document.createElement('figcaption'), title), surface); boards.append(figure);
+    figure.append(bindText(document.createElement('figcaption'), boardNames[kind]), surface); boards.append(figure);
     return figure;
   }
   stage.append(clue, badge);
-  pane('Clue map', 'clue', stage);
+  pane('clue', stage);
   const mapStage = document.createElement('div'); mapStage.className = 'replay-map-stage border rounded-9 overflow-hidden';
-  const guessPane = pane('Guess map', 'guess', mapStage);
+  const guessPane = pane('guess', mapStage);
   const mapNote = bindText(document.createElement('span'), 'No guess-map movement was recorded.');
   mapNote.className = 'replay-map-note'; mapStage.append(mapNote);
   const switches = document.createElement('div'); switches.className = 'replay-board-switch';
@@ -214,8 +219,8 @@ export function openClueReplay(
     for (const button of switches.querySelectorAll('button'))
       button.setAttribute('aria-pressed', String(button.dataset.view === selection));
   }
-  for (const [view, text] of [['follow','Follow actions'],['clue','Clue map'],['guess','Guess map']] as const) {
-    const button = control(text); button.dataset.view = view;
+  for (const view of ['follow', 'clue', 'guess'] as const) {
+    const button = control(view === 'follow' ? 'Follow actions' : boardNames[view]); button.dataset.view = view;
     button.onclick = () => { selection = view; selectBoard(); };
     switches.append(button);
   }
@@ -265,8 +270,12 @@ export function openClueReplay(
     new Intl.NumberFormat(guessrLocale(), { style: 'unit', unit: 'second', unitDisplay: 'narrow' }).format(sec);
   const label = (index: number) =>
     index === 0 && steps[index].action === 'view' ? 'Started view' : actions[steps[index].action][1];
-  const stepTitle = (index: number) => 'map' in steps[index] && !['map-view','map-pan'].includes(steps[index].action)
-    ? tr('Guess map') + ' — ' + tr(label(index)) : tr(label(index));
+  const stepTitle = (index: number) => {
+    const step = steps[index];
+    const action = tr(label(index));
+    if (step.action === 'map-view' || step.action === 'map-pan') return action;
+    return tr(boardNames[stepBoard(step)]) + ' — ' + action;
+  };
   let thumbnail: ClueViewport | undefined;
   let cached: Awaited<ReturnType<ReplayLoader>> | undefined;
   function setPlayback(state: typeof playback) {
@@ -355,6 +364,7 @@ export function openClueReplay(
         const next = strip.children[i - start] ?? null;
         const entry = document.createElement('li');
         entry.className = 'stepper-item';
+        entry.dataset.board = stepBoard(step);
         entry.append(node);
         strip.insertBefore(entry, next);
         nodes.set(i, node);
@@ -390,7 +400,7 @@ export function openClueReplay(
       const clueIndex = 'camera' in step ? i : priorCamera[i];
       const mapIndex = 'map' in step ? i : priorMap[i];
       const guessIndex = 'point' in step ? i : priorGuess[i];
-      actionBoard = 'camera' in step ? 'clue' : 'guess';
+      actionBoard = stepBoard(step);
       selectBoard();
       const activeStage = actionBoard === 'clue' ? stage : mapStage;
       activeStage.append(badge);
