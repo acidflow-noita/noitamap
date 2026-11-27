@@ -511,13 +511,18 @@ it('groups result navigation and shows green punctuation-free copy feedback besi
   const button = (label: string) => [...document.querySelectorAll('button')].find(b => b.textContent === label)!;
   expect(button('Back').closest('.stream-results-heading')).not.toBeNull();
   expect(button('Back').parentElement!.firstElementChild).toBe(button('Back'));
-  expect(button('Start another game').parentElement!.classList.contains('action-row')).toBe(true);
+  const resultsMenu = document.querySelector('.stream-results > .stream-results-menu')!;
+  expect(resultsMenu.previousElementSibling?.matches('.stream-results-heading')).toBe(true);
+  expect(resultsMenu.firstElementChild).toBe(button('Start another game'));
   expect(document.querySelector('.stream-publication a')!.textContent).toBe('streamer’s results');
   expect(document.querySelector('h1')!.textContent).toBe('streamer’s results');
   button('Copy result link').click(); for (let i = 0; i < 5; i++) await Promise.resolve();
   expect(writeText).toHaveBeenCalledWith(location.origin + '/guess/results/' + game.session.id + '/');
   expect(mocks.notice).toHaveBeenCalledWith('Copied', 'success');
   expect(hooks.toast).not.toHaveBeenCalled();
+  button('Start another game').click();
+  await vi.waitFor(() => expect(location.pathname).toBe('/guess/stream/'));
+  expect(document.querySelector('.stream-setup-card')).not.toBeNull();
 });
 
 it('keeps round reviews inline with thumbnails and the save/share menu above the table', async () => {

@@ -128,7 +128,7 @@ it('keeps return and backtracking free and translates the position without chang
   east.click(); await flush();
   expect(f.progress.dx).toBe(24);
   expect(maximumScore(f.progress)).toBe(4900);
-  expect(start.getAttribute('aria-description')).toBe('Return to start — Free action');
+  expect(start.getAttribute('aria-description')).toBe('Return to start — Free action (R)');
   expect(start.querySelector('.clue-control-cost')?.textContent).toBe('Free');
   expect(west.getAttribute('aria-description')).toBe('Travel west — Free action (A)');
   expect(west.querySelector('.clue-control-cost')?.textContent).toBe('Free');
@@ -140,6 +140,36 @@ it('keeps return and backtracking free and translates the position without chang
   expect(maximumScore(f.progress)).toBe(4900);
   expect(east.getAttribute('aria-description')).toBe('Nach Osten bewegen — Kostenlose Aktion (D)');
   expect(east.querySelector('.clue-control-cost')?.textContent).toBe('Kostenlos');
+});
+
+it.each([{ code: 'KeyR', key: 'к' }, { code: '', key: 'R' }])('recenters the clue with R using $code/$key', async keys => {
+  const f = await fixture();
+  const reset = f.button('Return to start');
+  expect(reset.getAttribute('aria-keyshortcuts')).toBe('R');
+  expect(reset.querySelector('.hotkey-letter')?.textContent).toBe('R');
+  expect(f.clue.getAttribute('aria-keyshortcuts')?.split(' ')).toContain('R');
+  f.button('Zoom out').click(); await flush();
+  f.button('Travel east').click(); await flush();
+  f.button('Travel south').click(); await flush();
+  const before = structuredClone(f.progress);
+  const press = (target: EventTarget, modifiers: KeyboardEventInit = {}) => {
+    const event = new KeyboardEvent('keydown', { ...keys, bubbles: true, cancelable: true, ...modifiers });
+    target.dispatchEvent(event);
+    return event;
+  };
+  const input = document.body.appendChild(document.createElement('input'));
+  expect(press(input).defaultPrevented).toBe(false);
+  expect(press(document, { ctrlKey: true }).defaultPrevented).toBe(false);
+  expect(press(document, { metaKey: true }).defaultPrevented).toBe(false);
+  await flush();
+  expect(f.progress).toEqual(before);
+  expect(press(document).defaultPrevented).toBe(true);
+  await flush();
+  expect(f.onCamera).toHaveBeenLastCalledWith({ dx: 0, dy: 0, level: before.level }, 'return');
+  expect(maximumScore(f.progress)).toBe(maximumScore(before));
+  expect(reset.disabled).toBe(true);
+  press(document); await flush();
+  expect(f.onCamera.mock.calls.filter(([, action]) => action === 'return')).toHaveLength(1);
 });
 
 it('shows the remaining maximum before a guess and updates it only after successful exploration', async () => {

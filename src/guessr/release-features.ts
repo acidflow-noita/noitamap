@@ -17,10 +17,14 @@ export const guessrFeatures = {
     title: 'Daily limit countdown',
     note: 'When a daily limit blocks play, the notice shows a countdown and the reset time in your time zone.',
   },
+  clueReset: {
+    title: 'Return to start',
+    note: 'Press R to return to the starting point on the clue map at the current zoom level.',
+  },
 } as const;
 
 type Feature = keyof typeof guessrFeatures;
-export const latestFeatures: readonly Feature[] = ['replays', 'markers', 'hostReview', 'limits'];
+export const latestFeatures: readonly Feature[] = ['replays', 'markers', 'hostReview', 'limits', 'clueReset'];
 
 export function newFeatureBadge(feature: Feature) {
   const badge = document.createElement('span');

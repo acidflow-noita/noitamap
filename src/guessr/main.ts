@@ -41,7 +41,7 @@ import {
   type PracticeSession,
 } from "./practice";
 import { MapBoard } from "./map-board";
-import { attachClueControls } from "./clue-view";
+import { attachClueControls, clueShortcutHelp } from "./clue-view";
 import { guessRouteUrl, readGuessRoute, type GuessPane } from './routes';
 import {
   imageGameRequest,
@@ -1582,7 +1582,7 @@ function help(trigger: HTMLButtonElement): void {
       node('p', 'mb-0', msg('Place your pin on the world map, then submit your guess.')),
     ),
     node("p", "", msg("No time limit. Your progress saves automatically.")),
-    node('p', 'fine-print', msg('Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.')),
+    node('p', 'fine-print', msg(clueShortcutHelp)),
     node('p', 'fine-print', msg('Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.')),
   );
   dialog.append(header, body);

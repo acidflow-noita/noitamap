@@ -1380,7 +1380,7 @@ export class StreamUI {
     this.hooks.cleanupClue(view.destroy);
     main.append(view);
     this.resultPublication(view, entry, this.game);
-    main.append(actionRow(action('Start another game', async () => {
+    view.querySelector('.stream-results-menu')!.prepend(action('Start another game', async () => {
       // Do not replace the singleton host session until its retry credential is
       // durable, or publication has already been confirmed.
       const saved = await this.archive.get(result.id).catch(() => undefined);
@@ -1388,8 +1388,9 @@ export class StreamUI {
         this.hooks.toast(tr('This browser could not save the result. Download a copy before closing this page.'));
         return;
       }
+      history.replaceState(null, '', guessRouteUrl('stream', location.href));
       await this.open(false);
-    })));
+    }, 'btn btn-solid primary'));
   }
   private resultPublication(view: HTMLElement, entry: ArchivedStreamResult, game?: StreamGame): void {
     const panel = el('div', '', 'stream-banner stream-publication'), message = el('p');

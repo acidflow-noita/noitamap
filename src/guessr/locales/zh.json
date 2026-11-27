@@ -623,7 +623,7 @@
   "Pro access was confirmed for this game.": "已确认本场比赛可使用专业版访问权限。",
   "This timing option is not available on this site yet.": "该网站目前尚不提供此时间设置选项。",
   "Guess map. Arrow keys pan, plus and minus zoom, Home resets the view. Focus the map and press Space to place a pin at the centre.": "地图定位。使用方向键平移，加号和减号调整缩放，Home键重置视图。将光标对准地图并按空格键，即可在中心位置放置一个图钉。",
-  "Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.": "《Clue》操作说明：W、A、S 和 D 键控制视角移动。Q 键缩小视图，E 键放大视图。",
+  "Press R to return to the starting point on the clue map at the current zoom level.": "按 R 键，以当前缩放级别返回线索地图上的起点。",
   "Not ready": "还没准备好",
   "vs": "vs简体中文（大陆）",
   "What's new": "最新动态",

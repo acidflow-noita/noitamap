@@ -12,9 +12,20 @@ import { bindAttribute, bindText, formatGuessrNumber, tr, onGuessrLanguageChange
 import type { AreaDifficulty } from './area-rules';
 import { updateRoundIndicators } from './round-status';
 import { gameShortcut } from './game-keyboard';
+import { featureLabel, guessrFeatures } from './release-features';
 import { Popover } from '../bootstrap';
 
-const shortcuts: Record<string, string> = { 'Travel north': 'W', 'Travel west': 'A', 'Travel south': 'S', 'Travel east': 'D', 'Zoom out': 'Q', 'Zoom in': 'E' };
+const shortcuts = {
+  up: 'W', left: 'A', down: 'S', right: 'D', 'zoom-out': 'Q', 'zoom-in': 'E', return: 'R',
+} as const satisfies Record<keyof typeof clueNavigation, string>;
+
+export function clueShortcutHelp(): string {
+  return tr('Use W, A, S and D to move the clue image. Q zooms out. E zooms in.') + ' ' + tr(guessrFeatures.clueReset.note);
+}
+
+function shortcutTitle(label: string) {
+  return label === clueNavigation.return[1] ? featureLabel('clueReset', label) : tr(label);
+}
 
 let controlId = 0;
 
@@ -29,8 +40,8 @@ export function attachClueControls(
     onExplore?: () => void; onCamera?: (camera: import('./clue-camera').Camera, action: CameraAction) => void } = {},
 ): () => void {
   const viewport = new ClueViewport(clue, place, travelStep);
-  clue.setAttribute('aria-keyshortcuts', 'W A S D Q E');
-  bindAttribute(clue, 'aria-description', 'Clue controls: W, A, S and D move the view. Q zooms out and E zooms in.');
+  clue.setAttribute('aria-keyshortcuts', Object.values(shortcuts).join(' '));
+  bindAttribute(clue, 'aria-description', clueShortcutHelp);
   const controls = document.createElement("div");
   controls.className = "clue-controls";
   controls.classList.toggle('clue-controls-compact', !!options.compact);
@@ -61,8 +72,8 @@ export function attachClueControls(
     costLabel: HTMLElement;
     target: () => [number, number, number];
     label: string;
-    shortcut?: string;
-    popover?: InstanceType<typeof Popover>;
+    shortcut: string;
+    popover: InstanceType<typeof Popover>;
   }[] = [];
 
   const add = (
@@ -91,20 +102,17 @@ export function attachClueControls(
       sizer.setAttribute('aria-hidden', 'true'); bindText(sizer, source); price.append(sizer);
     }
     button.append(price);
-    const shortcut = shortcuts[label];
-    let popover: InstanceType<typeof Popover> | undefined;
-    if (shortcut) {
-      const letter = document.createElement('span'); letter.className = 'hotkey-letter'; letter.textContent = shortcut;
-      letter.setAttribute('aria-hidden', 'true'); button.append(letter);
-      button.setAttribute('aria-keyshortcuts', shortcut);
-      const content = letter.cloneNode(true) as HTMLElement;
-      content.removeAttribute('aria-hidden');
-      popover = new Popover(anchor, { title: () => tr(label), content, html: true, trigger: 'hover focus',
-        placement: 'top', container: 'body', animation: false, delay: { show: 80, hide: 120 } });
-      anchor.addEventListener('show.bs.popover', event => {
-        if (typeof matchMedia === 'function' && matchMedia('(hover: none), (pointer: coarse)').matches && !anchor.matches(':focus-visible') && !button.matches(':focus-visible')) event.preventDefault();
-      });
-    }
+    const shortcut = shortcuts[action];
+    const letter = document.createElement('span'); letter.className = 'hotkey-letter'; letter.textContent = shortcut;
+    letter.setAttribute('aria-hidden', 'true'); button.append(letter);
+    button.setAttribute('aria-keyshortcuts', shortcut);
+    const content = letter.cloneNode(true) as HTMLElement;
+    content.removeAttribute('aria-hidden');
+    const popover = new Popover(anchor, { title: () => shortcutTitle(label), content, html: true, trigger: 'hover focus',
+      placement: 'top', container: 'body', animation: false, delay: { show: 80, hide: 120 } });
+    anchor.addEventListener('show.bs.popover', event => {
+      if (typeof matchMedia === 'function' && matchMedia('(hover: none), (pointer: coarse)').matches && !anchor.matches(':focus-visible') && !button.matches(':focus-visible')) event.preventDefault();
+    });
     buttons.push({ button, anchor, costLabel, target, label, shortcut, popover });
     return button;
   };
@@ -173,8 +181,8 @@ export function attachClueControls(
           ? tr("Costs {{points}} points", { count: cost, points: formatGuessrNumber(cost) })
           : tr("Free action"));
       };
-      bindAttribute(button, 'aria-description', () => hint() + (shortcut ? ` (${shortcut})` : ''));
-      bindAttribute(anchor, 'aria-description', () => hint() + (shortcut ? ` (${shortcut})` : ''));
+      bindAttribute(button, 'aria-description', () => `${hint()} (${shortcut})`);
+      bindAttribute(anchor, 'aria-description', () => `${hint()} (${shortcut})`);
     }
     bindText(description, () => {
       const position = [
@@ -241,27 +249,26 @@ export function attachClueControls(
   let lastKey = 0;
   const keydown = (event: KeyboardEvent) => {
     if (stopped || controls.inert || !clue.isConnected || clue.closest('[hidden], [inert]') || !gameShortcut(event)) return;
-    const labels: Record<string, string> = { KeyW: 'Travel north', KeyA: 'Travel west', KeyS: 'Travel south', KeyD: 'Travel east', KeyQ: 'Zoom out', KeyE: 'Zoom in' };
-    const label = labels[event.code] ?? ({ w: 'Travel north', a: 'Travel west', s: 'Travel south', d: 'Travel east', q: 'Zoom out', e: 'Zoom in' } as Record<string, string>)[event.key.toLowerCase()];
-    if (!label) return;
+    const control = buttons.find(item => event.code === 'Key' + item.shortcut)
+      ?? buttons.find(item => item.shortcut === event.key.toUpperCase());
+    if (!control) return;
     event.preventDefault();
     if (event.repeat && performance.now() - lastKey < 180) return;
-    const control = buttons.find(item => item.label === label);
-    if (!control || control.button.disabled) return;
+    if (control.button.disabled) return;
     lastKey = performance.now(); control.button.click();
   };
   document.addEventListener('keydown', keydown);
   const unsubscribeKeys = onGuessrLanguageChanged(() => {
-    for (const { popover, label, shortcut } of buttons) if (popover) {
+    for (const { popover, label, shortcut } of buttons) {
       const key = document.createElement('span'); key.className = 'hotkey-letter'; key.textContent = shortcut!;
-      popover.setContent({ '.popover-header': tr(label), '.popover-body': key });
+      popover.setContent({ '.popover-header': shortcutTitle(label), '.popover-body': key });
     }
   });
   void load(progress.dx, progress.dy, progress.level);
   return () => {
     stopped = true;
     document.removeEventListener('keydown', keydown);
-    unsubscribeKeys(); for (const { popover } of buttons) popover?.dispose();
+    unsubscribeKeys(); for (const { popover } of buttons) popover.dispose();
     viewport.destroy();
     controls.remove();
   };
