@@ -1224,7 +1224,7 @@ export class StreamUI {
         scored.difficultyTier,
       );
       actions.append(
-        el("p", "Your guess is blue. The location is green."),
+        el("p", "Your guess is green. The correct location is blue."),
         action(
           index + 1 === game.session.rounds.length ? "View results" : "Next round",
           () => this.nextRound(),

@@ -11,6 +11,7 @@ import {
 } from "./clue-camera";
 import { bindAttribute, tr } from "./i18n";
 import { clueLoadingPlaceholder } from './loading-placeholders';
+import { mapPinIcon } from './map-pin';
 import type { ReplayMotion } from './replay-motion';
 
 type ClueTransition = boolean | { replayFrom: Camera; motion: ReplayMotion };
@@ -35,6 +36,7 @@ export class ClueViewport {
     bindAttribute(mount, "data-loading-label", "Loading clue map…");
     bindAttribute(mount, "data-paused-label", "Paused");
     mount.replaceChildren(this.canvas, clueLoadingPlaceholder());
+    if (mount.classList.contains('clue')) mount.append(mapPinIcon('clue'));
   }
   private async image(url: string): Promise<HTMLImageElement> {
     let pending = this.images.get(url);
@@ -194,8 +196,8 @@ export class ClueViewport {
     const pinLayer = document.createElement('div');
     pinLayer.className = 'replay-pin-layer';
     pinLayer.setAttribute('aria-hidden', 'true');
-    const pin = document.createElement('span');
-    pin.className = 'replay-pan-marker';
+    const pin = mapPinIcon('clue');
+    pin.classList.add('replay-pan-marker');
     pinLayer.append(pin);
     this.mount.append(layer, pinLayer);
     const translation = (x: number, y: number, view: ViewRect) =>

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cameraRect, type Camera, type ClueSource } from '../src/guessr/clue-camera';
 import { ClueViewport } from '../src/guessr/clue-viewport';
 import { ReplayMotion } from '../src/guessr/replay-motion';
+import { ANSWER_PIN_COLOR, MAP_PIN_PATH } from '../src/guessr/map-pin';
 
 const start = { dx: 0, dy: 0, level: 0 };
 const distant = { dx: 400, dy: 100, level: 0 };
@@ -25,6 +26,7 @@ afterEach(() => {
 
 async function move(source: ClueSource, from: Camera, to: Camera) {
   const mount = document.createElement('div');
+  mount.className = 'clue';
   const viewport = new ClueViewport(mount, source);
   const motion = new ReplayMotion();
   const animate = vi.spyOn(motion, 'animate').mockResolvedValue(true);
@@ -35,7 +37,11 @@ async function move(source: ClueSource, from: Camera, to: Camera) {
     expect([viewport.canvas.width, viewport.canvas.height]).toEqual([rect.width, rect.height]);
     expect(drawImage.mock.calls.at(-1)!.slice(-6)).toEqual([rect.width, rect.height, 0, 0, rect.width, rect.height]);
     expect(mount.querySelector('.replay-pan-layer, .replay-pin-layer')).toBeNull();
-    const [[, terrain], [, marker]] = animate.mock.calls;
+    const [[, terrain], [pinLayer, marker]] = animate.mock.calls;
+    for (const pin of [mount.querySelector('.clue-pin-icon path'), pinLayer.querySelector('.replay-pan-marker path')]) {
+      expect(pin?.getAttribute('fill')).toBe(ANSWER_PIN_COLOR);
+      expect(pin?.getAttribute('d')).toBe(MAP_PIN_PATH);
+    }
     return { terrain, marker };
   } finally {
     viewport.destroy();

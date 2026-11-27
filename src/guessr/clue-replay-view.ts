@@ -444,8 +444,8 @@ export function openClueReplay(
           if (guessStep && 'point' in guessStep) {
             const previous = steps[priorGuess[guessIndex]];
             const prior = previous && 'point' in previous ? previous.point : undefined;
-            const pins = [{ id:'current', name, guess:guessStep.point, color:'#56b9ff' }];
-            if (prior) pins.push({ id:'previous', name:tr('Previous guess'), guess:prior, color:'#a2aab9' });
+            const pins = [{ id:'current', name, guess:guessStep.point }];
+            if (prior) pins.push({ id:'previous', name:tr('Previous guess'), guess:prior });
             if (board) {
               board.setPlayers(pins, round.answer, () => {});
               const pin = board.highlightPlayer('current');

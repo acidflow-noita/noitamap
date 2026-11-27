@@ -166,8 +166,8 @@
 .replay-pan-layer, .replay-pin-layer { position: absolute; inset: 0; }
 .replay-boards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--game-gutter); }
 .replay-boards.single-board { grid-template-columns: minmax(0, 1fr); }
-.replay-content :is([data-board="clue"], [data-view="clue"]) { --replay-map-color: var(--bs-blue-400); }
-.replay-content :is([data-board="guess"], [data-view="guess"]) { --replay-map-color: var(--bs-green-400); }
+.replay-content :is([data-board="clue"], [data-view="clue"]) { --replay-map-color: var(--guessr-clue-color); }
+.replay-content :is([data-board="guess"], [data-view="guess"]) { --replay-map-color: var(--guessr-guess-color); }
 .replay-pane { min-inline-size: 0; margin: 0; display: grid; gap: .5rem; }
 .replay-pane[hidden], .replay-map-stage > [hidden] { display: none; }
 .replay-pane figcaption { color: var(--replay-map-color); font-weight: 600; }
@@ -194,7 +194,7 @@
 }
 .replay-pan-layer, .replay-pin-layer { pointer-events: none; transform-origin: 0 0; }
 .replay-pin-layer > .replay-pan-marker { left: 0; top: 0; }
-.clue:has(> .replay-pan-layer)::before { visibility: hidden; }
+.clue:has(> .replay-pan-layer) > .clue-pin-icon { visibility: hidden; }
 .replay-action-badge { position: absolute; z-index: 1; inset-block-end: 16%; inset-inline-start: 50%; transform: translateX(-50%);
   display: inline-flex; align-items: center; justify-content: center; gap: .5rem; inline-size: max-content; max-inline-size: calc(100% - 2rem);
   padding: .375rem .75rem; border: 1px solid rgb(255 255 255 / .7); border-radius: var(--radius-control);

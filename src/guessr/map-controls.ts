@@ -1,6 +1,7 @@
 import type { MapBoard } from './map-board';
 import { bindAttribute, bindText } from './i18n';
 import { iconLabel } from './control-icons';
+import { mapPinIcon } from './map-pin';
 
 /** These controls change the free guess map, never the clue's point allowance. */
 export function mapControls(board: MapBoard, options: { readOnly?: boolean } = {}): HTMLElement {
@@ -18,7 +19,7 @@ export function mapControls(board: MapBoard, options: { readOnly?: boolean } = {
     bindAttribute(button, 'title', label);
     if (icon) { button.append(iconLabel(icon, label)); if (icon.startsWith('zoom')) button.querySelector('span')!.classList.add('sr-only'); }
     else {
-      const icon = document.createElement('img'); icon.src = '/assets/noitaguessr-pin.svg'; icon.alt = ''; icon.width = 18; icon.height = 22;
+      const icon = mapPinIcon('guess'); icon.setAttribute('width', '18'); icon.setAttribute('height', '22');
       const text = bindText(document.createElement('span'), label); button.append(icon, text);
       board.onPinChange(placed => { button.disabled = !placed; });
     }

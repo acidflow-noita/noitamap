@@ -41,6 +41,7 @@ import {
   type PracticeSession,
 } from "./practice";
 import { MapBoard } from "./map-board";
+import { mapPinIcon } from './map-pin';
 import { attachClueControls, clueShortcutHelp } from "./clue-view";
 import { guessRouteUrl, readGuessRoute, type GuessPane } from './routes';
 import {
@@ -490,7 +491,7 @@ function putClue(clue: HTMLElement, url: string, crop: number): void {
     );
   };
   img.src = url;
-  clue.replaceChildren(img, clueLoadingPlaceholder());
+  clue.replaceChildren(img, clueLoadingPlaceholder(), mapPinIcon('clue'));
 }
 function addSubmit(toolbar: HTMLElement, action: () => unknown, disabled: boolean): void {
   const confirm = button(msg('Submit guess'), action, 'primary');
@@ -657,7 +658,7 @@ function renderPractice(): void {
       session.results.length === session.order.length ||
       (session.settings.mode === "survival" && livesLeft(session) === 0);
     roundNavigation(main, button(finished ? msg("View results") : msg("Next round"), advancePractice, 'primary round-next'),
-      msg("Your guess is blue. The location is green."),
+      msg("Your guess is green. The correct location is blue."),
     );
   } else {
     addSubmit(mapBar, guessPractice, !session.guess || session.pausedAt !== null);
@@ -836,7 +837,7 @@ function renderImageGame(review?: {
     );
     roundNavigation(main, review ? backToResults(finishImageGame)
       : button(imageSession.round + 1 === imageSession.totalRounds ? msg("View results") : msg("Next round"), advanceImageGame, 'primary round-next'),
-      msg("Your guess is blue. The location is green."),
+      msg("Your guess is green. The correct location is blue."),
     );
   } else {
     addSubmit(mapBar, submitImageGame, !imageGuess || imagePaused);
@@ -1556,7 +1557,7 @@ function reviewRanked(ordinal: number, continueGame = false): void {
   roundNavigation(main, continueGame
     ? button(ranked?.status === 'complete' ? msg('View results') : msg('Next round'), renderRanked, 'primary round-next')
     : backToResults(renderRanked),
-    msg(rankedReadOnly ? 'Green: correct location. Blue: player’s map marker.' : "Green: correct location. Blue: your guess."),
+    msg(rankedReadOnly ? 'The player’s marker is green. The correct location is blue.' : "Your guess is green. The correct location is blue."),
   );
 }
 function help(trigger: HTMLButtonElement): void {

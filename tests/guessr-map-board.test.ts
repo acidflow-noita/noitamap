@@ -199,6 +199,7 @@ describe("guess-map camera", () => {
     const { board, mount } = await fixture();
     const controls = mapControls(board);
     const center = controls.querySelector<HTMLButtonElement>('[aria-label="Center map on marker"]')!;
+    expect(center.querySelector('.guess-pin-icon path')?.getAttribute('fill')).toBe(GUESS_PIN_COLOR);
     expect(center.disabled).toBe(true);
     click(mount, 300, 150);
     expect(center.disabled).toBe(false);

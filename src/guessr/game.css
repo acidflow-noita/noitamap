@@ -37,6 +37,8 @@
   font-optical-sizing: auto;
   --game-gutter: 1rem;
   --game-progress-gap: 0.25rem;
+  --guessr-clue-color: var(--bs-blue-400);
+  --guessr-guess-color: var(--bs-green-400);
   /* Tailwind emerald-700/800: logo-adjacent green with readable white labels. */
   --game-action: oklch(50.8% 0.118 165.612);
   --game-action-hover: oklch(43.2% 0.095 166.913);
@@ -733,16 +735,13 @@ header.page-heading {
   height: 100%;
   image-rendering: pixelated;
 }
-.clue:before,
-.replay-pan-marker {
-  content: "";
+.clue-pin-icon {
   position: absolute;
   z-index: 1;
   left: var(--target-x, 50%);
   top: var(--target-y, 50%);
   width: 36px;
   height: 44px;
-  background: url("/assets/noitaguessr-pin.svg") center / contain no-repeat;
   filter:
     drop-shadow(1px 0 0 #fff)
     drop-shadow(-1px 0 0 #fff)
@@ -753,7 +752,7 @@ header.page-heading {
   transform: translate(-49.497%, -98.711%);
   pointer-events: none;
 }
-.clue.target-outside:before {
+.clue.target-outside > .clue-pin-icon {
   display: none;
 }
 .clue-controls {
@@ -786,8 +785,8 @@ header.page-heading {
     max-width: none;
   }
 }
-.clue.loading:before,
-.clue.paused:before {
+.clue.loading > .clue-pin-icon,
+.clue.paused > .clue-pin-icon {
   display: none;
 }
 .clue.loading:after,
@@ -990,7 +989,7 @@ tbody tr:last-child td {
 .daily-results-table tfoot { --bs-table-bg: var(--surface-2); }
 .result-location { display: flex; align-items: center; gap: 0.75rem; min-inline-size: 14rem; }
 .result-preview { position: relative; inline-size: 6.75rem; flex: none; border-radius: var(--control-radius); overflow: hidden; }
-.result-preview .clue::before { width: 10px; height: 12px; }
+.result-preview .clue-pin-icon { width: 10px; height: 12px; }
 .result-preview-open.btn { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; padding: 0; border: 1px solid var(--border-strong); border-radius: inherit; background: transparent; }
 .result-preview-open.btn:is(:hover, :focus-visible) { background: transparent; border-color: var(--accent-fg); }
 .result-preview-open.btn:focus-visible { outline-offset: -3px; }
