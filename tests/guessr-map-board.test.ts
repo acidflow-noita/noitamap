@@ -246,6 +246,23 @@ describe("guess-map camera", () => {
     expect(camera()).toEqual(result); aligned(viewer.viewport);
   });
 
+  it('frames the chosen result pin with the answer and restores the complete field on Home', async () => {
+    const { board, viewer } = await fixture();
+    const answer = { x: 0, y: 0 }, near = { x: 460, y: 180 }, far = { x: 12000, y: 9000 };
+    board.setPlayers([{ id: '1', name: 'Near', guess: near }, { id: '2', name: 'Far', guess: far },
+      { id: '3', name: 'Absent', guess: null }], answer, () => {});
+    const all = camera();
+    board.focusPlayer('1');
+    const close = camera(); expect(close.width).toBeLessThan(all.width);
+    for (const p of [answer, near]) {
+      expect(p.x).toBeGreaterThanOrEqual(close.x); expect(p.x).toBeLessThanOrEqual(close.x + close.width);
+      expect(p.y).toBeGreaterThanOrEqual(close.y); expect(p.y).toBeLessThanOrEqual(close.y + close.height);
+    }
+    board.focusPlayer('3'); expect(camera()).toEqual(close);
+    board.focusPlayer('2'); expect(camera().width).toBeGreaterThan(close.width); aligned(viewer.viewport);
+    board.home(); expect(camera()).toEqual(all);
+  });
+
   it('never zooms inward when zooming out of an all-guesses result near the world edges', async () => {
     const { board } = await fixture();
     board.setPlayers([{ id: 'first', name: 'First', guess: { x: -17920, y: -31744 } },

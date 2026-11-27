@@ -1,3 +1,5 @@
+import { roundProgress } from './round-progress';
+import { iconLabel } from './control-icons';
 import topographySvg from '../../public/guessr/topography.svg?raw';
 import { bindAttribute, bindText, formatGuessrNumber, guessrLocale, tr } from "./i18n";
 import type { StreamResult } from "./stream-types";
@@ -5,9 +7,11 @@ import { playerColor } from './player-color';
 import { streamResultNames } from './stream-display-name';
 import { streamResultShare } from './stream-share';
 import { streamResultReviews } from './stream-result-review';
+import type { ReplayLoader } from './clue-replay';
+import { createReplayRows, publishedReplayLoader } from './clue-replay-view';
 import type { ImageGameConfig } from './image-game';
 import { pvpResultHeadline } from './pvp-results';
-import { networkReviewView, networkReviewText, networkReviewSummary } from './network-review-view';
+import { privateResultReview } from './network-review-view';
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -19,10 +23,12 @@ function el<K extends keyof HTMLElementTagNameMap>(
   element.className = className;
   return element;
 }
-export function streamResultsView(result: StreamResult, viewerId?: string, onBack?: () => void, config?: ImageGameConfig): HTMLElement & { destroy: () => void } {
+export function streamResultsView(result: StreamResult, viewerId?: string, onBack?: () => void, config?: ImageGameConfig,
+  liveReplay?: ReplayLoader): HTMLElement & { destroy: () => void } {
   result = streamResultNames(result);
   const section = el("section", '', 'stream-results'),
-    hero = el("div", "", "finish-hero stream-results-heading");
+    hero = el('section', '', 'card finish-hero stream-results-heading rounded-9');
+  const headingBody = el('div', '', 'card-body result-heading-body'); hero.append(headingBody);
   const host = result.players.find((p) => p.id === result.host.id)!;
   const own = viewerId ? result.players.find(p => p.id === viewerId) : undefined;
   const featured = own ?? host;
@@ -33,14 +39,15 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
     const rule = new Intl.PluralRules('en', { type: 'ordinal' }).select(rank);
     return number + ({ one: 'st', two: 'nd', few: 'rd' }[rule as 'one' | 'two' | 'few'] ?? 'th');
   };
+  const outcome = el('div', '', 'result-outcome');
   const title = el("h1", () => own ? tr('Your result') : viewerId ? tr('Game results') : tr('{{player}}’s results', { player: result.host.name }));
   if (onBack) {
     const back = el('button', '', 'btn btn-outline theme-secondary result-back'); back.type = 'button'; back.onclick = onBack;
-    const icon = el('i', '', 'bi bi-arrow-left'); icon.setAttribute('aria-hidden', 'true');
-    back.append(icon, el('span', 'Back', 'visually-hidden')); bindAttribute(back, 'title', 'Back');
-    hero.append(back);
+    const label = iconLabel('arrow-left', { source: 'Back' });
+    label.querySelector('span')!.className = 'visually-hidden';
+    back.append(label); bindAttribute(back, 'title', 'Back');
+    outcome.append(back);
   }
-  const outcome = el('div', '', 'result-outcome');
   outcome.append(
     el("span", pvp ? '1v1' : "Chat vs Streamer", 'result-mode' + (pvp ? '' : ' twitch-mode-label')),
     title,
@@ -52,38 +59,43 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   );
   const score = el('div', '', 'result-score');
   if (viewerId && !own) score.append(el('p', 'The streamer did not record a guess from this account.'));
-  else score.append(el('strong', () => tr('{{points}} points', { points: formatGuessrNumber(featured.score), count: featured.score })),
-    el('span', () => tr('{{completed}} of {{total}} rounds completed', { completed: formatGuessrNumber(result.rounds.length), total: formatGuessrNumber(result.scheduledRounds ?? result.rounds.length) })));
-  hero.append(outcome, score);
+  else score.append(el('strong', () => tr('{{points}} points', { points: formatGuessrNumber(featured.score), count: featured.score })));
+  const completion = el('div', '', 'result-completion');
+  const totalRounds = result.scheduledRounds ?? result.rounds.length;
+  completion.append(el('span', result.concededBy ? 'Game ended' : 'Game finished'));
+  if (totalRounds > 0) completion.append(roundProgress(totalRounds, result.rounds.length, result.rounds.length, true));
+  score.append(completion);
+  headingBody.append(outcome, score);
   const share = streamResultShare(result, viewerId);
   const menu = el('div', '', 'stream-results-menu');
   if (share) menu.append(share.element);
   const download = el('button', 'Save results as a web page', 'btn btn-outline theme-secondary'); download.type = 'button';
   download.onclick = () => downloadStreamResult(result, 'html');
-  const more = el('details', '', 'stream-export-options');
-  const json = el('button', 'Export scores (JSON)', 'btn btn-outline theme-secondary'); json.type = 'button';
+  bindAttribute(download, 'title', 'Open the saved web page in a browser to search and sort every player’s scores offline.');
+  const json = el('button', 'Save scores as a JSON file', 'btn btn-outline theme-secondary'); json.type = 'button';
   json.onclick = () => downloadStreamResult(result, 'json');
-  const moreToggle = el('summary', '', 'btn btn-outline theme-secondary result-more-toggle');
-  const moreIcon = el('i', '', 'bi bi-three-dots'); moreIcon.setAttribute('aria-hidden', 'true');
-  bindAttribute(moreToggle, 'aria-label', 'More download options'); bindAttribute(moreToggle, 'title', 'More download options');
-  moreToggle.append(moreIcon);
-  more.append(moreToggle, json,
-    el('p', 'Open the saved web page in a browser to search and sort every player’s scores offline.', 'fine-print'));
-  menu.append(download, more); section.append(hero, menu);
-  const networkReview = networkReviewSummary(result.reviewFlags, result.players); if (networkReview) section.append(networkReview);
-  const reviews = streamResultReviews(result, config); section.append(reviews.element);
+  menu.append(download, json); section.append(hero, menu);
+  const review = privateResultReview(result); if (review) section.append(review.element);
+  const readReplay = result.clueReplays && result.rounds.length ? liveReplay ?? publishedReplayLoader(result.id) : undefined;
+  const replays = readReplay ? createReplayRows(readReplay, result.config ?? config) : undefined;
+  const reviews = streamResultReviews(result, config, readReplay); section.append(reviews.element);
   const controls = el("div", "", "stream-table-controls"),
     filter = el("input"),
     count = el("span", "", "muted");
+  count.setAttribute('role','status');
   filter.type = "search";
   bindAttribute(filter, "placeholder", "Find a player");
   bindAttribute(filter, "aria-label", "Filter players by name or login");
-  controls.append(el('h2', 'Standings'), count, filter);
-  section.append(controls);
-  const wrap = el("div", "", "table-wrap"),
+  controls.append(el('h2', 'Player scores'), count, filter);
+  const standings = el('section', '', 'stream-standings'); standings.append(controls); section.append(standings);
+  const wrap = el("div", "", "table-wrap stream-score-frame rounded-9"),
     table = el("table", '', 'table stream-score-table'),
     head = el("tr"),
     tbody = el("tbody");
+  table.onpointerover = event => {
+    table.classList.toggle('score-pointer-hover', event.pointerType === 'mouse' || event.pointerType === 'pen');
+  };
+  table.onpointerleave = () => table.classList.remove('score-pointer-hover');
   let sort = "rank",
     direction = 1;
   const columns = [
@@ -122,7 +134,7 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   thead.append(head);
   table.append(thead, tbody);
   wrap.append(table);
-  section.append(wrap);
+  standings.append(wrap);
   function render() {
     const query = filter.value.trim().toLocaleLowerCase();
     const rows = result.players.filter(
@@ -148,27 +160,32 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
       const row = el("tr");
       if (!pvp && player.id === result.host.id) row.className = "stream-host-row";
       if (player.id === viewerId) row.classList.add('stream-viewer-row');
-      row.append(
-        el("td", () => formatGuessrNumber(player.rank), "numeric stream-rank-column"),
-        el(
-          "td",
-          () => player.name + (!pvp && player.id === result.host.id ? tr(', Streamer') : '') + (player.id === viewerId ? tr(', You') : ''),
-        ),
-      );
-      (row.children[1] as HTMLElement).style.color = playerColor(player, pvp ? '' : result.host.id);
-      const warning = networkReviewView(result.reviewFlags, result.players, player.id); if (warning) row.children[1].append(warning);
-      for (const round of player.rounds) {
-        const cell = el("td", () => formatGuessrNumber(round.score), "numeric");
-        cell.classList.toggle('score-perfect', round.score === 5000);
+      const name = document.createElement('td');
+      const label = () => player.name + (!pvp && player.id === result.host.id ? tr(', Streamer') : '') + (player.id === viewerId ? tr(', You') : '');
+      name.append(bindText(document.createElement('span'), label));
+      name.style.color = playerColor(player, pvp ? '' : result.host.id);
+      row.append(el("td", () => formatGuessrNumber(player.rank), "numeric stream-rank-column"), name);
+      player.rounds.forEach((round, index) => {
+        const cell = el('td', '', 'numeric');
+        const score = el('span', () => formatGuessrNumber(round.score));
+        score.classList.toggle('score-perfect', round.score === 5000);
         bindAttribute(cell, 'title', () => tr('Area: {{area}}, Proximity: {{proximity}}', { area: formatGuessrNumber(round.areaScore), proximity: formatGuessrNumber(round.positionScore) }));
+        const location = result.rounds[index];
+        if (replays && location) {
+          const group = el('div', '', 'score-with-replay');
+          group.append(score, replays.scoreButton(player, { number:index+1, answer:location.answer, location:location.name }));
+          cell.append(group);
+        } else cell.append(score);
         row.append(cell);
-      }
+      });
       row.append(el("td", () => formatGuessrNumber(player.score), "numeric score"));
-      fragment.append(row);
+      fragment.append(row); replays?.appendAfterScore(fragment,player.id);
     }
-    tbody.replaceChildren(fragment);
-    bindText(count, () => tr('{{shown}} of {{players}} players', { shown: formatGuessrNumber(rows.length), players: formatGuessrNumber(result.players.length), count: result.players.length }));
-    [...head.children].forEach((th, index) => {
+    tbody.replaceChildren(fragment); replays?.discardHidden();
+    bindText(count, () => query
+      ? tr('Showing {{shown}} of {{players}}', {shown:formatGuessrNumber(rows.length),players:formatGuessrNumber(result.players.length)})
+      : playerCount(result.players.length));
+    [...head.children].filter(th => th.querySelector('.stream-table-sort')).forEach((th, index) => {
       const key =
         index === 0
           ? "rank"
@@ -185,7 +202,10 @@ export function streamResultsView(result: StreamResult, viewerId?: string, onBac
   }
   filter.addEventListener("input", render);
   render();
-  return Object.assign(section, { destroy: () => { share?.destroy(); reviews.destroy(); } });
+  return Object.assign(section, { destroy: () => { replays?.destroy(); review?.destroy(); share?.destroy(); reviews.destroy(); } });
+}
+function playerCount(total:number) {
+  return tr('{{amount}} players', { amount:formatGuessrNumber(total), count:total });
 }
 /** A single file with embedded data, styling, filtering and sorting; no network,
  * framework, login, API credentials or session tokens are needed to read it. */
@@ -196,8 +216,6 @@ export function streamResultHtml(result: StreamResult): string {
     .replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029');
   const labels = {
     locale: guessrLocale(),
-    reviewTitle: tr('Review suggested'),
-    reviews: (result.reviewFlags ?? []).map(flag => networkReviewText(flag, result.players)),
     title: tr('NoitaGuessr stream results'),
     heading: result.mode === 'pvp' ? `NoitaGuessr, ${tr('1v1')}` : tr('NoitaGuessr, Chat vs Streamer'),
     rank: result.mode === 'pvp' ? pvpResultHeadline(result) : tr('{{player}} — rank {{rank}} of {{players}}', { player: host.name, rank: formatGuessrNumber(host.rank), players: formatGuessrNumber(result.players.length) }),
@@ -205,7 +223,8 @@ export function streamResultHtml(result: StreamResult): string {
     filter: tr('Find a player'),
     columns: [tr('Rank'), tr('Player'), ...result.rounds.map((_, i) => tr('Round {{round}}', { round: formatGuessrNumber(i + 1) })), tr('Total')],
     streamer: result.mode === 'pvp' ? '' : tr(', Streamer'),
-    count: tr('{{shown}} of {{players}} players', { shown: '{{shown}}', players: formatGuessrNumber(result.players.length), count: result.players.length }),
+    countAll: playerCount(result.players.length),
+    count: tr('Showing {{shown}} of {{players}}',{shown:'{{shown}}',players:formatGuessrNumber(result.players.length)}),
     scores: tr('Area: {{area}}, Proximity: {{proximity}}', { area: '{{area}}', proximity: '{{proximity}}' }),
     note: result.mode === 'pvp' ? tr('Both players use the same puzzles and scoring rules.') : tr('Equal scores share a rank.'),
   };
@@ -223,8 +242,8 @@ export function streamResultHtml(result: StreamResult): string {
   .host{background:rgb(145 70 255 / .12)}tbody tr:last-child td{border-bottom:0}.score-perfect{color:#fcd34d;font-weight:700;text-shadow:0 0 .45rem rgb(251 191 36 / .6),0 0 1rem rgb(251 191 36 / .3)}
   #rank{font-variant-numeric:tabular-nums slashed-zero;font-size:1rem;font-weight:600}h1{font-size:1.125rem}th:first-child,td:first-child{width:1%;white-space:nowrap;padding-inline:.5rem}th[aria-sort="ascending"] button::after{content:" ↑"}th[aria-sort="descending"] button::after{content:" ↓"}
   </style>
-  <h1 id="heading"></h1><div id="rank"></div><p id="summary"></p><input id="filter" type="search"><div class="wrap" tabindex="0"><table><thead><tr id="head"></tr></thead><tbody id="rows"></tbody></table></div><p id="count"></p><small id="note"></small><section id="review-warnings" style="color:#fca5a5"></section>
-  <script>const result=${json(result)},labels=${json(labels)};document.documentElement.lang=labels.locale;document.title=labels.title;for(const key of ['heading','rank','summary','note'])document.getElementById(key).textContent=labels[key];const filter=document.getElementById('filter');filter.placeholder=labels.filter;filter.setAttribute('aria-label',labels.filter);const host=result.players.find(p=>p.id===result.host.id),number=n=>n.toLocaleString(labels.locale);let key=0,dir=1;const cols=labels.columns;cols.forEach((label,i)=>{const th=document.createElement('th'),b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>{dir=key===i?-dir:i<2?1:-1;key=i;draw()};th.append(b);document.querySelector('#head').append(th)});const value=(p,i)=>i===0?p.rank:i===1?p.name:i===cols.length-1?p.score:p.rounds[i-2].score;function draw(){const q=filter.value.toLocaleLowerCase(labels.locale);const list=result.players.filter(p=>(p.name+' '+p.login).toLocaleLowerCase(labels.locale).includes(q));list.sort((a,b)=>dir*(key===1?a.name.localeCompare(b.name,labels.locale):value(a,key)-value(b,key))||a.name.localeCompare(b.name,labels.locale));const rows=document.createDocumentFragment();for(const p of list){const row=document.createElement('tr');if(result.mode!=='pvp'&&p.id===host.id)row.className='host';cols.forEach((_,i)=>{const td=document.createElement('td');if(i===1)td.style.color=result.mode!=='pvp'&&p.id===result.host.id?'#9146FF':/^#[a-f0-9]{6}$/i.test(p.color||'')?p.color:'#E2E8F0';td.textContent=typeof value(p,i)==='number'?number(value(p,i)):String(value(p,i))+(i===1&&p.id===host.id?labels.streamer:'');if(i>1&&i<cols.length-1&&value(p,i)===5000)td.classList.add('score-perfect');if(i>1&&i<cols.length-1)td.title=labels.scores.replaceAll('{{area}}',number(p.rounds[i-2].areaScore)).replaceAll('{{proximity}}',number(p.rounds[i-2].positionScore));row.append(td)});rows.append(row)}document.querySelector('#rows').replaceChildren(rows);document.querySelector('#count').textContent=labels.count.replaceAll('{{shown}}',number(list.length));[...document.querySelector('#head').children].forEach((th,i)=>th.setAttribute('aria-sort',i===key?(dir===1?'ascending':'descending'):'none'))}filter.oninput=draw;draw();if(labels.reviews.length){const section=document.getElementById('review-warnings'),heading=document.createElement('h2');heading.textContent=labels.reviewTitle;section.append(heading);for(const text of labels.reviews){const p=document.createElement('p');p.textContent=text;section.append(p)}};</script></html>`;
+  <h1 id="heading"></h1><div id="rank"></div><p id="summary"></p><input id="filter" type="search"><div class="wrap" tabindex="0"><table><thead><tr id="head"></tr></thead><tbody id="rows"></tbody></table></div><p id="count"></p><small id="note"></small>
+  <script>const result=${json(result)},labels=${json(labels)};document.documentElement.lang=labels.locale;document.title=labels.title;for(const key of ['heading','rank','summary','note'])document.getElementById(key).textContent=labels[key];const filter=document.getElementById('filter');filter.placeholder=labels.filter;filter.setAttribute('aria-label',labels.filter);const host=result.players.find(p=>p.id===result.host.id),number=n=>n.toLocaleString(labels.locale);let key=0,dir=1;const cols=labels.columns;cols.forEach((label,i)=>{const th=document.createElement('th'),b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>{dir=key===i?-dir:i<2?1:-1;key=i;draw()};th.append(b);document.querySelector('#head').append(th)});const value=(p,i)=>i===0?p.rank:i===1?p.name:i===cols.length-1?p.score:p.rounds[i-2].score;function draw(){const q=filter.value.toLocaleLowerCase(labels.locale);const list=result.players.filter(p=>(p.name+' '+p.login).toLocaleLowerCase(labels.locale).includes(q));list.sort((a,b)=>dir*(key===1?a.name.localeCompare(b.name,labels.locale):value(a,key)-value(b,key))||a.name.localeCompare(b.name,labels.locale));const rows=document.createDocumentFragment();for(const p of list){const row=document.createElement('tr');if(result.mode!=='pvp'&&p.id===host.id)row.className='host';cols.forEach((_,i)=>{const td=document.createElement('td');if(i===1)td.style.color=result.mode!=='pvp'&&p.id===result.host.id?'#9146FF':/^#[a-f0-9]{6}$/i.test(p.color||'')?p.color:'#E2E8F0';td.textContent=typeof value(p,i)==='number'?number(value(p,i)):String(value(p,i))+(i===1&&p.id===host.id?labels.streamer:'');if(i>1&&i<cols.length-1&&value(p,i)===5000)td.classList.add('score-perfect');if(i>1&&i<cols.length-1)td.title=labels.scores.replaceAll('{{area}}',number(p.rounds[i-2].areaScore)).replaceAll('{{proximity}}',number(p.rounds[i-2].positionScore));row.append(td)});rows.append(row)}document.querySelector('#rows').replaceChildren(rows);document.querySelector('#count').textContent=q?labels.count.replaceAll('{{shown}}',number(list.length)):labels.countAll;[...document.querySelector('#head').children].forEach((th,i)=>th.setAttribute('aria-sort',i===key?(dir===1?'ascending':'descending'):'none'))}filter.oninput=draw;draw();</script></html>`;
 }
 
 export function downloadStreamResult(

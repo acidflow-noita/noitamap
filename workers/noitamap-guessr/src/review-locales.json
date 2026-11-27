@@ -1,0 +1,82 @@
+{
+  "br": {
+    "accountGroup": "{{players}} utilizaram a mesma conexão à Internet na rodada {{round}}.",
+    "noGuess": "Pelo menos uma dessas contas não enviou uma resposta para esta rodada.",
+    "context": "Conexões compartilhadas podem acionar esse indicador. Isso não comprova trapaça, e as pontuações permanecem inalteradas."
+  },
+  "cs": {
+    "accountGroup": "{{players}} využívali ve {{round}}. kole stejné internetové připojení.",
+    "noGuess": "Alespoň jeden z těchto účtů v tomto kole neodeslal tip.",
+    "context": "Tuto značku mohou způsobit sdílená připojení. Neznamená to, že došlo k podvádění, a skóre se nemění."
+  },
+  "de": {
+    "accountGroup": "{{players}} haben in Runde {{round}} dieselbe Internetverbindung genutzt.",
+    "noGuess": "Mindestens eines dieser Konten hat für diese Runde keinen Tipp abgegeben.",
+    "context": "Gemeinsam genutzte Verbindungen können dieses Flag auslösen. Dies ist kein Beweis für Betrug, und die Punktestände bleiben unverändert."
+  },
+  "en": {
+    "accountGroup": "{{players}} used the same internet connection in round {{round}}.",
+    "noGuess": "At least one of those accounts did not submit a guess for this round.",
+    "context": "Shared connections can cause this flag. It does not prove cheating, and scores are unchanged."
+  },
+  "es": {
+    "accountGroup": "{{players}} utilizaron la misma conexión a Internet en la ronda {{round}}.",
+    "noGuess": "Al menos una de esas cuentas no ha enviado ninguna respuesta para esta ronda.",
+    "context": "Las conexiones compartidas pueden provocar que se active este indicador. Esto no demuestra que se haya hecho trampa, y las puntuaciones no se ven afectadas."
+  },
+  "fi": {
+    "accountGroup": "{{players}} käytti samaa internetyhteyttä kierroksella {{round}}.",
+    "noGuess": "Ainakin yksi näistä tileistä ei lähettänyt arvausvastausta tähän kierrokseen.",
+    "context": "Yhteiset yhteydet voivat aiheuttaa tämän merkinnän. Se ei todista huijaamista, eikä pisteisiin tule muutoksia."
+  },
+  "fr": {
+    "accountGroup": "{{players}} ont utilisé la même connexion Internet lors de la manche {{round}}.",
+    "noGuess": "Au moins un de ces comptes n'a pas donné de réponse pour cette manche.",
+    "context": "Ce drapeau peut être déclenché par des connexions partagées. Cela ne prouve pas qu'il y ait eu tricherie, et les scores restent inchangés."
+  },
+  "id": {
+    "accountGroup": "{{players}} menggunakan koneksi internet yang sama pada babak {{round}}.",
+    "noGuess": "Setidaknya salah satu dari akun-akun tersebut tidak mengirimkan tebakannya untuk putaran ini.",
+    "context": "Koneksi bersama dapat memicu munculnya tanda ini. Hal ini tidak membuktikan adanya kecurangan, dan skor tetap tidak berubah."
+  },
+  "it": {
+    "accountGroup": "{{players}} hanno utilizzato la stessa connessione Internet nel round {{round}}.",
+    "noGuess": "Almeno uno di questi account non ha inviato una risposta per questo round.",
+    "context": "Le connessioni condivise possono far scattare questo avviso. Ciò non costituisce prova di frode e i punteggi rimangono invariati."
+  },
+  "ja": {
+    "accountGroup": "{{players}}は、{{round}}ラウンドで同じインターネット接続を使用しました。",
+    "noGuess": "それらのアカウントのうち、少なくとも1つは今回のラウンドで予想を提出しませんでした。",
+    "context": "接続の共有がこのフラグの原因となる場合があります。これは不正行為を証明するものではなく、スコアに変更はありません。"
+  },
+  "nl": {
+    "accountGroup": "{{players}} hebben in ronde {{round}} dezelfde internetverbinding gebruikt.",
+    "noGuess": "Ten minste één van die accounts heeft voor deze ronde geen gok ingediend.",
+    "context": "Gedeelde verbindingen kunnen ervoor zorgen dat deze markering wordt weergegeven. Dit is geen bewijs van valsspelen en de scores blijven ongewijzigd."
+  },
+  "pl": {
+    "accountGroup": "{{players}} korzystali z tego samego połączenia internetowego w rundzie {{round}}.",
+    "noGuess": "Przynajmniej jedno z tych kont nie przesłało odpowiedzi w tej rundzie.",
+    "context": "Przyczyną pojawienia się tego oznaczenia mogą być wspólne połączenia. Nie świadczy to o oszukiwaniu, a wyniki pozostają bez zmian."
+  },
+  "ru": {
+    "accountGroup": "{{players}} использовали одно и то же интернет-соединение в раунде {{round}}.",
+    "noGuess": "По крайней мере один из этих аккаунтов не прислал своего варианта ответа в этом раунде.",
+    "context": "Причиной появления этого флага могут стать совместные подключения. Это не является доказательством использования читов, и результаты остаются без изменений."
+  },
+  "sv": {
+    "accountGroup": "{{players}} använde samma internetanslutning i omgång {{round}}.",
+    "noGuess": "Minst ett av dessa konton lämnade inte in något gissning för den här omgången.",
+    "context": "Delade anslutningar kan utlösa denna markering. Det är inget bevis på fusk, och poängen förblir oförändrade."
+  },
+  "uk": {
+    "accountGroup": "{{players}} користувалися одним і тим самим інтернет-з’єднанням у раунді {{round}}.",
+    "noGuess": "Принаймні один із цих акаунтів не надіслав свого варіанту відповіді в цьому раунді.",
+    "context": "Цей прапорець може з’явитися через спільні підключення. Це не є доказом використання нечесних методів, і результати залишаються незмінними."
+  },
+  "zh": {
+    "accountGroup": "在第 {{round}} 轮中，{{players}} 使用了同一条互联网连接。",
+    "noGuess": "这些账号中至少有一个在本轮中未提交猜测。",
+    "context": "共享连接可能会触发此提示。这并不证明存在作弊行为，且分数保持不变。"
+  }
+}

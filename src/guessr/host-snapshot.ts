@@ -9,7 +9,8 @@ export function hostPlayer(game: StreamGame, player: StreamParticipant): StreamP
 }
 /** Hosting does not grant advance access to opponents' pins or future clues. */
 export function hostSnapshot(game: StreamGame): StreamGame {
-  return { ...game, recentNonces: undefined, receipts: undefined, submittedCounts: submittedCounts(game),
+  const { reviewFlags, ...visible } = game;
+  return { ...visible, ...(game.stage === 'complete' && reviewFlags?.length ? { reviewSuggested: true as const } : {}), recentNonces: undefined, receipts: undefined, submittedCounts: submittedCounts(game),
     participants: game.participants.map(player => hostPlayer(game, player)),
     session: { ...game.session, token: '', rounds: game.session.rounds.map((round, i) => ({ ...round, token: '',
       clue: game.reveals[i] || i === game.round && game.timing?.phase === 'play' ? round.clue : { frames: [] },

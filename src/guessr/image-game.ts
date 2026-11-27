@@ -1,3 +1,4 @@
+import { gameFetch } from './quota-state';
 /** Public round protocol. Hidden target coordinates and the global image index
  * have no representation in an active clue. Answers appear only in results. */
 import type { Bounds, Pack, Point } from "./rules";
@@ -163,7 +164,7 @@ async function requestGame(
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (entry) headers["X-Guessr-State"] = entry.token;
-  const response = await fetch(base + path, {
+  const response = await gameFetch(base + path, {
     method: body === undefined ? "GET" : "POST",
     headers,
     body,

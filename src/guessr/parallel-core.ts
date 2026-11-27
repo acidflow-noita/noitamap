@@ -1,3 +1,4 @@
+import { twitchColor } from './player-color';
 import { newStreamGame, acceptStreamGuess, closeStreamRound, revealStreamRound, advanceStreamRound, streamResult, type StreamChatMessage } from './stream-state';
 import { beginStreamTiming, startHostWindow, startStreamTiming, streamTick, shortenFinishedWindow,
   STREAM_DELIVERY_GRACE_MS, STREAM_RESULTS_HOLD_MS, STREAM_SUBMISSION_GRACE_MS, streamRevealAt } from './stream-timing';
@@ -26,13 +27,14 @@ export interface ParallelRecord {
   pendingRevealAt?: number;
   publicationError?: string;
   publicationRetryAt?: number;
+  replayCursor?: { round: number; after: string };
   publishedAt?: number;
   finalResult?: StreamPublishedResult;
 }
 export function createParallelRecord(input: ParallelInitialization, now: number): ParallelRecord {
   // The coordinator already holds the private solutions. Browser continuation
   // tokens are redundant here and must not inflate every durable write/snapshot.
-  const session = { ...input.session, token: '', rounds: input.session.rounds.map(round => ({ ...round, token: '' })) };
+  const session = { ...input.session, clueReplays: true as const, token: '', rounds: input.session.rounds.map(round => ({ ...round, token: '' })) };
   const game = newStreamGame(session, input.session.serverNow);
   game.clockOffset = 0;
   startStreamTiming(game, input.seconds, now, true);
@@ -43,8 +45,14 @@ export function createParallelRecord(input: ParallelInitialization, now: number)
 export function joinParallelPlayer(record: ParallelRecord, player: StreamPlayer): StreamParticipant {
   const game = record.game;
   let found = game.participants.find(p => p.id === player.id);
-  const safe = { ...player, name: streamPlayerName(player.name, player.login) };
-  if (found) { Object.assign(found, safe); return found; }
+  const color = twitchColor(player.color) ?? twitchColor(found?.color);
+  const safe = { ...player, name: streamPlayerName(player.name, player.login), color };
+  if (found) {
+    Object.assign(found, safe);
+    const joined = game.joinedPlayers?.[player.id];
+    if (joined) Object.assign(joined, { name:safe.name, login:safe.login, color });
+    return found;
+  }
   if (game.pvp && (game.timing?.phase !== 'lobby' || game.pvp.declined.includes(player.id))) throw new ParallelActionError('This invitation is not available.');
   if (game.participants.length >= (game.pvp ? 2 : STREAM_MAX_PLAYERS)) throw new ParallelActionError('This game has reached its player limit.');
   found = { ...safe, guesses: game.session.rounds.map(() => null) };

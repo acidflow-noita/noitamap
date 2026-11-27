@@ -486,8 +486,8 @@ it('opens host setup for a completed save and keeps saved results behind an expl
   expect(document.querySelector('.finish-hero')).not.toBeNull();
   expect(hooks.toast).not.toHaveBeenCalled();
   expect(button('Save results as a web page')).toBeDefined();
-  expect(button('Export scores (JSON)').closest('details')!.open).toBe(false);
-  expect(document.body.textContent).toContain('search and sort every player’s scores offline');
+  expect(button('Save scores as a JSON file').closest('details')).toBeNull();
+  expect(button('Save results as a web page').title).toContain('search and sort every player’s scores offline');
   expect(mocks.pause).not.toHaveBeenCalled();
   expect(mocks.watchChat).not.toHaveBeenCalled();
   ui.suspend(); ui = new StreamUI(hooks); await ui.publicResult(game.session.id);

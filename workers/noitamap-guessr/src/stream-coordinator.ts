@@ -1,3 +1,4 @@
+import { CapacityError, reserveFinish, releaseFinish, noteRoundsLeft, seatRequests } from './capacity';
 import { DurableObject } from 'cloudflare:workers';
 import { STREAM_LIVE_RETENTION_MS } from '../../../src/guessr/stream-lifetime';
 import type { Env } from './index';
@@ -16,6 +17,7 @@ import { streamRoundData, type StreamRoundView } from '../../../src/guessr/strea
 import { pvpSnapshot } from '../../../src/guessr/pvp-state';
 import { hostSnapshot, hostPlayer, submittedCounts } from '../../../src/guessr/host-snapshot';
 import { GAME_PROTOCOL } from '../../../src/guessr/game-protocol';
+import { acceptedReplayGuess, appendReplayGuess, type AcceptedReplayGuess, appendClueFrames, archiveReplayBatch, createReplayTable, releasedClueReplay, replayReservation } from './clue-replay-store';
 import { networkTag, newNetworkKey, newPlayerReview, roundNetworkFlags, type PrivatePlayerReview } from '../../../src/guessr/network-review';
 
 interface Attachment { protocol?: number; networkTag?: string; revealed?: number; generation?: number; identity?: ParallelIdentity; opened: number; count: number; since: number }
@@ -40,6 +42,7 @@ export class StreamCoordinator extends DurableObject<Env> {
     const row = this.ctx.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').toArray()[0];
     if (!row) { this.record = undefined; return; }
     this.record = JSON.parse(row.data);
+    if (this.record!.game.session.clueReplays) createReplayTable(this.ctx.storage.sql);
     this.reviews.clear();
     this.record!.game.participants = this.ctx.storage.sql.exec<{ data: string }>('SELECT data FROM players ORDER BY ordinal').toArray().map(r => {
       const value = JSON.parse(r.data);
@@ -61,14 +64,17 @@ export class StreamCoordinator extends DurableObject<Env> {
       this.ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS game (id INTEGER PRIMARY KEY, data TEXT NOT NULL)');
       this.ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS players (id TEXT PRIMARY KEY, ordinal INTEGER NOT NULL, data TEXT NOT NULL)');
       this.ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS round_results (ordinal INTEGER PRIMARY KEY, data TEXT NOT NULL)');
+      createReplayTable(this.ctx.storage.sql);
       await this.persist(this.record.game.participants);
       await this.schedule();
     });
   }
-  private async persist(players: StreamParticipant[] = [], removed: string[] = []): Promise<void> {
+  private async persist(players: StreamParticipant[] = [], removed: string[] = [], replayGuess?: AcceptedReplayGuess): Promise<void> {
     const record = this.record!;
+    const previousRounds = this.storedRounds.size;
     try {
       this.ctx.storage.transactionSync(() => {
+        if (replayGuess) appendReplayGuess(this.ctx.storage.sql, record, replayGuess);
         for (const id of removed) record.metrics.storageRowsWritten += this.ctx.storage.sql.exec('DELETE FROM players WHERE id=?', id).rowsWritten;
         record.game.reveals.forEach((reveal, round) => {
           if (!reveal || this.storedRounds.has(round)) return;
@@ -89,6 +95,10 @@ export class StreamCoordinator extends DurableObject<Env> {
         this.ctx.storage.sql.exec('INSERT INTO game(id,data) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data', JSON.stringify(metadata));
       });
       await this.ctx.storage.sync();
+      if (this.storedRounds.size > previousRounds) {
+        await noteRoundsLeft(this.env,record.game.session.id,record.game.pvp ? 'pvp' : 'stream',
+          record.game.session.rounds.length-this.storedRounds.size,Date.now()).catch(() => {});
+      }
     } catch (error) {
       try { this.restore(); } catch { /* A storage reset can make the old instance unusable. */ }
       throw new GameStorageError(error);
@@ -132,7 +142,11 @@ export class StreamCoordinator extends DurableObject<Env> {
     if (!this.storedRounds.has(round)) return;
     if (!this.roundViews.has(round)) {
       const row = this.ctx.storage.sql.exec<{ data: string }>('SELECT data FROM round_results WHERE ordinal=?', round).toArray()[0];
-      if (row) this.roundViews.set(round, JSON.parse(row.data));
+      if (row) {
+        const saved: StreamRoundView = JSON.parse(row.data);
+        delete saved.reviewFlags;
+        this.roundViews.set(round, saved);
+      }
     }
     return this.roundViews.get(round);
   }
@@ -156,7 +170,7 @@ export class StreamCoordinator extends DurableObject<Env> {
       });
       socket.serializeAttachment(attachment);
     }
-    if (record.publishedAt) this.send(socket, { type: 'published', result: streamResult(record.game) });
+    if (record.game.published && record.publishedAt) this.send(socket, { type: 'published', result: streamResult(record.game) });
   }
   private broadcast(): void { for (const socket of this.ctx.getWebSockets()) this.snapshot(socket); }
   async webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer): Promise<void> {
@@ -184,6 +198,19 @@ export class StreamCoordinator extends DurableObject<Env> {
           const existing = record.game.participants.find(p => p.id === identity.id);
           if (record.game.pvp && !existing && (record.game.stage === 'complete' || record.ended)) throw new ParallelActionError('This invitation is not available.');
           const active = !record.ended && record.game.stage !== 'complete';
+          if (active && !existing && !identity.color) {
+            // Recover a verified color once on first join, without one request per table row.
+            try {
+              const prior=await this.env.DB.prepare('SELECT color FROM stream_player_colors WHERE player_id=?')
+                .bind(identity.id).first<{color:string}>();
+              if (prior?.color) identity.color=prior.color;
+            } catch { /* A missing optional color cannot block joining the game. */ }
+          }
+          if (active && !existing && !record.game.pvp && record.game.participants.length < STREAM_MAX_PLAYERS) {
+            const left = record.game.session.rounds.length - (record.game.timing?.chatRound ?? record.game.round);
+            await reserveFinish(this.env,record.game.session.id,identity.id,seatRequests(Math.max(1,left)),
+              this.retentionDeadline(),now);
+          }
           const player = active ? joinParallelPlayer(record, identity) : existing ?? {
             id: identity.id, login: identity.login, name: streamPlayerName(identity.name, identity.login), color: identity.color,
             guesses: record.game.session.rounds.map(() => null),
@@ -216,7 +243,8 @@ export class StreamCoordinator extends DurableObject<Env> {
             if (other !== socket && prior?.id === identity.id && prior.role === identity.role) other.close(4002, 'Opened in another tab');
           }
           if (active || record.game.pvp) await this.persist(active ? [player] : []);
-          this.send(socket, { type: 'authorized', player: { id: player.id, login: player.login, name: player.name, color: player.color },
+          this.send(socket, { type: 'authorized', ...(record.game.session.clueReplays ? { clueReplays: true } : {}),
+            player: { id: player.id, login: player.login, name: player.name, color: player.color },
             ticket: await socketTicket(this.env, record.game.session.id, identity), expiresAt: identity.expiresAt, now: Date.now(),
             acceptedRevisions: Object.fromEntries(player.guesses.flatMap((guess, round) => guess?.revision ? [[record.game.session.rounds[round].id, guess.revision]] : [])) });
           this.snapshot(socket, true);
@@ -225,6 +253,10 @@ export class StreamCoordinator extends DurableObject<Env> {
             submittedCounts: submittedCounts(record.game) });
         });
       } catch (error) {
+        if (error instanceof CapacityError) {
+          this.send(socket,{type:'error',code:'play-capacity',scope:error.scope,resetAt:error.resetAt,message:error.message});
+          socket.close(4003,'New players paused'); return;
+        }
         if (error instanceof GameStorageError) throw error;
         if (error instanceof ParallelActionError) {
           this.send(socket, { type: 'error', code: 'capacity', message: error.message }); socket.close(4003, 'Invitation unavailable'); return;
@@ -253,6 +285,22 @@ export class StreamCoordinator extends DurableObject<Env> {
     // A busy final-second burst must not turn on-time frames into late guesses.
     const record = this.record!;
     record.metrics.socketMessages++;
+    if (message.type === 'clue-frames' || message.type === 'clue-read') {
+      if (!record.game.session.clueReplays || !record.game.participants.some(p => p.id === identity.id)) throw new ParallelActionError('Invalid clue replay');
+      if (record.game.pvp && this.attachment(socket).generation !== record.game.pvp.controllers?.[identity.id]) {
+        socket.close(4002, 'Opened in another tab'); return;
+      }
+      if (message.type === 'clue-read') {
+        if (typeof message.request !== 'string' || !/^[\w-]{1,48}$/.test(message.request) || typeof message.player !== 'string') throw new ParallelActionError('Invalid clue replay');
+        this.send(socket, { type: 'clue-replay', request: message.request,
+          replay: releasedClueReplay(this.ctx.storage.sql, record.game, message.round, message.player) });
+      } else {
+        const through = appendClueFrames(this.ctx.storage.sql, record, identity, message.roundId, message.frames, now);
+        await this.ctx.storage.sync();
+        this.send(socket, { type: 'clue-ack', roundId: message.roundId, through });
+      }
+      return;
+    }
     if (message.type === 'relay') throw new ParallelActionError('This game transport has been retired.');
     if (message.type === 'activity') {
       const round = record.game.session.rounds.findIndex(r => r.id === message.roundId);
@@ -294,7 +342,7 @@ export class StreamCoordinator extends DurableObject<Env> {
         const tag = this.attachment(socket).networkTag;
         if (tag) { const review = this.reviews.get(identity.id) ?? newPlayerReview(); review.submitted[command.round - 1] = tag; this.reviews.set(identity.id, review); }
         record.metrics.firstBySocket++;
-        await this.persist([player]); await this.schedule();
+        await this.persist([player], [], acceptedReplayGuess(record.game, command.round - 1, player.id)); await this.schedule();
         if (record.game.timing!.revision !== oldRevision) this.broadcast();
         this.hosts({ type: 'participant', participant: hostPlayer(record.game, player), joined: Object.keys(record.game.joinedPlayers ?? {}).length,
           submittedCounts: submittedCounts(record.game), submitted: true });
@@ -319,7 +367,9 @@ export class StreamCoordinator extends DurableObject<Env> {
       } else if (message.type === 'quit') record.ended = true;
       else if (message.type !== 'publish') throw new ParallelActionError('Invalid command');
       if (!record.hostCommands.includes(message.id)) record.hostCommands = [...record.hostCommands.slice(-31), message.id];
-      tickParallel(record, now); await this.persist([record.game.participants[0]]);
+      const replayGuess = message.type === 'host-guess' ? acceptedReplayGuess(record.game, record.game.round, identity.id) : undefined;
+      if(record.ended) await releaseFinish(this.env,record.game.session.id,now).catch(() => {});
+      tickParallel(record, now); await this.persist([record.game.participants[0]], [], replayGuess);
       if (record.game.stage === 'complete') await this.publish();
       await this.schedule(); this.broadcast();
     }
@@ -338,8 +388,9 @@ export class StreamCoordinator extends DurableObject<Env> {
       const accepted = status === 'accepted' || status === 'duplicate';
       if (status === 'accepted') {
         game.participants.find(p => p.id === identity.id)!.guesses[command.round - 1]!.automatic = message.submission.automatic;
+        const replayGuess = acceptedReplayGuess(game, command.round - 1, identity.id);
         record.metrics.firstBySocket++; tickParallel(record, now);
-        await this.persist(game.participants); await this.schedule();
+        await this.persist(game.participants, [], replayGuess); await this.schedule();
       } else if (status === 'duplicate') record.metrics.duplicates++;
       else record.metrics.rejected++;
       this.send(socket, { type: 'receipt', round: command.round, roundId: command.roundId!, nonce: command.nonce,
@@ -379,6 +430,7 @@ export class StreamCoordinator extends DurableObject<Env> {
     }
     if (!record.hostCommands.includes(message.id)) record.hostCommands = [...record.hostCommands.slice(-31), message.id];
     game.timing!.revision++;
+    if(record.ended) await releaseFinish(this.env,game.session.id,now).catch(() => {});
     await this.persist(game.participants, removed);
     if (game.stage === 'complete') await this.publish();
     await this.schedule(); this.broadcast(); this.send(socket, { type: 'command', id: message.id, accepted: true });
@@ -394,18 +446,39 @@ export class StreamCoordinator extends DurableObject<Env> {
     // Freeze the payload before external I/O so a lost D1 response retries identically.
     const result = parallelResult(record); result.transportStats = { ...record.metrics }; await this.persist();
     try {
-      const response = await persistStreamResult(this.env, record.owner, result, record.game.session.createdAt);
+      const replayBytes = replayReservation(this.ctx.storage.sql, record.game);
+      const stored = record.game.reviewFlags?.length ? { ...result, reviewFlags: record.game.reviewFlags } : result;
+      const response = await persistStreamResult(this.env, record.owner, stored, record.game.session.createdAt, Date.now(), replayBytes);
       if (!response.ok) {
         const data = await response.json() as { error?: string };
         record.publicationRetryAt = Date.now() + Math.max(60, Math.min(86400, Number(response.headers.get('Retry-After')) || 60)) * 1000;
         throw Error(data.error ?? 'Publishing unavailable');
       }
+      if (replayBytes && await this.env.DB.prepare('SELECT id FROM stream_results WHERE id=? AND replay_bytes>0')
+        .bind(result.id).first()) {
+        record.replayCursor = await archiveReplayBatch(this.env.DB, this.ctx.storage.sql, record.game, record.replayCursor);
+        if (record.replayCursor) {
+          record.publicationRetryAt = Date.now() + 1000;
+          await this.persist();
+          return;
+        }
+      }
       record.game.published = true; record.publishedAt = Date.now(); record.publicationError = undefined;
     } catch (error) {
       record.publicationError = error instanceof ImageGameError ? error.message : 'Publishing is unavailable. Your local game is safe; download the result or retry later.';
-      record.publicationRetryAt ??= Date.now() + Math.min(6 * 3600000, 60000 * 2 ** Math.min(9, record.metrics.publicationAttempts - 1));
+      if (error instanceof ImageGameError && error.status === 410) {
+        // An owner can remove the published score while replay pages are being
+        // copied. Respect the tombstone and retire the live copy on schedule.
+        record.ended = true; record.publishedAt = Date.now(); record.replayCursor = undefined;
+      } else record.publicationRetryAt ??= Date.now() + Math.min(6 * 3600000, 60000 * 2 ** Math.min(9, record.metrics.publicationAttempts - 1));
     }
     await this.persist();
+  }
+  /** The Worker verifies the published D1 parent before calling this fallback. */
+  publishedClueReplay(round: number, player: string) {
+    const game = this.record?.game;
+    return game?.stage === 'complete'
+      ? releasedClueReplay(this.ctx.storage.sql, game, round, player) : null;
   }
   private async schedule(): Promise<void> {
     const now = Date.now(), record = this.record!;

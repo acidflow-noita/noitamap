@@ -1,3 +1,5 @@
+import { CapacityError, capacityResponse, gameAvailability, gameRequests, reserveFinish, releaseFinish, noteRoundsLeft, cancelFinish } from './capacity';
+import { indexPendingColors } from './result-publication';
 import {
   scoreGuess,
   within,
@@ -9,7 +11,7 @@ import { streamRoute } from "./streams";
 import { preparedSource } from "./prepared-source";
 import {
   SoloGameService,
-  soloGameRoute,
+  soloGameRoute, SOLO_SESSION_LIFETIME,
 } from "../../../src/guessr/solo-server";
 import { publishDaily } from './daily-publish';
 import { scoreAreaGuess } from '../../../src/guessr/area-rules';
@@ -34,6 +36,7 @@ export interface Env {
   GAME_TICKET_PUBLIC_KEY?: string;
   ALLOWED_ORIGINS: string;
   GAME_ENABLED?: string;
+  GAME_CAPACITY_GUARD?: string;
   SOLO_ENABLED?: string;
   DAILY_REQUEST_BUDGET?: string;
   STREAM_ENABLED?: string;
@@ -96,6 +99,8 @@ export class HttpError extends Error {
   constructor(
     public status: number,
     message: string,
+    readonly quota?: 'ranked' | 'ranked-player',
+    readonly resetAt?: number,
   ) {
     super(message);
   }
@@ -168,6 +173,14 @@ async function identity(
 async function admit(env: Env, user: GameIdentity, now: number): Promise<void> {
   const day = new Date(now).toISOString().slice(0, 10),
     minute = Math.floor(now / 60000);
+  if (env.GAME_CAPACITY_GUARD === 'account') {
+    // This short per-account abuse limit is separate from shared capacity. In-progress attempts use their reservation.
+    const allowed = await env.DB.prepare(`INSERT INTO usage_limits(key,count,expires_at) VALUES(?,1,?)
+      ON CONFLICT(key) DO UPDATE SET count=count+1 WHERE count<30 RETURNING count`)
+      .bind(`u:${user.sub}:m:${minute}`,now+120000).first();
+    if (!allowed) fail(429,'Too many requests. Please try again later.');
+    return;
+  }
   const budget = Math.min(
     40000,
     Math.max(100, Number(env.DAILY_REQUEST_BUDGET) || 10000),
@@ -190,12 +203,12 @@ async function admit(env: Env, user: GameIdentity, now: number): Promise<void> {
       )
         .bind(`all:${day}`)
         .first<{ count: number }>();
-      fail(
-        429,
-        (total?.count ?? 0) >= budget
-          ? "Ranked play is resting for today. Practice is still available."
-          : "Too many requests. Please try again later.",
-      );
+      const resetAt = Date.parse(day) + 86400000;
+      if ((total?.count ?? 0) >= budget)
+        throw new HttpError(429, 'Ranked play is resting for today. Practice is still available.', 'ranked', resetAt);
+      if (key === `u:${user.sub}:d:${day}`)
+        throw new HttpError(429, 'Your ranked play limit has been reached for today.', 'ranked-player', resetAt);
+      fail(429, 'Too many requests. Please try again later.');
     }
   }
 }
@@ -314,6 +327,10 @@ async function route(
 ): Promise<Response> {
   const url = new URL(request.url),
     path = url.pathname;
+  if (path === '/api/availability' && request.method === 'GET') {
+    const state = await gameAvailability(env,now);
+    return Response.json(state,{headers:{'Cache-Control':'public, max-age=15'}});
+  }
   if (path === '/api/admin/daily') return publishDaily(request, env, now);
   if (path.startsWith("/api/streams/")) return streamRoute(request, env, now);
   if (path.startsWith("/api/games/")) {
@@ -325,18 +342,23 @@ async function route(
         { error: "Demo rounds are not available on this site yet." },
         503,
       );
-    if (env.PUBLIC_GAME_RATE_LIMIT && !(await env.PUBLIC_GAME_RATE_LIMIT.limit({ key: request.headers.get('CF-Connecting-IP') || 'unknown' })).success) {
+    const continuing = /^\/api\/games\/sessions\/[a-f0-9-]{36}(?:\/(?:guess|next))?$/.test(path);
+    if (!continuing && env.PUBLIC_GAME_RATE_LIMIT && !(await env.PUBLIC_GAME_RATE_LIMIT.limit({ key: request.headers.get('CF-Connecting-IP') || 'unknown' })).success) {
       const response = json({ error: 'Too many requests. Please try again later.' }, 429);
       response.headers.set('Retry-After', '60'); return response;
     }
     const source = preparedSource(env);
-    return (
-      (await soloGameRoute(
-        request,
-        new SoloGameService(source, env.GAME_SIGNING_SECRET),
-        now,
-      )) ?? json({ error: "Game route not found." }, 404)
-    );
+    const id = path === '/api/games/sessions' && request.method === 'POST' ? crypto.randomUUID() : undefined;
+    if (id) await reserveFinish(env,id,'',gameRequests('demo',3),now+SOLO_SESSION_LIFETIME,now);
+    try {
+      const response = await soloGameRoute(request,new SoloGameService(source,env.GAME_SIGNING_SECRET),now,
+        { id, advanced: (game,left) => left ? noteRoundsLeft(env,game,'demo',left,now) : releaseFinish(env,game,now) }) ?? json({error:'Game route not found.'},404);
+      if (id && !response.ok) await cancelFinish(env,id,'');
+      return response;
+    } catch (error) {
+      if (id) await cancelFinish(env,id,'');
+      throw error;
+    }
   }
   if (path === "/health" && request.method === "GET")
     return json({
@@ -351,7 +373,6 @@ async function route(
   if (!["GET", "POST"].includes(request.method))
     fail(405, "Method not allowed.");
   const user = await identity(request, env, now);
-  await admit(env, user, now);
   if (path === "/api/daily" && request.method === "GET") {
     const day =
       url.searchParams.get("day") || new Date(now).toISOString().slice(0, 10);
@@ -366,12 +387,13 @@ async function route(
     )
       .bind(day, now)
       .first<Challenge>();
-    if (!current) return json({ challenge: null });
+    if (!current) { await admit(env,user,now); return json({ challenge:null }); }
     const existing = await env.DB.prepare(
       "SELECT id,next_round,completed_at FROM attempts WHERE user_id=? AND challenge_id=?",
     )
       .bind(user.sub, current.id)
       .first<{ id: string; next_round: number; completed_at: number | null }>();
+    if (!existing) await admit(env,user,now);
     return json({
       challenge: {
         id: current.id,
@@ -386,7 +408,7 @@ async function route(
       attemptStatus: existing ? existing.completed_at !== null || existing.next_round >= DAILY_ROUNDS ? 'complete' : 'active' : null,
     });
   }
-  if (path === "/api/attempts" && request.method === "POST") {
+  if ((path === "/api/attempts" || path === "/api/attempts/new") && request.method === "POST") {
     const data = await body(request);
     only(data, ["challengeId"]);
     if (
@@ -405,6 +427,7 @@ async function route(
         fail(409, 'You’ve already played this Daily.');
       return json(await state(env, existing, c, now));
     }
+    await admit(env,user,now);
     if (now < c.opens_at) fail(409, "This challenge is closed.");
     const count = await env.DB.prepare(
       "SELECT COUNT(*) AS n FROM questions WHERE challenge_id=?",
@@ -412,11 +435,15 @@ async function route(
       .bind(c.id)
       .first<{ n: number }>();
     if (count?.n !== DAILY_ROUNDS) fail(503, "This challenge is not ready.");
-    await env.DB.prepare(
-      "INSERT INTO attempts(id,user_id,challenge_id,display_name,started_at,round_started_at) VALUES(?,?,?,?,?,?) ON CONFLICT(user_id,challenge_id) DO NOTHING",
-    )
-      .bind(crypto.randomUUID(), user.sub, c.id, user.name, now, now)
-      .run();
+    const id = crypto.randomUUID();
+    // A saved Daily can resume after rotation. Keep its reserve until completion or an explicit quit.
+    await reserveFinish(env,id,'',gameRequests('ranked',DAILY_ROUNDS),now + 5*60000,now);
+    {
+      const created = await env.DB.prepare(
+        "INSERT INTO attempts(id,user_id,challenge_id,display_name,started_at,round_started_at) VALUES(?,?,?,?,?,?) ON CONFLICT(user_id,challenge_id) DO NOTHING RETURNING id"
+      ).bind(id,user.sub,c.id,user.name,now,now).first();
+      if (!created) await cancelFinish(env,id,'');
+    }
     const a = await env.DB.prepare(
       "SELECT * FROM attempts WHERE user_id=? AND challenge_id=?",
     )
@@ -560,6 +587,7 @@ async function route(
     }
     fail(405, "Method not allowed.");
   }
+  await admit(env,user,now);
   if (path === "/api/history" && request.method === "GET") {
     const rows = (
       await env.DB.prepare(
@@ -650,8 +678,10 @@ export async function handle(
     try {
       response = await route(request, env, now);
     } catch (e) {
-      response = json(
+      if (e instanceof CapacityError) response = capacityResponse(e,now);
+      else response = json(
         {
+          ...(e instanceof HttpError && e.quota ? { quota: e.quota, resetAt: e.resetAt } : {}),
           error:
             e instanceof HttpError
               ? e.message
@@ -659,6 +689,11 @@ export async function handle(
         },
         e instanceof HttpError ? e.status : 503,
       );
+      if (e instanceof HttpError && e.quota && e.resetAt) {
+        response.headers.set('X-Guessr-Daily-Quota', e.quota);
+        response.headers.set('X-Guessr-Reset-At', String(e.resetAt));
+        response.headers.set('Retry-After', String(Math.max(1, Math.ceil((e.resetAt - now) / 1000))));
+      }
     }
   // Preserve the upgraded socket; constructing an ordinary Response loses it.
   if (response.status === 101) return response;
@@ -667,7 +702,10 @@ export async function handle(
   const vary = headers.get('Vary')?.split(',').map(s => s.trim()).filter(Boolean) ?? [];
   if (!vary.some(value => ['*', 'origin'].includes(value.toLowerCase()))) vary.push('Origin');
   headers.set('Vary', vary.join(', '));
-  if (origin) headers.set("Access-Control-Allow-Origin", origin);
+  if (origin) {
+    headers.set("Access-Control-Allow-Origin", origin);
+    headers.set('Access-Control-Expose-Headers', 'X-Guessr-Daily-Quota, X-Guessr-Reset-At, Retry-After');
+  }
   if (request.method === "OPTIONS") {
     headers.set(
       "Access-Control-Allow-Headers",
@@ -688,6 +726,7 @@ export default {
     return handle(request, env);
   },
   async scheduled(_event: unknown, env: Env) {
+    await indexPendingColors(env.DB, 12);
     await env.DB.prepare("DELETE FROM usage_limits WHERE expires_at<?")
       .bind(Date.now())
       .run();

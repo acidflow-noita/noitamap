@@ -94,23 +94,107 @@
 [aria-sort='ascending'] > .stream-table-sort::after { visibility: visible; transform: rotate(225deg); vertical-align: 0; }
 [aria-sort='descending'] > .stream-table-sort::after { visibility: visible; }
 .stream-score-table { --bs-table-color: var(--text); --bs-table-bg: transparent; --bs-table-border-color: var(--border); border-collapse: collapse; }
-.network-review { margin-block-start: var(--control-gap); max-inline-size: 32rem; white-space: normal; }
-.network-review > summary { color: var(--danger-fg); font-size: .75rem; font-weight: 600; cursor: pointer; }
-.network-review > p { color: var(--text-muted); font-size: .8125rem; font-weight: 400; margin: var(--panel-padding) 0 0; }
-.network-review-summary { max-inline-size: none; margin-block: var(--section-gap); padding: var(--section-gap); border: 1px solid var(--danger-fg); border-radius: var(--radius-control); }
-.network-review-summary > section { display: grid; gap: var(--bs-spacer-1); margin-block-start: var(--section-gap); }
-.network-review-summary h3 { color: var(--danger-fg); font-size: .875rem; margin: 0; }
-.network-review-summary p { margin: 0; color: var(--text-muted); font-size: .8125rem; }
+.host-review-notice:not([hidden]) { display: grid; justify-items: start; gap: var(--panel-padding); padding: var(--game-gutter);
+  margin-block: var(--game-gutter); border: 1px solid var(--bs-warning-border-subtle, var(--border)); border-radius: var(--radius-panel); }
+.host-review-notice p { margin: 0; }
 .stream-score-table :is(th, td) { padding: .65rem .9rem; border-block-end: 1px solid var(--border); vertical-align: middle; }
 .stream-score-table th { font-size: .8125rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
 .stream-channel-link { color: inherit; text-decoration: none; }
 .stream-channel-link:hover { color: inherit; text-decoration: underline; }
-.stream-score-table .numeric { text-align: end; font-variant-numeric: tabular-nums; }
+.stream-score-table .numeric { text-align: end; }
 .stream-score-table :is(th, td):nth-child(2):not(.numeric) { text-align: start; }
 .stream-round-score-table :is(th, td):first-child { inline-size: 4rem; }
 .stream-round-score-table :is(th, td):nth-child(2) { inline-size: auto; }
-.stream-round-score-table tr.selected { background: var(--accent-bg); outline: 1px solid var(--accent-fg); outline-offset: -1px; }
-.stream-round-score-table tbody tr { cursor: pointer; }
+.stream-score-frame .stream-score-table tbody > tr:not(.score-replay-row) {
+  position: relative; cursor: default; background-image: var(--score-row-wash, none);
+}
+.stream-score-frame .stream-score-table tbody > tr:is(.selected, :focus-visible, :has(:focus-visible)),
+.stream-score-frame .score-pointer-hover tbody > tr:not(.score-replay-row):hover {
+  --score-row-ring: ""; --score-row-wash: linear-gradient(var(--accent-bg), var(--accent-bg));
+}
+.stream-score-frame .stream-score-table tbody > tr:not(.score-replay-row)::after {
+  content: var(--score-row-ring, none); position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  border: var(--bs-border-width) solid var(--accent-fg);
+}
+.stream-score-frame .stream-score-table tbody > tr:not(.score-replay-row):last-child::after {
+  border-end-start-radius: calc(var(--bs-radius-9) - var(--bs-border-width));
+  border-end-end-radius: calc(var(--bs-radius-9) - var(--bs-border-width));
+}
+.stream-score-frame .stream-score-table tbody > tr:not(.score-replay-row) > td:last-child {
+  background-image: var(--score-row-wash, none);
+}
+.stream-score-frame .stream-score-table tr:has(.clue-replay-open[aria-expanded="true"]) > td {
+  background-color: color-mix(in oklab, var(--accent-strong) 22%, var(--surface-1));
+  background-image: none;
+}
+.stream-score-table tr:has(.clue-replay-open[aria-expanded="true"]) > td:first-child {
+  box-shadow: inset 3px 0 var(--accent-fg);
+}
+#guess-app .stream-score-table .score-with-replay > button.clue-replay-open[aria-expanded="true"] {
+  background: var(--accent-fg); color: var(--bg); border-color: var(--accent-fg);
+}
+.score-with-replay { display: inline-flex; align-items: center; justify-content: end; gap: .5rem; white-space: nowrap; }
+#guess-app .score-with-replay > .clue-replay-open {
+  flex: none; display: inline-grid; place-items: center; inline-size: 2.5rem; block-size: 2.5rem;
+  min-inline-size: 0; min-block-size: 0; box-sizing: border-box; aspect-ratio: 1; padding: 0; line-height: 1;
+}
+#guess-app .clue-replay-open > .bi { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+.table-wrap.stream-score-frame {
+  position: relative;
+  container-type: inline-size;
+  margin: 0;
+  border: var(--bs-border-width) solid var(--border-strong);
+  border-radius: var(--bs-radius-9);
+  background: var(--surface-1);
+  overflow: auto;
+}
+.stream-round-preview, .replay-content { scroll-margin-block: var(--game-gutter); }
+#guess-app .stream-score-table .score-replay-row > td { padding: 0; inline-size: auto; text-align: start; }
+.score-replay-disclosure { position: sticky; inset-inline-start: 0; box-sizing: border-box;
+  inline-size: min(100%, 100cqi); min-inline-size: 0; padding: .5rem; }
+.score-replay-disclosure .accordion-header { gap: var(--bs-spacer-3); }
+.score-replay-disclosure .clue-replay-panel { min-inline-size: 0; padding: .75rem; }
+.replay-content { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem;
+  inline-size: 100%; }
+.replay-content > [hidden], .clue-replay-stage > [hidden], .clue-replay-toolbar > [hidden] { display: none; }
+.clue-replay-stage { position: relative; isolation: isolate; box-sizing: border-box; aspect-ratio: 9 / 4;
+  inline-size: 100%; min-inline-size: 0; background: var(--bg); overflow: hidden; }
+.clue-replay-stage .clue, .clue-replay-stage .map-board, .stream-review-grid .clue-replay-stage .map-board {
+  margin: 0; inline-size: 100%; block-size: 100%; min-block-size: 0; aspect-ratio: auto; }
+.clue-replay-stage .clue canvas { inline-size: 100%; block-size: 100%; object-fit: contain; image-rendering: pixelated; }
+.clue-replay-stage > .clue { isolation: isolate; }
+.clue-replay-stage > .replay-guess-map, .replay-pan-layer, .replay-pin-layer { position: absolute; inset: 0; }
+.replay-pan-layer, .replay-pin-layer { pointer-events: none; transform-origin: 0 0; }
+.replay-pin-layer > .replay-pan-marker { left: 0; top: 0; }
+.clue:has(> .replay-pan-layer)::before { visibility: hidden; }
+.replay-action-badge { position: absolute; z-index: 1; inset-block-end: 16%; inset-inline-start: 50%; transform: translateX(-50%);
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem; inline-size: max-content; max-inline-size: calc(100% - 2rem);
+  padding: .375rem .75rem; border: 1px solid rgb(255 255 255 / .7); border-radius: var(--radius-control);
+  background: rgb(8 12 20 / .94); color: #fff; font-size: .9375rem; font-weight: 600; line-height: 1.25; text-align: center;
+  opacity: 0; pointer-events: none; }
+.replay-action-badge.visible { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) { .replay-action-badge { transition: opacity 120ms ease; } }
+.replay-status, .replay-content > button { justify-self: start; margin: 0; }
+.clue-replay-toolbar { display: flex; align-items: center; }
+#guess-app .replay-play { display: inline-flex; align-items: center; justify-content: center; gap: .375rem;
+  min-inline-size: 0; padding-inline: .75rem; line-height: 1.25; }
+.replay-play > .bi { display: inline-flex; line-height: 1; }
+.replay-play > .bi-play-fill { margin-inline-start: -.15em; }
+.replay-step-time { color: var(--text-muted); font-size: .75rem; font-weight: 600; line-height: 1rem; white-space: nowrap; }
+.replay-time-measure { position: absolute; inset: 0 auto auto 0; visibility: hidden; inline-size: max-content; }
+.replay-timeline { --replay-step-row: 3.5rem; position: relative; inline-size: 100%; min-inline-size: 0; max-block-size: 14rem; overflow: auto; }
+.replay-timeline .stepper { display: grid; grid-auto-flow: row; grid-auto-rows: var(--replay-step-row); align-content: start; row-gap: 0;
+  inline-size: 100%; margin: 0; --bs-stepper-size: 2rem; --bs-stepper-text-gap: .25rem; }
+.replay-timeline .stepper-item::before { content: ""; grid-area: 1 / 1; }
+.replay-timeline .replay-row-end::after { display: none; }
+#guess-app .replay-step { grid-area: 1 / 1 / span 2; z-index: 2; display: grid; grid-template-rows: var(--bs-stepper-size) auto;
+  justify-items: center; align-items: center; gap: var(--bs-stepper-text-gap); inline-size: 100%; min-inline-size: 0; min-block-size: 44px;
+  margin: 0; padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text); cursor: pointer; }
+.replay-step-icon { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+.replay-step[aria-current="step"] .replay-step-icon { color: var(--bs-stepper-active-color); }
+@media (pointer: coarse) {
+  #guess-app .score-with-replay > .clue-replay-open { inline-size: 2.75rem; block-size: 2.75rem; }
+}
 .stream-table-controls input {
   min-width: 14rem;
   max-width: 100%;
@@ -279,10 +363,7 @@
 .stream-round-review-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .5rem; min-inline-size: 0; max-inline-size: 100%; }
 .stream-round-review-actions > [hidden] { display: none; }
 
-.stream-results-menu { display: flex; flex-wrap: wrap; align-items: center; gap: var(--game-gutter); margin-block: .75rem; }
-.stream-export-options { position: relative; }
-.stream-export-options > summary { cursor: pointer; padding: .5rem; }
-.stream-export-options[open] > button { display: block; margin-block-start: .5rem; }
+.stream-results-menu { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
 #guess-app:has(.stream-result-reviews) { overflow-anchor: none; }
 .finish-hero .stream-placement { font-size: 1.125rem; font-weight: 600; color: var(--text); }
 .stream-result-reviews { flex: none; overflow-anchor: none; margin-block: var(--game-gutter); --bs-accordion-bg: var(--surface-1); --bs-accordion-btn-bg: var(--surface-1); --bs-accordion-active-bg: var(--surface-2); --bs-accordion-border-color: var(--border); }
@@ -297,7 +378,54 @@
 .stream-review-grid > .game-panel { min-block-size: 0; }
 .stream-review-grid .map-board { flex: 1; min-block-size: 18rem; block-size: 22rem; }
 .stream-review-grid .stream-round-score-scroll { max-block-size: 38rem; }
-.stream-review-grid .stream-round-preview { flex: none; inline-size: min(100%, 28rem); margin-inline: auto; aspect-ratio: 9 / 4; }
+.inline-round-review {
+  --review-rank-inset: .75rem;
+}
+.inline-round-review .round-review-media,
+.inline-round-review .round-review-table-body {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-inline-size: 0;
+  align-self: start;
+  --bs-border-color: var(--border-strong);
+}
+.round-review-media {
+  display: grid;
+  container-type: inline-size;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: var(--game-gutter);
+}
+#guess-app .inline-round-review .review-header { min-block-size: 0; padding: 0 0 .75rem; }
+#guess-app .inline-round-review .round-review-score-panel > .review-header {
+  padding-inline-start: calc(var(--bs-border-width) + var(--review-rank-inset));
+}
+.inline-round-review .stream-round-score-scroll {
+  inline-size: 100%; box-sizing: border-box; max-block-size: calc(38rem + var(--open-replay-height, 0px));
+}
+.inline-round-review .stream-round-score-table th:first-child {
+  text-align: start;
+  padding-inline-start: var(--review-rank-inset);
+}
+@media (min-width: 48.001rem) {
+  .inline-round-review { grid-template-rows: auto auto; row-gap: 0; }
+  .inline-round-review > .game-panel {
+    container-type: normal;
+    display: grid;
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+}
+.round-review-media > :is(.stream-round-preview, .map-board) {
+  box-sizing: border-box;
+  min-inline-size: 0;
+  inline-size: 100%;
+  margin: 0;
+}
+.round-review-media > .stream-round-preview { aspect-ratio: 9 / 4; }
+.stream-review-grid .round-review-media > .map-board { min-block-size: 0; block-size: clamp(13rem, 55cqi, 23rem); }
 .stream-round-results-layout {
   --review-max-height: clamp(14rem, 68svh, 48rem);
   /* Leave enough height to show the northernmost and southernmost pins at a scale that fills the map width. */
@@ -313,8 +441,8 @@
 @media (max-width: 48rem) {
   .stream-review-grid { grid-template-columns: minmax(0, 1fr); }
   .stream-round-results-layout .map-board { flex: none; }
-  .stream-result-reviews .accordion-body { padding: .5rem; }
-  .stream-result-reviews .accordion-header { padding: .5rem; }
+  .stream-result-reviews .accordion-body { padding: .875rem; }
+  .stream-result-reviews .accordion-header { padding: .75rem; }
 }
 
 .pvp-lobby-players { display: flex; justify-content: center; align-items: baseline; flex-wrap: wrap; gap: .5rem 1rem; max-inline-size: 100%; font-size: clamp(1rem, 3vw, 1.5rem); }
@@ -323,33 +451,57 @@
 .stream-results .stream-score-table .stream-rank-column > button { padding-inline: 0; }
 /* Completed games are read in order: outcome, actions, locations, standings. */
 .stream-results {
+  display: grid; gap: var(--game-gutter); inline-size: 100%;
   max-inline-size: 80rem;
   min-inline-size: 0;
   margin-inline: auto;
   container-type: inline-size;
 }
 .finish-hero.stream-results-heading {
+  margin: 0;
+  padding: 0;
+  text-align: start;
+}
+.result-heading-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: 1rem;
-  row-gap: 0.75rem;
-  min-block-size: 0;
-  text-align: start;
-  margin: 0.625rem 0;
-  padding: 1rem 1.25rem;
-  border: 0;
-  border-inline-start: 3px solid var(--daily-strong);
+  gap: var(--game-gutter);
+  padding: clamp(1rem, 2vw, 1.5rem);
 }
-.finish-hero.stream-results-heading:has(.result-back) {
-  grid-template-columns: auto minmax(0, 1fr) auto;
+/* The arrow and heading share a grid row, independent of the mode and placement lines. */
+.result-outcome:has(.result-back) {
+  --result-back-size: 2.75rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: .875rem;
+  align-items: center;
 }
-.result-back {
+.result-outcome:has(.result-back) > :not(.result-back) { grid-column: 2; }
+.result-outcome:has(.result-back) > .result-mode { grid-row: 1; }
+.result-outcome:has(.result-back) > h1 {
+  grid-row: 2;
+  align-self: start;
+  padding-block: max(0px, calc((var(--result-back-size) - 1lh) / 2));
+}
+@supports (text-box: trim-both cap alphabetic) {
+  .result-outcome:has(.result-back) > h1 {
+    text-box: trim-both cap alphabetic;
+    padding-block: max(0px, calc((var(--result-back-size) - 1cap) / 2));
+  }
+}
+.result-outcome > .result-back { grid-area: 2 / 1; align-self: start; translate: 0 -.0625rem; }
+.stream-standings { display: grid; gap: .75rem; min-inline-size: 0; }
+.stream-results > .stream-result-reviews, .stream-results > .host-review-notice { margin-block: 0; }
+.stream-result-reviews:empty { display: none; }
+#guess-app .result-back {
   display: grid;
   place-items: center;
-  min-inline-size: 2.75rem;
-  block-size: 2.75rem;
+  inline-size: var(--result-back-size);
+  block-size: var(--result-back-size);
+  min-inline-size: 0;
+  padding: 0;
 }
+.result-back > svg { display: block; inline-size: 1rem; block-size: 1rem; }
 .stream-results-heading .result-outcome h1 {
   font-size: 1.25rem;
   line-height: 1.25;
@@ -357,7 +509,7 @@
 .result-outcome,
 .result-score {
   display: grid;
-  gap: 0.25rem;
+  row-gap: 0.25rem;
   min-inline-size: 0;
 }
 .result-outcome {
@@ -369,29 +521,22 @@
   margin: 0;
 }
 .result-mode,
-.result-score > span {
+.result-completion {
   font-size: 0.8125rem;
   color: var(--text-muted);
 }
 .result-score {
   text-align: end;
 }
+.result-completion { display: grid; justify-items: end; gap: .375rem; }
+.result-completion .lobby-rounds { inline-size: min(7rem, 100%); }
+@media (max-width: 40rem) { .result-completion { justify-items: start; } }
 .result-score strong {
   font-size: clamp(1.25rem, 2.5vw, 1.625rem);
   line-height: 1.15;
   letter-spacing: -0.02em;
 }
-.stream-results .stream-results-menu {
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0.75rem 0 1rem;
-}
-.stream-results-menu :is(.btn, summary) {
-  min-inline-size: 0;
-  max-inline-size: 100%;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
+.stream-results-menu .btn { min-inline-size: 0; max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere; }
 .stream-results .stream-publication {
   display: flex;
   gap: 0.5rem;
@@ -406,18 +551,6 @@
 .stream-publication p {
   color: var(--text-muted);
   font-size: 0.875rem;
-}
-.result-more-toggle {
-  display: inline-grid;
-  place-items: center;
-  min-inline-size: 2.75rem;
-  min-block-size: 2.5rem;
-}
-.result-more-toggle::marker {
-  content: "";
-}
-.result-more-toggle::-webkit-details-marker {
-  display: none;
 }
 .stream-results .publication-confirmed {
   display: contents;
@@ -437,8 +570,8 @@
   margin-inline-start: auto;
 }
 .stream-results .stream-table-controls {
-  gap: 0.5rem 0.875rem;
-  margin: 1.25rem 0 0.5rem;
+  gap: .5rem 1rem;
+  margin: 0;
 }
 .stream-table-controls h2 {
   margin: 0;
@@ -450,13 +583,13 @@
 .stream-results .table-wrap {
   margin-block-start: 0;
 }
-.stream-results > .table-wrap .stream-score-table tr > :last-child {
+.stream-score-frame .stream-score-table tr:not(.score-replay-row) > :last-child {
   position: sticky;
   inset-inline-end: 0;
   background-color: var(--surface-1);
   border-inline-start: 1px solid var(--border);
 }
-.stream-results > .table-wrap .stream-score-table {
+.stream-standings > .table-wrap .stream-score-table {
   margin: 0;
 }
 .round-review-label {
@@ -484,8 +617,8 @@
   }
   .round-review-group {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0 0.375rem;
+    grid-template-columns: repeat(var(--review-round-count, 5), minmax(0, 1fr));
+    gap: 0 .75rem;
   }
   .round-review-group > details,
   .round-review-group > details::details-content {
@@ -497,6 +630,7 @@
   .round-review-group > details > .accordion-body {
     grid-column: 1 / -1;
     margin-block-start: 0.5rem;
+    padding: var(--game-gutter);
     border-radius: 0.75rem;
     background: var(--surface-1);
   }
@@ -508,8 +642,8 @@
     align-items: center;
     gap: 0.5rem;
     min-inline-size: 0;
-    min-block-size: 3rem;
-    padding: 0.375rem 0.5rem;
+    min-block-size: 3.25rem;
+    padding: .625rem .75rem;
     border-radius: 0.75rem;
     background: var(--surface-1);
   }
@@ -560,25 +694,17 @@
   }
 }
 @media (max-width: 40rem) {
-  .stream-results .stream-results-menu {
-    gap: 0.375rem;
-  }
+  .stream-results-menu { gap: .75rem; }
   .stream-results-menu .stream-publication {
     margin-inline-start: 0;
   }
-  .finish-hero.stream-results-heading,
-  .finish-hero.stream-results-heading:has(.result-back) {
-    grid-template-columns: auto minmax(0, 1fr);
-    padding: 0.75rem;
-    align-items: start;
-    gap: 0.5rem;
-  }
-  .finish-hero.stream-results-heading:not(:has(.result-back)) {
+  .result-heading-body {
     grid-template-columns: minmax(0, 1fr);
+    padding: 1rem;
+    align-items: start;
+    gap: .75rem;
   }
-  .finish-hero.stream-results-heading:has(.result-back) .result-score {
-    grid-column: 2;
-  }
+  .result-heading-body:has(.result-back) .result-score { padding-inline-start: 3.625rem; }
   .result-score {
     display: flex;
     flex-wrap: wrap;
@@ -586,9 +712,7 @@
     gap: 0.25rem 0.625rem;
     text-align: start;
   }
-  .stream-results .stream-table-controls {
-    margin-block-start: 0.875rem;
-  }
+
   .stream-table-controls input[type="search"] {
     flex: 1 1 8rem;
     min-inline-size: 8rem;

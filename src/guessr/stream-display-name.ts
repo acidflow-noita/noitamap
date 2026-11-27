@@ -1,4 +1,4 @@
-import type { StreamPlayer, StreamResult } from './stream-types';
+import { publicResultReview, type StreamPlayer, type StreamResult } from './stream-types';
 
 /** Twitch display labels may contain formatting marks. Identity is the numeric
  * Twitch ID; harmless label cleanup must never discard someone's scores. */
@@ -21,6 +21,7 @@ export function streamHostName(host: StreamPlayer, player?: StreamPlayer): strin
 
 /** Repair presentation/exports without mutating archived data or player scores. */
 export function streamResultNames(result: StreamResult): StreamResult {
+  result = publicResultReview(result);
   const player = result.players.find(player => player.id === result.host.id);
   const name = streamPlayerName(streamHostName(result.host, player), result.host.login);
   const players = result.players.map(player => {

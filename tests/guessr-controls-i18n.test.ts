@@ -53,11 +53,11 @@ async function flush() { for (let i = 0; i < 6; i++) await Promise.resolve(); }
 async function fixture(progress: ClueProgress = newClueProgress()) {
   const root = document.createElement('div'); root.className = 'game-grid'; document.body.append(root);
   const clue = document.createElement('div'); root.append(difficultyIndicator(), maximumIndicator(), clue);
-  const changed = vi.fn();
-  dispose = attachClueControls(clue, { frames: [{ image: '/fixture.webp', x: -864, y: -384, width: 1728, height: 768 }] }, progress, 256, changed, { difficultyTier: 'normal' });
+  const changed = vi.fn(), onCamera = vi.fn();
+  dispose = attachClueControls(clue, { frames: [{ image: '/fixture.webp', x: -864, y: -384, width: 1728, height: 768 }] }, progress, 256, changed, { difficultyTier: 'normal', onCamera });
   await flush();
   const button = (label: string) => document.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!;
-  return { clue, changed, progress, button };
+  return { clue, changed, onCamera, progress, button };
 }
 
 it('routes WASD and Q/E through the same costed actions and ignores typing and browser shortcuts', async () => {
@@ -77,6 +77,11 @@ it('routes WASD and Q/E through the same costed actions and ignores typing and b
   dispose?.(); dispose = undefined;
   document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', code: 'KeyA', cancelable: true })); await flush();
   expect(f.progress).toEqual(before);
+  expect(f.onCamera.mock.calls.map(([, action]) => action)).toEqual(['view', 'right', 'zoom-out', 'zoom-in']);
+  expect(f.onCamera.mock.calls.map(([camera]) => camera)).toEqual([
+    { dx: 0, dy: 0, level: 0 }, { dx: 24, dy: 0, level: 0 },
+    { dx: 24, dy: 0, level: 1 }, { dx: 24, dy: 0, level: 0 },
+  ]);
 });
 
 it('changes live labels and formatted costs without replacing icons, moving the camera, or charging points', async () => {
@@ -163,6 +168,7 @@ it('uses singular remaining point costs and keeps the retry action alive when th
   east.click(); await flush();
   expect(f.progress.dx).toBe(0);
   expect(maximumScore(f.progress)).toBe(1);
+  expect(f.onCamera).toHaveBeenCalledTimes(1);
   const error = document.querySelector('.error')!, retry = error.querySelector<HTMLButtonElement>('button')!;
   expect(error.textContent).toContain('Keine Punkte abgezogen.');
   expect(retry.getAttribute('aria-description')).toBe('Bild erneut laden — Kostet 1 Punkt, wenn das Bild geladen wird');
@@ -173,6 +179,7 @@ it('uses singular remaining point costs and keeps the retry action alive when th
   expect(retry.querySelector('.clue-control-cost')?.textContent).toBe('-1');
   retry.click(); await flush();
   expect(f.progress.dx).toBe(24);
+  expect(f.onCamera).toHaveBeenLastCalledWith({ dx: 24, dy: 0, level: 0 }, 'right');
   expect(maximumScore(f.progress)).toBe(0);
   expect(error.children).toHaveLength(0);
 });

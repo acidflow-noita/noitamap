@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import { testGameKeys } from './helpers/game-ticket-keys';
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { handle, type Env } from "../workers/noitamap-guessr/src/index";
@@ -488,7 +489,7 @@ describe("ranked game authority", () => {
     const r = await f.call("/api/daily");
     expect(r.status).toBe(429);
     expect(await r.json()).toMatchObject({
-      error: expect.stringContaining("resting for today"),
+      error: expect.stringContaining("resting for today"), quota: "ranked", resetAt: Date.UTC(2026, 9, 13),
     });
     expect(
       f.sqlite
@@ -506,4 +507,25 @@ describe("ranked game authority", () => {
     ).toBe(413);
     expect((await f.call("/api/leaderboard?day=2026-02-31")).status).toBe(400);
   });
+});
+
+it('lets an admitted Daily resume and finish all remaining rounds after shared capacity closes', async () => {
+  const f = await fixture();
+  for(const file of ['0002_stream_results','0010_stream_game_admission','0013_game_capacity'])
+    f.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/'+file+'.sql','utf8'));
+  f.env.GAME_CAPACITY_GUARD='account';
+  const day=Math.floor(now/86400000)*86400000;
+  f.sqlite.prepare('UPDATE guessr_capacity SET day_start=?,measured_through=?,checked_at=?,used_requests=1000').run(day,now,now);
+  const created=await f.call('/api/attempts/new',{challengeId:'daily-test'});
+  expect(created.status).toBe(200);
+  const {id}=await created.json() as {id:string};
+  f.sqlite.prepare('UPDATE guessr_capacity SET paused_until=?').run(day+86400000);
+  expect((await f.call('/api/attempts',{challengeId:'daily-test'})).status).toBe(200);
+  expect((await f.call('/api/attempts/'+id)).status).toBe(200);
+  for(let round=0;round<10;round++) {
+    const response=await f.call('/api/attempts/'+id+'/guess',{round,guess:{x:0,y:0},requestId:'capacity-round-'+round},now+round+100);
+    expect(response.status).toBe(200);
+  }
+  expect((await (await f.call('/api/attempts/'+id)).json() as any).status).toBe('complete');
+  expect(f.sqlite.prepare('SELECT release_after AS until FROM guessr_finish_holds WHERE game=?').get(id)!.until).toBeLessThan(day+86400000);
 });

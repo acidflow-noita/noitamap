@@ -1,5 +1,5 @@
 import i18next, { currentLanguage, languageLocale, SUPPORTED_LANGUAGES, type SupportedLanguage } from './i18n';
-import Combobox from './bootstrap-combobox';
+import Combobox, { setupComboboxToggle } from './bootstrap-combobox';
 import '../public/css/language-selector.css';
 
 export interface LanguageSelectorOptions {
@@ -34,17 +34,7 @@ function flagImage(flag: string): HTMLImageElement {
 export function mountLanguageSelector(options: LanguageSelectorOptions): { refresh: () => void; destroy: () => void } {
   const { button, menu } = options;
   button.parentElement?.classList.add('language-selector');
-  button.classList.add('combobox-toggle');
-  button.dataset.bsToggle = 'combobox';
-  button.setAttribute('role', 'combobox');
-  button.setAttribute('aria-haspopup', 'listbox');
-  button.setAttribute('aria-expanded', 'false');
-  button.setAttribute('aria-controls', menu.id);
-  const value = document.createElement('span'); value.className = 'combobox-value';
-  const caret = document.createElement('span'); caret.className = 'combobox-caret';
-  caret.setAttribute('aria-hidden', 'true');
-  caret.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="m3 6 5 5 5-5z"/></svg>';
-  button.replaceChildren(value, caret);
+  const value = setupComboboxToggle(button, menu.id);
   const links = new Map<SupportedLanguage, HTMLAnchorElement>();
   menu.replaceChildren();
   for (const [code, { name, flag }] of Object.entries(SUPPORTED_LANGUAGES)) {

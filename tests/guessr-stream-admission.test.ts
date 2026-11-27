@@ -26,18 +26,17 @@ it('allows only one of two simultaneous attempts for a host’s twentieth slot a
   } finally { f.close(); }
 });
 
-it('bounds total creation at one hundred across hosts and releases only failed preparations', async () => {
+it('admits more than 100 new rooms when different hosts have room and can release a failed preparation', async () => {
   const f = fixture();
   try {
-    for (let i = 0; i < 99; i++) await admitStreamGame(f.db, String(100 + Math.floor(i / 20)), now);
-    const results = await Promise.allSettled([admitStreamGame(f.db, '200', now), admitStreamGame(f.db, '201', now)]);
-    expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);
-    expect((results.find(r => r.status === 'rejected') as PromiseRejectedResult).reason.message).toContain('100 new games');
-    const row = f.sqlite.prepare("SELECT id,host_id FROM stream_game_admissions WHERE host_id IN ('200','201')").get()!;
-    await cancelStreamAdmission(f.db, row.id as string, '999');
-    await expect(admitStreamGame(f.db, '202', now)).rejects.toBeInstanceOf(StreamAdmissionError);
-    await cancelStreamAdmission(f.db, row.id as string, row.host_id as string);
-    await expect(admitStreamGame(f.db, '202', now)).resolves.toBeTruthy();
+    for (let i = 0; i < 100; i++) await admitStreamGame(f.db, String(100 + Math.floor(i / 20)), now);
+    const [first, second] = await Promise.all([admitStreamGame(f.db, '200', now), admitStreamGame(f.db, '201', now)]);
+    expect(first).not.toBe(second);
+    expect(f.sqlite.prepare('SELECT COUNT(*) AS n FROM stream_game_admissions').get()!.n).toBe(102);
+    await cancelStreamAdmission(f.db, first, '999');
+    expect(f.sqlite.prepare('SELECT id FROM stream_game_admissions WHERE id=?').get(first)).toBeTruthy();
+    await cancelStreamAdmission(f.db, first, '200');
+    expect(f.sqlite.prepare('SELECT id FROM stream_game_admissions WHERE id=?').get(first)).toBeUndefined();
   } finally { f.close(); }
 });
 

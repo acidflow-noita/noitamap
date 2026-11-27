@@ -1160,7 +1160,7 @@ export class StreamUI {
         if (game.timing.seconds) { next.id = 'stream-auto-next'; next.disabled = true; }
         actions.append(next);
       }
-      this.hooks.cleanupClue(streamRoundResults(main, game, index, actions));
+      this.hooks.cleanupClue(streamRoundResults(main, game, index, actions, this.parallel?.readReplay));
       this.updateTimer(); return;
     }
     const host = game.participants.find((p) => p.id === game.session.host.id)!;
@@ -1197,7 +1197,8 @@ export class StreamUI {
           game.clue,
           256,
           this.save,
-          { compact: true, difficultyTier: game.session.rounds[index].difficultyTier },
+          { compact: true, difficultyTier: game.session.rounds[index].difficultyTier,
+            onCamera: (camera, action) => this.parallel?.recordCamera(game.session.rounds[index].id, camera, action) },
         ),
       );
     clue.classList.toggle("paused", game.paused && !reveal);
@@ -1375,7 +1376,7 @@ export class StreamUI {
     const entry: ArchivedStreamResult = { result, published: !!this.game.published,
       ...(!this.game.published && this.game.session.token ? { pendingToken: this.game.session.token } : {}),
       ...(this.game.session.localChat ? { localChannel: this.game.session.host.login } : {}) };
-    const view = streamResultsView(result, undefined, this.exit, this.hooks.config);
+    const view = streamResultsView(result, undefined, this.exit, this.hooks.config, !this.game.published ? this.parallel?.readReplay : undefined);
     this.hooks.cleanupClue(view.destroy);
     main.append(view);
     this.resultPublication(view, entry, this.game);
@@ -1506,7 +1507,8 @@ export class StreamUI {
     main.append(heading, loading);
     try {
       let entry = await this.archive.get(id);
-      if (entry?.result.mode === 'pvp' && !entry.published && navigator.onLine !== false) try {
+      const missingColor = entry?.published && entry.result.players.some(p => (entry!.result.mode === 'pvp' || p.id !== entry!.result.host.id) && !p.color);
+      if (entry && (entry.result.mode === 'pvp' && !entry.published || missingColor) && navigator.onLine !== false) try {
         entry = { result: await this.api.result(id), published: true };
         await this.archive.save(entry);
       } catch { /* The saved complete result stays readable without a connection. */ }

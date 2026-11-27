@@ -42,7 +42,7 @@ export function fitGameFrame(grid: HTMLElement): () => void {
       ...grid.querySelectorAll(':scope > .stream-connection-bar')];
     const legend = parent.querySelector<HTMLElement>(':scope > .round-map-legend');
     if (legend) inputs.push(legend);
-    if (parent.parentElement) inputs.push(...parent.parentElement.querySelectorAll(':scope > .site-header, :scope > .guessr-poll-bar'));
+    if (parent.parentElement) inputs.push(...parent.parentElement.querySelectorAll(':scope > .site-header, :scope > .guessr-quota-bar, :scope > .guessr-poll-bar'));
     if (left && right) inputs.push(...[...left.children, ...right.children].filter(child => child !== clue && child !== map));
     inputs.push(...grid.querySelectorAll('.round-panel-header > *'));
     watch(inputs);

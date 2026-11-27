@@ -46,6 +46,8 @@ export type ParallelAuthorization =
   | { role: 'resume'; ticket: string };
 export type ParallelClientMessage =
   | ({ type: 'authorize'; protocol?: number } & ParallelAuthorization)
+  | { type: 'clue-frames'; roundId: string; frames: import('./clue-replay').ReplayFrame[] }
+  | { type: 'clue-read'; request: string; round: number; player: string }
   | { type: 'activity'; id: string; roundId: string }
   | { type: 'guess'; submission: ParallelSubmission }
   | { type: 'relay'; message: StreamChatMessage }
@@ -58,7 +60,9 @@ export type ParallelClientMessage =
   | { type: 'advance'; id: string }
   | { type: 'recover' };
 export type ParallelServerMessage =
-  | { type: 'authorized'; ticket: string; expiresAt: number; player: StreamPlayer; now: number; acceptedRevisions?: Record<string, number> }
+  | { type: 'authorized'; ticket: string; expiresAt: number; player: StreamPlayer; now: number; acceptedRevisions?: Record<string, number>; clueReplays?: true }
+  | { type: 'clue-ack'; roundId: string; through: number }
+  | { type: 'clue-replay'; request: string; replay: import('./clue-replay').ClueReplay | null }
   | { type: 'state'; state: LiveRoomView; now: number }
   | { type: 'host'; game: StreamGame; now: number; metrics: ParallelMetrics; publicationError?: string; ended?: boolean }
   | { type: 'participant'; participant: StreamParticipant; joined: number; submittedCounts?: number[]; submitted?: boolean }
@@ -67,6 +71,7 @@ export type ParallelServerMessage =
       playerId?: string; reason?: 'closed' | 'superseded' | 'invalid'; point?: Point; maximum?: number; automatic?: boolean }
   | { type: 'reveal'; round: number; reveal: StreamReveal; results?: import('./stream-round-data').StreamRoundView }
   | { type: 'published'; result: StreamResult }
+  | { type: 'error'; code: 'play-capacity'; scope: 'starts'|'game-size'|'checking'; resetAt:number; message:string }
   | { type: 'error'; code: 'auth' | 'capacity' | 'invalid' | 'unavailable'; message: string };
 
 /** Only the authenticated session-creation route can initialize an object. */
@@ -79,6 +84,7 @@ export interface ParallelInitialization {
 export interface ParallelNamespace {
   getByName(id: string): {
     initialize(input: ParallelInitialization): Promise<void>;
+    publishedClueReplay?(round: number, player: string): Promise<import('./clue-replay').ClueReplay | null>;
     fetch(request: Request): Promise<Response>;
   };
 }

@@ -299,8 +299,10 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       bindAttribute(cluePanel, 'aria-label', () => tr('Round {{round}} clue', { round: formatGuessrNumber(snapshot!.round) }));
       const clue = node('div', 'clue loading');
       cluePanel.replaceChildren(roundPanelHeader(clueTitleBar(budget)), clue);
+      const replayRound = live?.roundId;
       if (progress) clearControls = attachClueControls(clue, snapshot.source, progress, 256, () => { saveProgress(); refresh(); },
         { compact: true, difficultyTier: () => live?.difficultyTier,
+          onCamera: (camera, action) => { if (replayRound && live?.roundId === replayRound) feed?.recordCamera(replayRound, camera, action); },
           onExplore: () => { if (live?.roundId) feed?.explored(live.roundId); } });
       else {
         viewport = new ClueViewport(clue, snapshot.source);
@@ -324,7 +326,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
     if (published) rememberPublishedStream(completed.id, channel);
     if (drawnResults !== key) {
       drawnResults = key; clearResults?.();
-      const summary = streamResultsView(completed, playerId ?? undefined, undefined, config);
+      const summary = streamResultsView(completed, playerId ?? undefined, undefined, config, published ? undefined : feed?.readReplay);
       clearResults = summary.destroy;
       const open = node('a', 'btn btn-outline theme-secondary', 'Open results page');
       open.href = guessRouteUrl('stream-result', location.origin, { result: completed.id }).href;
@@ -389,7 +391,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
               : r.received ? () => formatGuessrNumber(r.score?.score ?? 0) : '—'));
           body.append(row);
         }
-        const reviews = roundResultReviews(released, config, openRounds); clearResults = reviews.destroy;
+        const reviews = roundResultReviews(released, config, openRounds, feed?.readReplay); clearResults = reviews.destroy;
         table.append(body); const links = node('div', 'stream-results-menu'); links.append(result);
         const wrap = node('div', 'table-wrap'); wrap.append(table);
         resultsPanel.replaceChildren(heading, links, total, reviews.element, wrap);
@@ -503,7 +505,7 @@ export function mountStreamPicker(main: HTMLElement, config: ImageGameConfig, vi
       }
       sharedNext = button('Waiting for the streamer', () => {}, 'secondary'); sharedNext.disabled = true;
       actions.append(sharedNext);
-      clearShared = sharedRoundResults(sharedPanel, config, data, actions);
+      clearShared = sharedRoundResults(sharedPanel, config, data, actions, { readReplay: feed?.readReplay });
     }
     const finalReveal = data.round === live?.totalRounds && !!live.timing?.seconds;
     const readyPhase = pvp && live?.phase === 'reveal' && !finalReveal;

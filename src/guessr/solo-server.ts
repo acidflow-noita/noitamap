@@ -313,12 +313,12 @@ export class SoloGameService {
     };
   }
 
-  async start(now = Date.now()): Promise<SoloGameState> {
+  async start(now = Date.now(), id: string = crypto.randomUUID()): Promise<SoloGameState> {
     const config = await this.source.config();
     const selected = await this.source.sampleRounds(3);
     const game: Envelope = {
       schemaVersion: 1,
-      id: crypto.randomUUID(),
+      id,
       version: config.version,
       createdAt: now,
       expiresAt: now + SOLO_SESSION_LIFETIME,
@@ -470,6 +470,7 @@ export async function soloGameRoute(
   request: Request,
   service: SoloGameService,
   now = Date.now(),
+  lifecycle?: { id?: string; advanced(id: string, remaining:number): Promise<void> },
 ): Promise<Response | null> {
   const path = new URL(request.url).pathname;
   if (path !== "/api/games" && !path.startsWith("/api/games/")) return null;
@@ -483,7 +484,7 @@ export async function soloGameRoute(
       if (request.method !== "POST")
         throw new ImageGameError(405, "Method not allowed.");
       await requestBody(request, []);
-      return json(await service.start(now), 201);
+      return json(await service.start(now,lifecycle?.id), 201);
     }
     const match =
       /^\/api\/games\/sessions\/([^/]+)(?:\/(guess|next|reviews\/\d+))?$/.exec(
@@ -514,7 +515,9 @@ export async function soloGameRoute(
     }
     if (action === "next") {
       await requestBody(request, []);
-      return json(await service.next(id, token, now));
+      const next = await service.next(id,token,now);
+      await lifecycle?.advanced(id,next.stage === 'complete' ? 0 : next.totalRounds - next.round).catch(() => {});
+      return json(next);
     }
     if (action?.startsWith("reviews/"))
       return json(

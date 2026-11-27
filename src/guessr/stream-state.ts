@@ -239,9 +239,10 @@ export function streamResult(game: StreamGame): StreamResult {
   )
     throw new Error("Finish every round before publishing results.");
   return {
+    ...(game.session.clueReplays ? { clueReplays: true } : {}),
     ...(game.session.mode === 'pvp' ? { mode: 'pvp' as const, scheduledRounds: game.session.rounds.length } : {}),
     ...(game.session.dataset ? { dataset: game.session.dataset } : {}),
-    ...(game.reviewFlags?.length ? { reviewFlags: game.reviewFlags } : {}),
+    ...(game.reviewSuggested || game.reviewFlags?.length ? { reviewSuggested: true } : {}),
     ...(game.pvp?.concededBy ? { concededBy: game.pvp.concededBy } : {}),
     schema: 1,
     id: game.session.id,

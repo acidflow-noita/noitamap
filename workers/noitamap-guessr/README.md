@@ -6,7 +6,7 @@ This Worker runs in the secondary Cloudflare account, ACID HELPER. The primary a
 
 Chat vs Streamer and 1v1 use one hibernating `StreamCoordinator` Durable Object per game. Gameplay uses authenticated WebSockets. Twitch is used for identity and optional invitation/result posts in the streamer's own channel. Gameplay does not read Twitch chat or send guesses, receipts or state updates there.
 
-Deploy this Worker before its matching frontend. This transport update uses the existing Durable Object binding and database tables. It needs no new secret or D1 migration.
+For multiplayer clue replays, apply `0011_clue_replays.sql` to the Guessr D1 database, deploy this Worker, then deploy the matching frontend. Games created after the update advertise replay support to their players.
 
 The first WebSocket frame authenticates the connection. Provider credentials never enter URLs, socket attachments, application logs or persistent game storage. Resume credentials are scoped to the game, identity and protocol generation. Old resume credentials and old gameplay frames are rejected. The frontend discards the previous chat-transport token once and requests identity-only Twitch access for players.
 
@@ -16,7 +16,7 @@ Other players' pins remain private until their round is released. The host recei
 
 ## Game flow
 
-Multiplayer supports 3, 5 and 10 rounds, with 5 selected by default. The default round timer is 90 seconds. Starting a game opens a lobby with no deadline. The host shares the link and then presses Start game. The countdown is silent. Round results remain visible for 30 seconds.
+Multiplayer supports 3, 5 and 10 rounds, with 5 selected by default. The default round timer is 90 seconds. Starting a game opens a lobby with no deadline. The host shares the link and then presses Start game. The countdown is silent. Timed games hold intermediate results for at least eight seconds before automatic round progression.
 
 The streaming-protection option is on by default for Chat vs Streamer and off for 1v1. With protection on, the other players complete each location before the streamer sees it. With protection off, both sides play the same location together. A 1v1 roster has exactly two players, and the host must approve the named ready opponent. Leaving an active 1v1 match concedes it and opens the result.
 
@@ -24,13 +24,21 @@ An unsent last marker is submitted automatically at zero. The existing bounded s
 
 ## Results and history
 
+Each player’s clue replay records displayed camera actions and accepted guesses, including revisions. Changed views travel in batches on the existing WebSocket. After reveal, the public API returns ordered actions and whole seconds from that player’s round opening. Private storage retains the original camera timestamps. Show replay opens an inline timeline in the round results or standings. Hover or focus a step to review it. Play all advances the steps at half-second intervals. Published reads use `GET /api/streams/results/{game}/rounds/{round}/replays/{player}`.
+
+Replay pages count against the result storage budget. When only the scores fit, the coordinator serves the recordings for its usual 24-hour retention period. Removing a result also removes its archived recordings.
+
 History returns numeric placement and score totals for any selected player in the existing page request. New results include compact totals in their metadata. Apply `0008_result_history_summaries.sql` before deploying this feature. For older compressed results, the Worker prepares at most one missing summary per history request and stores it separately. Later reads reuse it. The original result and scores remain immutable. Full historical payloads stay in Cloudflare during this preparation. The separate summary and its row overhead count against the existing storage budget.
 
 Completed games publish one immutable compressed result to D1. Public result reads and channel history do not require login. Publication retries are idempotent and continue after a browser disconnect. Local result copies and HTML/image exports remain available if publication is delayed.
 
-Result storage has an application byte budget below the Free D1 limit. New-lobby admission is limited to 100 games per UTC day overall and 20 per verified Twitch host. Apply `0010_stream_game_admission.sql` before deploying those checks. The claim is atomic and happens before puzzle sampling or coordinator creation. Failed preparation releases its claim; cancelled lobbies still count. Refreshes and reconnects do not claim new slots. Finished games are not rejected by daily publication counts. Limit messages show the reset time in the viewer's local timezone. Admission counters are retained for 32 days and cleaned without a cron job. These safeguards do not make Worker or Durable Object usage unlimited. Keep both Cloudflare accounts on the intended Free plans.
+Apply `0012_player_colors.sql` before deploying the color fallback. Newly published games index recorded Twitch colors by stable player ID. For immediate recovery after migrating, run `npm run backfill:colors -- --apply` with the secondary account and D1 settings in [capacity setup](CAPACITY.md). Running it without `--apply` reports the pending count. The scheduled task also backfills up to 12 historical records per run. The public results reader fills only missing colors from that index, in one batch. Install the matching auth Worker update so public Twitch colors can also be read with the app credentials when a player’s own access token has expired.
 
-SvC results can show groups of accounts that merit review. The coordinator derives private, game-specific keyed network identifiers from the trusted edge address. Raw addresses are not saved. The client reports at most one clue-navigation event per round, which is deduplicated across retries. Public warnings contain player names and round numbers, never network identifiers. They do not prove cheating or change scores.
+Result storage has an application byte budget below the Free D1 limit. New-game admission uses measured Cloudflare account traffic and completion reserves. Each verified Twitch host can still create up to 20 rooms per UTC day. See [capacity setup](CAPACITY.md). Apply `0010_stream_game_admission.sql` before deploying those checks. The claim is atomic and happens before puzzle sampling or coordinator creation. Failed preparation releases its claim; cancelled lobbies still count. Refreshes and reconnects do not claim new slots. Finished games are not rejected by daily publication counts. Limit messages show the reset time in the viewer's local timezone. Admission counters are retained for 32 days and cleaned without a cron job. These safeguards do not make Worker or Durable Object usage unlimited. Keep both Cloudflare accounts on the intended Free plans.
+
+Final results can show a private review notice to the signed-in host. Reveal reasoning requests a fresh result-management ticket and sends it to `POST /api/streams/results/{game}/review`. The Worker verifies ownership before returning the case details with `Cache-Control: no-store`. Round broadcasts, public result reads, and score exports omit the reasoning. The public reader also redacts older JSON and compressed documents containing review details.
+
+The static menu notice and protected starts use the account-wide capacity observation. A shortfall pauses new starts before the request wall. A missing or stale observation pauses new starts temporarily. The client displays shared limits in a thin warning strip above the menu and formats the reset in the player’s timezone. A personal daily limit appears on the affected action. A readable Cloudflare 1027 can also activate the service-wide strip. The client reads the status from the static site and expires notices locally.
 
 ## Identity and optional Twitch posting
 
@@ -48,7 +56,7 @@ The first authenticated publication for the current UTC day enables generated ma
 
 For an upgrade after people already played today's Daily, run biome-baker on `main` through **New pipeline** with `GUESSR_SOURCE_ONLY=1`, `BAKE_KIND=daily`, and `DEPLOY=1`, then start **guessr-source-refresh**. This manual job restores the verified current-seed archive, uses the pinned Guessr tools and publishes with `--source-only`. It does not rerender/deploy the main map or replace Daily questions and attempts. Normal daily pipelines continue to publish both Daily puzzles and the generated SvC catalog in the separate, non-blocking Guessr job.
 
-Clue and reference images are static Pages assets. Viewing or moving an image does not invoke this Worker. Daily publication uses prepared generated terrain from the separate non-blocking Guessr job in the biome-baker pipeline. Each game pins its imagery version so a publication cannot change an active game's locations.
+Clue and reference images are static Pages assets. Multiplayer replay messages record only the relative camera and timestamp. Daily publication uses prepared generated terrain from the separate non-blocking Guessr job in the biome-baker pipeline. Each game pins its imagery version so a publication cannot change an active game's locations.
 
 Prepared sampling files are private Worker assets. Public requests cannot fetch `/game-data/` files. Anonymous demo calls are rate limited before sampling work. Origin checks allow the configured production site only.
 

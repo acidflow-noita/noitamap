@@ -1,3 +1,4 @@
+import { gameFetch } from './quota-state';
 import { GameApi, gameApiOrigin } from "./api";
 import { expandStreamResult, packStreamPublish } from "./stream-codec";
 import type {
@@ -30,7 +31,7 @@ export class StreamApi {
     this.localChannel = channel;
   }
   private async localRequest<T>(path: string, body?: unknown): Promise<T> {
-    const response = await fetch("/guessr-api/stream" + path, {
+    const response = await gameFetch("/guessr-api/stream" + path, {
       method: body === undefined ? "GET" : "POST",
       headers: body === undefined ? {} : { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify({ ...body as object, ...(this.localChannel ? { localChannel: this.localChannel } : {}) }),
@@ -103,7 +104,7 @@ export class StreamApi {
               throw new Error(
                 "Result hosting is not configured. Open the host’s downloaded result instead.",
               );
-            const response = await fetch(
+            const response = await gameFetch(
               this.origin + "/api/streams/results/" + id,
               { signal: AbortSignal.timeout(15000) },
             );
@@ -125,7 +126,7 @@ export class StreamApi {
     const path = '/history/' + channel + (before ? '?before=' + encodeURIComponent(before) : '');
     if (this.local) return this.localRequest<StreamHistoryPage>(path);
     if (!this.origin) throw new Error('Result hosting is not configured.');
-    const response = await fetch(this.origin + '/api/streams' + path, { signal: AbortSignal.timeout(15000) });
+    const response = await gameFetch(this.origin + '/api/streams' + path, { signal: AbortSignal.timeout(15000) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Could not load game history.');
     return data;

@@ -4,6 +4,10 @@ The website stays at `https://dynamic-map.noitamap.com/guess/`. Its production
 API default is `https://guessr-api.sage-data.xyz`; local Vite keeps its local
 round service unless an explicit `VITE_GUESSR_API_URL` is supplied.
 
+## Pending Guessr release
+
+Apply the D1 migrations through `0013_game_capacity.sql` before deploying the replay API. The replay controls, score tables and color fallback use the updated API and auth Worker. Enable [account-based admission and static availability](CAPACITY.md) once the observer is publishing fresh readings.
+
 ## Current update: guess feedback, player colors and round pacing
 
 The Guessr API now preserves optional Twitch colors in the final result JSON.

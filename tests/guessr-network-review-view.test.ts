@@ -1,20 +1,22 @@
 // @vitest-environment jsdom
-import { expect, it } from 'vitest';
-import { networkReviewSummary } from '../src/guessr/network-review-view';
-import type { NetworkReviewFlag } from '../src/guessr/stream-types';
+import { expect, it, vi } from 'vitest';
+import { reviewDisclosure } from '../src/guessr/network-review-view';
+import { publicResultReview } from '../src/guessr/stream-types';
 
-it('shows separate account groups together without changing scores or exposing network identifiers', () => {
-  const players = ['200', '201', '300', '301'].map(id => ({ id, name: `Player ${id}`, login: `player${id}` }));
-  const flags: NetworkReviewFlag[] = [
-    { round: 1, highScorers: ['200'], explorers: ['201'], nonSubmitting: ['201'] },
-    { round: 2, highScorers: ['200'], explorers: ['201'], nonSubmitting: [] },
-    { round: 1, highScorers: ['300'], explorers: ['301'], nonSubmitting: [] },
-  ];
-  const summary = networkReviewSummary(flags, players)!;
-  expect(summary.querySelector('summary')?.textContent).toBe('Shared connection groups: 2');
-  const groups = summary.querySelectorAll('section'); expect(groups).toHaveLength(2);
-  expect(groups[0].textContent).toContain('Player 200, Player 201');
-  expect(groups[0].textContent).not.toContain('Player 300');
-  expect(groups[1].textContent).toContain('Player 300, Player 301');
-  expect(summary.textContent).toContain('It does not prove cheating, and scores are unchanged.');
+it('keeps reasons out of public results and loads the private explanation only after the explicit reveal', async () => {
+  const flags = [{ round: 1, highScorers: ['200'], explorers: ['201'], nonSubmitting: ['201'] }];
+  const read = vi.fn(async (_signal: AbortSignal) => ['Player 200, Player 201 were flagged in this test.']);
+  const publicResult = publicResultReview({ reviewFlags: flags });
+  expect(publicResult).toEqual({ reviewSuggested: true });
+  const { element, hide } = reviewDisclosure(read);
+  const reveal = element.querySelector('button')!;
+  expect(element.textContent).toContain('Keep the reasoning off stream');
+  expect(reveal.textContent).toBe('Reveal reasoning');
+  expect(element.textContent).not.toContain('same internet connection');
+  expect(read).not.toHaveBeenCalled();
+  reveal.click();
+  await vi.waitFor(() => expect(element.textContent).toContain('Player 200, Player 201'));
+  hide();
+  expect(read.mock.calls[0][0].aborted).toBe(true);
+  expect(element.textContent).not.toContain('Player 201');
 });

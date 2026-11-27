@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --local",
+    "capacity": "node ops/capacity-observer.mjs",
+    "backfill:colors": "node ops/backfill-result-colors.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p test/tsconfig.json",
     "test": "vitest run",
     "types": "wrangler types worker-configuration.d.ts --env-interface CloudflareBindings"

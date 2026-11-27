@@ -6,10 +6,14 @@ import {
   unionRect,
   type Camera,
   type ClueSource,
+  type PreparedFrame,
   type ViewRect,
 } from "./clue-camera";
 import { bindAttribute, tr } from "./i18n";
 import { clueLoadingPlaceholder } from './loading-placeholders';
+import type { ReplayMotion } from './replay-motion';
+
+type ClueTransition = boolean | { replayFrom: Camera; motion: ReplayMotion };
 
 /** Draws native pixels from the prepared images. Panning changes the crop,
  * keeping about 10% of the previous view visible on each ordinary step. */
@@ -53,23 +57,30 @@ export class ClueViewport {
       this.images.delete(this.images.keys().next().value!);
     return pending;
   }
-  async show(camera: Camera, onReady?: () => void): Promise<boolean> {
+  async show(camera: Camera, onReady?: () => void, transition: ClueTransition = true): Promise<boolean> {
     if (!supportedCamera(this.source, camera))
       throw new Error(tr("View is outside the clue boundary."));
-    const serial = ++this.serial;
-    this.stopAnimation();
+    this.stop();
+    const serial = this.serial;
     this.canvas.dataset.ready = "false";
-    const target = cameraRect(camera),
-      from = this.rect;
-    const animate =
-      from &&
-      from.width === target.width &&
-      from.height === target.height &&
-      Math.abs(from.x - target.x) < target.width &&
-      Math.abs(from.y - target.y) < target.height &&
-      !matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const area = animate ? unionRect(from, target) : target,
+    const target = cameraRect(camera);
+    const replay = typeof transition === 'object' ? transition : undefined;
+    const from = replay ? cameraRect(replay.replayFrom) : this.rect;
+    const moved = from && (from.x !== target.x || from.y !== target.y || from.width !== target.width);
+    const animate = transition && from && moved && (replay ? !replay.motion.reduced :
+      from.width === target.width && from.height === target.height &&
+      Math.abs(from.x - target.x) < target.width && Math.abs(from.y - target.y) < target.height &&
+      !matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const area = animate ? unionRect(from, target) : target;
+    let plan: PreparedFrame[], covered = true;
+    try {
       plan = planView(this.source, area, this.step);
+    } catch (error) {
+      if (!replay || !animate) throw error;
+      // A sparse older recording may have both endpoints but no terrain between them.
+      plan = [...planView(this.source, from, this.step), ...planView(this.source, target, this.step)];
+      covered = false;
+    }
     const images = await Promise.all(
       plan.map((frame) => this.image(frame.image)),
     );
@@ -96,23 +107,24 @@ export class ClueViewport {
       );
     }
     onReady?.();
-    this.canvas.width = target.width;
-    this.canvas.height = target.height;
     const context = this.canvas.getContext("2d")!;
-    context.imageSmoothingEnabled = false;
     this.canvas.dataset.ready = "false";
     const draw = (rect: ViewRect) => {
-      context.clearRect(0, 0, target.width, target.height);
+      const width = Math.round(rect.width), height = Math.round(rect.height);
+      if (this.canvas.width !== width) this.canvas.width = width;
+      if (this.canvas.height !== height) this.canvas.height = height;
+      context.imageSmoothingEnabled = false;
+      context.clearRect(0, 0, width, height);
       context.drawImage(
         buffer,
         rect.x - area.x,
         rect.y - area.y,
-        target.width,
-        target.height,
+        rect.width,
+        rect.height,
         0,
         0,
-        target.width,
-        target.height,
+        width,
+        height,
       );
       this.rect = rect;
       this.mount.style.setProperty(
@@ -133,7 +145,12 @@ export class ClueViewport {
       this.mount.classList.remove("loading");
       this.onDraw?.(rect);
     };
-    if (animate && (from.x !== target.x || from.y !== target.y)) {
+    if (animate && replay) {
+      draw(from);
+      await this.moveReplayCamera(buffer, area, from, target, covered, replay.motion, draw);
+      if (this.closed || serial !== this.serial) return false;
+      draw(target);
+    } else if (animate) {
       await new Promise<void>((resolve) => {
         const start = performance.now();
         let tick = 0;
@@ -161,10 +178,63 @@ export class ClueViewport {
     this.canvas.dataset.ready = "true";
     return true;
   }
+  /** Project native pixels through the two recorded views. Keep the pin at its normal screen size. */
+  private async moveReplayCamera(
+    buffer: HTMLCanvasElement, area: ViewRect, from: ViewRect, to: ViewRect, covered: boolean,
+    motion: ReplayMotion, draw: (rect: ViewRect) => void
+  ) {
+    const layer = document.createElement('div');
+    layer.className = 'replay-pan-layer';
+    layer.setAttribute('aria-hidden', 'true');
+    const aspect = to.width / to.height;
+    const baseWidth = Math.max(area.width, area.height * aspect);
+    buffer.style.width = (area.width / baseWidth) * 100 + '%';
+    buffer.style.height = (area.height * aspect / baseWidth) * 100 + '%';
+    layer.append(buffer);
+    const pinLayer = document.createElement('div');
+    pinLayer.className = 'replay-pin-layer';
+    pinLayer.setAttribute('aria-hidden', 'true');
+    const pin = document.createElement('span');
+    pin.className = 'replay-pan-marker';
+    pinLayer.append(pin);
+    this.mount.append(layer, pinLayer);
+    const translation = (x: number, y: number, view: ViewRect) =>
+      `translate(${100 * (x - view.x) / view.width}%, ${100 * (y - view.y) / view.height}%)`;
+    const terrain = (view: ViewRect) => `${translation(area.x, area.y, view)} scale(${baseWidth / view.width})`;
+    const start = covered ? from : to;
+    this.stopAnimation = () => motion.cancel();
+    try {
+      await Promise.all([
+        motion.animate(layer, [
+          { transform: terrain(start), opacity: covered ? 1 : 0 }, { transform: terrain(to), opacity: 1 },
+        ], progress => {
+          if (this.closed || !covered) return;
+          // Transforms interpolate inverse zoom and the projected world origin.
+          const width = 1 / ((1 - progress) / from.width + progress / to.width);
+          const height = width / aspect;
+          draw({ width, height,
+            x: width * ((1 - progress) * from.x / from.width + progress * to.x / to.width),
+            y: height * ((1 - progress) * from.y / from.height + progress * to.y / to.height) });
+        }),
+        motion.animate(pinLayer, [
+          { transform: translation(0, 0, start), opacity: covered ? 1 : 0 },
+          { transform: translation(0, 0, to), opacity: 1 },
+        ]),
+      ]);
+    } finally {
+      layer.remove();
+      pinLayer.remove();
+    }
+  }
+  stop(): void {
+    this.serial++;
+    const stop = this.stopAnimation;
+    this.stopAnimation = () => {};
+    stop();
+  }
   destroy(): void {
     this.closed = true;
-    this.serial++;
-    this.stopAnimation();
+    this.stop();
     this.images.clear();
   }
 }

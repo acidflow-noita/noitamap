@@ -28,11 +28,31 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async () => new Response('WebSocket required', { status: 426 })));
 });
 afterEach(() => { connection?.dispose(); connection = undefined; vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
-async function authorized(socket: Socket) {
+async function authorized(socket: Socket, clueReplays?: true) {
   socket.open(); await Promise.resolve(); await Promise.resolve();
   socket.receive({ type: 'authorized', ticket: 'safe-resume-ticket', expiresAt: Date.now() + 600000,
-    player: { id: '200', name: 'Player', login: 'player' }, now: Date.now() });
+    player: { id: '200', name: 'Player', login: 'player' }, now: Date.now(), clueReplays });
 }
+it('flushes displayed clue moves ahead of the guess and reloads only the requested recording', async () => {
+  connection = new ParallelConnection('https://guessr-api.sage-data.xyz', game,'200',async () => ({role:'player',accessToken:'test'}), {message:vi.fn(),status:vi.fn()});
+  const socket=Socket.all[0];await authorized(socket,true);
+  connection.recordCamera(submission.roundId,{dx:0,dy:0,level:0});
+  await vi.advanceTimersByTimeAsync(20);
+  connection.recordCamera(submission.roundId,{dx:24,dy:0,level:0});
+  connection.submit(submission);
+  const frames=socket.sent.map(m=>JSON.parse(m));
+  expect(frames.slice(-3).map(m=>m.type)).toEqual(['clue-frames','clue-frames','guess']);
+  expect(frames.at(-2).frames[0].slice(1)).toEqual([24,0,0]);
+  const pending=connection.readReplay(1,'200',new AbortController().signal);
+  const read=JSON.parse(socket.sent.at(-1)!);expect(read).toMatchObject({type:'clue-read',round:1,player:'200'});
+  socket.receive({type:'clue-replay',request:read.request,replay:null});expect(await pending).toBeNull();
+});
+it('keeps playing with a coordinator which predates recordings', async()=>{
+  connection=new ParallelConnection('https://guessr-api.sage-data.xyz',game,'200',async()=>({role:'player',accessToken:'test'}),{message:vi.fn(),status:vi.fn()});
+  const socket=Socket.all[0];await authorized(socket);
+  connection.recordCamera(submission.roundId,{dx:0,dy:0,level:0});connection.submit(submission);
+  expect(socket.sent.map(m=>JSON.parse(m).type)).toEqual(['authorize','guess']);
+});
 it('stops retrying a confirmed missing game and releases a pending End game immediately', async () => {
   vi.mocked(fetch).mockResolvedValue(new Response('Game unavailable', { status: 404 }));
   const events = { message: vi.fn(), status: vi.fn() };

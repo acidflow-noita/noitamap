@@ -35,7 +35,9 @@ it('keeps PvP result copy neutral and identifies unfinished rounds after a conce
   const duel = structuredClone(result); duel.mode = 'pvp'; duel.scheduledRounds = 5; duel.concededBy = '123';
   const view = streamResultsView(duel, '456'); document.body.append(view);
   expect(view.querySelector('.finish-hero')!.textContent).toContain('Rank conceded the match.');
-  expect(view.querySelector('.finish-hero')!.textContent).toContain('1 of 5 rounds completed');
+  expect(view.querySelector('.finish-hero')!.textContent).toContain('Game ended');
+  expect(view.querySelector('.finish-hero [role="progressbar"]')?.getAttribute('aria-valuetext')).toBe('1 of 5 rounds completed');
+  expect(view.querySelector('.finish-hero .lobby-rounds .current')).toBeNull();
   expect(view.querySelector('.finish-hero')!.textContent).not.toContain('Equal scores share a rank');
   expect(view.querySelector('.finish-hero')!.textContent).not.toContain('Streamer');
   expect(view.querySelector('.stream-host-row')).toBeNull(); view.destroy();
@@ -46,6 +48,7 @@ async function translations() {
   await initializeGuessrTranslations();
   i18next.addResourceBundle('de', 'translation', {}, true, true);
   i18next.addResourceBundle('de', 'guessr', {
+    'Showing {{shown}} of {{players}}': 'Es werden {{shown}} von {{players}} angezeigt',
     'Rank': 'Rang', 'Player': 'Spieler', 'Total': 'Gesamt', 'Find a player': 'Spieler suchen',
     '{{shown}} of {{players}} players_other': '{{shown}} von {{players}} Spielern',
     ', Streamer': ', Streamer', '{{points}} points_other': '{{points}} Punkte',
@@ -134,7 +137,7 @@ it('exports a localized standalone web page that filters and sorts offline witho
     const filter = doc.querySelector<HTMLInputElement>('#filter')!;
     filter.value = 'streamer'; filter.dispatchEvent(new offline.window.Event('input'));
     expect(doc.querySelectorAll('tbody tr')).toHaveLength(1);
-    expect(doc.querySelector('#count')!.textContent).toBe('1 von 2 Spielern');
+    expect(doc.querySelector('#count')!.textContent).toBe('Es werden 1 von 2 angezeigt');
     filter.value = ''; filter.dispatchEvent(new offline.window.Event('input'));
     (doc.querySelector('th button') as HTMLButtonElement).click();
     expect(doc.querySelector('tbody tr')!.children[1].textContent).toBe('Rank, Streamer');

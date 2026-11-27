@@ -1,4 +1,4 @@
-import { persistStreamResult } from '../workers/noitamap-guessr/src/result-publication';
+import { persistStreamResult, indexPendingColors } from '../workers/noitamap-guessr/src/result-publication';
 import { StreamService } from '../src/guessr/stream-server';
 import { verifyGameTicket } from '../workers/noitamap-guessr/src/tickets';
 import { ImageGameError } from '../src/guessr/image-game-server';
@@ -48,6 +48,8 @@ async function fixture() {
   db.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/0007_result_ownership.sql', 'utf8'));
   db.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/0008_result_history_summaries.sql', 'utf8'));
   db.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/0010_stream_game_admission.sql', 'utf8'));
+  db.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/0011_clue_replays.sql', 'utf8'));
+  db.sqlite.exec(readFileSync('workers/noitamap-guessr/migrations/0012_player_colors.sql', 'utf8'));
   const ticket = await signGameTicket(
     streamHost.sub,
     streamHost.name,
@@ -105,11 +107,11 @@ async function fixture() {
     }
     return packStreamPublish({ token: session.token, finishedAt: game.finishedAt!, players: streamResult(game).players });
   }
-  async function publish(input: unknown, hostToken = ticket.token) {
+  async function publish(input: unknown, hostToken = ticket.token, replayBytes = 0) {
     try {
       const user = await owner(hostToken);
       const { owner: id, result } = await service.result(input as Parameters<typeof service.result>[0], user, streamNow + 1000);
-      return await persistStreamResult(env, id, result, user.ticketIssuedAt, streamNow + 1000);
+      return await persistStreamResult(env, id, result, user.ticketIssuedAt, streamNow + 1000, replayBytes);
     } catch (error) {
       return Response.json({ error: (error as Error).message }, { status: error instanceof ImageGameError ? error.status : 503 });
     }
@@ -124,6 +126,7 @@ describe("single-document stream publication", () => {
     const source = { config: vi.fn(async () => { throw Error('Must not load'); }), sampleRounds: vi.fn(async () => []) };
     const response = await streamRoute(f.request('/sessions', { protocol: 2, transport: 'parallel', rounds: 3 }), f.env, streamNow + 1000, source);
     expect(response.status).toBe(429); expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0);
+    expect(response.headers.get('X-Guessr-Daily-Quota')).toBe('host-games');
     expect(await response.json()).toMatchObject({ resetAt: Date.parse(new Date(streamNow).toISOString().slice(0, 10)) + 86400000 });
     expect(source.config).not.toHaveBeenCalled(); expect(initialize).not.toHaveBeenCalled();
   });
@@ -335,6 +338,13 @@ describe("single-document stream publication", () => {
       writes,
     );
   });
+  it('still publishes the score when the remaining budget cannot accommodate its replay archive', async () => {
+    const f = await fixture(), input = await f.completed();
+    f.sqlite.prepare('UPDATE stream_result_storage SET used_bytes=? WHERE id=1').run(STREAM_STORAGE_BUDGET_BYTES - 65536);
+    expect((await f.publish(input, undefined, 1024 * 1024)).status).toBe(201);
+    expect(f.sqlite.prepare('SELECT replay_bytes FROM stream_results').get()).toEqual({ replay_bytes: 0 });
+    expect(f.sqlite.prepare('SELECT used_bytes FROM stream_result_storage').get()?.used_bytes).toBeLessThanOrEqual(STREAM_STORAGE_BUDGET_BYTES);
+  });
   it('acknowledges an already-published result even when all storage budget is used', async () => {
     const f = await fixture(), input = await f.completed();
     expect((await f.publish( input)).status).toBe(201);
@@ -473,4 +483,76 @@ it('allows owner/admin removal without Pro, blocks other users and prevents re-p
   const next = await f.completed(), nextId = (await (await f.publish( next)).json() as any).id;
   const admin = await signResultManagementTicket('account:admin', 'WUOTE', streamSecret, { twitchUserId: '564553302', twitchLogin: 'renamed_admin' }, streamNow);
   expect((await f.call('/results/' + nextId + '/delete', {}, admin.token)).status).toBe(204);
+});
+
+it('redacts review reasons from public results and requires the matching host ticket for an explicit private read', async () => {
+  const f = await fixture();
+  const input = await f.completed();
+  await f.publish(input);
+  const { id: sourceId } = f.sqlite.prepare('SELECT id FROM stream_results LIMIT 1').get() as { id: string };
+  const publicResult = (await (await f.call('/results/' + sourceId, undefined, null)).json()) as any;
+  const flags = [{ round: 1, highScorers: ['200'], explorers: ['201'], nonSubmitting: ['201'] }];
+  const owner = await signResultManagementTicket(
+    streamHost.sub,
+    streamHost.name,
+    streamSecret,
+    streamHost,
+    streamNow
+  );
+  const stranger = await signResultManagementTicket(
+    'account:unrelated',
+    'Other',
+    streamSecret,
+    { twitchUserId: '999', twitchLogin: 'other' },
+    streamNow
+  );
+  for (const compressed of [false, true]) {
+    const id = crypto.randomUUID();
+    const raw = JSON.stringify({ ...publicResult, id, reviewFlags: flags });
+    const gz = compressed
+      ? new Uint8Array(
+          await new Response(new Response(raw).body!.pipeThrough(new CompressionStream('gzip'))).arrayBuffer()
+        )
+      : null;
+    const meta = compressed
+      ? JSON.stringify({ storage: 'gzip-json-v1', rawBytes: new TextEncoder().encode(raw).length })
+      : raw;
+    f.sqlite
+      .prepare(
+        `INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json,result_gzip,host_id,host_verified_at)
+      SELECT ?,owner,day,created_at,bytes,digest,?,?,host_id,host_verified_at FROM stream_results WHERE id=?`
+      )
+      .run(id, meta, gz, sourceId);
+    const safe = (await (await f.call('/results/' + id, undefined, null)).json()) as any;
+    expect(safe.reviewSuggested).toBe(true);
+    expect(safe).not.toHaveProperty('reviewFlags');
+    expect((await f.call('/results/' + id + '/review', {}, null)).status).toBe(401);
+    expect((await f.call('/results/' + id + '/review', {}, stranger.token)).status).toBe(404);
+    const res = await f.call('/results/' + id + '/review', {}, owner.token);
+    expect(res.headers.get('Cache-Control')).toBe('no-store');
+    const details = (await res.json()) as { reasons: string[] };
+    expect(details.reasons.join(' ')).toContain('round 1');
+    expect(details).not.toHaveProperty('flags');
+  }
+});
+
+it('recovers a missing archived chatter color from another game, preserves the recorded colors and leaves the score document immutable', async () => {
+  const f = await fixture();
+  await f.publish(await f.completed());
+  const {id: originalId} = f.sqlite.prepare('SELECT id FROM stream_results LIMIT 1').get() as {id:string};
+  const base = await (await f.call('/results/'+originalId, undefined, null)).json() as any;
+  const newer = crypto.randomUUID(), older = crypto.randomUUID();
+  const insert = f.sqlite.prepare(`INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json,result_gzip,host_id,host_verified_at)
+    SELECT ?,owner,day,?,bytes,digest,?,?,host_id,host_verified_at FROM stream_results WHERE id=?`);
+  for (const [id,color,at] of [[newer,undefined,streamNow],[older,'#1E90FF',streamNow-86400000]] as const) {
+    const doc = {...base,id,finishedAt:at,players:[...base.players,{...base.players[0],id:'200',login:'chatter',name:'Chatter',color}]};
+    const raw = JSON.stringify(doc);
+    const gzip = new Uint8Array(await new Response(new Response(raw).body!.pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+    insert.run(id,at,JSON.stringify({storage:'gzip-json-v1',rawBytes:new TextEncoder().encode(raw).length}),gzip,originalId);
+  }
+  const stored = f.sqlite.prepare('SELECT hex(result_gzip) AS bytes FROM stream_results WHERE id=?').get(newer);
+  await indexPendingColors(f.db,8);
+  const result = await (await f.call('/results/'+newer,undefined,null)).json() as any;
+  expect(result.players.find((p:{id:string})=>p.id==='200').color).toBe('#1E90FF');
+  expect(f.sqlite.prepare('SELECT hex(result_gzip) AS bytes FROM stream_results WHERE id=?').get(newer)).toEqual(stored);
 });

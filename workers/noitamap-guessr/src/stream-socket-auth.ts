@@ -49,9 +49,9 @@ export async function authorizeSocket(env: Env, record: ParallelRecord, input: P
     if (user.sub !== record.owner || user.twitchUserId !== record.game.session.host.id) {
       if (!record.game.pvp) return null;
       return { id: user.twitchUserId, login: user.twitchLogin, name: streamPlayerName(user.name, user.twitchLogin),
-        role: 'player', expiresAt: user.exp * 1000 };
+        ...(user.twitchColor ? { color:user.twitchColor } : {}), role: 'player', expiresAt: user.exp * 1000 };
     }
-    return { ...record.game.session.host, role: 'host', owner: user.sub, expiresAt: user.exp * 1000 };
+    return { ...record.game.session.host, ...(user.twitchColor ? {color:user.twitchColor} : {}), role: 'host', owner: user.sub, expiresAt: user.exp * 1000 };
   }
   if (input.role !== 'player' || typeof input.accessToken !== 'string' || !/^[a-zA-Z0-9]{10,512}$/.test(input.accessToken)) return null;
   record.metrics.twitchValidations++;

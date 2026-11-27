@@ -41,7 +41,7 @@ async function collect(directory: string): Promise<void> {
 for (const directory of ['src', 'test', 'migrations']) await collect(join(worker, directory));
 const configuration = await readFile(join(target, 'workers/noitamap-guessr/wrangler.jsonc'), 'utf8');
 if (!configuration.includes('"directory": "../../private-assets"')) throw Error('Review the private asset binding before synchronizing.');
-for (const name of ['package.json', 'package-lock.json', 'tsconfig.json', 'vitest.config.ts', 'worker-configuration.d.ts', 'README.md']) files.add(join(worker, name));
+for (const name of ['ops/capacity-observer.mjs', 'ops/cloudflare-api.mjs', 'ops/backfill-result-colors.mjs', 'CAPACITY.md', 'package.json', 'package-lock.json', 'tsconfig.json', 'vitest.config.ts', 'worker-configuration.d.ts', 'README.md']) files.add(join(worker, name));
 // Retire tracked managed source that was deleted upstream; never prune assets,
 // local credentials, recovery data, or arbitrary untracked work.
 const expected = new Set([...files].map(file => relative(root, file)));
@@ -57,6 +57,10 @@ for (const file of files) {
   if (file.endsWith('/worker-configuration.d.ts')) {
     const [incoming, existing] = await Promise.all([readFile(file, 'utf8'), readFile(destination, 'utf8').catch(() => '')]);
     if (incoming.replace(/[ \t]+$/gm, '') === existing.replace(/[ \t]+$/gm, '')) continue;
+    if (existing && !/[ \t]+$/m.test(existing)) {
+      await writeFile(destination, incoming.replace(/[ \t]+$/gm, ''));
+      continue;
+    }
   }
   await mkdir(dirname(destination), { recursive: true }); await copyFile(file, destination);
 }

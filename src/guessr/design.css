@@ -7,9 +7,10 @@
   --game-gutter: 1rem; --game-action: #047857; --game-action-hover: #065f46;
   --control-radius: var(--bs-radius-9,1rem); --radius-control: var(--bs-radius-9,1rem); --radius-panel: .75rem;
 }
-#guess-app { min-block-size: 100dvh; block-size: auto; font-size: 1rem; font-variant-numeric: lining-nums tabular-nums; }
+#guess-app { min-block-size: 100dvh; block-size: auto; font-size: 1rem; font-variant-numeric: lining-nums tabular-nums slashed-zero; }
 #guess-app :is(button, input, select, output, .numeric, .score, .stream-round-timer, .stream-waiting-timer) {
-  font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "tnum" 1, "lnum" 1;
+  font-variant-numeric: lining-nums tabular-nums slashed-zero;
+  font-feature-settings: inherit;
 }
 #guess-app h1 { font-size: 1.5rem; line-height: 1.2; font-weight: 650; }
 #guess-app h2 { font-size: 1.25rem; line-height: 1.3; font-weight: 650; }
@@ -36,6 +37,9 @@ body:has(#guess-app) .pro-gift-link {
   flex: none; flex-wrap: nowrap; min-block-size: 3.5rem; padding: .5rem var(--game-page-padding);
   gap: 1rem; border-block-end: 1px solid var(--border);
 }
+#guess-app > .guessr-quota-bar:not([hidden]) { display: flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .35rem var(--game-page-padding); background: var(--warning-bg); color: var(--warning-fg);
+  border-block-end: 1px solid color-mix(in srgb, var(--warning-fg) 45%, transparent); font-size: .875rem; line-height: 1.35; }
 #guess-app > .guessr-poll-bar {
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(2rem, 1fr); align-items: center;
   padding-inline: .375rem; color: #d1fae5; background: #102b27; border-block-end: 1px solid #255247;
@@ -823,4 +827,12 @@ body:has(#guess-app) .pro-gift-link { padding: .5rem 1rem; text-decoration: none
   .logo-state[data-state='connected'] .state-dot { animation: none; opacity: 1; transform: none; }
   .submit-feedback .animation-pop { animation: none; }
   .guessr-account-dialog .badge.pro { animation: none; }
+}
+
+/* Results get page gutters even inside the edge-to-edge live game shell. */
+#guess-app > .shell:has(> .stream-results, > .stream-review-grid, .stream-viewer-layout.show-results, .stream-viewer-layout.show-round-results) {
+  --game-page-padding: clamp(1rem, 3vw, 2rem);
+  padding-inline-start: max(var(--game-page-padding), env(safe-area-inset-left, 0px));
+  padding-inline-end: max(var(--game-page-padding), env(safe-area-inset-right, 0px));
+  padding-block: var(--game-gutter) max(var(--game-gutter), env(safe-area-inset-bottom, 0px));
 }

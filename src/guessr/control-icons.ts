@@ -1,8 +1,20 @@
 import icons from "./bootstrap-icons.json";
 import { bindAttribute } from "./i18n";
 import { setText, type LocalizedText } from './messages';
+import type { CameraAction } from './clue-replay';
 
 export type ControlIcon = keyof typeof icons;
+
+/** The live clue controls and their replay steps use the same icons and translation keys. */
+export const clueNavigation = {
+  up: ['arrow-up', 'Travel north'],
+  down: ['arrow-down', 'Travel south'],
+  left: ['arrow-left', 'Travel west'],
+  right: ['arrow-right', 'Travel east'],
+  'zoom-in': ['zoom-in', 'Zoom in'],
+  'zoom-out': ['zoom-out', 'Zoom out'],
+  return: ['arrow-counterclockwise', 'Return to start'],
+} as const satisfies Record<Exclude<CameraAction, 'view'>, readonly [ControlIcon, string]>;
 
 /** Keep the translated label in its own node so language changes retain the SVG. */
 export function iconLabel(icon: ControlIcon, label: LocalizedText): DocumentFragment {

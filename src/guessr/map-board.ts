@@ -92,6 +92,7 @@ export class MapBoard {
         y: bounds.y,
         width: bounds.width,
         success: () => {
+          if (!this.tiles) return;
           this.tilesReady = true;
           this.updateView();
         },
@@ -463,14 +464,22 @@ export class MapBoard {
     this.raiseSolution();
     this.resultMarkers = points; this.fittedMarkers = this.resultMarkers; this.atHome = false; this.updateView();
   }
-  highlightPlayer(id: string): void {
+  highlightPlayer(id: string): SVGGElement | undefined {
     const previous = this.highlightedPlayer && this.playerMarks.get(this.highlightedPlayer);
     if (previous) { previous.dataset.pinHeight = String(PLAYER_PIN_HEIGHT); previous.classList.remove('selected'); }
     const mark = this.playerMarks.get(id); this.highlightedPlayer = id;
     if (mark) { mark.dataset.pinHeight = String(HIGHLIGHT_PIN_HEIGHT); mark.classList.add('selected'); this.marks.append(mark); }
-    for (const [playerId, element] of this.playerMarks) element.style.opacity = id && playerId !== id ? '0.18' : '1';
+    for (const [playerId, element] of this.playerMarks) element.style.opacity = mark && playerId !== id ? '0.18' : '1';
     this.raiseSolution();
     this.updateMarkers();
+    return mark;
+  }
+  focusPlayer(id: string): void {
+    const pin = this.playerMarks.get(id), answer = this.resultMarkers?.[0];
+    if (!pin || !answer) return;
+    this.fittedMarkers = [answer, { x: Number(pin.dataset.x), y: Number(pin.dataset.y) }];
+    this.atHome = false;
+    this.updateView();
   }
   private raiseSolution(): void {
     // SVG paints in DOM order. CSS z-index does not order SVG groups.

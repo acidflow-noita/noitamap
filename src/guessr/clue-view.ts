@@ -1,3 +1,4 @@
+import type { CameraAction } from './clue-replay';
 import { changeClue, maximumScore, type ClueProgress } from "./rules";
 import {
   clampCamera,
@@ -6,7 +7,7 @@ import {
   type ClueSource,
 } from "./clue-camera";
 import { ClueViewport } from "./clue-viewport";
-import { setControlIcon } from "./control-icons";
+import { clueNavigation, setControlIcon } from "./control-icons";
 import { bindAttribute, bindText, formatGuessrNumber, tr, onGuessrLanguageChanged } from "./i18n";
 import type { AreaDifficulty } from './area-rules';
 import { updateRoundIndicators } from './round-status';
@@ -24,7 +25,8 @@ export function attachClueControls(
   progress: ClueProgress,
   travelStep: number,
   onChange: () => void,
-  options: { compact?: boolean; difficultyTier?: AreaDifficulty | null | (() => AreaDifficulty | null | undefined); onExplore?: () => void } = {},
+  options: { compact?: boolean; difficultyTier?: AreaDifficulty | null | (() => AreaDifficulty | null | undefined);
+    onExplore?: () => void; onCamera?: (camera: import('./clue-camera').Camera, action: CameraAction) => void } = {},
 ): () => void {
   const viewport = new ClueViewport(clue, place, travelStep);
   clue.setAttribute('aria-keyshortcuts', 'W A S D Q E');
@@ -65,16 +67,16 @@ export function attachClueControls(
 
   const add = (
     parent: HTMLElement,
-    label: string,
-    icon: Parameters<typeof setControlIcon>[1],
+    action: keyof typeof clueNavigation,
     target: () => [number, number, number],
   ) => {
+    const [icon, label] = clueNavigation[action];
     const button = document.createElement("button");
     button.id = `guessr-clue-control-${++controlId}`;
     button.type = "button";
     button.className = "btn btn-sm btn-outline theme-secondary clue-control";
     setControlIcon(button, icon, label, false);
-    button.addEventListener("click", () => void load(...target()));
+    button.addEventListener("click", () => void load(...target(), action));
     // The drawing toolbar's hotkey-letter presentation, including disabled controls.
     const anchor = document.createElement('span');
     anchor.className = 'control-help focus-ring';
@@ -110,30 +112,20 @@ export function attachClueControls(
     const target = clampCamera(place, { ...progress, level });
     return [target.dx, target.dy, target.level];
   };
-  add(zoom, "Zoom in", "zoom-in", () => zoomTarget(progress.level - 1));
-  add(zoom, "Zoom out", "zoom-out", () => zoomTarget(progress.level + 1));
-  add(zoom, "Return to start", "arrow-counterclockwise", () => [
+  add(zoom, "zoom-in", () => zoomTarget(progress.level - 1));
+  add(zoom, "zoom-out", () => zoomTarget(progress.level + 1));
+  add(zoom, "return", () => [
     0,
     0,
     progress.level,
   ]);
-  for (const [label, dx, dy] of [
-    ["Travel north", 0, -1],
-    ["Travel west", -1, 0],
-    ["Travel south", 0, 1],
-    ["Travel east", 1, 0],
+  for (const [action, direction, dx, dy] of [
+    ["up", "north", 0, -1],
+    ["left", "west", -1, 0],
+    ["down", "south", 0, 1],
+    ["right", "east", 1, 0],
   ] as const) {
-    const direction =
-      dy < 0 ? "north" : dy > 0 ? "south" : dx < 0 ? "west" : "east";
-    const icon =
-      dy < 0
-        ? "arrow-up"
-        : dy > 0
-          ? "arrow-down"
-          : dx < 0
-            ? "arrow-left"
-            : "arrow-right";
-    const button = add(pad, label, icon, () => {
+    const button = add(pad, action, () => {
       const next = moveCamera(place, progress, dx, dy);
       return [next.dx, next.dy, next.level];
     });
@@ -205,7 +197,7 @@ export function attachClueControls(
     });
   }
 
-  async function load(dx: number, dy: number, level: number): Promise<void> {
+  async function load(dx: number, dy: number, level: number, action: CameraAction = 'view'): Promise<void> {
     if (stopped || controls.inert || pending || !supportedCamera(place, { dx, dy, level }))
       return;
     pending = true;
@@ -215,6 +207,7 @@ export function attachClueControls(
       const explored = level > progress.level || level === progress.level && (dx !== progress.dx || dy !== progress.dy);
       await viewport.show({ dx, dy, level }, () => {
         changeClue(place, progress, dx, dy, level);
+        options.onCamera?.({ dx, dy, level }, action);
         if (explored) options.onExplore?.();
         onChange();
         update();
@@ -237,7 +230,7 @@ export function attachClueControls(
             : tr('Free action'));
         });
         retry.append(retryLabel, retryCost);
-        retry.onclick = () => void load(dx, dy, level);
+        retry.onclick = () => void load(dx, dy, level, action);
         error.append(message, retry);
       }
     } finally {

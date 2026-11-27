@@ -1,8 +1,13 @@
+import { localizedError } from './messages';
+import { gameFetch, acceptStartAvailability } from './quota-state';
 import type { ParallelAuthorization, ParallelClientMessage, ParallelServerMessage, ParallelSubmission } from './parallel-types';
 import type { RoomConnection } from './live-room-types';
 import { connectionDiagnostic } from './connection-diagnostics';
 import { GAME_PROTOCOL } from './game-protocol';
 import { GAME_UNAVAILABLE_MESSAGE } from './stream-lifetime';
+import { ClueReplayOutbox } from './clue-replay-outbox';
+import type { ClueReplay, ReplayLoader } from './clue-replay';
+import type { Camera } from './clue-camera';
 
 type Command = Extract<ParallelClientMessage, { id: string }>;
 function authorizationCloseCode(error: unknown): number {
@@ -29,18 +34,24 @@ export class ParallelConnection {
   private revisions = new Map<string, number>();
   private commands = new Map<string, { message: Command; resolve(): void; reject(error: Error): void }>();
   private hostPending?: Extract<Command, { type: 'host-guess' }>;
+  private replayEnabled = false;
+  private replayOutbox: ClueReplayOutbox;
+  private replayReads = new Map<string, { finish(value: ClueReplay | null): void; fail(): void }>();
+  private flushReplay = () => { if (this.replayEnabled) this.replayOutbox.flush(); };
   private offset = 0;
   private status: RoomConnection = 'connecting';
   private storageKey: string;
   private online = () => { if (!this.closed && !this.ready) this.connect(); };
   private visibility = () => {
     clearTimeout(this.pongDeadline);
+    if (document.visibilityState === 'hidden') this.flushReplay();
     if (document.visibilityState === 'visible' && this.ready) this.probe?.();
   };
   constructor(private origin: string, readonly gameId: string, readonly identity: string,
     private authorize: () => Promise<ParallelAuthorization>,
     private events: { message(value: ParallelServerMessage): void; status(value: RoomConnection, detail: string): void }) {
     this.storageKey = `noitaguessr-socket-v${GAME_PROTOCOL}:${gameId}:${identity}`;
+    this.replayOutbox = new ClueReplayOutbox(this.storageKey + ':clues', m => this.send(m));
     try {
       const saved = JSON.parse(localStorage.getItem(this.storageKey + ':pending') ?? '[]');
       if (Array.isArray(saved)) for (const item of saved.slice(-10)) if (item?.roundId && /^[a-f0-9]{16}$/.test(item.nonce)
@@ -55,12 +66,29 @@ export class ParallelConnection {
         && (saved.point === null || Number.isFinite(saved.point?.x) && Number.isFinite(saved.point?.y))) this.hostPending = saved;
     } catch {}
     window.addEventListener('online', this.online);
+    window.addEventListener('pagehide', this.flushReplay);
     document.addEventListener('visibilitychange', this.visibility);
     this.connect();
   }
   now(): number { return Date.now() + this.offset; }
   connected(): boolean { return this.ready; }
   state(): RoomConnection { return this.status; }
+  recordCamera(roundId: string, camera: Camera, action?: import('./clue-replay').CameraAction): void {
+    if (this.replayEnabled && !this.closed && !this.completed) this.replayOutbox.record(roundId, camera, this.now(), action);
+  }
+  readReplay: ReplayLoader = (round, player, signal) => {
+    if (!this.replayEnabled) return Promise.resolve(null);
+    if (!this.connected() || signal.aborted) return Promise.reject(Error('Connection unavailable. Reconnecting…'));
+    const request = crypto.randomUUID();
+    return new Promise((resolve, reject) => {
+      const cleanup = () => { clearTimeout(timer); signal.removeEventListener('abort', fail); this.replayReads.delete(request); };
+      const fail = () => { cleanup(); reject(Error('Connection unavailable. Reconnecting…')); };
+      const timer = setTimeout(fail, 10000);
+      this.replayReads.set(request, { finish: value => { cleanup(); resolve(value); }, fail });
+      signal.addEventListener('abort', fail, { once: true });
+      if (!this.send({ type: 'clue-read', request, round, player })) fail();
+    });
+  };
   private update(status: RoomConnection, detail = '') { this.status = status; this.events.status(status, detail); }
   private persist(): void {
     try { localStorage.setItem(this.storageKey + ':pending', JSON.stringify([...this.outbox.values()])); } catch {}
@@ -71,6 +99,7 @@ export class ParallelConnection {
   }
   submit(submission: ParallelSubmission): void {
     if ((this.outbox.get(submission.roundId)?.revision ?? 0) > submission.revision) return;
+    this.flushReplay();
     this.revisions.set(submission.roundId, Math.max(submission.revision, this.revisions.get(submission.roundId) ?? 0));
     this.outbox.set(submission.roundId, submission); this.persist();
     this.send({ type: 'guess', submission });
@@ -81,6 +110,7 @@ export class ParallelConnection {
   recover(): void { this.send({ type: 'recover' }); }
   command(message: Command): Promise<void> {
     if (this.unavailable) return Promise.reject(Error(GAME_UNAVAILABLE_MESSAGE));
+    if (message.type === 'host-guess' || message.type === 'quit' || message.type === 'advance') this.flushReplay();
     if (message.type === 'host-guess') {
       this.hostPending = message;
       try { localStorage.setItem(this.storageKey + ':host-guess', JSON.stringify(message)); } catch {}
@@ -117,10 +147,17 @@ export class ParallelConnection {
       let message: ParallelServerMessage;
       try { message = JSON.parse(event.data); } catch { return; }
       if ('now' in message && Number.isFinite(message.now)) this.offset = message.now - Date.now();
+      if (message.type === 'error' && message.code === 'play-capacity') {
+        if (message.scope !== 'game-size') acceptStartAvailability(message.scope,message.resetAt);
+        this.unavailable = true;
+        this.update('stopped',localizedError(Object.assign(new Error(message.message),{resetAt:message.resetAt})));
+        socket.close(4003,'New players paused'); return;
+      }
       if (message.type === 'error' && message.code === 'capacity') {
         this.update('stopped', message.message); socket.close(4003, 'Invitation unavailable'); return;
       }
       if (message.type === 'published') {
+        this.replayOutbox.clear();
         this.completed = true; clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
       }
       if (message.type === 'authorized') {
@@ -129,6 +166,8 @@ export class ParallelConnection {
         connectionDiagnostic({ event: 'connected', transport: 'coordinator', code: this.ready ? 'reauthorized' : 'authorized' });
         clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.refreshAuth);
         this.ready = true; this.failures = 0; this.authFailures = 0;
+        this.replayEnabled = message.clueReplays === true;
+        if (this.replayEnabled) this.replayOutbox.reconnect();
         try { sessionStorage.setItem(this.storageKey, JSON.stringify({ ticket: message.ticket, expiresAt: message.expiresAt })); } catch {}
         this.update('connected');
         for (const submission of this.outbox.values()) this.send({ type: 'guess', submission });
@@ -153,6 +192,10 @@ export class ParallelConnection {
           void this.authorize().then(auth => { if (current()) socket.send(JSON.stringify({ type: 'authorize', protocol: GAME_PROTOCOL, ...auth })); })
             .catch(error => { if (current()) socket.close(authorizationCloseCode(error), 'Authorization unavailable'); });
         }, Math.max(1000, message.expiresAt - this.now() - 60000));
+      } else if (message.type === 'clue-ack') {
+        this.replayOutbox.acknowledge(message.roundId, message.through); return;
+      } else if (message.type === 'clue-replay') {
+        this.replayReads.get(message.request)?.finish(message.replay); return;
       } else if (message.type === 'receipt') {
         const pending = this.outbox.get(message.roundId);
         if (pending?.nonce === message.nonce) { this.outbox.delete(message.roundId); this.persist(); }
@@ -168,6 +211,7 @@ export class ParallelConnection {
     socket.onerror = () => { if (current()) socket.close(); };
     socket.onclose = event => {
       if (!current()) return;
+      for (const read of this.replayReads.values()) read.fail();
       connectionDiagnostic({ event: 'socket-close', transport: 'coordinator', status: event.code });
       this.ready = false; clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
       if (this.unavailable) return;
@@ -194,7 +238,7 @@ export class ParallelConnection {
     const controller = this.availabilityRequest = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
     try {
-      const response = await fetch(new URL(`/api/streams/live/${this.gameId}/socket`, this.origin), {
+      const response = await gameFetch(new URL(`/api/streams/live/${this.gameId}/socket`, this.origin), {
         credentials: 'omit', cache: 'no-store', signal: controller.signal,
       });
       if (response.status !== 404) { await response.body?.cancel(); return; }
@@ -210,6 +254,10 @@ export class ParallelConnection {
   }
   retry(): void { if (!this.ready) { this.authFailures = 0; this.connect(); } }
   dispose(): void {
+    this.flushReplay();
+    this.replayOutbox.dispose();
+    for (const read of this.replayReads.values()) read.fail();
+    window.removeEventListener('pagehide', this.flushReplay);
     this.closed = true; clearTimeout(this.timer); clearInterval(this.heartbeat); clearTimeout(this.pongDeadline); clearTimeout(this.refreshAuth);
     this.availabilityRequest?.abort();
     window.removeEventListener('online', this.online); this.socket?.close();

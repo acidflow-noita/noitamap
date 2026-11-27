@@ -1,4 +1,7 @@
-import { STREAM_MAX_DOCUMENT_BYTES, type StreamPublishedResult } from '../../../src/guessr/stream-types';
+import { fillMissingColors, hasMissingColors } from './result-colors';
+import type { Database } from './index';
+import { publicClueReplay, type StoredClueTrack } from '../../../src/guessr/clue-replay';
+import { publicResultReview, STREAM_MAX_DOCUMENT_BYTES, type StreamPublishedResult } from '../../../src/guessr/stream-types';
 import { streamHistorySummary } from '../../../src/guessr/stream-history-summary';
 
 /** Application payload/overhead budget, below the 500 MB Free database limit.
@@ -11,7 +14,8 @@ export interface StoredResultBody { result_json: string; result_gzip: unknown }
 export async function encodeStoredResult(result: StreamPublishedResult, serialized: string, original = encoder.encode(serialized)) {
   if (!original.byteLength || original.byteLength > STREAM_MAX_DOCUMENT_BYTES) throw new Error('Invalid result size.');
   const gzip = await new Response(new Response(original).body!.pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
-  const header = JSON.stringify({ storage: 'gzip-json-v1', host: { id: result.host.id, login: result.host.login, name: result.host.name },
+  const header = JSON.stringify({ storage: 'gzip-json-v1', hasReviewReasons: !!result.reviewFlags?.length, hasMissingColors: hasMissingColors(result), ...(result.clueReplays ? { clueReplays: true } : {}),
+    host: { id: result.host.id, login: result.host.login, name: result.host.name },
     finishedAt: result.finishedAt, playerCount: result.players.length, rawBytes: original.byteLength, summary: streamHistorySummary(result) });
   const bytes = encoder.encode(header).byteLength + gzip.byteLength;
   // Tiny/incompressible documents keep the original representation.
@@ -75,4 +79,33 @@ export async function readStoredResult(stored: StoredResultBody): Promise<Stream
   } finally { await reader.cancel().catch(() => {}); }
   if (stored.result_gzip != null && size !== JSON.parse(stored.result_json).rawBytes) throw Error('Stored result size does not match its metadata.');
   return JSON.parse(text + decoder.decode()) as StreamPublishedResult;
+}
+
+/** Older compressed headers cannot establish whether the original document contained reasons. */
+export async function publicStoredResultResponse(stored: StoredResultBody, request: Request, db: Database): Promise<Response> {
+  const header = JSON.parse(stored.result_json);
+  if (stored.result_gzip != null && header.hasReviewReasons === false && header.hasMissingColors === false)
+    return storedResultResponse(stored, request);
+  const original = stored.result_gzip == null ? header as StreamPublishedResult : await readStoredResult(stored);
+  const safe = publicResultReview(original);
+  let colored = safe;
+  if (hasMissingColors(safe)) {
+    // Color enrichment is optional. The public privacy projection is always applied.
+    try { colored = await fillMissingColors(db, safe); } catch { /* An unavailable color index does not hide scores. */ }
+  }
+  if (colored === original) return storedResultResponse(stored, request);
+  return Response.json(colored, { headers: { 'Cache-Control': 'public, max-age=60', Vary: 'Accept-Encoding' } });
+}
+
+export async function archivedClueReplay(db: Database, game: string, round: number, player: string) {
+  const row = await db.prepare(`SELECT meta.payload AS clue, (
+    SELECT json_extract(p.payload, ?) FROM stream_result_replay_pages p WHERE p.game_id=meta.game_id AND p.round=meta.round
+    AND p.first_player<>'' AND p.first_player<=? ORDER BY p.first_player DESC LIMIT 1) AS track
+    FROM stream_result_replay_pages meta WHERE meta.game_id=? AND meta.round=? AND meta.first_player=''`)
+    .bind('$."' + player + '"', player, game, round).first<{clue: string; track: string | null}>();
+  if (!row) return undefined;
+  if (!row.track) return null;
+  const stored: StoredClueTrack = row.track.startsWith('{') ? JSON.parse(row.track)
+    : { track: row.track, opens: null, guesses: [] };
+  return publicClueReplay(JSON.parse(row.clue), stored);
 }

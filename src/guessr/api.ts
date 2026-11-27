@@ -1,3 +1,4 @@
+import { gameFetch, blockedNewStart, startPauseText } from './quota-state';
 import type { Bounds, Point } from "./rules";
 import type { ImageGameConfig } from './image-game';
 import type { ClueSource } from './clue-camera';
@@ -147,8 +148,12 @@ export class GameApi {
   }
   async request<T>(path: string, options: { body?: unknown } = {}): Promise<T> {
     if (!path.startsWith("/api/")) throw new Error("Invalid game route");
+    if (options.body !== undefined) {
+      const notice=await blockedNewStart(path);
+      if (notice) throw new ApiError(notice.scope === 'checking' ? 503 : 429,startPauseText(notice),notice.resetAt);
+    }
     const token = await this.getTicket();
-    const response = await fetch(this.origin + path, {
+    const response = await gameFetch(this.origin + path, {
       method: options.body === undefined ? "GET" : "POST",
       headers: {
         Authorization: "Bearer " + token,
@@ -173,7 +178,7 @@ export class GameApi {
   }
   async publicResult<T>(id: string, answers = false): Promise<T> {
     if (!/^[\w-]{1,100}$/.test(id)) throw new ApiError(404, 'No results were found for this link.');
-    const response = await fetch(`${this.origin}/api/daily/results/${id}${answers ? '/answers' : ''}`, {
+    const response = await gameFetch(`${this.origin}/api/daily/results/${id}${answers ? '/answers' : ''}`, {
       credentials: 'omit', signal: AbortSignal.timeout(15000),
     });
     const data = await response.json().catch(() => ({}));
@@ -184,7 +189,7 @@ export class GameApi {
     const publicImage = /^\/api\/daily\/results\/[\w-]{1,100}\/image\/[0-9]$/.test(path);
     if (!publicImage && !/^\/api\/attempts\/[\w-]+\/image\/[0-9]$/.test(path))
       throw new Error("Invalid round image");
-    const response = await fetch(this.origin + path, {
+    const response = await gameFetch(this.origin + path, {
       credentials: 'omit',
       headers: publicImage ? {} : { Authorization: "Bearer " + (await this.getTicket()) },
       signal: signal

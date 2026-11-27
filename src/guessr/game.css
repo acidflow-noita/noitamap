@@ -719,7 +719,8 @@ header.page-heading {
   height: 100%;
   image-rendering: pixelated;
 }
-.clue:before {
+.clue:before,
+.replay-pan-marker {
   content: "";
   position: absolute;
   z-index: 1;

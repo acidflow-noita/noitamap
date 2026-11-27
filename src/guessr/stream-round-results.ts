@@ -5,9 +5,10 @@ import type { ImageGameConfig } from './image-game';
 import type { StreamGame } from './stream-types';
 import { bindText, formatGuessrNumber, guessrGameTerm, guessrLocale, onGuessrLanguageChanged, tr } from './i18n';
 import { playerColor } from './player-color';
-import { networkReviewView } from './network-review-view';
 import { RESULT_PIN_PADDING_Y } from './map-framing';
 import { within } from './rules';
+import type { ReplayLoader } from './clue-replay';
+import { createReplayRows } from './clue-replay-view';
 
 function reviewHeader(label: string | (() => string), controls: HTMLElement) {
   const header = document.createElement('header'); header.className = 'panel-bar review-header';
@@ -16,13 +17,14 @@ function reviewHeader(label: string | (() => string), controls: HTMLElement) {
   return header;
 }
 
-export function streamRoundResults(main: HTMLElement, game: StreamGame, index: number, actions: HTMLElement): () => void {
-  return sharedRoundResults(main, game.session.config, streamRoundData(game, index), actions);
+export function streamRoundResults(main: HTMLElement, game: StreamGame, index: number, actions: HTMLElement, readReplay?: ReplayLoader): () => void {
+  return sharedRoundResults(main, game.session.config, streamRoundData(game, index), actions, { readReplay });
 }
 export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, data: StreamRoundView, actions: HTMLElement,
-  options: { inline?: boolean; clue?: HTMLElement } = {}): () => void {
+  options: { inline?: boolean; clue?: HTMLElement; readReplay?: ReplayLoader } = {}): () => void {
   const grid = document.createElement('div'); grid.className = 'stream-review-grid';
-  if (!options.inline) {
+  if (options.inline) grid.classList.add('inline-round-review');
+  else {
     grid.classList.add('stream-round-results-layout');
     const ys = [data.answer.y];
     for (const { guess } of data.players) if (guess && within(guess, config.bounds)) ys.push(guess.y);
@@ -30,21 +32,33 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
     grid.style.setProperty('--review-world-aspect', String(config.bounds.width / Math.max(1, spread)));
     grid.style.setProperty('--review-pin-space', `${2 * RESULT_PIN_PADDING_Y}px`);
   }
-  const mapPanel = document.createElement('section'); mapPanel.className = 'game-panel';
+  const mapPanel = document.createElement('section'); mapPanel.className = 'game-panel rounded-9';
   const map = document.createElement('div'); map.className = 'map-board';
   if (options.inline) {
-    if (options.clue) mapPanel.append(options.clue);
-    mapPanel.append(map);
+    const media = document.createElement('div');
+    media.className = 'round-review-media';
+    map.classList.add('border','rounded-9','overflow-hidden');
+    if (options.clue) {
+      options.clue.classList.add('border','rounded-9','overflow-hidden');
+      media.append(options.clue);
+    }
+    media.append(map);
+    mapPanel.append(media);
   } else {
     const body = document.createElement('div'); body.className = 'review-map-body';
     body.append(map); mapPanel.append(body);
   }
-  const scores = document.createElement('section'); scores.className = 'game-panel';
+  const scores = document.createElement('section'); scores.className = 'game-panel round-review-score-panel rounded-9';
   const heading = reviewHeader(() => tr('Round {{round}} results', { round: formatGuessrNumber(data.round) }), actions);
-  const wrap = document.createElement('div'); wrap.className = 'stream-round-score-scroll';
+  const wrap = document.createElement('div'); wrap.className = 'table-wrap stream-score-frame stream-round-score-scroll rounded-9';
   const table = document.createElement('table'); table.className = 'table stream-score-table stream-round-score-table';
   const head = document.createElement('thead'), header = document.createElement('tr'), body = document.createElement('tbody');
-  head.append(header); table.append(head, body); wrap.append(table); scores.append(heading, wrap); grid.append(mapPanel, scores); main.append(grid);
+  head.append(header); table.append(head, body); wrap.append(table);
+  if (options.inline) {
+    const scoreBody = document.createElement('div'); scoreBody.className = 'round-review-table-body';
+    scoreBody.append(wrap); scores.append(heading,scoreBody);
+  } else scores.append(heading,wrap);
+  grid.append(mapPanel, scores); main.append(grid);
   const board = new MapBoard(map, config.bounds, config.overview, () => {}, config.map); board.setLocked(true);
   mapPanel.prepend(reviewHeader(() => guessrGameTerm(data.label), mapControls(board, { readOnly: true })));
   const rows = new Map<string, HTMLTableRowElement>();
@@ -53,6 +67,8 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
     if (selected) rows.get(selected)?.classList.remove('selected');
     selected = id; rows.get(id)?.classList.add('selected'); board.highlightPlayer(id);
   };
+  const readReplay = data.clueReplays ? options.readReplay : undefined;
+  const replays = readReplay ? createReplayRows(readReplay, config) : undefined;
   const players = data.players;
   const streamerId = data.mode === 'pvp' ? '' : data.host.id;
   const roundOrder = [...players].sort((a, b) => b.score - a.score || b.total - a.total);
@@ -76,25 +92,34 @@ export function sharedRoundResults(main: HTMLElement, config: ImageGameConfig, d
       : sort === 'rank' ? ranks.get(a.id)! - ranks.get(b.id)! : sort === 'round' ? a.score - b.score : a.total - b.total));
     rows.clear(); const fragment = document.createDocumentFragment();
     for (const player of ordered) {
-      const row = document.createElement('tr'); row.tabIndex = 0; row.dataset.player = player.id;
+      const row = document.createElement('tr'); row.tabIndex = data.clueReplays && options.readReplay ? -1 : 0; row.dataset.player = player.id;
       if (player.id === streamerId) row.classList.add('stream-host-row');
       if (player.id === selected) row.classList.add('selected');
-      row.onmouseenter = row.onfocus = row.onclick = () => select(player.id);
-      row.onmouseleave = row.onblur = () => { rows.get(player.id)?.classList.remove('selected'); selected = undefined; board.highlightPlayer(''); };
+      const focus = () => { select(player.id); board.focusPlayer(player.id); };
+      row.onmouseenter = row.onclick = focus; row.addEventListener('focusin', focus);
+      const clear = () => { if (selected === player.id) select(''); };
+      row.onmouseleave = clear;
+      row.addEventListener('focusout', e => { if (!(e.relatedTarget instanceof Node) || !row.contains(e.relatedTarget)) clear(); });
       for (const [column, text] of [formatGuessrNumber(ranks.get(player.id)!), player.name,
         (player.recorded ?? !!player.guess) ? formatGuessrNumber(player.score) : '—', formatGuessrNumber(player.total)].entries()) {
         const cell = document.createElement('td'); cell.textContent = text;
         if (column !== 1) cell.className = 'numeric';
         if (column === 2 && player.score === 5000) cell.classList.add('score-perfect');
         else if (column === 1) cell.style.color = playerColor(player, streamerId);
-        if (column === 1) { const warning = networkReviewView(data.reviewFlags, players, player.id); if (warning) cell.append(warning); }
         if (column === 2 && !(player.recorded ?? !!player.guess)) cell.setAttribute('aria-label', tr(data.mode === 'pvp' ? 'No recorded guesses' : 'No guess recorded by the streamer'));
+        if (column === 2 && replays) {
+          const group = document.createElement('div'); group.className = 'score-with-replay';
+          const score = document.createElement('span'); score.textContent = text;
+          cell.classList.remove('score-perfect'); score.classList.toggle('score-perfect', player.score === 5000);
+          group.append(score, replays.scoreButton(player, {number:data.round, answer:data.answer, location:data.label}));
+          cell.replaceChildren(group);
+        }
         row.append(cell);
       }
-      rows.set(player.id, row); fragment.append(row);
+      rows.set(player.id, row); fragment.append(row); replays?.appendAfterScore(fragment,player.id);
     }
-    body.replaceChildren(fragment);
+    body.replaceChildren(fragment); replays?.discardHidden();
   }
   render(); const unsubscribe = onGuessrLanguageChanged(render);
-  return () => { unsubscribe(); board.destroy(); };
+  return () => { replays?.destroy(); unsubscribe(); board.destroy(); };
 }

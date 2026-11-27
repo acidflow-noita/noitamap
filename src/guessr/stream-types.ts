@@ -27,6 +27,7 @@ export interface StreamRound {
   token: string;
 }
 export interface StreamSession {
+  clueReplays?: true;
   protocol?: number;
   imageRoot?: string;
   dataset?: { day: string; seed: number; renderId: string };
@@ -90,6 +91,7 @@ export interface StreamParticipant extends StreamPlayer {
 }
 export interface StreamGame {
   submittedCounts?: number[];
+  reviewSuggested?: true;
   reviewFlags?: NetworkReviewFlag[];
   pvp?: { ready: string[]; declined: string[]; controllers?: Record<string, number>; concededBy?: string };
   schema: 1;
@@ -129,6 +131,8 @@ export interface StreamPlayerResult extends StreamPlayer {
 }
 /** No credentials, unrevealed tokens, raw chat, or account IDs in public results. */
 export interface StreamResult {
+  clueReplays?: true;
+  reviewSuggested?: true;
   reviewFlags?: NetworkReviewFlag[];
   dataset?: StreamSession['dataset'];
   mode?: import('./match-settings').MultiplayerMode;
@@ -154,6 +158,12 @@ export interface NetworkReviewFlag {
   highScorers: string[];
   explorers: string[];
   nonSubmitting: string[];
+}
+/** Historical results can contain evidence inline. Strip it at every public boundary. */
+export function publicResultReview<T extends { reviewFlags?: NetworkReviewFlag[]; reviewSuggested?: true }>(result: T): T {
+  if (!Object.hasOwn(result, 'reviewFlags')) return result;
+  const { reviewFlags, ...rest } = result;
+  return { ...rest, ...(reviewFlags?.length ? { reviewSuggested: true } : {}) } as T;
 }
 export interface StreamPublishInput {
   token: string;

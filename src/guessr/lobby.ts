@@ -69,6 +69,12 @@ function actionButton(
   return button;
 }
 
+function newGameButton(label: LocalizedText, action: LobbyAction) {
+  const button = actionButton(label,action);
+  button.dataset.guessrStart = '';
+  return button;
+}
+
 function modeCard(options: {
   name: string;
   image: string;
@@ -167,7 +173,7 @@ export function createLobby(options: LobbyOptions): HTMLElement {
 
   // Fixed scenery from the archived seed 78633191 capture, never today's clues.
   const modes = element("div", "lobby-modes");
-  const streamActions = [actionButton(msg("Play as streamer"), options.streamHost)];
+  const streamActions = [newGameButton(msg("Play as streamer"), options.streamHost)];
   if (options.streamJoin) {
     streamActions.push(actionButton(msg("Play as chatter"), options.streamJoin));
   }
@@ -189,7 +195,7 @@ export function createLobby(options: LobbyOptions): HTMLElement {
       image: "mountain",
       description: "Three rounds from the main world.",
       badge: "Free",
-      actions: [actionButton(msg("Start demo"), options.startDemo)],
+      actions: [newGameButton(msg("Start demo"), options.startDemo)],
     }),
     modeCard({
       name: "Chat vs Streamer",
@@ -205,7 +211,7 @@ export function createLobby(options: LobbyOptions): HTMLElement {
   lobby.append(modes);
   if (options.pvp) modes.append(modeCard({ name: '1v1', image: 'pyramid',
     description: 'Challenge another player. Only one of you needs Pro.', badge: 'Pro', pro: true,
-    actions: [actionButton(msg('Play 1v1'), options.pvp)] }));
+    actions: [newGameButton(msg('Play 1v1'), options.pvp)] }));
   if (options.history) lobby.append(historySummary(options.history));
   return lobby;
 }

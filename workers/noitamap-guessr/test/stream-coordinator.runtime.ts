@@ -12,10 +12,222 @@ import resultSchema from '../migrations/0002_stream_results.sql?raw';
 import historySchema from '../migrations/0005_stream_history.sql?raw';
 import storageSchema from '../migrations/0006_stream_storage.sql?raw';
 import ownershipSchema from '../migrations/0007_result_ownership.sql?raw';
+import replaySchema from '../migrations/0011_clue_replays.sql?raw';
+import { encodeReplayFrames, type ReplayFrame } from '../../../src/guessr/clue-replay';
+import { archiveReplayBatch } from '../src/clue-replay-store';
+import { archivedClueReplay } from '../src/result-storage';
 
 const sockets: WebSocket[] = [];
 afterEach(async () => { sockets.splice(0).forEach(s => { try { s.close(); } catch {} }); await reset(); });
 const secret = 'runtime-test-socket-key-never-used-in-production';
+async function installReplayTestSchema() {
+  for (const schema of [resultSchema, historySchema, storageSchema, ownershipSchema, replaySchema]) {
+    for (const sql of schema
+      .replace(/^\s*--.*$/gm, '')
+      .trim()
+      .split(/;\n+(?=(?:CREATE|ALTER|DROP|DELETE|INSERT)\b)/))
+      if (sql.trim()) await env.DB.prepare(sql).run();
+  }
+}
+it.each(['stream', 'pvp'] as const)(
+  'keeps %s camera traces private until reveal and preserves them through hibernation and publication',
+  async mode => {
+    await installReplayTestSchema();
+    const { stub, session, join } = await fixture(mode);
+    const host = await join('host'),
+      player = await join();
+    await runInDurableObject(stub, (_, state) => {
+      const record = JSON.parse(
+        state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data
+      );
+      record.game.timing.phase = 'play';
+      record.game.openedAt = record.game.timing.startsAt = session.createdAt;
+      record.game.timing.windows[0] = { opensAt: session.createdAt, closesAt: null, closed: false };
+      state.storage.sql.exec('UPDATE game SET data=?', JSON.stringify(record));
+    });
+    await evictDurableObject(stub, { webSockets: 'hibernate' });
+    const t = session.createdAt,
+      roundId = session.rounds[0].id;
+    const input = {
+      type: 'clue-frames',
+      player: '100',
+      roundId,
+      frames: [
+        [t, 0, 0, 0],
+        [t + 1, 24, 0, 0],
+        [t + 2, 24, 0, 1],
+      ],
+    };
+    for (const socket of [player, player]) {
+      const ack = socket.wait(m => m.type === 'clue-ack');
+      socket.send(input);
+      await ack;
+    }
+    const own = host.wait(m => m.type === 'clue-ack');
+    host.send({ type: 'clue-frames', roundId, frames: [[t, 0, 0, 0]] });
+    await own;
+    const early = host.wait(m => m.type === 'clue-replay');
+    host.send({ type: 'clue-read', round: 1, player: '200', request: 'early' });
+    expect(await early).toMatchObject({ replay: null });
+    const publicRead = () =>
+      handle(new Request(`https://api.test/api/streams/results/${session.id}/rounds/1/replays/200`), {
+        ...env,
+        STREAM_ENABLED: 'true',
+        GAME_SIGNING_SECRET: '',
+      } as Env);
+    expect((await publicRead()).status).toBe(404);
+    expect(host.messages.some(m => JSON.stringify(m).includes('clue-frames'))).toBe(false);
+    expect(
+      await runInDurableObject(stub, (_, state) =>
+        state.storage.sql.exec('SELECT frames FROM clue_replays ORDER BY player').toArray()
+      )
+    ).toEqual([{ frames: 1 }, { frames: 3 }]);
+    await runInDurableObject(stub, (_, state) => {
+      const record = JSON.parse(
+        state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data
+      );
+      record.game.reveals = record.privateReveals.slice(0, 1);
+      record.game.stage = 'reveal';
+      state.storage.sql.exec('UPDATE game SET data=?', JSON.stringify(record));
+    });
+    await evictDurableObject(stub, { webSockets: 'hibernate' });
+    const released = host.wait(m => m.type === 'clue-replay');
+    host.send({ type: 'clue-read', round: 1, player: '200', request: 'review' });
+    const live = await released;
+    if (live.type !== 'clue-replay' || !live.replay) throw Error('Missing revealed replay');
+    expect(live.replay.steps.map(step => [step.second, 'camera' in step && step.camera])).toEqual([
+      [0,{dx:0,dy:0,level:0}], [0,{dx:24,dy:0,level:0}], [0,{dx:24,dy:0,level:1}],
+    ]);
+    expect(live.replay).not.toHaveProperty('track');
+    expect(live.replay.clue).toEqual(session.rounds[0].clue);
+    const late = player.wait(m => m.type === 'clue-ack');
+    player.send({ ...input, frames: [[t + 3, 0, 0, 0]] });
+    await late;
+    await runInDurableObject(stub, (_, state) => {
+      const record = JSON.parse(
+        state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data
+      );
+      record.game.reveals = record.privateReveals;
+      record.game.stage = 'complete';
+      record.game.finishedAt = Date.now();
+      record.game.round = record.privateReveals.length - 1;
+      state.storage.sql.exec('UPDATE game SET data=?', JSON.stringify(record));
+    });
+    await evictDurableObject(stub, { webSockets: 'hibernate' });
+    await runDurableObjectAlarm(stub);
+    const read = (id: string, round = 1) =>
+      handle(new Request(`https://api.test/api/streams/results/${session.id}/rounds/${round}/replays/${id}`), {
+        ...env,
+        STREAM_ENABLED: 'true',
+        GAME_SIGNING_SECRET: '',
+      } as Env);
+    const archive = await read('200');
+    expect(archive.status).toBe(200);
+    expect(await archive.json()).toEqual(live.replay);
+    expect((await read('100')).status).toBe(200);
+    expect((await read('999')).status).toBe(404);
+    expect((await read('200', 2)).status).toBe(404);
+    expect(
+      await env.DB.prepare('SELECT replay_bytes FROM stream_results WHERE id=?')
+        .bind(session.id)
+        .first<number>('replay_bytes')
+    ).toBeGreaterThan(0);
+    await env.DB.prepare('DELETE FROM stream_results WHERE id=?').bind(session.id).run();
+    expect((await read('200')).status).toBe(404);
+    expect(await env.DB.prepare('SELECT used_bytes FROM stream_result_storage WHERE id=1').first('used_bytes')).toBe(
+      0
+    );
+  },
+  20000
+);
+it('records each accepted chatter revision once and preserves an automatic update during a reconnect', async () => {
+  const { stub, session, join } = await fixture();
+  const host = await join('host'),
+    chatter = await join();
+  const started = host.wait(m => m.type === 'command');
+  host.send({ type: 'start', id: 'begin-replay-test' });
+  await started;
+  await runInDurableObject(stub, (_, state) => {
+    const record = JSON.parse(
+      state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data
+    );
+    record.game.timing.startsAt = record.game.timing.windows[0].opensAt = Date.now() - 7000;
+    state.storage.sql.exec('UPDATE game SET data=? WHERE id=1', JSON.stringify(record));
+  });
+  await evictDurableObject(stub, { webSockets: 'hibernate' });
+  const original = {
+    roundId: session.rounds[0].id,
+    point: streamAnswer,
+    maximum: 4500,
+    nonce: '7777777777777777',
+    revision: 1,
+  };
+  const update = {
+    ...original,
+    point: { x: streamAnswer.x + 24, y: streamAnswer.y + 12 },
+    nonce: '8888888888888888',
+    revision: 2,
+    automatic: true,
+  };
+  for (const guess of [original, update, update]) {
+    const reply = chatter.wait(m => m.type === 'receipt' && m.nonce === guess.nonce);
+    chatter.send({ type: 'guess', submission: guess });
+    expect(await reply).toMatchObject({ accepted: true });
+  }
+  const replay = await runInDurableObject(stub, (_, state) => {
+    const row = state.storage.sql
+      .exec<{ guesses: string; frames: number }>(
+        'SELECT guesses,frames FROM clue_replays WHERE player=? AND round=1',
+        '200'
+      )
+      .one();
+    return { points: JSON.parse(row.guesses).map((step: number[]) => step.slice(1)), frames: row.frames };
+  });
+  expect(replay).toEqual({
+    points: [
+      [streamAnswer.x, streamAnswer.y, 0],
+      [update.point.x, update.point.y, 1],
+    ],
+    frames: 0,
+  });
+});
+it('resumes large replay archives with deterministic pages and fetches only the requested player', async () => {
+  await installReplayTestSchema();
+  const { stub, session } = await fixture();
+  await env.DB.prepare(
+    'INSERT INTO stream_results(id,owner,day,created_at,bytes,digest,result_json,host_id,host_verified_at) VALUES(?,?,?,?,?,?,?,?,?)'
+  )
+    .bind(session.id, 'owner', '2026-11-26', 1, 2, 'test', '{"host":{"id":"100","login":"host"}}', '100', 1)
+    .run();
+  const track = Array.from({ length: 240 }, (_, batch) =>
+    encodeReplayFrames(
+      Array.from({ length: 32 }, (_, n): ReplayFrame => [batch * 32 + n, n, 0, 0]),
+      0
+    )
+  ).join('');
+  await runInDurableObject(stub, async (_, state) => {
+    const { game, privateReveals } = JSON.parse(
+      state.storage.sql.exec<{ data: string }>('SELECT data FROM game WHERE id=1').one().data
+    );
+    game.reveals = privateReveals.slice(0, 1);
+    for (let i = 0; i < 12; i++)
+      state.storage.sql.exec('INSERT INTO clue_replays(round,player,last_at,frames,track) VALUES(?,?,?,?,?)', 1, String(100 + i), 7679, 7680, track);
+    const db = env.DB;
+    const first = await archiveReplayBatch(db, state.storage.sql, game);
+    expect(first).toEqual({ round: 1, after: '107' });
+    expect(await archiveReplayBatch(db, state.storage.sql, game)).toEqual(first);
+    expect(await archiveReplayBatch(db, state.storage.sql, game, first)).toBeUndefined();
+  });
+  expect(
+    await env.DB.prepare('SELECT count(*) AS n FROM stream_result_replay_pages WHERE game_id=?')
+      .bind(session.id)
+      .first('n')
+  ).toBe(13);
+  const db = env.DB;
+  for (const player of ['100', '107', '108', '111'])
+    expect((await archivedClueReplay(db, session.id, 1, player))?.steps).toHaveLength(7680);
+  expect(await archivedClueReplay(db, session.id, 1, '1010')).toBeNull();
+}, 20000);
 it('reports missing and expired games without an upgrade, but keeps live games available', async () => {
   const bindings = { ...env, STREAM_ENABLED: 'true', GAME_SIGNING_SECRET: '' } as Env;
   const probe = (id: string) => handle(new Request(`https://api.test/api/streams/live/${id}/socket`, {
@@ -151,7 +363,9 @@ it('persists one exploration signal per player and round, keeps pins private, an
   ]);
   await evictDurableObject(stub);
   const recovered = highA.wait(m => m.type === 'reveal'); highA.send({ type: 'recover' });
-  expect(await recovered).toMatchObject({ results: { reviewFlags: flags, players: expect.arrayContaining([expect.objectContaining({ id: '200', score: 5000 })]) } });
+  const publicRound = await recovered;
+  expect(publicRound).toMatchObject({ results: { players: expect.arrayContaining([expect.objectContaining({ id: '200', score: 5000 })]) } });
+  expect(publicRound).not.toHaveProperty('results.reviewFlags');
 });
 
 it('keeps both PvP players private, locks accepted guesses and restores the same state after hibernation', async () => {

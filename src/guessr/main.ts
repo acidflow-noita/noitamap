@@ -1,6 +1,8 @@
+import { watchStartMenu, refreshStartAvailability, newStartsPaused } from './quota-state';
 import { mapControls } from './map-controls';
 import { fitGameFrame } from './game-frame';
 import { compactHeaderNavigation, gameLogo, moveGameExit } from './game-chrome';
+import { createQuotaBanner } from './quota-banner';
 import { createPollBanner } from './poll-banner';
 import { mountAccountMenu } from './account-menu';
 import { updateSubmit, submitHelp } from './submit-control';
@@ -75,7 +77,7 @@ import {
 } from "./api";
 
 const root = document.getElementById("guess-app")!;
-let pollBanner: HTMLElement | undefined;
+let pollBanner: HTMLElement | undefined, quotaBanner: HTMLElement | undefined, clearCapacityMenu: (() => void) | undefined;
 let pack: Pack;
 let session: PracticeSession | null = null;
 let imageSession: ImageGameState | null = null;
@@ -199,13 +201,15 @@ function cleanup(): void {
   imageUrl = undefined;
 }
 function shell(game = false): HTMLElement {
+  clearCapacityMenu?.(); clearCapacityMenu = undefined;
   const enteringPlay = game && !root.querySelector('main.game-shell');
   allowGuessrChangelog(false);
   cleanup();
   clearFrame?.(); clearFrame = undefined; clearHeader?.(); clearSubmit?.(); clearSubmit = undefined;
   disposeGuessrLanguagePickers(root);
   root.replaceChildren();
-  root.append(pollBanner ??= createPollBanner(save));
+  void refreshStartAvailability();
+  root.append(quotaBanner ??= createQuotaBanner(), pollBanner ??= createPollBanner(save));
   const header = node("header", "site-header"), logo = gameLogo(home);
   const identity = node('div', 'header-identity');
   identity.append(logo.element, createGuessrLanguagePicker());
@@ -318,6 +322,7 @@ function home(): void {
         latest && best ? { recent: latest, best, action: history } : undefined,
     }),
   );
+  clearCapacityMenu = watchStartMenu(main);
 }
 function quitDemo(mode: 'image' | 'practice', id: string): void {
   const key = mode === 'image' ? IMAGE_SESSION_KEY : SESSION_KEY;
@@ -1278,7 +1283,7 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
             ? await service.request<RankedState>(
                 "/api/attempts/" + status.attemptId,
               )
-            : await service.request<RankedState>("/api/attempts", {
+            : await service.request<RankedState>("/api/attempts/new", {
                 body: { challengeId: c.id },
               });
           if (version === generation) openRanked(a);
@@ -1291,6 +1296,7 @@ async function rankedLobby(resumeId?: string, day = utcDay()): Promise<void> {
       "primary",
     );
     start.disabled = blocked;
+    if (!status.attemptId) start.disabled = newStartsPaused();
     const buttons = node('div', 'daily-attempt-actions');
     buttons.append(start);
     if (status.attemptId && !completed) buttons.append(quitButton(status.attemptId));

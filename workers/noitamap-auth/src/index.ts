@@ -1,3 +1,4 @@
+import { verifiedChatColor } from './twitch-chat-color';
 import { authKey, encryptCredential, decryptCredential, secretMatches, SESSION_FORMAT, SESSION_KEY_ID, type CredentialKeys } from './crypto';
 import { createLoginSession, readSessionAccount, rotateRefresh, revokeLoginSession, type LoginSession, type SessionClaims, type SessionAccount } from './sessions';
 import { signGameTicket } from './game-ticket';
@@ -519,18 +520,14 @@ async function handleGameTicket(request: Request, env: Env, secrets: SessionSecr
   // game name. These fields are already loaded from the verified provider record.
   const name = twitch?.login ? twitch.nickname || twitch.username || twitch.login : user.nickname || user.username;
   let color: string | undefined;
-  if (participant && twitch) {
-    const credentials = await readCredentials(twitch, secrets), clientId = await getSecret(env.TWITCH_CLIENT_ID);
-    if (credentials && credentials.expiresAt > Date.now() && clientId) try {
-      const response = await fetch('https://api.twitch.tv/helix/chat/color?user_id=' + twitch.provider_user_id, {
-        headers: { Authorization: 'Bearer ' + credentials.accessToken, 'Client-Id': clientId }, signal: AbortSignal.timeout(3000),
-      });
-      if (response.ok) {
-        const data = await response.json() as { data?: { user_id: string; color: string }[] };
-        const value = data.data?.find(row => row.user_id === twitch.provider_user_id)?.color;
-        if (value && /^#[0-9a-fA-F]{6}$/.test(value)) color = value;
-      }
-    } catch { /* A missing chat color must not prevent playing. */ }
+  if (!management && twitch) {
+    const clientId = await getSecret(env.TWITCH_CLIENT_ID);
+    if (clientId) {
+      const credentials = await readCredentials(twitch, secrets);
+      color = await verifiedChatColor(twitch.provider_user_id, clientId,
+        credentials && credentials.expiresAt > Date.now() ? credentials.accessToken : undefined,
+        () => getSecret(env.TWITCH_CLIENT_SECRET));
+    }
   }
   const issued = await signGameTicket(`account:${account.id}`,
     name, key, twitch?.login ? { twitchUserId: twitch.provider_user_id, twitchLogin: twitch.login, ...(color ? { twitchColor: color } : {}) } : undefined, Date.now(), management ? 'result-management' : participant ? 'player' : 'game');

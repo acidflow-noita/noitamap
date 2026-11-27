@@ -1,3 +1,5 @@
+import { CapacityError, capacityResponse, gameRequests, reserveFinish, cancelFinish, DAY_MS } from './capacity';
+import { privateReviewReasons } from './private-review';
 import { ImageGameError } from "../../../src/guessr/image-game-server";
 import { preparedSource } from "./prepared-source";
 import {
@@ -10,7 +12,7 @@ import {
 } from "../../../src/guessr/stream-types";
 import { verifyGameTicket, verifyResultManagementTicket } from "./tickets";
 import type { Env } from "./index";
-import { storedResultResponse, type StoredResultBody } from './result-storage';
+import { archivedClueReplay, publicStoredResultResponse, readStoredResult, type StoredResultBody } from './result-storage';
 import { GAME_PROTOCOL, GAME_RELOAD_MESSAGE } from '../../../src/guessr/game-protocol';
 import { storedHistorySummary } from './history-summary';
 import { generatedStreamSource } from './generated-stream-source';
@@ -112,6 +114,29 @@ export async function streamRoute(
         throw new ImageGameError(429, 'Too many connections. Please try again shortly.');
       return await env.STREAM_COORDINATORS.getByName(socketMatch[1]).fetch(request);
     }
+    const replayMatch = /^\/api\/streams\/results\/([a-f0-9-]{36})\/rounds\/(10|[1-9])\/replays\/(\d{1,30})$/.exec(path);
+    if (replayMatch && request.method === 'GET') {
+      const [, game, index, player] = replayMatch, round = Number(index);
+      if (!idPattern.test(game)) throw new ImageGameError(404, 'Replay unavailable');
+      let replay = await archivedClueReplay(env.DB, game, round, player);
+      if (replay === undefined && env.STREAM_COORDINATORS && await env.DB.prepare("SELECT id FROM stream_results WHERE id=? AND json_extract(result_json,'$.clueReplays')=1")
+        .bind(game).first()) replay = await env.STREAM_COORDINATORS.getByName(game).publishedClueReplay?.(round, player) ?? null;
+      if (!replay) throw new ImageGameError(404, 'Replay unavailable');
+      return Response.json(replay, { headers: { 'Cache-Control': 'public, max-age=60' } });
+    }
+    const reviewMatch = /^\/api\/streams\/results\/([a-f0-9-]{36})\/review$/.exec(path);
+    if (reviewMatch) {
+      if (!idPattern.test(reviewMatch[1])) throw new ImageGameError(404, 'Result not found.');
+      if (request.method !== 'POST') throw new ImageGameError(405, 'Method not allowed.');
+      const bearer = request.headers.get('Authorization')?.match(/^Bearer (\S+)$/)?.[1] ?? '';
+      const manager = await verifyResultManagementTicket(bearer, env.GAME_TICKET_PUBLIC_KEY ?? '', now);
+      if (!manager) throw new ImageGameError(401, 'Sign in to view these results.');
+      const stored = await env.DB.prepare(`SELECT result_json,result_gzip FROM stream_results
+        WHERE id=? AND (owner=? OR host_id=?)`).bind(reviewMatch[1], manager.sub, manager.twitchUserId ?? null).first<StoredResultBody>();
+      if (!stored) throw new ImageGameError(404, 'Result not found.');
+      const result = await readStoredResult(stored);
+      return json({ reasons: privateReviewReasons(result, request.headers.get('Accept-Language') ?? 'en') });
+    }
     const deleteMatch = /^\/api\/streams\/results\/([a-f0-9-]{36})\/delete$/.exec(path);
     if (deleteMatch) {
       if (!idPattern.test(deleteMatch[1])) throw new ImageGameError(404, 'Result not found.');
@@ -183,7 +208,7 @@ export async function streamRoute(
           404,
           "Result not found. Ask the host for the downloaded result.",
         );
-      return storedResultResponse(stored, request);
+      return await publicStoredResultResponse(stored, request, env.DB);
     }
     if (
       ![
@@ -215,6 +240,7 @@ export async function streamRoute(
       if (env.PUBLIC_GAME_RATE_LIMIT && !(await env.PUBLIC_GAME_RATE_LIMIT.limit({ key: 'stream-create:' + user.sub })).success) throw new ImageGameError(429, 'Too many games.');
       const id = await admitStreamGame(env.DB, user.twitchUserId, now);
       try {
+        await reserveFinish(env,id,'',gameRequests(mode,rounds),now+DAY_MS,now);
         const selected = source ? { source } : mode === 'pvp' ? { source: preparedSource(env) } : await generatedStreamSource(env, now);
         const service = new StreamService(selected.source, env.STREAM_SIGNING_SECRET || '');
         const session = { ...await service.start(user, now, data.transport, rounds, { mode, streaming: data.streaming as boolean | undefined, id }), live: true as const };
@@ -223,14 +249,18 @@ export async function streamRoute(
           reveals: await service.coordinatorReveals(session.token, user, now), seconds });
         return json({ ...session, token: '', rounds: mode === 'pvp' ? [] : session.rounds.map(round => ({ ...round, token: '', clue: { frames: [] } })) }, 201);
       } catch (error) {
+        await cancelFinish(env,id,'').catch(() => {});
         await cancelStreamAdmission(env.DB, id, user.twitchUserId).catch(() => {});
         throw error;
       }
     }
     throw new ImageGameError(410, 'This game transport has been retired.');
   } catch (error) {
+    if (error instanceof CapacityError) return capacityResponse(error,now);
     if (error instanceof StreamAdmissionError) {
-      const limited = json({ error: error.message, resetAt: error.resetAt }, 429);
+      const limited = json({ error: error.message, quota: error.scope, resetAt: error.resetAt }, 429);
+      limited.headers.set('X-Guessr-Daily-Quota', error.scope);
+      limited.headers.set('X-Guessr-Reset-At', String(error.resetAt));
       limited.headers.set('Retry-After', String(Math.max(1, Math.ceil((error.resetAt - now) / 1000))));
       return limited;
     }
