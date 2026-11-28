@@ -16,9 +16,16 @@ import type { ParallelInitialization } from '../src/guessr/parallel-types';
 let directory: string;
 beforeEach(async () => { directory = await mkdtemp(join(tmpdir(), 'guessr-daily-')); vi.spyOn(console, 'log').mockImplementation(() => {}); });
 afterEach(async () => { vi.restoreAllMocks(); vi.unstubAllGlobals(); await rm(directory, { recursive: true, force: true }); });
-async function fixture(material = { r: 30, g: 40, b: 50, alpha: 1 }) {
+async function fixture(material = { r: 30, g: 40, b: 50, alpha: 1 }, shoreX: number | null = 850) {
   const png = join(directory, 'source.png'), bake = join(directory, 'middle');
-  await sharp({ create: { width: 2048, height: 2048, channels: 4, background: material } }).png().toFile(png);
+  // A one-unit change on this shoreline must survive the exact solid-color filter.
+  const scene = sharp({ create: { width: 2048, height: 2048, channels: 4, background: material } });
+  if (shoreX !== null) {
+    const shore = await sharp({ create: { width: 1, height: 2048, channels: 4,
+      background: { ...material, r: material.r + 1 } } }).png().toBuffer();
+    scene.composite([{ input: shore, left: shoreX, top: 0 }]);
+  }
+  await scene.png().toFile(png);
   const source = await prepareCapturedMap(png, bake, { originX: -17920, originY: 0 });
   await writeFile(join(bake, 'background.json'), JSON.stringify({ schemaVersion: 1, kind: 'dynamic-map-background', identity: 'a'.repeat(64),
     source: 'test-fixture', capture: { width: 2048, height: 2048, originX: -17920, originY: 0, tileSize: 512, overlap: 2, maxLevel: 11 } }));
@@ -37,7 +44,13 @@ async function fixture(material = { r: 30, g: 40, b: 50, alpha: 1 }) {
 
 it('prepares a reusable whole-world image set and publishes its matching private daily only after image verification', async () => {
   const input = await fixture(), manifest = await prepareDaily(input);
-  expect(manifest).toMatchObject({ complete: true, seed: 123, eligibleAreas: 1, rounds: 10 });
+  expect(manifest).toMatchObject({ complete: true, seed: 123, eligibleAreas: 1, rounds: 10, solidStartZoom: 4 });
+  const daily = JSON.parse(await readFile(join(input.outputDirectory, 'private/daily.json'), 'utf8'));
+  const shoreline = -17920 + 850;
+  for (const round of daily.rounds) {
+    expect(shoreline).toBeGreaterThanOrEqual(round.answer.x - 216);
+    expect(shoreline).toBeLessThan(round.answer.x + 216);
+  }
   const data = JSON.parse(await readFile(join(input.outputDirectory, 'clues/dataset.json'), 'utf8'));
   expect(JSON.stringify(data)).not.toContain('answer');
   expect(await publishDailyPackage({ directory: input.outputDirectory })).toMatchObject({ published: false });
@@ -129,6 +142,12 @@ it('classifies final composed Daily images privately and excludes every Hard vie
 it('rejects a mismatched seed before producing publishable output', async () => {
   const input = await fixture();
   await expect(prepareDaily({ ...input, expectedSeed: 456 })).rejects.toThrow('seed-matched');
+});
+
+it('does not publish an unplayable fallback when all eligible starts are solid lava', async () => {
+  const input = await fixture({ r: 255, g: 96, b: 0, alpha: 1 }, null);
+  await expect(prepareDaily(input)).rejects.toThrow('No reviewed playable areas');
+  await expect(readFile(join(input.outputDirectory, 'manifest.json'))).rejects.toMatchObject({ code: 'ENOENT' });
 });
 
 it.each(['missing image', 'changed seed'])('keeps the previous Daily active after %s during publication', async failure => {

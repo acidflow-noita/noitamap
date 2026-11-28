@@ -40,6 +40,7 @@ export interface PrivateImageSet {
     cellSize: number;
     areas: Record<string, readonly Bounds[]>;
   };
+  solidViews?: { imageVersion: string; level: number; rectangles: readonly Bounds[] };
 }
 export interface PrivateRound {
   id: string;

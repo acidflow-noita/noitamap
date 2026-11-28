@@ -5,6 +5,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { privateOutput } from "./private-output.mjs";
 import { areaStartVariants } from "../../src/guessr/starting-view.ts";
+import { prepareSolidViews } from './solid-views.mts';
 import { eligibleForNewRound, type AreaDefinition } from "../../src/guessr/area-rules.ts";
 import type { PrivateImageSet } from "../../src/guessr/image-game-server.ts";
 import {
@@ -30,6 +31,7 @@ export async function prepareWorkerData(
     outputDirectory?: string;
     publicConfigPath?: string;
     referenceRoot?: string;
+    imageDirectory?: string;
     onProgress?: () => void;
   } = {},
 ) {
@@ -48,6 +50,8 @@ export async function prepareWorkerData(
   ];
   if (index.capture.sha256 !== inventory.capture.sha256)
     throw new Error("Area masks and images must use the same captured map.");
+  // Existing captures can be repackaged without regenerating or renaming their images.
+  const solidViews = await prepareSolidViews(index, resolve(options.imageDirectory ?? 'task/guessr/opaque-site/images'));
   const output = privateOutput(
     resolve(options.outputDirectory ?? "task/guessr/private/worker-assets"),
   );
@@ -160,6 +164,7 @@ export async function prepareWorkerData(
     directory: output,
     areas: new Set(catalog.areas.map(area => area.definition.id)).size,
     featurelessVariants, featurelessPositions,
+    solidStartZoom: solidViews.level,
     positions,
     excluded,
     catalogBytes: Buffer.byteLength(text),

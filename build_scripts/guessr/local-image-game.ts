@@ -2,6 +2,7 @@
  * catalog and session files never pass through a static asset route. */
 import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { prepareSolidViews } from './solid-views.mts';
 import {
   ImageGameError,
   ImageGameService,
@@ -41,6 +42,7 @@ export async function loadLocalImageGame(
     throw new Error(
       "The area masks and prepared images must use the same captured map.",
     );
+  await prepareSolidViews(index, resolve(root, 'task/guessr/opaque-site/images'));
   await mkdir(directory, { recursive: true });
   return new ImageGameService(index, inventory.puzzleAreas, {
     async get(id) {

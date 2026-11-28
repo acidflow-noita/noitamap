@@ -52,6 +52,8 @@ The primary auth Worker requests `user:write:chat` only when the streamer enable
 
 ## Prepared imagery
 
+The cook excludes starting positions that still show a single color after four centered zoom-outs (432 by 192 native pixels). It checks across tile boundaries and subtracts those positions from each area's start mask. A shoreline or structure inside the window stays eligible under this rule. The Worker draws from the prepared masks. Generated Daily manifests record `solidStartZoom: 4`.
+
 Apply `0009_generated_stream_maps.sql` before deploying generated SvC support. The existing Guessr CI job now also prepares the full eligible location catalog as bounded encrypted static files. The publisher stores only private metadata and the per-dataset key in D1. It verifies the uploaded files before activation. No new secret, binding, paid service or request per clue movement is needed.
 
 The first authenticated publication for the current UTC day enables generated maps for SvC. After that, a missing current-day package returns a preparation message instead of falling back to captured terrain. A game pins its day, seed, render identity, clue root and reference map. SvC selects fresh rounds from the full prepared location pool, independently of the ten Daily puzzles. PvP and Demo keep their current source.

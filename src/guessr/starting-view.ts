@@ -5,6 +5,8 @@ import { cameraRect, intersection } from "./clue-camera.ts";
 import type { PrivateImageSet } from "./image-game-server.ts";
 import type { Bounds, Point } from "./rules.ts";
 
+export const SOLID_START_LEVEL = 4;
+
 export type ImageContent =
   | "empty"
   | "full"
@@ -83,6 +85,12 @@ export function prepareAreaStarts(
   if (!area.runs?.length || !Number.isInteger(area.originY))
     throw new Error(`Area ${area.id}: missing starting-location mask.`);
   const c = index.capture;
+  const solid = index.solidViews;
+  if (solid && (solid.imageVersion !== index.version || solid.level !== SOLID_START_LEVEL))
+    throw new Error('Solid-view mask does not match the prepared images.');
+  if (solid && (!Array.isArray(solid.rectangles) || solid.rectangles.some(r =>
+    ![r.x, r.y, r.width, r.height].every(Number.isSafeInteger) || r.width <= 0 || r.height <= 0)))
+    throw new Error('Invalid solid-view mask.');
   const initial = cameraRect({ dx: 0, dy: 0, level: 0 });
   const widest = cameraRect({ dx: 0, dy: 0, level: 6 });
   const allowed = {
@@ -165,7 +173,13 @@ export function prepareAreaStarts(
             if (eligible) rectangles.push(eligible);
           }
         }
-      strips.push(...union(rectangles));
+      const candidates = union(rectangles);
+      const cuts = solid?.rectangles.filter(r => r.x < mask.x + mask.width && r.x + r.width > mask.x
+        && r.y < mask.y + mask.height && r.y + r.height > mask.y);
+      if (candidates.length && cuts?.length) {
+        const { inside, outside } = partitionStarts(candidates, cuts);
+        strips.push(...(inside.length ? outside : candidates));
+      } else strips.push(...candidates);
     }
   return startSampler(strips);
 }

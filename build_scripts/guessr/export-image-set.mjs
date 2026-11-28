@@ -351,6 +351,7 @@ export async function exportImageSet({
     images,
     fingerprint: identity,
   };
+  if (previous?.fingerprint === identity && previous.solidViews) index.solidViews = previous.solidViews;
   // Assets are complete first. Each file is published by rename; dataset.json is last.
   await atomicWrite(privatePath, JSON.stringify(index, null, 2) + "\n", 0o600);
   await atomicWrite(join(destination, "_headers"), HEADERS);

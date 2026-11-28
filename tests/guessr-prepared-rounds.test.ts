@@ -38,6 +38,7 @@ async function fixture(areaIds = ['private-area-0', 'private-area-1'], random = 
   const index: PrivateImageSet = {
     schemaVersion: 1,
     version: "fixture-version",
+    solidViews: { imageVersion: "fixture-version", level: 4, rectangles: [] },
     viewDifficulty: { schemaVersion: 1, imageVersion: 'fixture-version', cellSize: 32,
       areas: { 'terrain/edr': [], 'biome/the-work-hell': [] } },
     images,

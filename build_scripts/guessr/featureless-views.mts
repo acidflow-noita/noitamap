@@ -11,6 +11,7 @@ import type { PrivateImageSet } from '../../src/guessr/image-game-server.ts';
 import type { Bounds } from '../../src/guessr/rules.ts';
 import { privateOutput } from './private-output.mjs';
 import { withProgress } from './progress.mts';
+import { prepareSolidViews } from './solid-views.mts';
 
 export const FEATURELESS_CELL = 32;
 export interface Texture { data: Uint8Array; width: number; height: number }
@@ -152,6 +153,7 @@ export async function prepareFeaturelessViews(options: { indexPath?: string; inv
   if (index.capture.sha256 !== inventory.capture.sha256) throw new Error('Classification masks and images must use the same capture.');
   const { data, info } = await sharp(textureBytes).toColourspace('srgb').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const imageDirectory = resolve(options.imageDirectory ?? 'task/guessr/opaque-site/images');
+  await prepareSolidViews(index, imageDirectory);
   const evidence = await classifyFeaturelessViews(index, inventory.puzzleAreas,
     id => readFile(resolve(imageDirectory, id + '.webp')), { data, width: info.width, height: info.height });
   const policy = createHash('sha256').update('featureless-view-v1').update(textureBytes).digest('hex');

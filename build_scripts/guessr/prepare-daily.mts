@@ -95,7 +95,8 @@ export async function prepareDaily(options: {
   await prepareFeaturelessViews({ indexPath, inventoryPath, imageDirectory: join(output, 'clues/images') });
   const workerDirectory = join(privateRoot, 'worker-assets');
   const prepared = await withProgress('Preparing playable areas', recipe.areas.length, progress => prepareWorkerData({
-    indexPath, inventoryPath, outputDirectory: workerDirectory, onProgress: () => progress.advance(),
+    indexPath, inventoryPath, imageDirectory: join(output, 'clues/images'),
+    outputDirectory: workerDirectory, onProgress: () => progress.advance(),
   }), { unit: 'areas' });
   // Choose the shared daily rounds once in CI, never while a player is exploring.
   const entropy = randomBytes(32); let counter = 0;
@@ -115,6 +116,7 @@ export async function prepareDaily(options: {
     clueFiles: images.stats.assets + 2 + Object.keys(pack.preparedSource!.files).length, referenceFiles: composed.tiles + 2, backgroundIdentity: composed.backgroundIdentity,
     eligibleAreas: prepared.areas, eligiblePositions: prepared.positions, excludedAreas: prepared.excluded,
     featurelessVariants: prepared.featurelessVariants, featurelessPositions: prepared.featurelessPositions,
+    solidStartZoom: prepared.solidStartZoom,
     rounds: rounds.length,
   };
   if (summary.clueFiles > 20000) throw Error('Clue images and prepared data exceed the Pages Free file budget.');
